@@ -27,7 +27,7 @@ http://fpsbi.com/s/k2/bl2/
 ## Creating your own
 
 * Clone this repo
-* Take any business process diagram (BPMN file, process diagram in a PDF, etc.) into the three customized JS files
-* The *tools/bpmviz_creator_prompt.txt* will leverage any of the above and create all three JS files for you.
+* Take any business process diagram (BPMN file, process diagram in a PDF, etc.) and feed it as input into...
+* The *tools/bpmviz_creator_prompt.txt* - it will leverage any of the above and create all three JS files for you.
 * Run the *index.htm* file in your browser or any web server to see it execute.
 
