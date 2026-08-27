@@ -28,9 +28,10 @@ http://fpsbi.com/s/k2/bl2/
 
 * Clone this repo
 * Take any business process diagram (BPMN file, process diagram in a PDF, etc.) and feed it as input into...
-* The *tools/bpmviz_creator_prompt.txt* - it will leverage any of the above and create all three JS files for you.
+* The *tools/bpmviz_creator_prompt.txt* - it will leverage any of the above and create all three JS files for you. [1]
   * branding.js - governs appearance
   * process.js - describes the business process
   * samples.js - provides sample runs of the business process
 * Run the *index.htm* file in your browser or any web server to see it execute.
 
+Note [1]: Recommend the use of Opus-4.6 and higher. Untested with other models.
