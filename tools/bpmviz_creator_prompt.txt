@@ -1,0 +1,321 @@
+# Task: Generate BPMN Explorer Config Files from a Process Diagram
+
+You will be given a **business process diagram** (BPMN, flowchart, swimlane diagram, or similar). Your job is to produce **three JavaScript files** — `branding.js`, `process.js`, and `samples.js` — that conform exactly to the contracts below. These files plug into an existing visualizer engine; you must not invent new fields or change the schemas.
+
+---
+
+## Step 1: Analyze the PDF
+
+Before writing any code, extract and list the following from the diagram. Show your work in a short analysis block at the top of your response.
+
+### 1a. Process identity
+- **Process name** (e.g., "Mortgage Underwriting", "Insurance Claim Triage")
+- **Domain / industry** (e.g., banking, healthcare, manufacturing)
+- **Likely organization type** if visible (department names, system names, regulatory references)
+- **Trigger event** — what starts the process (single noun phrase like "Application Received")
+- **End state(s)** — what completes it
+
+### 1b. Swimlanes (actors / systems / roles)
+List every horizontal lane in top-to-bottom order. For each lane capture:
+- Short ID (lowercase, no spaces, max 10 chars)
+- Display name (Title Case, max ~24 chars)
+- Suggested accent color (see palette below)
+
+If the diagram has no explicit lanes, **infer 4–8 lanes** by grouping tasks by likely actor/system (e.g., "Customer", "Intake System", "Underwriter", "Risk Committee", "Core Banking"). Document your inference.
+
+### 1c. Nodes
+List every shape in the diagram. For each, capture:
+- **ID** (camelCase, max ~16 chars, unique)
+- **Type**, one of:
+  - `start` — circle, thin border, entry point
+  - `end` — circle, thick border, normal exit
+  - `endTerminate` — circle with filled inner circle (process killed)
+  - `eventMessage` — circle with envelope (wait state, external trigger)
+  - `gatewayX` — diamond with X (exclusive — pick one branch)
+  - `gatewayP` — diamond with + (parallel — all branches)
+  - `taskUser` — rectangle, human task
+  - `taskService` — rectangle, automated/system task
+  - `taskScript` — rectangle, business-rules/script task
+- **Label** (use `\n` for line breaks; max 2 lines, ~14 chars per line)
+- **Lane ID** it belongs to
+- **Column index** (0 = leftmost; increment left-to-right following flow order)
+- **Description** (1–3 sentences explaining what happens; infer plausibly if not stated)
+- For tasks only:
+  - **`avg`** (typical duration in minutes) — infer from task nature
+  - **`sla`** (target deadline in minutes) — typically 1.5×–4× the avg
+
+### 1d. Flows (sequence flows / arrows)
+List every arrow as a `[from, to, optionalLabel]` triple. Labels are only required on flows exiting an exclusive gateway (e.g., "Yes", "No", "Approved", "Rejected").
+
+### 1e. Sample scenarios
+The visualizer needs **3–5 in-flight examples** that exercise different paths through the gateways. Invent realistic-but-plausible scenarios that cover:
+1. A clean happy-path completion (`status: 'completed'`)
+2. An in-progress mid-flow item (`status: 'in-progress'`)
+3. A newly-started item (`status: 'new'`)
+4. A stuck/escalated item past SLA (`status: 'stuck'`)
+5. (If a dispute/rework branch exists) a disputed item (`status: 'disputed'`)
+
+For each sample, pick a different gateway-branch combination.
+
+---
+
+## Step 2: Write `branding.js`
+
+Use this **exact** structure. Fill every field. Keep the `BRANDING` object name and key names identical to the contract.
+
+```js
+/* ============================================================
+   BRANDING — derived from <PDF filename or process name>
+   ============================================================ */
+
+const BRANDING = {
+  app: {
+    name: 'BPMN Explorer',                  // keep as 'BPMN Explorer' unless told otherwise
+    subtitle: '<Domain> · <Process> · Live',
+    headerStatus: 'Telemetry connected · <Org/Department> · <Period>',
+    brandMarkGradient: 'conic-gradient(from 220deg, <c1>, <c2>, <c3>, <c1>)',
+    brandMarkGlow: '0 0 18px rgba(<rgb of c1>, .35)',
+  },
+
+  footer: {
+    org: '© 2026 PracticeOps Beta · <Process> Data Model',
+    linkText: 'linkedin.com/in/dougross',
+    linkHref: 'https://linkedin.com/in/dougross',
+  },
+
+  copy: {
+    sampleNoun: '<Singular noun for one item>',      // e.g. 'Claim', 'Loan', 'Bill', 'Ticket'
+    sampleListTitle: 'Active <plural noun>',         // e.g. 'Active claims'
+    sampleListUnit: 'in flight',                     // usually keep as 'in flight'
+    startEventLabel: '<Trigger event past-tense>',   // e.g. 'Claim filed', 'Loan submitted'
+  },
+
+  help: {
+    title: 'BPMN Explorer · Help',
+    subtitle: 'A 2.5D process viewer with replayable telemetry for <domain> <process>.',
+    sections: [
+      {
+        title: 'Default view',
+        body: `<2–4 sentence description of what the default view shows. Reference the
+        actual number of lanes, the trigger, and the terminal step. Note that it
+        auto-plays at <b>1× (slow-mo)</b> and that the speed pill cycles 1× → 4× → 16× → 64×.>`
+      },
+      {
+        title: 'Process variants by <sampleNoun>',
+        body: `<Describe what each of the 3–5 sample items demonstrates. Reference at
+        least 2 specific sample names and which gateway branches they exercise.>`
+      },
+      {
+        title: 'Reading the active state',
+        body: `The currently-active task has expanding cyan rings pulsing outward
+        (sonar-style) and a brighter fill. The flow path leading into it animates
+        with traveling cyan dashes. Completed paths turn solid green; pending paths stay dim.`
+      }
+    ],
+    shortcutsTitle: 'Navigation',
+    shortcuts: [
+      ['Pan canvas', 'Click + drag'],
+      ['Zoom', '<kbd>+</kbd> / <kbd>−</kbd> · scroll · <kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd>'],
+      ['Reset to default view', '<kbd>0</kbd> · Reset button'],
+      ['Show entire diagram', '<kbd>F</kbd> · "All" button'],
+      ['Inspect node', 'Single click on a node · double click to zoom in'],
+      ['Minimap navigation', 'Click or drag in lower-right minimap'],
+    ],
+    playbackTitle: 'Playback',
+    playback: [
+      ['Play / pause', '<kbd>Space</kbd> · ▶ button · click empty canvas'],
+      ['Restart', '<kbd>R</kbd>'],
+      ['Jump to current', '<kbd>E</kbd>'],
+      ['Cycle speed', 'Click the speed pill (1× slow-mo → 4× → 16× → 64×)'],
+    ],
+    togglesTitle: 'Toggles',
+    toggles: [
+      ['<b>Heat</b>', 'Tints lanes by current load — see where bottlenecks are concentrating.'],
+      ['<b>Metrics</b>', 'Toggles inline SLA bars on tasks.'],
+      ['<b>Labels</b>', 'Show / hide gateway-branch labels.'],
+      ['<b>Stars</b>', 'Decorative background starfield.'],
+    ]
+  }
+};
+```
+
+**Brand color guidance:** Pick 3 hex colors from the lane accent palette below that evoke the domain (e.g., banking → blues + gold; healthcare → teals + soft red; logistics → orange + slate). Convert the first color to RGB for the glow.
+
+---
+
+## Step 3: Write `process.js`
+
+Use this **exact** structure. Do not add fields; do not rename keys.
+
+```js
+/* ============================================================
+   PROCESS DEFINITION — <Process Name>
+   ============================================================ */
+
+const LANES = [
+  { id:'<short>', name:'<Display Name>', accent:'<#hex>' },
+  // ... one per lane, top-to-bottom
+];
+
+const NODES = [
+  { id:'<id>', type:'<type>', label:'<Label\\nLine2>', lane:'<laneId>', col:<int>,
+    sla:<int|omit>, avg:<int|omit>,
+    desc:'<1–3 sentence description>' },
+  // ... every node from the diagram
+];
+
+const FLOWS = [
+  ['<fromId>','<toId>'],
+  ['<fromId>','<toId>','<branchLabel>'],   // label only when from is gatewayX
+  // ... every arrow from the diagram
+].map(f => ({ from:f[0], to:f[1], label:f[2]||null, id:`${f[0]}__${f[1]}` }));
+
+const NODE_BY_ID = Object.fromEntries(NODES.map(n=>[n.id,n]));
+```
+
+### Hard rules for `process.js`
+
+1. **Column assignment:** Walk the diagram left-to-right following sequence flows. Each node's `col` is its depth from `start` (which is `col:0`). If two nodes are at the same flow-depth, give them the same `col`. **Maximum reasonable col is ~18**; if your process is wider, consider whether some serial subtasks should be merged.
+2. **Lane assignment:** Every node must reference a `lane` ID that exists in `LANES`.
+3. **No orphan nodes:** Every non-start node must have at least one incoming flow; every non-end node must have at least one outgoing flow.
+4. **Gateway flow labels:** Every flow exiting a `gatewayX` must have a label. Flows exiting `gatewayP` should have no label.
+5. **SLA values are minutes** (not hours or days). 1 hour = 60. 1 day = 1440. 1 week = 10080.
+6. **Labels with `\n`:** Use exactly one `\n` to wrap into 2 lines. Never use 3 lines.
+7. **`avg` must be less than `sla`** for non-wait-state tasks.
+
+### Lane accent color palette (pick to match domain feel)
+```
+Teal-green   #56c2a3   (systems, automation, finance ops)
+Orange       #f0a868   (coordination, operations, customer-facing ops)
+Steel-blue   #7c8db5   (managers, mid-level)
+Coral-red    #e76f73   (executives, partners, sign-off)
+Purple       #a78bfa   (directors, governance, leadership)
+Pink         #f472b6   (risk, quality, compliance)
+Amber        #fbbf24   (external parties, clients, wait states)
+Aqua         #4dd0c1   (back office, A/R, fulfillment)
+Slate-blue   #6e8ebf   (legal, contracts)
+Forest       #4ade80   (audit, verification)
+```
+
+### Node-type quick reference
+| Diagram shape | Type to use |
+|---|---|
+| Thin circle (start) | `start` |
+| Thick circle (end) | `end` |
+| Circle with filled circle inside | `endTerminate` |
+| Circle with envelope | `eventMessage` |
+| Diamond with X (or unmarked) | `gatewayX` |
+| Diamond with + | `gatewayP` |
+| Rectangle with person icon | `taskUser` |
+| Rectangle with gear icon | `taskService` |
+| Rectangle with page/script icon | `taskScript` |
+| Plain rectangle (ambiguous) | Default to `taskUser` if a role appears responsible, else `taskService` |
+
+---
+
+## Step 4: Write `samples.js`
+
+Use this **exact** structure. Keep the `buildPath` helper exactly as-is.
+
+```js
+/* ============================================================
+   SAMPLES — exercising different paths through <Process Name>
+   ============================================================ */
+
+function buildPath(steps){
+  let t = 0; const out = [];
+  function walk(arr){
+    for (const s of arr) {
+      if (Array.isArray(s[0])) {
+        const startT = t; let maxEnd = startT;
+        for (const branch of s) {
+          let bt = startT;
+          for (const [nid, dur] of branch) { out.push({nodeId:nid, t:bt, dur}); bt += dur; }
+          if (bt > maxEnd) maxEnd = bt;
+        }
+        t = maxEnd;
+      } else {
+        const [nid, dur] = s;
+        out.push({nodeId:nid, t, dur});
+        t += dur;
+      }
+    }
+  }
+  walk(steps);
+  return out;
+}
+
+const SUBMISSIONS = [
+  {
+    id:'<shortid>',
+    name:'<Specific item name> · <one-line status>',
+    client:'<Counterparty / customer name>',
+    engagement:'<Type of work / product>',
+    fees:'<$ amount or volume metric>',                // optional but keep field
+    partner:'<Owning person>',                          // optional but keep field
+    office:'<Location>',                                // optional but keep field
+    status:'in-progress',                               // see allowed values below
+    summary:'<2–3 sentence narrative of current state>',
+    path: buildPath([
+      // [nodeId, durationMinutes] for each step the item actually traversed
+      // For gateways, include them with dur:0
+      // Only include nodes the item actually visited (not pending future ones)
+      // Wait, no — include ALL nodes the item WILL visit through end; the
+      // simulation animates forward through them. pauseAt determines where
+      // 'now' freezes.
+      ['start',0],
+      ['<nextNode>', <minutes>],
+      // ... continue to an end node
+    ]),
+    pauseAt: <minutes>      // simulation time at which this sample is "now"
+  },
+  // ... 3–5 total
+];
+```
+
+### Hard rules for `samples.js`
+
+1. **Allowed `status` values:** `'in-progress' | 'new' | 'stuck' | 'completed' | 'disputed'`
+2. **Every `path` must end at an `end` or `endTerminate` node** — even for in-progress items. The path describes the *projected full route*; `pauseAt` controls where playback is currently frozen.
+3. **Gateways must appear in the path with `dur:0`** at the moment the decision was made.
+4. **Through an exclusive gateway, only include the branch actually taken** (do not include both branches).
+5. **`pauseAt` placement by status:**
+   - `'new'` → very early (within first 1–2 tasks, e.g., 5–60 minutes in)
+   - `'in-progress'` → mid-flow (30%–60% of total path duration)
+   - `'stuck'` → at or past the SLA boundary of a specific task
+   - `'disputed'` → inside the dispute/rework branch
+   - `'completed'` → set to `999999` (past total) so the whole path renders done
+6. **Realistic durations:** Use `avg` and `sla` from `process.js` as your baseline. For stuck items, exceed `sla`. For clean items, run near `avg`. Add ±20% variance.
+7. **Sample variety:** Across all 3–5 samples, ensure every gateway branch in the diagram is exercised by at least one sample.
+
+---
+
+## Step 5: Final checklist before returning
+
+Run through these mentally and fix anything that fails:
+
+- [ ] Every `NODES[i].lane` exists in `LANES`
+- [ ] Every `FLOWS[i].from` and `.to` exists in `NODES`
+- [ ] Exactly one `start` node, at least one `end`/`endTerminate` node
+- [ ] Every flow out of a `gatewayX` has a label; flows out of `gatewayP` have no label
+- [ ] Every task has both `avg` and `sla`, with `avg < sla`
+- [ ] Every sample's `path` references only node IDs that exist in `NODES`
+- [ ] Every sample's `path` follows valid sequence flows (you can trace it on the diagram)
+- [ ] Across all samples, every gateway branch is taken by at least one
+- [ ] Lane count is 4–10; node count is 10–25; column count is ≤ 18
+- [ ] No `\n` in any label produces more than 2 lines
+- [ ] All three files use `const` declarations at top level (no `export`, no modules — these are plain `<script>` includes)
+
+---
+
+## Output format
+
+Return your response in this exact order:
+
+1. **`## Analysis`** — a short markdown block with the extracted process identity, lanes, nodes, flows, and sample plan from Step 1. Bullet lists are fine.
+2. **`## branding.js`** — a single fenced ```js block
+3. **`## process.js`** — a single fenced ```js block
+4. **`## samples.js`** — a single fenced ```js block
+5. **`## Validation notes`** — brief notes on any assumptions you had to make where the PDF was ambiguous, and confirmation that the final-checklist items all pass.
+
+Do not output any other prose, preamble, or postscript. The three code blocks should be droppable into `js/` and run immediately.
