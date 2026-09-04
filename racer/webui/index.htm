@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BPMN Race Explorer · Swimlanes</title>
+
+<style id="baseTheme">
+/* ============================================================
+   BASELINE THEME (fallback). process.js styles, injected later,
+   override anything here. Guarantees the app never renders raw.
+   ============================================================ */
+:root{
+  --bg:#0d141e; --panel:#131d2a; --panel2:#0f1824; --line:#233246;
+  --text:#dbe6f3; --muted:#8598ad; --dim:#5f7185;
+  --cyan:#22d3ee; --green:#34d399; --amber:#f6b93b; --blue:#5b8def; --teal:#2dd4bf;
+  --red:#f87171;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);
+  font:13px/1.4 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+b{color:#fff}
+body.no-labels .nlabel,body.no-labels .nsub,body.no-labels .elabel,
+body.no-labels .badge,body.no-labels .roletext{display:none}
+
+/* ---------- app shell ---------- */
+.app{display:grid;grid-template-rows:auto auto 1fr;height:100vh;overflow:hidden}
+
+/* ---------- header ---------- */
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;
+  border-bottom:1px solid var(--line);background:var(--panel)}
+.logo{width:30px;height:30px;border-radius:7px;flex:none;
+  background:linear-gradient(135deg,var(--cyan),var(--blue))}
+.htitle{display:flex;flex-direction:column;min-width:0}
+.htitle .kick{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}
+.htitle .main{font-size:15px;font-weight:700;color:#fff;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.hstat{margin-left:auto;display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}
+.hstat .dot{width:8px;height:8px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 8px var(--green)}
+.hstat #tplus{color:#fff;font-weight:600}
+
+/* ---------- toolbar ---------- */
+.toolbar{display:flex;align-items:center;gap:8px;padding:8px 14px;
+  border-bottom:1px solid var(--line);background:var(--panel2);flex-wrap:wrap}
+.toolbar .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.toolbar .spacer{flex:1}
+select,.btn,.chip,.speed{background:#1b2836;color:var(--text);border:1px solid var(--line);
+  border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer;line-height:1}
+select:hover,.btn:hover,.chip:hover,.speed:hover{border-color:var(--cyan)}
+.btn.icon{width:32px;height:30px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.chip.on{background:rgba(34,211,238,.15);border-color:var(--cyan);color:var(--cyan)}
+.toggle{width:38px;height:20px;border-radius:11px;background:#2a3a4c;position:relative;
+  cursor:pointer;border:1px solid var(--line);flex:none}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+  background:#8ea3b8;transition:.15s}
+.toggle.on{background:rgba(34,211,238,.3);border-color:var(--cyan)}
+.toggle.on::after{left:20px;background:var(--cyan)}
+.clock{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;padding:0 4px}
+
+/* ---------- main split ---------- */
+.app>.main{display:flex;min-height:0;overflow:hidden}
+.stage{flex:1;min-width:0;position:relative;display:flex;flex-direction:column;overflow:hidden}
+.side{width:340px;flex:none;border-left:1px solid var(--line);background:var(--panel2);
+  overflow-y:auto;padding:12px 12px 40px}
+
+/* ---------- milestone race ---------- */
+.msrace{padding:8px 14px 4px;border-bottom:1px solid var(--line);background:var(--panel)}
+.msrace .cap{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  font-size:12px;color:var(--muted);margin-bottom:20px}
+.msrace .cap .fast{color:var(--text)}
+.msrace .cap .fast .b4{color:var(--dim);text-decoration:line-through}
+.mstrack{position:relative;height:30px;margin:0 6px}
+.msline{position:absolute;left:2%;right:2%;top:14px;height:2px;background:var(--line)}
+.msnode{position:absolute;top:0;transform:translateX(-50%);text-align:center;width:0}
+.msnode .d{width:9px;height:9px;border-radius:50%;background:#33465b;margin:10px auto 0;
+  border:2px solid var(--panel)}
+.msnode.hit .d{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.msnode .t{position:absolute;top:-16px;left:50%;transform:translateX(-50%);white-space:nowrap;
+  font-size:10px;color:var(--muted)}
+.runner{position:absolute;top:6px;width:22px;height:22px;border-radius:50%;transform:translateX(-50%);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#04121a;
+  transition:left .12s linear;z-index:3}
+.runner.B{background:var(--amber)}
+.runner.A{background:var(--cyan);top:-16px}
+.runner .tag{position:absolute;top:-15px;left:50%;transform:translateX(-50%);white-space:nowrap;
+  font-size:10px;font-weight:600;color:var(--text);background:var(--panel2);
+  padding:1px 5px;border-radius:4px;border:1px solid var(--line)}
+.runner.A .tag{top:auto;bottom:-15px}
+.racehint{font-size:11px;color:var(--dim);padding:4px 2px 0}
+
+/* ---------- tracks / svg canvas ---------- */
+.track{position:relative;flex:1;min-height:0;overflow:hidden;border-top:1px solid var(--line)}
+.track .view{position:absolute;inset:0;overflow:hidden;cursor:grab}
+.track .view:active{cursor:grabbing}
+.track svg{width:100%;height:100%;display:block}
+.lanetag{position:absolute;top:6px;right:10px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);background:var(--panel2);padding:2px 7px;border-radius:5px;border:1px solid var(--line)}
+.track.after{border-top:2px solid var(--line)}
+
+/* gutter chips (positioned by JS via inline top) */
+.gutter{position:absolute;top:0;left:0;width:164px;height:100%;pointer-events:none;z-index:2}
+.gchip{position:absolute;left:6px;width:150px;height:34px;display:flex;align-items:center;gap:8px;
+  padding:0 8px;background:rgba(15,24,36,.92);border:1px solid var(--line);border-radius:8px;
+  backdrop-filter:blur(2px)}
+.gchip .gd{width:9px;height:9px;border-radius:50%;flex:none;background:var(--muted)}
+.gchip.ext   .gd{background:var(--dim)}
+.gchip.human .gd{background:var(--blue)}
+.gchip.agent .gd{background:var(--teal)}
+.gchip.agent{border-color:rgba(45,212,191,.5)}
+.gchip .gt{display:flex;flex-direction:column;min-width:0}
+.gchip .gn{font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gchip .gr{font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* svg lane bands + separators */
+.band{opacity:.5}
+.band.ext{fill:#101a26}
+.band.human{fill:#111d2b}
+.band.agent{fill:rgba(45,212,191,.06)}
+.lanesep{stroke:var(--line);stroke-width:1}
+
+/* edges */
+.edge{fill:none;stroke:#4a6076;stroke-width:2}
+.edge.dashed{stroke-dasharray:5 4}
+.edge.done{stroke:var(--cyan)}
+.elabel{fill:var(--muted);font-size:10px;text-anchor:middle}
+
+/* nodes */
+.node{ }
+.node .nbox{fill:#1a2735;stroke:#3a4f61;stroke-width:2;transition:stroke .2s,fill .2s}
+.nlabel{fill:#eaf2fb;font-size:12px;font-weight:600;text-anchor:middle;pointer-events:none}
+.nsub{fill:var(--muted);font-size:10px;text-anchor:middle;pointer-events:none}
+.badge{fill:var(--dim);font-size:10px;text-anchor:middle;pointer-events:none}
+.rolepill{fill:#22303f;stroke:var(--line);stroke-width:1}
+.roletext{fill:var(--muted);font-size:8px;text-anchor:middle;pointer-events:none}
+
+.node.active .nbox{stroke:var(--cyan);fill:#12303a;filter:url(#glowC)}
+.node.done   .nbox{stroke:var(--green);fill:#12291f}
+.node.bott   .nbox{stroke:var(--amber)}
+.node.bott.active .nbox{filter:none;stroke:var(--amber)}
+.node.agent  .nbox{stroke:var(--teal)}
+.node.exc    .nbox{stroke:var(--blue);stroke-dasharray:4 3}
+.node.opt    .nbox{opacity:.75;stroke-dasharray:3 3}
+.star{fill:var(--amber);opacity:0;transition:opacity .3s}
+.star.show{opacity:1;filter:url(#glowA)}
+
+/* heat mode tint */
+.track.heat .node.bott .nbox{fill:#3a2410}
+
+/* ---------- minimap ---------- */
+.minimap{position:absolute;right:12px;bottom:56px;width:290px;background:rgba(13,20,30,.92);
+  border:1px solid var(--line);border-radius:10px;padding:8px;z-index:4;backdrop-filter:blur(3px)}
+.minimap .mh{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px}
+.minimap #mm{width:100%;height:70px;display:block}
+.mm-dot{fill:#4a6076}
+.mm-dot.a{fill:var(--teal)}
+.mm-box{fill:rgba(34,211,238,.12);stroke:var(--cyan);stroke-width:1.5}
+.minimap .foot{font-size:9px;color:var(--dim);margin-top:4px}
+
+/* ---------- step detail ---------- */
+.detailWrap{position:absolute;inset:0;display:none;z-index:20}
+.detailWrap.show{display:block}
+.detailWrap .backdrop{position:absolute;inset:0;background:rgba(4,9,15,.55)}
+.detail{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:340px;max-width:90%;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.dclose{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--muted);
+  font-size:15px;cursor:pointer}
+.dkick{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+.dname{font-size:17px;font-weight:700;color:#fff;margin:2px 0 2px}
+.dsub{font-size:12px;color:var(--muted);margin-bottom:8px}
+.drows{border-top:1px solid var(--line);margin-top:8px}
+.drow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px}
+.drow .k{color:var(--muted)}
+.drow .v{color:#fff;font-weight:600}
+.flags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.flag{font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid var(--line);color:var(--text)}
+.flag.proc{background:#1b2836}
+.flag.bott{background:rgba(246,185,59,.16);border-color:var(--amber);color:var(--amber)}
+.flag.agent{background:rgba(45,212,191,.16);border-color:var(--teal);color:var(--teal)}
+.flag.exc{background:rgba(91,141,239,.16);border-color:var(--blue);color:var(--blue)}
+.flag.opt{background:#1b2836;color:var(--muted)}
+
+/* ---------- stage footer ---------- */
+.stagefoot{display:flex;align-items:center;gap:8px;padding:7px 14px;border-top:1px solid var(--line);
+  background:var(--panel);font-size:11px;color:var(--muted);flex-wrap:wrap}
+.legend{display:flex;gap:12px;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.kbd{background:#1b2836;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:10px;margin:0 2px}
+.stagefoot .right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.stagefoot a{color:var(--cyan);text-decoration:none}
+
+/* ---------- sidebar ---------- */
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.sh .t{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.sh .c{background:#1b2836;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700}
+.case{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;
+  margin-bottom:8px;cursor:pointer;transition:border .15s}
+.case:hover{border-color:var(--cyan)}
+.case.sel{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset}
+.case .row1{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.case .name{font-size:13px;font-weight:600;color:#fff}
+.tag2{font-size:9px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.tag2.t-done{background:rgba(52,211,153,.16);color:var(--green)}
+.tag2.t-prog{background:rgba(34,211,238,.16);color:var(--cyan)}
+.tag2.t-stuck{background:rgba(248,113,113,.16);color:var(--red)}
+.tag2.t-new{background:rgba(246,185,59,.16);color:var(--amber)}
+.case .fund{font-size:11px;color:var(--muted);margin:3px 0}
+.case .row2{display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:11px}
+.case .times b{color:var(--amber)}
+.case .times i{color:var(--cyan);font-style:normal}
+.case .amt{color:#fff;font-weight:600}
+
+/* exec cards */
+.exec{margin-top:14px}
+.eh{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;
+  text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+.eh b{color:#fff}
+.cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px}
+.card .k{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.card .v{font-size:17px;font-weight:800;color:#fff;margin:2px 0}
+.card .s{font-size:9px;color:var(--muted)}
+.card.g{border-color:rgba(52,211,153,.35)}
+.card.c{border-color:rgba(34,211,238,.35)}
+.card.a{border-color:rgba(246,185,59,.35)}
+
+/* metrics table */
+table.metrics{width:100%;border-collapse:collapse;margin-top:16px;font-size:12px}
+table.metrics th{text-align:right;color:var(--muted);font-weight:600;padding:6px 6px;
+  border-bottom:1px solid var(--line);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+table.metrics th:first-child{text-align:left}
+table.metrics td{padding:6px 6px;border-bottom:1px solid var(--line);text-align:right}
+table.metrics td:first-child{text-align:left;color:var(--muted)}
+table.metrics td.b4{color:var(--amber)}
+table.metrics td.af{color:var(--cyan)}
+table.metrics td.d{color:var(--green);font-weight:600}
+</style>
+
+<!-- Process definition + branding + styling live here. Swap this file to retheme/re-model. -->
+<script src="process.js"></script>
+<!-- Reusable engine injects the theme's stylesheet before body paints -->
+<script>
+  (function(){
+    if(!window.PROCESS){console.error("process.js failed to load");return;}
+    var s=document.createElement("style");
+    s.textContent=window.PROCESS.styles||"";
+    document.head.appendChild(s);
+  })();
+</script>
+</head>
+<body>
+<svg id="globalDefs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="glowC" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="glowA" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <marker id="arw" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L6.5,3 L0,6 Z" fill="#4a6076"/></marker>
+</defs></svg>
+
+<div class="app">
+  <header>
+    <div class="logo"></div>
+    <div class="htitle">
+      <div class="kick" id="hKick"></div>
+      <div class="main" id="hMain"></div>
+    </div>
+    <div class="hstat"><span class="dot"></span><span id="hStat"></span> <span id="tplus">6h 30m</span></div>
+  </header>
+
+  <div class="toolbar">
+    <span class="lbl">Submission</span>
+    <select id="caseSel"></select>
+    <button class="btn icon" id="restart" title="Restart">⏮</button>
+    <button class="btn icon" id="play" title="Play / Pause">▶</button>
+    <button class="btn icon" id="toEnd" title="Skip to end">⏭</button>
+    <button class="btn speed" id="speed">1× speed (slow-mo)</button>
+    <div class="toggle on" id="loop" title="Loop"></div>
+    <span class="clock" id="clock">6h 30m / 6h 30m</span>
+    <div class="spacer"></div>
+    <button class="chip" id="heat">Heat</button>
+    <button class="chip on" id="metrics">Metrics</button>
+    <button class="chip on" id="labels">Labels</button>
+    <button class="chip" id="stars">Stars</button>
+    <button class="btn icon" id="zout">−</button>
+    <button class="btn" id="zfit">All</button>
+    <button class="btn icon" id="zin">+</button>
+    <button class="btn" id="reset">Reset</button>
+    <button class="btn icon" id="help">?</button>
+  </div>
+
+  <div class="main">
+    <div class="stage">
+      <div class="msrace">
+        <div class="cap">
+          <span>Milestone Race · Same Submission, Both Processes</span>
+          <span class="fast" id="fastTxt"></span>
+        </div>
+        <div class="mstrack" id="mstrack"><div class="msline"></div></div>
+        <div class="racehint" id="racehint"></div>
+      </div>
+
+      <div class="track before" id="trkBefore">
+        <div class="view"><svg id="svgBefore"></svg></div>
+        <div class="gutter" id="gutBefore"></div>
+        <div class="lanetag" id="tagBefore">Before · Current State</div>
+      </div>
+      <div class="track after" id="trkAfter">
+        <div class="view"><svg id="svgAfter"></svg></div>
+        <div class="gutter" id="gutAfter"></div>
+        <div class="lanetag" id="tagAfter">After · Future State</div>
+      </div>
+
+      <div class="minimap">
+        <div class="mh"><span>Process Overview · <b>B / A</b></span><span id="zpct">100%</span></div>
+        <svg id="mm" viewBox="0 0 280 70"></svg>
+        <div class="foot">click or drag to navigate · cyan box = current view</div>
+      </div>
+
+      <!-- Step detail (click any node) -->
+      <div class="detailWrap" id="detailWrap">
+        <div class="backdrop" id="detailBackdrop"></div>
+        <div class="detail" id="detail"></div>
+      </div>
+
+      <div class="stagefoot">
+        <div class="legend">
+          <span><i style="background:#3a4f61"></i>Pending</span>
+          <span><i style="background:var(--cyan)"></i>Active</span>
+          <span><i style="background:var(--green)"></i>Complete</span>
+          <span><i style="background:var(--amber)"></i>Bottleneck</span>
+          <span><i style="background:var(--blue)"></i>Human lane</span>
+          <span><i style="background:var(--teal)"></i>Agentic lane</span>
+        </div>
+        <span class="kbd">Space</span>pause <span class="kbd">?</span>help
+        <div class="right"><span id="footerTxt"></span> · <a id="liLink" href="#" target="_blank" rel="noopener noreferrer"></a></div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="sh"><span class="t">Active Submissions</span><span class="c" id="caseCount">5</span></div>
+      <div id="caseList"></div>
+
+      <div class="exec">
+        <div class="eh"><span>Executive Impact</span><b id="execFund"></b></div>
+        <div class="cards">
+          <div class="card g"><div class="k">Annual Savings</div><div class="v" id="cSave"></div><div class="s" id="cSaveS"></div></div>
+          <div class="card c"><div class="k">Cycle Time Cut</div><div class="v" id="cCut"></div><div class="s" id="cCutS"></div></div>
+          <div class="card a"><div class="k">FTE Freed</div><div class="v" id="cFte"></div><div class="s">redeployable</div></div>
+        </div>
+      </div>
+
+      <table class="metrics">
+        <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Δ</th></tr></thead>
+        <tbody id="mtBody"></tbody>
+      </table>
+    </aside>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   REUSABLE VISUALIZATION ENGINE
+   All process content, branding & styling comes from window.PROCESS (process.js)
+   ===================================================================== */
+const P = window.PROCESS;
+
+/* ----- pull model/layout/branding out of the definition ----- */
+const CONTENT_W = P.layout.CONTENT_W, CONTENT_H = P.layout.CONTENT_H, GUTTER = P.layout.GUTTER;
+const LANE_TOP  = P.layout.LANE_TOP,  LH = P.layout.LH;
+const BASE_B    = P.layout.BASE_B,    BASE_A = P.layout.BASE_A;
+const DURATION  = P.layout.DURATION || 22000;
+
+const LANES = P.lanes;
+const laneIndex = id => LANES.findIndex(l => l.id === id);
+const laneY = i => LANE_TOP + i*LH + LH/2;
+
+const MS   = P.milestones.names;
+const MSX  = P.milestones.x;
+const BASE_MS_B = P.milestones.baseB;
+const BASE_MS_A = P.milestones.baseA;
+
+const BEFORE = P.before, AFTER = P.after;
+const CASES  = P.cases;
+
+/* ===================== STATE ===================== */
+/* panY added so the canvas can be dragged/scrolled vertically to reveal swimlanes when zoomed in */
+const app={zoom:.5,fit:.5,panX:GUTTER+8,panY:0,t:0,playing:true,speed:1,loop:true,
+  heat:false,metrics:true,labels:true,stars:false,caseIdx:P.startCase!=null?P.startCase:2,tracks:{},dragged:false};
+const SPEEDS=[.5,1,2,4];
+let curCase=CASES[app.caseIdx];
+let MS_B=[...BASE_MS_B], MS_A=[...BASE_MS_A];
+
+const $=s=>document.querySelector(s);
+const svgEl=(t,a={},...k)=>{const n=document.createElementNS("http://www.w3.org/2000/svg",t);for(const q in a)n.setAttribute(q,a[q]);k.forEach(c=>n.appendChild(c));return n;};
+const T=(x,y,s,cls)=>{const t=svgEl("text",{x,y,class:cls});t.textContent=s;return t;};
+const fmt=m=>{m=Math.round(m);if(m<60)return m+"m";const h=Math.floor(m/60),r=m%60;return h+"h"+(r?" "+r+"m":"");};
+const fmtC=m=>{m=Math.round(m);return m<60?m+"m":Math.floor(m/60)+"h "+(m%60)+"m";};
+/* ★ safety net: ellipsize on-canvas text so an over-long label can never spill across neighbors.
+   Full text is always preserved in the click-detail panel. Keep authored labels short anyway. */
+const clip=(s,max)=>{s=String(s==null?"":s);return s.length>max?s.slice(0,max-1)+"…":s;};
+
+/* ===================== BUILD SVG ===================== */
+function diamond(x,y,r){return `${x},${y-r} ${x+r},${y} ${x},${y+r} ${x-r},${y}`;}
+function starPath(cx,cy,r){let p="";for(let i=0;i<10;i++){const a=Math.PI/5*i-Math.PI/2,rr=i%2?r*.45:r;p+=(i?"L":"M")+(cx+Math.cos(a)*rr).toFixed(1)+","+(cy+Math.sin(a)*rr).toFixed(1);}return p+"Z";}
+function hw(n){return n.type==="task"?64:n.type==="gw"?26:22;}
+
+function edgePath(from,to,opt){
+  if(from.x===to.x){
+    const up=to.y<from.y;
+    const y1=up?from.y-(from.type==="task"?27:22):from.y+(from.type==="task"?27:22);
+    const y2=up?to.y+(to.type==="task"?27:22):to.y-(to.type==="task"?27:22);
+    return {d:`M${from.x},${y1} L${from.x},${y2}`,mx:from.x,my:(y1+y2)/2};
+  }
+  const fwd=to.x>from.x;
+  const ax=fwd?from.x+hw(from):from.x-hw(from);
+  const bx=fwd?to.x-hw(to):to.x+hw(to);
+  if(from.y===to.y) return {d:`M${ax},${from.y} L${bx},${to.y}`,mx:(ax+bx)/2,my:from.y-7};
+  let midX=(ax+bx)/2; if(opt&&opt.early) midX=ax+22;
+  return {d:`M${ax},${from.y} H${midX} V${to.y} H${bx}`,mx:midX,my:(from.y+to.y)/2};
+}
+
+function drawNode(g,n){
+  const grp=svgEl("g",{class:"node"+(n.bott?" bott":"")+(n.agent?" agent":"")+(n.exc?" exc":"")+(n.opt?" opt":"")});
+  grp.__node=n;
+  if(n.type==="task"){
+    grp.appendChild(svgEl("rect",{class:"nbox",x:n.x-64,y:n.y-27,width:128,height:54,rx:9}));
+    grp.appendChild(T(n.x,n.y-4,clip(n.label,18),"nlabel"));                 /* ★ clipped */
+    if(n.sub)grp.appendChild(T(n.x,n.y+11,clip(n.sub,24),"nsub"));           /* ★ clipped */
+    grp.__badge=T(n.x,n.y+40,fmtC(Math.max(1,n.e-n.s)),"badge");grp.appendChild(grp.__badge);
+    if(n.role){grp.appendChild(svgEl("rect",{class:"rolepill",x:n.x-64,y:n.y-38,width:n.role.length*6+10,height:13,rx:6}));
+      grp.appendChild(T(n.x-64+(n.role.length*6+10)/2,n.y-28,n.role,"roletext"));}
+  }else if(n.type==="gw"){
+    grp.appendChild(svgEl("polygon",{class:"nbox",points:diamond(n.x,n.y,24)}));
+    grp.appendChild(T(n.x,n.y+40,clip(n.label,22),"nsub"));                  /* ★ clipped */
+  }else{
+    const sw=n.type==="end"?3.2:2;
+    grp.appendChild(svgEl("circle",{class:"nbox",cx:n.x,cy:n.y,r:22,"stroke-width":sw}));
+    if(n.type==="start")grp.appendChild(svgEl("circle",{cx:n.x,cy:n.y,r:6,fill:"#2b3a48"}));
+    grp.appendChild(T(n.x,n.y+40,clip(n.label||(n.type==="start"?"Start":"End"),22),"nsub")); /* ★ clipped */
+    if(n.type==="end")grp.appendChild(Object.assign(svgEl("path",{class:"star",d:starPath(n.x,n.y-38,10)})));
+  }
+  g.appendChild(grp);return grp;
+}
+
+function buildGutter(gutId){
+  const gut=$("#"+gutId);gut.innerHTML="";
+  const chips=LANES.map((L)=>{
+    const d=document.createElement("div");d.className="gchip "+L.type;
+    d.innerHTML=`<span class="gd"></span><span class="gt"><span class="gn">${L.name}</span><span class="gr">${L.role}</span></span>`;
+    gut.appendChild(d);return d;
+  });
+  return chips;
+}
+function buildTrack(svgId,gutId,model,which){
+  const svg=$("#"+svgId);svg.innerHTML="";
+  const g=svgEl("g",{class:"content"});svg.appendChild(g);
+  LANES.forEach((L,i)=>{
+    const y=LANE_TOP+i*LH;
+    g.appendChild(svgEl("rect",{class:"band "+L.type,x:0,y,width:CONTENT_W,height:LH}));
+    g.appendChild(svgEl("line",{class:"lanesep",x1:0,y1:y,x2:CONTENT_W,y2:y}));
+  });
+  g.appendChild(svgEl("line",{class:"lanesep",x1:0,y1:LANE_TOP+LANES.length*LH,x2:CONTENT_W,y2:LANE_TOP+LANES.length*LH}));
+  model.nodes.forEach(n=>n.y=laneY(laneIndex(n.lane)));
+  const edges=[];
+  model.edges.forEach(([fi,ti,label,opt])=>{
+    const from=model.nodes[fi],to=model.nodes[ti];const p=edgePath(from,to,opt);
+    const path=svgEl("path",{class:"edge"+(opt&&opt.dashed?" dashed":""),d:p.d,"marker-end":"url(#arw)"});
+    g.appendChild(path);
+    if(label)g.appendChild(T(p.mx,p.my-5,label,"elabel"));
+    edges.push({el:path,to});
+  });
+  const nodeEls=model.nodes.map(n=>drawNode(g,n));
+  nodeEls.forEach(gEl=>{
+    gEl.style.cursor="pointer";
+    gEl.addEventListener("click",e=>{ if(app.dragged)return; e.stopPropagation(); showNodeDetail(gEl.__node,which); });
+  });
+  const chips=buildGutter(gutId);
+  return {svg,content:g,view:svg.parentElement,nodes:model.nodes,nodeEls,edges,chips};
+}
+function initTracks(){
+  app.tracks.before=buildTrack("svgBefore","gutBefore",BEFORE,"before");
+  app.tracks.after =buildTrack("svgAfter","gutAfter",AFTER,"after");
+}
+
+/* ===================== STEP DETAIL ===================== */
+function laneName(id){const l=LANES.find(x=>x.id===id);return l?l.name:id;}
+function laneRole(id){const l=LANES.find(x=>x.id===id);return l?l.role:"";}
+function typeName(t){return ({task:"Task",gw:"Decision gateway",start:"Start event",end:"End event"})[t]||t;}
+function showNodeDetail(n,which){
+  const wrap=$("#detailWrap"),d=$("#detail");
+  const dur=Math.max(0,Math.round(n.e-n.s));
+  const procLabel=which==="before"?P.branding.beforeLabel:P.branding.afterLabel;
+  const flags=[`<span class="flag proc">${which==="before"?"Before":"After"}</span>`];
+  if(n.bott)flags.push('<span class="flag bott">Bottleneck</span>');
+  if(n.agent)flags.push('<span class="flag agent">Agentic AI</span>');
+  if(n.exc)flags.push('<span class="flag exc">Human-in-the-loop</span>');
+  if(n.opt)flags.push('<span class="flag opt">Optional</span>');
+  d.innerHTML=`
+    <button class="dclose" id="dclose" title="Close">✕</button>
+    <div class="dkick">${typeName(n.type)} · ${procLabel}</div>
+    <div class="dname">${n.label||typeName(n.type)}</div>
+    ${n.sub?`<div class="dsub">${n.sub}</div>`:""}
+    <div class="drows">
+      <div class="drow"><span class="k">Actor / Lane</span><span class="v">${laneName(n.lane)}</span></div>
+      <div class="drow"><span class="k">Lane type</span><span class="v">${laneRole(n.lane)}</span></div>
+      ${n.role?`<div class="drow"><span class="k">Executor</span><span class="v">${n.role}</span></div>`:""}
+      <div class="drow"><span class="k">Duration</span><span class="v">${dur<1?"—":fmtC(dur)}</span></div>
+      <div class="drow"><span class="k">Starts at</span><span class="v">${fmtC(Math.round(n.s))}</span></div>
+      <div class="drow"><span class="k">Ends at</span><span class="v">${fmtC(Math.round(n.e))}</span></div>
+    </div>
+    <div class="flags">${flags.join("")}</div>`;
+  wrap.classList.add("show");
+  $("#dclose").onclick=hideDetail;
+}
+function hideDetail(){$("#detailWrap").classList.remove("show");}
+
+/* ===================== MILESTONE RACE ===================== */
+let runnerA,runnerB,msNodes;
+function buildMSrace(){
+  const trk=$("#mstrack");trk.querySelectorAll(".msnode,.runner").forEach(e=>e.remove());
+  msNodes=MS.map((name,i)=>{const n=document.createElement("div");n.className="msnode";n.style.left=(2+MSX[i]*96)+"%";
+    n.innerHTML=`<div class="d"></div><div class="t">${name}</div>`;trk.appendChild(n);return n;});
+  runnerB=document.createElement("div");runnerB.className="runner B";runnerB.innerHTML=`B<span class="tag">B —</span>`;
+  runnerA=document.createElement("div");runnerA.className="runner A";runnerA.innerHTML=`A<span class="tag">A —</span>`;
+  trk.appendChild(runnerB);trk.appendChild(runnerA);
+}
+function raceX(elapsed,times){
+  if(elapsed<=0)return 2;
+  for(let i=0;i<times.length;i++){if(elapsed<=times[i]){const pT=i?times[i-1]:0,pX=i?MSX[i-1]:0;
+    const f=(elapsed-pT)/((times[i]-pT)||1);return 2+(pX+f*(MSX[i]-pX))*96;}}
+  return 98;
+}
+
+/* ===================== ZOOM / PAN ===================== */
+function computeFit(){
+  const t=app.tracks.before;
+  const w=(t.view.clientWidth||800)-GUTTER;
+  const h=t.view.clientHeight||300;
+  let f=Math.min(w/CONTENT_W,h/CONTENT_H)*0.98;
+  if(!isFinite(f)||f<=0)f=0.28;
+  app.fit=f;
+}
+/* ★ readable default: open at layout.startZoom (default 0.9) so labels are legible and you
+   pan for the rest. Narrow diagrams still open fully fitted (max() picks fit when fit>startZoom). */
+function resetView(){
+  computeFit();
+  const want=(P.layout.startZoom!=null?P.layout.startZoom:0.9);
+  app.zoom=Math.min(app.fit*4,Math.max(app.fit,want));
+  app.panX=GUTTER+8; app.panY=0;
+  clampPan(); applyTransform(); buildMinimap();
+}
+function fitAll(){                     // the "All" button: fit the whole diagram
+  computeFit();
+  app.zoom=app.fit;
+  app.panX=GUTTER+8; app.panY=0;
+  clampPan(); applyTransform(); buildMinimap();
+}
+function clampPan(){
+  const v=app.tracks.before.view;
+  const w=v.clientWidth||800;
+  const max=GUTTER+20;
+  const min=Math.min(max,w-CONTENT_W*app.zoom-20);
+  app.panX=Math.max(min,Math.min(max,app.panX));
+  /* vertical clamp: keep lanes reachable, snap to 0 when everything already fits */
+  const h=v.clientHeight||300;
+  const contentH=CONTENT_H*app.zoom;
+  if(contentH<=h-8){
+    app.panY=0;
+  }else{
+    const maxY=8, minY=h-contentH-8;
+    app.panY=Math.max(minY,Math.min(maxY,app.panY));
+  }
+}
+function applyTransform(){
+  const tr=`translate(${app.panX},${app.panY}) scale(${app.zoom})`;
+  app.tracks.before.content.setAttribute("transform",tr);
+  app.tracks.after.content.setAttribute("transform",tr);
+  $("#zpct").textContent=Math.round(app.zoom/app.fit*100)+"%";
+  repositionGutter();drawViewport();
+}
+function repositionGutter(){
+  ["before","after"].forEach(k=>{const t=app.tracks[k];if(!t.chips)return;
+    t.chips.forEach((c,i)=>{c.style.top=(laneY(i)*app.zoom+app.panY-17)+"px";
+      c.style.opacity=app.zoom<app.fit*0.9?0.9:1;});});
+}
+function zoomBy(f,cx,cy){
+  const v=app.tracks.before.view;
+  const w=v.clientWidth||800, h=v.clientHeight||300;
+  cx=cx==null?w/2:cx; cy=cy==null?h/2:cy;
+  const bx=(cx-app.panX)/app.zoom, by=(cy-app.panY)/app.zoom;
+  app.zoom=Math.max(app.fit*0.6,Math.min(app.fit*4,app.zoom*f));
+  app.panX=cx-bx*app.zoom; app.panY=cy-by*app.zoom;
+  clampPan();applyTransform();
+}
+
+/* ===================== MINIMAP ===================== */
+function buildMinimap(){
+  const mm=$("#mm");mm.innerHTML="";const sx=280/CONTENT_W;
+  BEFORE.nodes.forEach(n=>mm.appendChild(svgEl("circle",{class:"mm-dot",cx:(n.x*sx).toFixed(1),cy:22,r:2.4})));
+  AFTER.nodes.forEach(n=>mm.appendChild(svgEl("circle",{class:"mm-dot a",cx:(n.x*sx).toFixed(1),cy:48,r:2.4})));
+  mm.appendChild(svgEl("rect",{class:"mm-box",id:"mmbox",x:0,y:6,width:60,height:58,rx:3}));
+  drawViewport();
+}
+function drawViewport(){
+  const box=$("#mmbox");if(!box)return;
+  const vw=app.tracks.before.view.clientWidth||800;const sx=280/CONTENT_W;
+  const left=(GUTTER-app.panX)/app.zoom;const wid=(vw-GUTTER)/app.zoom;
+  box.setAttribute("x",Math.max(0,left*sx).toFixed(1));
+  box.setAttribute("width",Math.min(280,Math.max(14,wid*sx)).toFixed(1));
+}
+function mmGoto(clientX){
+  const mm=$("#mm"),r=mm.getBoundingClientRect();const frac=(clientX-r.left)/r.width;
+  const vw=app.tracks.before.view.clientWidth||800;const center=(GUTTER+vw)/2;
+  app.panX=center-frac*CONTENT_W*app.zoom;clampPan();applyTransform();
+}
+
+/* ===================== RENDER ===================== */
+function nodeState(n,el){
+  if(n.type==="start")return el>0?"done":"active";
+  if(n.type==="end")return el>=n.e?"done":"";
+  if(n.type==="gw")return el>=n.e?"done":"";
+  if(el>=n.e)return "done";
+  if(el>=n.s&&el<n.e)return "active";
+  return "";
+}
+function updateTrack(tk,el){
+  tk.nodeEls.forEach(g=>{const n=g.__node;g.classList.remove("active","done");
+    const st=nodeState(n,el);if(st)g.classList.add(st);
+    if(n.type==="end"){const s=g.querySelector(".star");if(s)s.classList.toggle("show",app.stars&&el>=n.e);}});
+  tk.edges.forEach(e=>e.el.classList.toggle("done",el>=e.to.s));
+}
+function render(){
+  const total=curCase.b;const bEl=app.t*total;const aEl=Math.min(curCase.a,bEl);
+  updateTrack(app.tracks.before,bEl);updateTrack(app.tracks.after,aEl);
+  const xB=raceX(bEl,MS_B),xA=raceX(aEl,MS_A);
+  if(runnerB){runnerB.style.left=xB+"%";runnerB.querySelector(".tag").textContent="B "+fmt(bEl);}
+  if(runnerA){runnerA.style.left=xA+"%";runnerA.querySelector(".tag").textContent="A "+fmt(aEl);}
+  msNodes.forEach((n,i)=>n.classList.toggle("hit",bEl>=MS_B[i]-0.5||aEl>=MS_A[i]-0.5));
+  $("#tplus").textContent=fmt(bEl);
+  $("#clock").textContent=fmt(bEl)+" / "+fmt(total);
+  $("#fastTxt").innerHTML=`After finished in <b>${fmt(curCase.a)}</b> vs Before <span class="b4">${fmtC(curCase.b)}</span> — <b>${fmt(curCase.b-curCase.a)} faster</b>`;
+  $("#racehint").innerHTML=app.playing?`Racing · click a step for details · press <b>Space</b> to pause`:`Paused · click a step for details · press <b>Space</b> to resume`;
+}
+let lastTs=0;
+function loop(ts){const dt=ts-lastTs;lastTs=ts;
+  if(app.playing){app.t+=(dt/DURATION)*app.speed;
+    if(app.t>=1){app.t=1;render();if(app.loop)setTimeout(()=>app.t=0,650);else{app.playing=false;syncPlay();}}}
+  render();requestAnimationFrame(loop);}
+
+/* ===================== SIDEBAR ===================== */
+function renderList(){
+  const box=$("#caseList");box.innerHTML="";$("#caseCount").textContent=CASES.length;
+  CASES.forEach((c,i)=>{const d=document.createElement("div");d.className="case"+(i===app.caseIdx?" sel":"");
+    d.innerHTML=`<div class="row1"><div class="name">${c.id} · ${c.title}</div><span class="tag2 ${c.tag}">${c.status}</span></div>
+      <div class="fund">${c.fund}</div>
+      <div class="row2"><div class="times"><b>B ${fmtC(c.b)}</b> &nbsp; <i>A ${fmt(c.a)}</i></div><div class="amt">${c.amt}</div></div>`;
+    d.onclick=()=>selectCase(i);box.appendChild(d);});
+}
+function renderExec(){
+  const c=curCase;$("#execFund").textContent=c.fund;
+  $("#cSave").textContent=c.exec.save;$("#cSaveS").textContent=c.exec.saveS;
+  $("#cCut").textContent=c.exec.cut;$("#cCutS").textContent=fmtC(c.b)+" → "+fmt(c.a);
+  $("#cFte").textContent=c.exec.fte;
+  const tb=$("#mtBody");tb.innerHTML="";
+  c.mt.forEach(r=>{const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${r[0]}</td><td class="b4">${r[1]}</td><td class="af">${r[2]}</td><td class="d">${r[3]}</td>`;tb.appendChild(tr);});
+}
+function rescale(){
+  const fB=curCase.b/BASE_B, fA=curCase.a/BASE_A;
+  BEFORE.nodes.forEach(n=>{n.s=n.bs*fB;n.e=n.be*fB;});
+  AFTER.nodes.forEach(n=>{n.s=n.bs*fA;n.e=n.be*fA;});
+  MS_B=BASE_MS_B.map(v=>v*fB);MS_A=BASE_MS_A.map(v=>v*fA);
+  [app.tracks.before,app.tracks.after].forEach(tk=>tk.nodeEls.forEach(g=>{
+    const n=g.__node;if(g.__badge)g.__badge.textContent=fmtC(Math.max(1,Math.round(n.e-n.s)));}));
+}
+function selectCase(i){
+  app.caseIdx=i;curCase=CASES[i];app.t=0;app.playing=true;syncPlay();hideDetail();
+  rescale();renderList();renderExec();$("#caseSel").value=i;
+}
+
+/* ===================== BRANDING ===================== */
+function applyBranding(){
+  const b=P.branding||{};
+  if(b.docTitle)document.title=b.docTitle;
+  $("#hKick").textContent=b.kicker||"";
+  $("#hMain").innerHTML=b.title||"";
+  $("#hStat").textContent=b.status||"";
+  $("#tagBefore").textContent=b.beforeLabel||"Before";
+  $("#tagAfter").textContent=b.afterLabel||"After";
+  $("#footerTxt").textContent=b.footer||"";
+  if(b.linkedin){const a=$("#liLink");a.textContent=b.linkedin;
+    a.href="https://"+b.linkedin.replace(/^https?:\/\//,"");}
+}
+
+/* ===================== CONTROLS ===================== */
+function syncPlay(){$("#play").textContent=app.playing?"⏸":"▶";}
+function initControls(){
+  const sel=$("#caseSel");
+  CASES.forEach((c,i)=>{const o=document.createElement("option");o.value=i;o.textContent=`${c.id} · ${c.title}`;sel.appendChild(o);});
+  sel.value=app.caseIdx;sel.onchange=e=>selectCase(+e.target.value);
+  $("#play").onclick=()=>{app.playing=!app.playing;syncPlay();};
+  $("#restart").onclick=()=>{app.t=0;app.playing=true;syncPlay();};
+  $("#toEnd").onclick=()=>{app.t=1;app.playing=false;syncPlay();};
+  $("#speed").onclick=()=>{const i=(SPEEDS.indexOf(app.speed)+1)%SPEEDS.length;app.speed=SPEEDS[i];
+    $("#speed").textContent=app.speed+"× speed"+(app.speed<1?" (slow-mo)":"");};
+  $("#loop").onclick=()=>{app.loop=!app.loop;$("#loop").classList.toggle("on",app.loop);};
+  const heatApply=()=>{$("#trkBefore").classList.toggle("heat",app.heat);$("#trkAfter").classList.toggle("heat",app.heat);};
+  $("#heat").onclick=()=>{app.heat=!app.heat;$("#heat").classList.toggle("on",app.heat);heatApply();};
+  $("#metrics").onclick=()=>{app.metrics=!app.metrics;$("#metrics").classList.toggle("on",app.metrics);
+    document.querySelector(".side").style.display=app.metrics?"":"none";};
+  $("#labels").onclick=()=>{app.labels=!app.labels;$("#labels").classList.toggle("on",app.labels);
+    document.body.classList.toggle("no-labels",!app.labels);};
+  $("#stars").onclick=()=>{app.stars=!app.stars;$("#stars").classList.toggle("on",app.stars);};
+  $("#zin").onclick=()=>zoomBy(1.2);$("#zout").onclick=()=>zoomBy(1/1.2);
+  $("#zfit").onclick=()=>fitAll();
+  $("#reset").onclick=()=>{app.t=0;app.playing=true;syncPlay();resetView();};
+  $("#help").onclick=()=>alert(P.branding.helpText||"BPMN Race Explorer\n\n• Space  play/pause\n• Click a step to inspect its details\n• Drag canvas to pan in any direction\n• Wheel scrolls vertically · Ctrl/⌘+wheel zooms\n• 'All' fits both processes to view");
+}
+
+/* ===================== INPUT ===================== */
+function initPan(){
+  [app.tracks.before,app.tracks.after].forEach(tk=>{
+    const v=tk.view;let down=false,sx=0,sy=0,sp=0,spy=0;
+    v.addEventListener("mousedown",e=>{down=true;sx=e.clientX;sy=e.clientY;sp=app.panX;spy=app.panY;app.dragged=false;});
+    window.addEventListener("mouseup",()=>{down=false;});
+    window.addEventListener("mousemove",e=>{if(!down)return;
+      if(Math.abs(e.clientX-sx)>3||Math.abs(e.clientY-sy)>3)app.dragged=true;
+      app.panX=sp+(e.clientX-sx);app.panY=spy+(e.clientY-sy);clampPan();applyTransform();});
+    v.addEventListener("wheel",e=>{e.preventDefault();const r=v.getBoundingClientRect();
+      if(e.ctrlKey||e.metaKey){ zoomBy(e.deltaY<0?1.1:1/1.1,e.clientX-r.left,e.clientY-r.top); }
+      else{ app.panY-=e.deltaY; app.panX-=e.deltaX; clampPan();applyTransform(); }
+    },{passive:false});
+    v.addEventListener("click",()=>{if(!app.dragged){app.playing=!app.playing;syncPlay();}});
+  });
+  const mm=$("#mm");let md=false;
+  mm.addEventListener("mousedown",e=>{md=true;mmGoto(e.clientX);});
+  window.addEventListener("mouseup",()=>md=false);
+  window.addEventListener("mousemove",e=>{if(md)mmGoto(e.clientX);});
+  $("#detailBackdrop").addEventListener("click",hideDetail);
+  window.addEventListener("keydown",e=>{
+    if(e.code==="Space"){e.preventDefault();app.playing=!app.playing;syncPlay();}
+    if(e.key==="?")$("#help").click();
+    if(e.key==="Escape")hideDetail();
+    if(e.key==="+"||e.key==="=")zoomBy(1.2);if(e.key==="-")zoomBy(1/1.2);
+    /* arrow keys nudge the canvas — handy for vertical lane inspection */
+    if(e.key==="ArrowUp"){app.panY+=40;clampPan();applyTransform();}
+    if(e.key==="ArrowDown"){app.panY-=40;clampPan();applyTransform();}
+    if(e.key==="ArrowLeft"){app.panX+=40;clampPan();applyTransform();}
+    if(e.key==="ArrowRight"){app.panX-=40;clampPan();applyTransform();}
+  });
+}
+
+/* ===================== BOOT ===================== */
+window.addEventListener("load",()=>{
+  applyBranding();
+  initTracks();buildMSrace();initControls();initPan();
+  renderList();renderExec();selectCase(app.caseIdx);buildMinimap();
+  requestAnimationFrame(()=>{resetView();requestAnimationFrame(resetView);});
+  window.addEventListener("resize",()=>{resetView();buildMinimap();});
+  requestAnimationFrame(ts=>{lastTs=ts;loop(ts);});
+});
+</script>
+</body>
+</html>
