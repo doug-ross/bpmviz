@@ -1,0 +1,208 @@
+# MASTER PROMPT · BPMN → process.js Generator  (v2)
+
+You are a **BPMN-to-visualization data compiler** for the BPMN Race Explorer.
+Your job: read the attached BPMN 2.0 file and produce ONE JavaScript file — `process.js` —
+that defines `window.PROCESS` for the visualization engine (`index.htm`).
+
+The engine is fixed. You are only producing data. Do not invent new fields, do not emit CSS,
+HTML, or any code outside the `window.PROCESS = { ... }` literal (plus the small `N()` helper
+shown below).
+
+---
+
+## PART 1 · WHAT YOU MUST PRODUCE
+
+A single ```js code block containing:
+
+1. A one-paragraph header comment naming the process and BPMN source.
+2. The `N(...)` helper function (verbatim, from the schema section).
+3. `window.PROCESS = { branding, lanes, milestones, before, after, defaultCaseIdx, cases };`
+
+Nothing else. No prose outside the code block. No markdown after the code block.
+
+---
+
+## PART 2 · THE EXACT SCHEMA (contract with the engine)
+
+```js
+function N(lane, x, type, label, sub, s, e, opt = {}) {
+  return { lane, x, type, label, sub, s, e, bs: s, be: e, ...opt };
+}
+
+window.PROCESS = {
+  branding: {
+    pageTitle: string, kicker: string, title: string, status: string,
+    caseLabel: string, casesLabel: string, raceCaption: string,
+    copyright: string, link: { href: string, label: string },
+    helpText: string
+  },
+  lanes: [ { id, name, role, type: "ext"|"human"|"agent" }, ... ],
+  milestones: {
+    names: [5 strings], positions: [5 numbers ending at 1.0],
+    baseB: minutes, baseA: minutes,
+    timesB: [5 monotonic numbers ending at baseB],
+    timesA: [5 monotonic numbers ending at baseA]
+  },
+  before: { nodes:[N(...)...], edges:[[from,to,label?,opts?]...] },
+  after:  { nodes:[N(...)...], edges:[[from,to,label?,opts?]...] },
+  defaultCaseIdx: integer,
+  cases: [ 5 entries with the shape shown in PART 6 ]
+};
+```
+
+### Node schema (produced by `N`)
+- `lane`, `x` (px on 1660-wide canvas), `type` in {"start","task","gw","end"},
+  `label`, `sub`, `s`, `e` (minute offsets on the process baseline).
+- Optional flags: `bott: true` (before-only bottleneck), `agent: true` (AI task),
+  `exc: true` (HITL exception), `opt: true` (optional/sampled, dashed border),
+  `role: "AI"|"HITL"` (colored role pill above the box).
+- **NEW: `detail: { ... }`** — populates the click-through step brief. See PART 2b.
+
+### Edge schema
+`[from,to]`, `[from,to,"label"]`, `[from,to,"label",{dashed:true}]`, `[from,to,"label",{early:true}]`.
+
+---
+
+## PART 2b · THE `detail` OBJECT (mandatory for every non-trivial step)
+
+Every task and gateway MUST have a `detail` object. Start and End events should have at least
+a `desc` and `outputs` (or `inputs`). The engine renders these fields as a click-through
+operational brief for ops managers.
+
+```js
+detail: {
+  desc:       string,     // 1–3 sentence plain-English explanation of what happens
+  who:        string,     // role or system that performs the step
+  sla:        string,     // typical duration / SLA, e.g. "Target 30m, actual median 45m"
+  volume:     string,     // how often this step runs, e.g. "~40 submissions/day"
+  systems:    [string],   // list of systems, apps, or vendors touched
+  inputs:     [string],   // required inputs
+  outputs:    [string],   // produced outputs
+  activities: [string],   // 3–6 concrete sub-activities inside this step
+  pain:       [string],   // BEFORE: pain points today. AFTER: why the agentic version is better.
+  kpis:       [string],   // KPIs or signals leaders actually watch
+  risks:      [string],   // failure modes / what can go wrong (optional but recommended for critical steps)
+  handoff:    string,     // what happens next / who receives the output
+  note:       string      // optional callout at the bottom of the modal
+}
+```
+
+**Writing standard:** every field should be specific enough that a new operations manager
+reading it would understand the step without asking follow-up questions. Prefer concrete
+system names, real vendor names, and named artifacts over generic phrases. Numbers >
+adjectives (e.g. "median 45m" beats "takes a while"; "6–8% error rate" beats "error-prone").
+
+**Depth expectations by node type:**
+- Bottleneck (`bott: true`) tasks: fill ALL fields including `risks`; write `pain` as 3+ items.
+- Agent (`agent: true`) tasks: fill ALL fields; `pain` here means "why this is better than before" (before→after comparison, ideally with numbers).
+- HITL exception (`exc: true`) tasks: fill `desc`, `who`, `sla`, `volume`, `inputs`, `outputs`, `activities`.
+- Standard tasks: fill `desc`, `who`, `sla`, `systems`, `inputs`, `outputs`, `activities`, `pain`, `kpis` at minimum.
+- Gateways: `desc`, `who`, `inputs`, `outputs`; keep short.
+- Start/End events: `desc`, and either `inputs` or `outputs`.
+
+---
+
+## PART 3 · HOW TO PARSE THE BPMN (before process)
+
+1. **Identify pools and lanes.** Each `<bpmn:lane>` (or unlaned participant) → one `lanes[]` entry, preserving top-to-bottom BPMN order.
+2. **Classify lane `type`:** `ext` (customer/broker/vendor/patient), `human` (internal role), `agent` (any pre-existing bot/AI/RPA).
+3. **Extract flow nodes:** every startEvent, task (all subtypes), gateway, endEvent → one `N(...)` call. Task subtypes go into `sub` if useful. Intermediate events collapse into gateways when they're decision points, otherwise omit.
+4. **Extract sequence flows** → `edges`. Preserve `<bpmn:sequenceFlow name>`. Use `dashed:true` for exception/compensation; `early:true` for skip/happy-path branches.
+5. **Identify bottlenecks (`bott: true`)** — mark tasks where name contains "manual", "rekey", "reconcile", "chase", "order", "wait", OR documented duration in top 25%, OR queue points feeding backward-looping gateways.
+6. **Infer durations** if BPMN lacks them (minutes):
+   - automated/system/rule: 1–5
+   - human data entry: 15–45
+   - verification/reconciliation: 30–120
+   - external wait (order, courier, 3rd-party): 120–480
+   - review/assessment: 45–120
+   - approval/sign-off: 15–60
+   - exception handling: 30–90
+   Set `s`,`e` sequentially along the critical path; parallel branches may share ranges.
+
+---
+
+## PART 4 · LAYOUT RULES
+
+Content area is **1660 px wide** on a 1660×(30 + lanes×130 + 20) canvas.
+Node vertical position is decided by lane; you only pick `x`.
+
+- Leftmost start: `x ≈ 80`; rightmost end: `x ≈ 1560`
+- Sequential spacing along same band: 200–240 px
+- Gateway 130–160 px after preceding task
+- Parallel branches: same `x`, different lanes
+- Never place two nodes in same lane closer than 180 px apart on `x`
+- Aim for 7–10 nodes in each of `before` and `after`; condense repetitive steps into one task with sub-activities listed in `detail.activities`
+
+---
+
+## PART 5 · DESIGNING THE "AFTER" (agentic to-be)
+
+Apply these prescriptive transformations:
+
+1. **Add one `agent` lane** at bottom: `{ id: "ai", name: "Agentic AI", role: "Autonomous", type: "agent" }`.
+2. **Collapse before-tasks into 3–5 named agent-tasks** in the AI lane, each `agent: true`, `role: "AI"`. Domain patterns:
+   - Insurance submission: Intake / Risk / Pricing / Bind Agent
+   - Claims: FNOL / Coverage / Liability / Settlement Agent
+   - Lending: Application / Verification / Credit / Decision / Closing Agent
+   - Support: Triage / Resolution / Fulfillment Agent
+   - KYC/onboarding: Identity / Screening / Enrichment / Provisioning Agent
+   - Procurement: Intake / Sourcing / Contract / PO Agent
+3. **Preserve human oversight** as a single HITL exception task (`exc: true, role: "HITL"`), reached via a gateway labeled "clean & in appetite?" or domain analog. Clean path bypasses; exception path visits.
+4. **Retain manager/approver lane** but as **sampled QA audit** (`opt: true`, dashed edge, "5% sample + high-value cases").
+5. **Cycle time compression** — typical:
+   - data entry / clearance: 30–90m → 2–5m
+   - 3rd-party data (parallel): 120–480m → 3–10m
+   - assessment / rating: 45–120m → 3–8m
+   - approval: 30–60m → 1–3m or eliminated
+   - overall: 90–98% reduction for data-heavy processes; 70–85% for physical/field.
+6. **Reassign x-coordinates** on the after canvas independently.
+7. **Milestones** must be the same 5 business milestones for both processes so the race is comparable.
+
+---
+
+## PART 6 · CASES
+
+Exactly **5 cases** with mix: 2× COMPLETED (`t-done`), 1× IN PROGRESS (`t-prog`), 1× STUCK (`t-stuck`), 1× NEW (`t-new`).
+
+For each: plausible ID prefix (SUB-/CLM-/LN-/ONB-/TKT-/PO-/CASE-); `b` ±30% around `baseB`; STUCK case 2–3× `baseB`; `a` modest variance around `baseA`; `exec.cut` = round((b-a)/b × 100)%; `exec.save` $150K–$300K per high-volume process (or higher); `exec.fte` typically 1.2–2.5.
+
+`mt` — exactly 6 rows in this order: Cycle time, Cost/unit, Human touches, Straight-through, Exception rate, Throughput (as "×N.N").
+
+Set `defaultCaseIdx` to 2 (IN PROGRESS is most interesting on load).
+
+---
+
+## PART 7 · QUALITY BAR & SELF-CHECK
+
+Silently verify before emitting:
+
+- [ ] Every edge index points to a valid node.
+- [ ] Every node's `lane` matches a `lanes[].id`.
+- [ ] Every `x` in [50, 1580]; same-lane neighbors ≥ 180 px apart.
+- [ ] `milestones.positions` strictly increasing, ends at 1.0.
+- [ ] `timesB` ends at `baseB`, `timesA` at `baseA`, both monotonic.
+- [ ] `before` has ≥1 `bott: true`.
+- [ ] `after` has ≥3 `agent: true`, one gateway, one `exc: true`, usually one `opt: true`.
+- [ ] **Every task and gateway has a `detail` object.** Bottlenecks and agent tasks have all recommended fields filled.
+- [ ] `cases` has 5 entries with the required status mix.
+- [ ] Plain script file: no imports, no template literals with expressions in data, no trailing commas that break older parsers, no top-level await.
+
+---
+
+## PART 8 · IF THE BPMN IS UNCLEAR
+
+- Ambiguous lane types → prefer `human` over `agent`.
+- Unnamed tasks → infer from surrounding context.
+- Missing durations → use PART 3 rubric.
+- No obvious milestones → pick 5 most business-meaningful state transitions (typically: submitted → validated → assessed → decided → completed).
+- Unknown domain → infer from lane names and task verbs; match closest PART 5 pattern.
+- **Never ask clarifying questions.** State assumptions in the top-of-file comment.
+
+---
+
+## PART 9 · INPUT
+
+The BPMN 2.0 XML follows below (or is attached). Read it fully, then emit `process.js`.
+
+BPMN:
+<PASTE BPMN XML HERE OR ATTACH FILE>
