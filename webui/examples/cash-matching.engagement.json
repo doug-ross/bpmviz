@@ -1,0 +1,3691 @@
+{
+  "schema": "bpmviz.engagement",
+  "schemaVersion": 1,
+  "id": "eng-cash-matching",
+  "revision": 0,
+  "createdAt": "2026-09-25T00:00:00.000Z",
+  "updatedAt": "2026-09-25T00:00:00.000Z",
+  "meta": {
+    "clientDisplayName": "Fund services operations (illustrative)",
+    "engagementName": "Cash transaction matching",
+    "processName": "End-to-end cash transaction matching",
+    "confidentiality": "internal",
+    "dataStatus": "demonstration",
+    "timeBasis": {
+      "unit": "minute",
+      "calendar": "calendar",
+      "businessMinutesPerDay": 480
+    },
+    "currency": "USD",
+    "disclosure": "Illustrative. Current state from a transaction-matching BPMN; future state and all figures are illustrative.",
+    "summary": "Click any node for full detail. Use Before/After toggle to compare states. Drag to pan, scroll or pinch to zoom. \"All\" button fits the whole diagram. Dashed edges = retries, failures, or sampled QA.",
+    "credits": "Sample from the original BPMVIZ race explorer by Doug Ross (MIT License)."
+  },
+  "milestones": [
+    {
+      "id": "ms-deal-setup",
+      "name": "Deal Setup",
+      "position": 0.34
+    },
+    {
+      "id": "ms-cash-config",
+      "name": "Cash Config",
+      "position": 0.42
+    },
+    {
+      "id": "ms-matching",
+      "name": "Matching",
+      "position": 0.45
+    },
+    {
+      "id": "ms-reconciliation",
+      "name": "Reconciliation",
+      "position": 0.9
+    },
+    {
+      "id": "ms-posted",
+      "name": "Posted",
+      "position": 1
+    }
+  ],
+  "models": [
+    {
+      "id": "m-current",
+      "role": "current",
+      "name": "Current state",
+      "version": 1,
+      "status": "baseline",
+      "locked": false,
+      "basedOn": null,
+      "sourceRefs": [
+        "ev-source-bpmn"
+      ],
+      "notes": "Before · Current State",
+      "lanes": [
+        {
+          "id": "ext",
+          "name": "GBIS / Holsen",
+          "role": "Ext. Feeds",
+          "type": "external"
+        },
+        {
+          "id": "deal",
+          "name": "Deal Setup",
+          "role": "Analytics",
+          "type": "human"
+        },
+        {
+          "id": "ops",
+          "name": "CS Analyst",
+          "role": "Maker",
+          "type": "human"
+        },
+        {
+          "id": "review",
+          "name": "Reviewer/RM",
+          "role": "Approver",
+          "type": "human"
+        },
+        {
+          "id": "sys",
+          "name": "Matching Eng.",
+          "role": "Rules Engine",
+          "type": "human"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "deal-initiated",
+          "label": "Deal initiated",
+          "sub": "New deal request",
+          "semanticType": "startEvent",
+          "laneId": "deal",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "setup-path",
+          "label": "Setup path?",
+          "sub": "",
+          "semanticType": "gateway",
+          "laneId": "deal",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "setup-submit",
+          "label": "Setup & submit",
+          "sub": "Shell+overview+appr",
+          "semanticType": "task",
+          "laneId": "deal",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": true,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "deal-approved",
+          "label": "Deal approved?",
+          "sub": "",
+          "semanticType": "gateway",
+          "laneId": "review",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "denied",
+          "label": "Denied",
+          "sub": "Changes lost",
+          "semanticType": "endEvent",
+          "laneId": "review",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "configure-cash",
+          "label": "Configure cash",
+          "sub": "Timing+accounts",
+          "semanticType": "task",
+          "laneId": "deal",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "send-txn-feeds",
+          "label": "Send txn feeds",
+          "sub": "GBIS+Holsen 5min",
+          "semanticType": "task",
+          "laneId": "ext",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "auto-matched",
+          "label": "Auto-matched?",
+          "sub": "rules+tolerance",
+          "semanticType": "gateway",
+          "laneId": "sys",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "reconcile-match",
+          "label": "Reconcile match",
+          "sub": "Recon Group ID",
+          "semanticType": "task",
+          "laneId": "sys",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "manual-triage",
+          "label": "Manual triage",
+          "sub": "Match/adjust/clear",
+          "semanticType": "task",
+          "laneId": "ops",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": true,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "approve-posting",
+          "label": "Approve posting",
+          "sub": "Dual control",
+          "semanticType": "task",
+          "laneId": "review",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "confirm-post",
+          "label": "Confirm & post",
+          "sub": "Holsen+ledger",
+          "semanticType": "task",
+          "laneId": "sys",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "reportable",
+          "label": "Reportable",
+          "sub": "Cash Activity ID",
+          "semanticType": "endEvent",
+          "laneId": "ext",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-deal-initiated-setup-path",
+          "from": "deal-initiated",
+          "to": "setup-path",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-setup-path-setup-submit",
+          "from": "setup-path",
+          "to": "setup-submit",
+          "label": "All Deals",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-setup-path-setup-submit-2",
+          "from": "setup-path",
+          "to": "setup-submit",
+          "label": "Direct",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-setup-submit-deal-approved",
+          "from": "setup-submit",
+          "to": "deal-approved",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-deal-approved-denied",
+          "from": "deal-approved",
+          "to": "denied",
+          "label": "Denied",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-deal-approved-configure-cash",
+          "from": "deal-approved",
+          "to": "configure-cash",
+          "label": "Approved",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-configure-cash-send-txn-feeds",
+          "from": "configure-cash",
+          "to": "send-txn-feeds",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-send-txn-feeds-auto-matched",
+          "from": "send-txn-feeds",
+          "to": "auto-matched",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-auto-matched-reconcile-match",
+          "from": "auto-matched",
+          "to": "reconcile-match",
+          "label": "Yes",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-auto-matched-manual-triage",
+          "from": "auto-matched",
+          "to": "manual-triage",
+          "label": "No",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-manual-triage-auto-matched",
+          "from": "manual-triage",
+          "to": "auto-matched",
+          "label": "Retry",
+          "semanticType": "loop",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-reconcile-match-approve-posting",
+          "from": "reconcile-match",
+          "to": "approve-posting",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-manual-triage-approve-posting",
+          "from": "manual-triage",
+          "to": "approve-posting",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-approve-posting-confirm-post",
+          "from": "approve-posting",
+          "to": "confirm-post",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-confirm-post-reportable",
+          "from": "confirm-post",
+          "to": "reportable",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-confirm-post-manual-triage",
+          "from": "confirm-post",
+          "to": "manual-triage",
+          "label": "Failed",
+          "semanticType": "loop",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        }
+      ],
+      "presentation": {
+        "laneHeight": null,
+        "nodes": {
+          "deal-initiated": {
+            "x": 0
+          },
+          "setup-path": {
+            "x": 1
+          },
+          "setup-submit": {
+            "x": 2
+          },
+          "deal-approved": {
+            "x": 3
+          },
+          "denied": {
+            "x": 4
+          },
+          "configure-cash": {
+            "x": 4
+          },
+          "send-txn-feeds": {
+            "x": 5
+          },
+          "auto-matched": {
+            "x": 5
+          },
+          "reconcile-match": {
+            "x": 6
+          },
+          "manual-triage": {
+            "x": 6
+          },
+          "approve-posting": {
+            "x": 6
+          },
+          "confirm-post": {
+            "x": 7
+          },
+          "reportable": {
+            "x": 7
+          }
+        }
+      }
+    },
+    {
+      "id": "m-future",
+      "role": "future",
+      "name": "Proposed future state",
+      "version": 1,
+      "status": "proposed",
+      "locked": false,
+      "basedOn": null,
+      "sourceRefs": [],
+      "notes": "After · Future State",
+      "lanes": [
+        {
+          "id": "ext",
+          "name": "GBIS / Holsen",
+          "role": "Ext. Feeds",
+          "type": "external"
+        },
+        {
+          "id": "deal",
+          "name": "Deal Setup",
+          "role": "Analytics",
+          "type": "human"
+        },
+        {
+          "id": "ops",
+          "name": "CS Analyst",
+          "role": "Maker",
+          "type": "human"
+        },
+        {
+          "id": "review",
+          "name": "Reviewer/RM",
+          "role": "Approver",
+          "type": "human"
+        },
+        {
+          "id": "ai",
+          "name": "Agentic AI",
+          "role": "Autonomous",
+          "type": "agent"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "deal-initiated",
+          "label": "Deal initiated",
+          "sub": "New deal request",
+          "semanticType": "startEvent",
+          "laneId": "deal",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "auto-config-deal",
+          "label": "Auto-config deal",
+          "sub": "Setup+cash rules",
+          "semanticType": "task",
+          "laneId": "ai",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": true,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "exception-deal",
+          "label": "Exception deal?",
+          "sub": "",
+          "semanticType": "gateway",
+          "laneId": "ai",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "review-deal",
+          "label": "Review deal",
+          "sub": "Nonstandard terms",
+          "semanticType": "task",
+          "laneId": "deal",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": true,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "ingest-match",
+          "label": "Ingest & match",
+          "sub": "Feeds+rules",
+          "semanticType": "task",
+          "laneId": "ai",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": true,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "match-found",
+          "label": "Match found?",
+          "sub": "",
+          "semanticType": "gateway",
+          "laneId": "ai",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "resolve-match",
+          "label": "Resolve match",
+          "sub": "True exception",
+          "semanticType": "task",
+          "laneId": "ops",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": true,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "auto-reconcile",
+          "label": "Auto-reconcile",
+          "sub": "Recon Group ID",
+          "semanticType": "task",
+          "laneId": "ai",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": true,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "approval-needed",
+          "label": "Approval needed?",
+          "sub": "",
+          "semanticType": "gateway",
+          "laneId": "ai",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "approve-posting",
+          "label": "Approve posting",
+          "sub": "High-value only",
+          "semanticType": "task",
+          "laneId": "review",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": true,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "post-confirm",
+          "label": "Post & confirm",
+          "sub": "Holsen+ledger",
+          "semanticType": "task",
+          "laneId": "ai",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": true,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "reportable",
+          "label": "Reportable",
+          "sub": "Cash Activity ID",
+          "semanticType": "endEvent",
+          "laneId": "ext",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "qa-audit-sample",
+          "label": "QA audit sample",
+          "sub": "Sampled review",
+          "semanticType": "task",
+          "laneId": "deal",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": true,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": "Proposed future-state step. Not validated."
+          },
+          "lineage": null,
+          "removed": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-deal-initiated-auto-config-deal",
+          "from": "deal-initiated",
+          "to": "auto-config-deal",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-auto-config-deal-exception-deal",
+          "from": "auto-config-deal",
+          "to": "exception-deal",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-exception-deal-review-deal",
+          "from": "exception-deal",
+          "to": "review-deal",
+          "label": "Yes",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-exception-deal-ingest-match",
+          "from": "exception-deal",
+          "to": "ingest-match",
+          "label": "No",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "early",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-review-deal-ingest-match",
+          "from": "review-deal",
+          "to": "ingest-match",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-ingest-match-match-found",
+          "from": "ingest-match",
+          "to": "match-found",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-match-found-resolve-match",
+          "from": "match-found",
+          "to": "resolve-match",
+          "label": "No",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-match-found-auto-reconcile",
+          "from": "match-found",
+          "to": "auto-reconcile",
+          "label": "Yes",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "early",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-resolve-match-auto-reconcile",
+          "from": "resolve-match",
+          "to": "auto-reconcile",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-auto-reconcile-approval-needed",
+          "from": "auto-reconcile",
+          "to": "approval-needed",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-auto-reconcile-qa-audit-sample",
+          "from": "auto-reconcile",
+          "to": "qa-audit-sample",
+          "label": "5% QA",
+          "semanticType": "sample",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-approval-needed-approve-posting",
+          "from": "approval-needed",
+          "to": "approve-posting",
+          "label": "Yes",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-approval-needed-post-confirm",
+          "from": "approval-needed",
+          "to": "post-confirm",
+          "label": "No",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "early",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-approve-posting-post-confirm",
+          "from": "approve-posting",
+          "to": "post-confirm",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-post-confirm-reportable",
+          "from": "post-confirm",
+          "to": "reportable",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        }
+      ],
+      "presentation": {
+        "laneHeight": null,
+        "nodes": {
+          "deal-initiated": {
+            "x": 0
+          },
+          "auto-config-deal": {
+            "x": 1
+          },
+          "exception-deal": {
+            "x": 2
+          },
+          "review-deal": {
+            "x": 3
+          },
+          "ingest-match": {
+            "x": 3
+          },
+          "match-found": {
+            "x": 4
+          },
+          "resolve-match": {
+            "x": 5
+          },
+          "auto-reconcile": {
+            "x": 5
+          },
+          "approval-needed": {
+            "x": 6
+          },
+          "approve-posting": {
+            "x": 6
+          },
+          "post-confirm": {
+            "x": 7
+          },
+          "reportable": {
+            "x": 7
+          },
+          "qa-audit-sample": {
+            "x": 7
+          }
+        }
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "case-1",
+      "name": "Auto-Match Reconciliation",
+      "statusLabel": "Completed",
+      "statusTone": "done",
+      "provenance": "illustrative",
+      "summary": "",
+      "attributes": [
+        {
+          "label": "Fund",
+          "value": "Meridian Credit Fund"
+        },
+        {
+          "label": "Amount",
+          "value": "$1.8M"
+        }
+      ],
+      "timing": {
+        "method": "population-illustration",
+        "note": "Timings scale one representative route to this case's total; the route itself does not change between cases."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v-deal-initiated",
+              "nodeId": "deal-initiated",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-setup-path",
+              "nodeId": "setup-path",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-setup-submit",
+              "nodeId": "setup-submit",
+              "start": 0,
+              "end": 155.49295774647888
+            },
+            {
+              "id": "v-deal-approved",
+              "nodeId": "deal-approved",
+              "start": 155.49295774647888,
+              "end": 155.49295774647888
+            },
+            {
+              "id": "v-configure-cash",
+              "nodeId": "configure-cash",
+              "start": 155.49295774647888,
+              "end": 194.3661971830986
+            },
+            {
+              "id": "v-send-txn-feeds",
+              "nodeId": "send-txn-feeds",
+              "start": 194.3661971830986,
+              "end": 197.6056338028169
+            },
+            {
+              "id": "v-auto-matched",
+              "nodeId": "auto-matched",
+              "start": 197.6056338028169,
+              "end": 197.6056338028169
+            },
+            {
+              "id": "v-reconcile-match",
+              "nodeId": "reconcile-match",
+              "start": 197.6056338028169,
+              "end": 204.08450704225353
+            },
+            {
+              "id": "v-manual-triage",
+              "nodeId": "manual-triage",
+              "start": 197.6056338028169,
+              "end": 391.9718309859155
+            },
+            {
+              "id": "v-approve-posting",
+              "nodeId": "approve-posting",
+              "start": 391.9718309859155,
+              "end": 421.1267605633803
+            },
+            {
+              "id": "v-confirm-post",
+              "nodeId": "confirm-post",
+              "start": 421.1267605633803,
+              "end": 460
+            },
+            {
+              "id": "v-reportable",
+              "nodeId": "reportable",
+              "start": 460,
+              "end": 460
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-deal-initiated-setup-path",
+              "fromVisitId": "v-deal-initiated",
+              "toVisitId": "v-setup-path"
+            },
+            {
+              "edgeId": "e-setup-path-setup-submit",
+              "fromVisitId": "v-setup-path",
+              "toVisitId": "v-setup-submit"
+            },
+            {
+              "edgeId": "e-setup-submit-deal-approved",
+              "fromVisitId": "v-setup-submit",
+              "toVisitId": "v-deal-approved"
+            },
+            {
+              "edgeId": "e-deal-approved-configure-cash",
+              "fromVisitId": "v-deal-approved",
+              "toVisitId": "v-configure-cash"
+            },
+            {
+              "edgeId": "e-configure-cash-send-txn-feeds",
+              "fromVisitId": "v-configure-cash",
+              "toVisitId": "v-send-txn-feeds"
+            },
+            {
+              "edgeId": "e-send-txn-feeds-auto-matched",
+              "fromVisitId": "v-send-txn-feeds",
+              "toVisitId": "v-auto-matched"
+            },
+            {
+              "edgeId": "e-auto-matched-reconcile-match",
+              "fromVisitId": "v-auto-matched",
+              "toVisitId": "v-reconcile-match"
+            },
+            {
+              "edgeId": "e-auto-matched-manual-triage",
+              "fromVisitId": "v-auto-matched",
+              "toVisitId": "v-manual-triage"
+            },
+            {
+              "edgeId": "e-manual-triage-approve-posting",
+              "fromVisitId": "v-manual-triage",
+              "toVisitId": "v-approve-posting"
+            },
+            {
+              "edgeId": "e-approve-posting-confirm-post",
+              "fromVisitId": "v-approve-posting",
+              "toVisitId": "v-confirm-post"
+            },
+            {
+              "edgeId": "e-confirm-post-reportable",
+              "fromVisitId": "v-confirm-post",
+              "toVisitId": "v-reportable"
+            }
+          ],
+          "membership": {
+            "deal-initiated": "included",
+            "setup-path": "included",
+            "setup-submit": "included",
+            "deal-approved": "included",
+            "denied": "unknown",
+            "configure-cash": "included",
+            "send-txn-feeds": "included",
+            "auto-matched": "included",
+            "reconcile-match": "included",
+            "manual-triage": "included",
+            "approve-posting": "included",
+            "confirm-post": "included",
+            "reportable": "included"
+          },
+          "pauseAt": null,
+          "milestones": {
+            "ms-deal-setup": 155.49295774647888,
+            "ms-cash-config": 194.3661971830986,
+            "ms-matching": 204.08450704225353,
+            "ms-reconciliation": 421.1267605633803,
+            "ms-posted": 460
+          }
+        },
+        "m-future": {
+          "visits": [
+            {
+              "id": "v-deal-initiated",
+              "nodeId": "deal-initiated",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-auto-config-deal",
+              "nodeId": "auto-config-deal",
+              "start": 0,
+              "end": 6.470588235294118
+            },
+            {
+              "id": "v-exception-deal",
+              "nodeId": "exception-deal",
+              "start": 6.470588235294118,
+              "end": 6.470588235294118
+            },
+            {
+              "id": "v-review-deal",
+              "nodeId": "review-deal",
+              "start": 6.470588235294118,
+              "end": 19.411764705882355
+            },
+            {
+              "id": "v-ingest-match",
+              "nodeId": "ingest-match",
+              "start": 6.470588235294118,
+              "end": 11.647058823529413
+            },
+            {
+              "id": "v-match-found",
+              "nodeId": "match-found",
+              "start": 11.647058823529413,
+              "end": 11.647058823529413
+            },
+            {
+              "id": "v-resolve-match",
+              "nodeId": "resolve-match",
+              "start": 11.647058823529413,
+              "end": 21.35294117647059
+            },
+            {
+              "id": "v-auto-reconcile",
+              "nodeId": "auto-reconcile",
+              "start": 11.647058823529413,
+              "end": 16.823529411764707
+            },
+            {
+              "id": "v-approval-needed",
+              "nodeId": "approval-needed",
+              "start": 16.823529411764707,
+              "end": 16.823529411764707
+            },
+            {
+              "id": "v-approve-posting",
+              "nodeId": "approve-posting",
+              "start": 16.823529411764707,
+              "end": 21.35294117647059
+            },
+            {
+              "id": "v-post-confirm",
+              "nodeId": "post-confirm",
+              "start": 16.823529411764707,
+              "end": 22
+            },
+            {
+              "id": "v-reportable",
+              "nodeId": "reportable",
+              "start": 22,
+              "end": 22
+            },
+            {
+              "id": "v-qa-audit-sample",
+              "nodeId": "qa-audit-sample",
+              "start": 16.823529411764707,
+              "end": 22
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-deal-initiated-auto-config-deal",
+              "fromVisitId": "v-deal-initiated",
+              "toVisitId": "v-auto-config-deal"
+            },
+            {
+              "edgeId": "e-auto-config-deal-exception-deal",
+              "fromVisitId": "v-auto-config-deal",
+              "toVisitId": "v-exception-deal"
+            },
+            {
+              "edgeId": "e-exception-deal-review-deal",
+              "fromVisitId": "v-exception-deal",
+              "toVisitId": "v-review-deal"
+            },
+            {
+              "edgeId": "e-exception-deal-ingest-match",
+              "fromVisitId": "v-exception-deal",
+              "toVisitId": "v-ingest-match"
+            },
+            {
+              "edgeId": "e-ingest-match-match-found",
+              "fromVisitId": "v-ingest-match",
+              "toVisitId": "v-match-found"
+            },
+            {
+              "edgeId": "e-match-found-resolve-match",
+              "fromVisitId": "v-match-found",
+              "toVisitId": "v-resolve-match"
+            },
+            {
+              "edgeId": "e-match-found-auto-reconcile",
+              "fromVisitId": "v-match-found",
+              "toVisitId": "v-auto-reconcile"
+            },
+            {
+              "edgeId": "e-auto-reconcile-approval-needed",
+              "fromVisitId": "v-auto-reconcile",
+              "toVisitId": "v-approval-needed"
+            },
+            {
+              "edgeId": "e-approval-needed-approve-posting",
+              "fromVisitId": "v-approval-needed",
+              "toVisitId": "v-approve-posting"
+            },
+            {
+              "edgeId": "e-approval-needed-post-confirm",
+              "fromVisitId": "v-approval-needed",
+              "toVisitId": "v-post-confirm"
+            },
+            {
+              "edgeId": "e-auto-reconcile-qa-audit-sample",
+              "fromVisitId": "v-auto-reconcile",
+              "toVisitId": "v-qa-audit-sample"
+            },
+            {
+              "edgeId": "e-post-confirm-reportable",
+              "fromVisitId": "v-post-confirm",
+              "toVisitId": "v-reportable"
+            }
+          ],
+          "membership": {
+            "deal-initiated": "included",
+            "auto-config-deal": "included",
+            "exception-deal": "included",
+            "review-deal": "included",
+            "ingest-match": "included",
+            "match-found": "included",
+            "resolve-match": "included",
+            "auto-reconcile": "included",
+            "approval-needed": "included",
+            "approve-posting": "included",
+            "post-confirm": "included",
+            "reportable": "included",
+            "qa-audit-sample": "included"
+          },
+          "pauseAt": null,
+          "milestones": {
+            "ms-deal-setup": 6.470588235294118,
+            "ms-cash-config": 6.470588235294118,
+            "ms-matching": 16.823529411764707,
+            "ms-reconciliation": 22,
+            "ms-posted": 22
+          }
+        }
+      },
+      "measures": [
+        {
+          "key": "cycleTime",
+          "label": "Cycle time",
+          "unit": "minute",
+          "values": {
+            "m-current": 460,
+            "m-future": 22
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: −95%."
+        },
+        {
+          "key": "costPerCase",
+          "label": "Cost per case",
+          "unit": "currency",
+          "values": {
+            "m-current": 320,
+            "m-future": 28
+          },
+          "suppliedText": {
+            "m-current": "$320",
+            "m-future": "$28"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: −91%."
+        },
+        {
+          "key": "humanTouches",
+          "label": "Human touches",
+          "unit": "count",
+          "values": {
+            "m-current": 5,
+            "m-future": 1
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: −80%."
+        },
+        {
+          "key": "straight-through",
+          "label": "Straight-through",
+          "unit": "percent",
+          "values": {
+            "m-current": 0,
+            "m-future": 96
+          },
+          "suppliedText": {
+            "m-current": "0%",
+            "m-future": "96%"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: +96pp."
+        },
+        {
+          "key": "match-accuracy",
+          "label": "Match accuracy",
+          "unit": "percent",
+          "values": {
+            "m-current": 93,
+            "m-future": 99
+          },
+          "suppliedText": {
+            "m-current": "93%",
+            "m-future": "99%"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: +6pp."
+        },
+        {
+          "key": "throughput-day",
+          "label": "Throughput",
+          "unit": "perDay",
+          "values": {
+            "m-current": 45,
+            "m-future": 180
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: +300%."
+        }
+      ],
+      "economics": {
+        "beforeModelId": "m-current",
+        "afterModelId": "m-future",
+        "supplied": {
+          "beforeCostPerCase": 320,
+          "afterCostPerCase": 28,
+          "costSavedPerCase": 290,
+          "fteCapacity": 0.4,
+          "text": {
+            "cycleSaved": "7.3 hrs",
+            "cycleSavedShare": "95%",
+            "costSaved": "$290",
+            "fte": "0.4"
+          }
+        },
+        "overrides": {}
+      }
+    },
+    {
+      "id": "case-2",
+      "name": "Deal Approval Delay",
+      "statusLabel": "Stuck",
+      "statusTone": "stuck",
+      "provenance": "illustrative",
+      "summary": "",
+      "attributes": [
+        {
+          "label": "Fund",
+          "value": "Horizon Opportunities"
+        },
+        {
+          "label": "Amount",
+          "value": "$5.2M"
+        }
+      ],
+      "timing": {
+        "method": "population-illustration",
+        "note": "Timings scale one representative route to this case's total; the route itself does not change between cases."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v-deal-initiated",
+              "nodeId": "deal-initiated",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-setup-path",
+              "nodeId": "setup-path",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-setup-submit",
+              "nodeId": "setup-submit",
+              "start": 0,
+              "end": 486.76056338028167
+            },
+            {
+              "id": "v-deal-approved",
+              "nodeId": "deal-approved",
+              "start": 486.76056338028167,
+              "end": 486.76056338028167
+            },
+            {
+              "id": "v-configure-cash",
+              "nodeId": "configure-cash",
+              "start": 486.76056338028167,
+              "end": 608.4507042253521
+            },
+            {
+              "id": "v-send-txn-feeds",
+              "nodeId": "send-txn-feeds",
+              "start": 608.4507042253521,
+              "end": 618.5915492957746
+            },
+            {
+              "id": "v-auto-matched",
+              "nodeId": "auto-matched",
+              "start": 618.5915492957746,
+              "end": 618.5915492957746
+            },
+            {
+              "id": "v-reconcile-match",
+              "nodeId": "reconcile-match",
+              "start": 618.5915492957746,
+              "end": 638.8732394366197
+            },
+            {
+              "id": "v-manual-triage",
+              "nodeId": "manual-triage",
+              "start": 618.5915492957746,
+              "end": 1227.0422535211267
+            },
+            {
+              "id": "v-approve-posting",
+              "nodeId": "approve-posting",
+              "start": 1227.0422535211267,
+              "end": 1318.3098591549297
+            },
+            {
+              "id": "v-confirm-post",
+              "nodeId": "confirm-post",
+              "start": 1318.3098591549297,
+              "end": 1440
+            },
+            {
+              "id": "v-reportable",
+              "nodeId": "reportable",
+              "start": 1440,
+              "end": 1440
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-deal-initiated-setup-path",
+              "fromVisitId": "v-deal-initiated",
+              "toVisitId": "v-setup-path"
+            },
+            {
+              "edgeId": "e-setup-path-setup-submit",
+              "fromVisitId": "v-setup-path",
+              "toVisitId": "v-setup-submit"
+            },
+            {
+              "edgeId": "e-setup-submit-deal-approved",
+              "fromVisitId": "v-setup-submit",
+              "toVisitId": "v-deal-approved"
+            },
+            {
+              "edgeId": "e-deal-approved-configure-cash",
+              "fromVisitId": "v-deal-approved",
+              "toVisitId": "v-configure-cash"
+            },
+            {
+              "edgeId": "e-configure-cash-send-txn-feeds",
+              "fromVisitId": "v-configure-cash",
+              "toVisitId": "v-send-txn-feeds"
+            },
+            {
+              "edgeId": "e-send-txn-feeds-auto-matched",
+              "fromVisitId": "v-send-txn-feeds",
+              "toVisitId": "v-auto-matched"
+            },
+            {
+              "edgeId": "e-auto-matched-reconcile-match",
+              "fromVisitId": "v-auto-matched",
+              "toVisitId": "v-reconcile-match"
+            },
+            {
+              "edgeId": "e-auto-matched-manual-triage",
+              "fromVisitId": "v-auto-matched",
+              "toVisitId": "v-manual-triage"
+            },
+            {
+              "edgeId": "e-manual-triage-approve-posting",
+              "fromVisitId": "v-manual-triage",
+              "toVisitId": "v-approve-posting"
+            },
+            {
+              "edgeId": "e-approve-posting-confirm-post",
+              "fromVisitId": "v-approve-posting",
+              "toVisitId": "v-confirm-post"
+            },
+            {
+              "edgeId": "e-confirm-post-reportable",
+              "fromVisitId": "v-confirm-post",
+              "toVisitId": "v-reportable"
+            }
+          ],
+          "membership": {
+            "deal-initiated": "included",
+            "setup-path": "included",
+            "setup-submit": "included",
+            "deal-approved": "included",
+            "denied": "unknown",
+            "configure-cash": "included",
+            "send-txn-feeds": "included",
+            "auto-matched": "included",
+            "reconcile-match": "included",
+            "manual-triage": "included",
+            "approve-posting": "included",
+            "confirm-post": "included",
+            "reportable": "included"
+          },
+          "pauseAt": null,
+          "milestones": {
+            "ms-deal-setup": 486.76056338028167,
+            "ms-cash-config": 608.4507042253521,
+            "ms-matching": 638.8732394366197,
+            "ms-reconciliation": 1318.3098591549297,
+            "ms-posted": 1440
+          }
+        },
+        "m-future": {
+          "visits": [
+            {
+              "id": "v-deal-initiated",
+              "nodeId": "deal-initiated",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-auto-config-deal",
+              "nodeId": "auto-config-deal",
+              "start": 0,
+              "end": 16.176470588235293
+            },
+            {
+              "id": "v-exception-deal",
+              "nodeId": "exception-deal",
+              "start": 16.176470588235293,
+              "end": 16.176470588235293
+            },
+            {
+              "id": "v-review-deal",
+              "nodeId": "review-deal",
+              "start": 16.176470588235293,
+              "end": 48.529411764705884
+            },
+            {
+              "id": "v-ingest-match",
+              "nodeId": "ingest-match",
+              "start": 16.176470588235293,
+              "end": 29.11764705882353
+            },
+            {
+              "id": "v-match-found",
+              "nodeId": "match-found",
+              "start": 29.11764705882353,
+              "end": 29.11764705882353
+            },
+            {
+              "id": "v-resolve-match",
+              "nodeId": "resolve-match",
+              "start": 29.11764705882353,
+              "end": 53.38235294117647
+            },
+            {
+              "id": "v-auto-reconcile",
+              "nodeId": "auto-reconcile",
+              "start": 29.11764705882353,
+              "end": 42.05882352941177
+            },
+            {
+              "id": "v-approval-needed",
+              "nodeId": "approval-needed",
+              "start": 42.05882352941177,
+              "end": 42.05882352941177
+            },
+            {
+              "id": "v-approve-posting",
+              "nodeId": "approve-posting",
+              "start": 42.05882352941177,
+              "end": 53.38235294117647
+            },
+            {
+              "id": "v-post-confirm",
+              "nodeId": "post-confirm",
+              "start": 42.05882352941177,
+              "end": 55
+            },
+            {
+              "id": "v-reportable",
+              "nodeId": "reportable",
+              "start": 55,
+              "end": 55
+            },
+            {
+              "id": "v-qa-audit-sample",
+              "nodeId": "qa-audit-sample",
+              "start": 42.05882352941177,
+              "end": 55
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-deal-initiated-auto-config-deal",
+              "fromVisitId": "v-deal-initiated",
+              "toVisitId": "v-auto-config-deal"
+            },
+            {
+              "edgeId": "e-auto-config-deal-exception-deal",
+              "fromVisitId": "v-auto-config-deal",
+              "toVisitId": "v-exception-deal"
+            },
+            {
+              "edgeId": "e-exception-deal-review-deal",
+              "fromVisitId": "v-exception-deal",
+              "toVisitId": "v-review-deal"
+            },
+            {
+              "edgeId": "e-exception-deal-ingest-match",
+              "fromVisitId": "v-exception-deal",
+              "toVisitId": "v-ingest-match"
+            },
+            {
+              "edgeId": "e-ingest-match-match-found",
+              "fromVisitId": "v-ingest-match",
+              "toVisitId": "v-match-found"
+            },
+            {
+              "edgeId": "e-match-found-resolve-match",
+              "fromVisitId": "v-match-found",
+              "toVisitId": "v-resolve-match"
+            },
+            {
+              "edgeId": "e-match-found-auto-reconcile",
+              "fromVisitId": "v-match-found",
+              "toVisitId": "v-auto-reconcile"
+            },
+            {
+              "edgeId": "e-auto-reconcile-approval-needed",
+              "fromVisitId": "v-auto-reconcile",
+              "toVisitId": "v-approval-needed"
+            },
+            {
+              "edgeId": "e-approval-needed-approve-posting",
+              "fromVisitId": "v-approval-needed",
+              "toVisitId": "v-approve-posting"
+            },
+            {
+              "edgeId": "e-approval-needed-post-confirm",
+              "fromVisitId": "v-approval-needed",
+              "toVisitId": "v-post-confirm"
+            },
+            {
+              "edgeId": "e-auto-reconcile-qa-audit-sample",
+              "fromVisitId": "v-auto-reconcile",
+              "toVisitId": "v-qa-audit-sample"
+            },
+            {
+              "edgeId": "e-post-confirm-reportable",
+              "fromVisitId": "v-post-confirm",
+              "toVisitId": "v-reportable"
+            }
+          ],
+          "membership": {
+            "deal-initiated": "included",
+            "auto-config-deal": "included",
+            "exception-deal": "included",
+            "review-deal": "included",
+            "ingest-match": "included",
+            "match-found": "included",
+            "resolve-match": "included",
+            "auto-reconcile": "included",
+            "approval-needed": "included",
+            "approve-posting": "included",
+            "post-confirm": "included",
+            "reportable": "included",
+            "qa-audit-sample": "included"
+          },
+          "pauseAt": null,
+          "milestones": {
+            "ms-deal-setup": 16.176470588235293,
+            "ms-cash-config": 16.176470588235293,
+            "ms-matching": 42.05882352941177,
+            "ms-reconciliation": 55,
+            "ms-posted": 55
+          }
+        }
+      },
+      "measures": [
+        {
+          "key": "cycleTime",
+          "label": "Cycle time",
+          "unit": "minute",
+          "values": {
+            "m-current": 1440,
+            "m-future": 55
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: −96%."
+        },
+        {
+          "key": "costPerCase",
+          "label": "Cost per case",
+          "unit": "currency",
+          "values": {
+            "m-current": 1250,
+            "m-future": 95
+          },
+          "suppliedText": {
+            "m-current": "$1,250",
+            "m-future": "$95"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: −92%."
+        },
+        {
+          "key": "humanTouches",
+          "label": "Human touches",
+          "unit": "count",
+          "values": {
+            "m-current": 9,
+            "m-future": 2
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: −78%."
+        },
+        {
+          "key": "straight-through",
+          "label": "Straight-through",
+          "unit": "percent",
+          "values": {
+            "m-current": 0,
+            "m-future": 80
+          },
+          "suppliedText": {
+            "m-current": "0%",
+            "m-future": "80%"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: +80pp."
+        },
+        {
+          "key": "approval-loops",
+          "label": "Approval loops",
+          "unit": "count",
+          "values": {
+            "m-current": 4,
+            "m-future": 1
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: −75%."
+        },
+        {
+          "key": "throughput-day",
+          "label": "Throughput",
+          "unit": "perDay",
+          "values": {
+            "m-current": 12,
+            "m-future": 60
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: +400%."
+        }
+      ],
+      "economics": {
+        "beforeModelId": "m-current",
+        "afterModelId": "m-future",
+        "supplied": {
+          "beforeCostPerCase": 1250,
+          "afterCostPerCase": 95,
+          "costSavedPerCase": 1155,
+          "fteCapacity": 0.7,
+          "text": {
+            "cycleSaved": "23.1 hrs",
+            "cycleSavedShare": "96%",
+            "costSaved": "$1,155",
+            "fte": "0.7"
+          }
+        },
+        "overrides": {}
+      }
+    },
+    {
+      "id": "case-3",
+      "name": "Manual Triage Heavy",
+      "statusLabel": "In progress",
+      "statusTone": "progress",
+      "provenance": "illustrative",
+      "summary": "",
+      "attributes": [
+        {
+          "label": "Fund",
+          "value": "Blue Harbor SMA"
+        },
+        {
+          "label": "Amount",
+          "value": "$3.1M"
+        }
+      ],
+      "timing": {
+        "method": "population-illustration",
+        "note": "Timings scale one representative route to this case's total; the route itself does not change between cases."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v-deal-initiated",
+              "nodeId": "deal-initiated",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-setup-path",
+              "nodeId": "setup-path",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-setup-submit",
+              "nodeId": "setup-submit",
+              "start": 0,
+              "end": 240
+            },
+            {
+              "id": "v-deal-approved",
+              "nodeId": "deal-approved",
+              "start": 240,
+              "end": 240
+            },
+            {
+              "id": "v-configure-cash",
+              "nodeId": "configure-cash",
+              "start": 240,
+              "end": 300
+            },
+            {
+              "id": "v-send-txn-feeds",
+              "nodeId": "send-txn-feeds",
+              "start": 300,
+              "end": 305
+            },
+            {
+              "id": "v-auto-matched",
+              "nodeId": "auto-matched",
+              "start": 305,
+              "end": 305
+            },
+            {
+              "id": "v-reconcile-match",
+              "nodeId": "reconcile-match",
+              "start": 305,
+              "end": 315
+            },
+            {
+              "id": "v-manual-triage",
+              "nodeId": "manual-triage",
+              "start": 305,
+              "end": 605
+            },
+            {
+              "id": "v-approve-posting",
+              "nodeId": "approve-posting",
+              "start": 605,
+              "end": 650
+            },
+            {
+              "id": "v-confirm-post",
+              "nodeId": "confirm-post",
+              "start": 650,
+              "end": 710
+            },
+            {
+              "id": "v-reportable",
+              "nodeId": "reportable",
+              "start": 710,
+              "end": 710
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-deal-initiated-setup-path",
+              "fromVisitId": "v-deal-initiated",
+              "toVisitId": "v-setup-path"
+            },
+            {
+              "edgeId": "e-setup-path-setup-submit",
+              "fromVisitId": "v-setup-path",
+              "toVisitId": "v-setup-submit"
+            },
+            {
+              "edgeId": "e-setup-submit-deal-approved",
+              "fromVisitId": "v-setup-submit",
+              "toVisitId": "v-deal-approved"
+            },
+            {
+              "edgeId": "e-deal-approved-configure-cash",
+              "fromVisitId": "v-deal-approved",
+              "toVisitId": "v-configure-cash"
+            },
+            {
+              "edgeId": "e-configure-cash-send-txn-feeds",
+              "fromVisitId": "v-configure-cash",
+              "toVisitId": "v-send-txn-feeds"
+            },
+            {
+              "edgeId": "e-send-txn-feeds-auto-matched",
+              "fromVisitId": "v-send-txn-feeds",
+              "toVisitId": "v-auto-matched"
+            },
+            {
+              "edgeId": "e-auto-matched-reconcile-match",
+              "fromVisitId": "v-auto-matched",
+              "toVisitId": "v-reconcile-match"
+            },
+            {
+              "edgeId": "e-auto-matched-manual-triage",
+              "fromVisitId": "v-auto-matched",
+              "toVisitId": "v-manual-triage"
+            },
+            {
+              "edgeId": "e-manual-triage-approve-posting",
+              "fromVisitId": "v-manual-triage",
+              "toVisitId": "v-approve-posting"
+            },
+            {
+              "edgeId": "e-approve-posting-confirm-post",
+              "fromVisitId": "v-approve-posting",
+              "toVisitId": "v-confirm-post"
+            },
+            {
+              "edgeId": "e-confirm-post-reportable",
+              "fromVisitId": "v-confirm-post",
+              "toVisitId": "v-reportable"
+            }
+          ],
+          "membership": {
+            "deal-initiated": "included",
+            "setup-path": "included",
+            "setup-submit": "included",
+            "deal-approved": "included",
+            "denied": "unknown",
+            "configure-cash": "included",
+            "send-txn-feeds": "included",
+            "auto-matched": "included",
+            "reconcile-match": "included",
+            "manual-triage": "included",
+            "approve-posting": "included",
+            "confirm-post": "included",
+            "reportable": "included"
+          },
+          "pauseAt": null,
+          "milestones": {
+            "ms-deal-setup": 240,
+            "ms-cash-config": 300,
+            "ms-matching": 315,
+            "ms-reconciliation": 650,
+            "ms-posted": 710
+          }
+        },
+        "m-future": {
+          "visits": [
+            {
+              "id": "v-deal-initiated",
+              "nodeId": "deal-initiated",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-auto-config-deal",
+              "nodeId": "auto-config-deal",
+              "start": 0,
+              "end": 10
+            },
+            {
+              "id": "v-exception-deal",
+              "nodeId": "exception-deal",
+              "start": 10,
+              "end": 10
+            },
+            {
+              "id": "v-review-deal",
+              "nodeId": "review-deal",
+              "start": 10,
+              "end": 30
+            },
+            {
+              "id": "v-ingest-match",
+              "nodeId": "ingest-match",
+              "start": 10,
+              "end": 18
+            },
+            {
+              "id": "v-match-found",
+              "nodeId": "match-found",
+              "start": 18,
+              "end": 18
+            },
+            {
+              "id": "v-resolve-match",
+              "nodeId": "resolve-match",
+              "start": 18,
+              "end": 33
+            },
+            {
+              "id": "v-auto-reconcile",
+              "nodeId": "auto-reconcile",
+              "start": 18,
+              "end": 26
+            },
+            {
+              "id": "v-approval-needed",
+              "nodeId": "approval-needed",
+              "start": 26,
+              "end": 26
+            },
+            {
+              "id": "v-approve-posting",
+              "nodeId": "approve-posting",
+              "start": 26,
+              "end": 33
+            },
+            {
+              "id": "v-post-confirm",
+              "nodeId": "post-confirm",
+              "start": 26,
+              "end": 34
+            },
+            {
+              "id": "v-reportable",
+              "nodeId": "reportable",
+              "start": 34,
+              "end": 34
+            },
+            {
+              "id": "v-qa-audit-sample",
+              "nodeId": "qa-audit-sample",
+              "start": 26,
+              "end": 34
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-deal-initiated-auto-config-deal",
+              "fromVisitId": "v-deal-initiated",
+              "toVisitId": "v-auto-config-deal"
+            },
+            {
+              "edgeId": "e-auto-config-deal-exception-deal",
+              "fromVisitId": "v-auto-config-deal",
+              "toVisitId": "v-exception-deal"
+            },
+            {
+              "edgeId": "e-exception-deal-review-deal",
+              "fromVisitId": "v-exception-deal",
+              "toVisitId": "v-review-deal"
+            },
+            {
+              "edgeId": "e-exception-deal-ingest-match",
+              "fromVisitId": "v-exception-deal",
+              "toVisitId": "v-ingest-match"
+            },
+            {
+              "edgeId": "e-ingest-match-match-found",
+              "fromVisitId": "v-ingest-match",
+              "toVisitId": "v-match-found"
+            },
+            {
+              "edgeId": "e-match-found-resolve-match",
+              "fromVisitId": "v-match-found",
+              "toVisitId": "v-resolve-match"
+            },
+            {
+              "edgeId": "e-match-found-auto-reconcile",
+              "fromVisitId": "v-match-found",
+              "toVisitId": "v-auto-reconcile"
+            },
+            {
+              "edgeId": "e-auto-reconcile-approval-needed",
+              "fromVisitId": "v-auto-reconcile",
+              "toVisitId": "v-approval-needed"
+            },
+            {
+              "edgeId": "e-approval-needed-approve-posting",
+              "fromVisitId": "v-approval-needed",
+              "toVisitId": "v-approve-posting"
+            },
+            {
+              "edgeId": "e-approval-needed-post-confirm",
+              "fromVisitId": "v-approval-needed",
+              "toVisitId": "v-post-confirm"
+            },
+            {
+              "edgeId": "e-auto-reconcile-qa-audit-sample",
+              "fromVisitId": "v-auto-reconcile",
+              "toVisitId": "v-qa-audit-sample"
+            },
+            {
+              "edgeId": "e-post-confirm-reportable",
+              "fromVisitId": "v-post-confirm",
+              "toVisitId": "v-reportable"
+            }
+          ],
+          "membership": {
+            "deal-initiated": "included",
+            "auto-config-deal": "included",
+            "exception-deal": "included",
+            "review-deal": "included",
+            "ingest-match": "included",
+            "match-found": "included",
+            "resolve-match": "included",
+            "auto-reconcile": "included",
+            "approval-needed": "included",
+            "approve-posting": "included",
+            "post-confirm": "included",
+            "reportable": "included",
+            "qa-audit-sample": "included"
+          },
+          "pauseAt": null,
+          "milestones": {
+            "ms-deal-setup": 10,
+            "ms-cash-config": 10,
+            "ms-matching": 26,
+            "ms-reconciliation": 34,
+            "ms-posted": 34
+          }
+        }
+      },
+      "measures": [
+        {
+          "key": "cycleTime",
+          "label": "Cycle time",
+          "unit": "minute",
+          "values": {
+            "m-current": 710,
+            "m-future": 34
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: −95%."
+        },
+        {
+          "key": "costPerCase",
+          "label": "Cost per case",
+          "unit": "currency",
+          "values": {
+            "m-current": 520,
+            "m-future": 40
+          },
+          "suppliedText": {
+            "m-current": "$520",
+            "m-future": "$40"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: −92%."
+        },
+        {
+          "key": "humanTouches",
+          "label": "Human touches",
+          "unit": "count",
+          "values": {
+            "m-current": 7,
+            "m-future": 2
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: −71%."
+        },
+        {
+          "key": "straight-through",
+          "label": "Straight-through",
+          "unit": "percent",
+          "values": {
+            "m-current": 0,
+            "m-future": 90
+          },
+          "suppliedText": {
+            "m-current": "0%",
+            "m-future": "90%"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: +90pp."
+        },
+        {
+          "key": "match-accuracy",
+          "label": "Match accuracy",
+          "unit": "percent",
+          "values": {
+            "m-current": 91,
+            "m-future": 98
+          },
+          "suppliedText": {
+            "m-current": "91%",
+            "m-future": "98%"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: +7pp."
+        },
+        {
+          "key": "throughput-day",
+          "label": "Throughput",
+          "unit": "perDay",
+          "values": {
+            "m-current": 30,
+            "m-future": 140
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: +367%."
+        }
+      ],
+      "economics": {
+        "beforeModelId": "m-current",
+        "afterModelId": "m-future",
+        "supplied": {
+          "beforeCostPerCase": 520,
+          "afterCostPerCase": 40,
+          "costSavedPerCase": 480,
+          "fteCapacity": 0.5,
+          "text": {
+            "cycleSaved": "11.3 hrs",
+            "cycleSavedShare": "95%",
+            "costSaved": "$480",
+            "fte": "0.5"
+          }
+        },
+        "overrides": {}
+      }
+    },
+    {
+      "id": "case-4",
+      "name": "Net-Zero Adjustment",
+      "statusLabel": "Completed",
+      "statusTone": "done",
+      "provenance": "illustrative",
+      "summary": "",
+      "attributes": [
+        {
+          "label": "Fund",
+          "value": "Cascade Fixed Income"
+        },
+        {
+          "label": "Amount",
+          "value": "$920K"
+        }
+      ],
+      "timing": {
+        "method": "population-illustration",
+        "note": "Timings scale one representative route to this case's total; the route itself does not change between cases."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v-deal-initiated",
+              "nodeId": "deal-initiated",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-setup-path",
+              "nodeId": "setup-path",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-setup-submit",
+              "nodeId": "setup-submit",
+              "start": 0,
+              "end": 202.8169014084507
+            },
+            {
+              "id": "v-deal-approved",
+              "nodeId": "deal-approved",
+              "start": 202.8169014084507,
+              "end": 202.8169014084507
+            },
+            {
+              "id": "v-configure-cash",
+              "nodeId": "configure-cash",
+              "start": 202.8169014084507,
+              "end": 253.52112676056336
+            },
+            {
+              "id": "v-send-txn-feeds",
+              "nodeId": "send-txn-feeds",
+              "start": 253.52112676056336,
+              "end": 257.7464788732394
+            },
+            {
+              "id": "v-auto-matched",
+              "nodeId": "auto-matched",
+              "start": 257.7464788732394,
+              "end": 257.7464788732394
+            },
+            {
+              "id": "v-reconcile-match",
+              "nodeId": "reconcile-match",
+              "start": 257.7464788732394,
+              "end": 266.19718309859155
+            },
+            {
+              "id": "v-manual-triage",
+              "nodeId": "manual-triage",
+              "start": 257.7464788732394,
+              "end": 511.2676056338028
+            },
+            {
+              "id": "v-approve-posting",
+              "nodeId": "approve-posting",
+              "start": 511.2676056338028,
+              "end": 549.2957746478874
+            },
+            {
+              "id": "v-confirm-post",
+              "nodeId": "confirm-post",
+              "start": 549.2957746478874,
+              "end": 600
+            },
+            {
+              "id": "v-reportable",
+              "nodeId": "reportable",
+              "start": 600,
+              "end": 600
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-deal-initiated-setup-path",
+              "fromVisitId": "v-deal-initiated",
+              "toVisitId": "v-setup-path"
+            },
+            {
+              "edgeId": "e-setup-path-setup-submit",
+              "fromVisitId": "v-setup-path",
+              "toVisitId": "v-setup-submit"
+            },
+            {
+              "edgeId": "e-setup-submit-deal-approved",
+              "fromVisitId": "v-setup-submit",
+              "toVisitId": "v-deal-approved"
+            },
+            {
+              "edgeId": "e-deal-approved-configure-cash",
+              "fromVisitId": "v-deal-approved",
+              "toVisitId": "v-configure-cash"
+            },
+            {
+              "edgeId": "e-configure-cash-send-txn-feeds",
+              "fromVisitId": "v-configure-cash",
+              "toVisitId": "v-send-txn-feeds"
+            },
+            {
+              "edgeId": "e-send-txn-feeds-auto-matched",
+              "fromVisitId": "v-send-txn-feeds",
+              "toVisitId": "v-auto-matched"
+            },
+            {
+              "edgeId": "e-auto-matched-reconcile-match",
+              "fromVisitId": "v-auto-matched",
+              "toVisitId": "v-reconcile-match"
+            },
+            {
+              "edgeId": "e-auto-matched-manual-triage",
+              "fromVisitId": "v-auto-matched",
+              "toVisitId": "v-manual-triage"
+            },
+            {
+              "edgeId": "e-manual-triage-approve-posting",
+              "fromVisitId": "v-manual-triage",
+              "toVisitId": "v-approve-posting"
+            },
+            {
+              "edgeId": "e-approve-posting-confirm-post",
+              "fromVisitId": "v-approve-posting",
+              "toVisitId": "v-confirm-post"
+            },
+            {
+              "edgeId": "e-confirm-post-reportable",
+              "fromVisitId": "v-confirm-post",
+              "toVisitId": "v-reportable"
+            }
+          ],
+          "membership": {
+            "deal-initiated": "included",
+            "setup-path": "included",
+            "setup-submit": "included",
+            "deal-approved": "included",
+            "denied": "unknown",
+            "configure-cash": "included",
+            "send-txn-feeds": "included",
+            "auto-matched": "included",
+            "reconcile-match": "included",
+            "manual-triage": "included",
+            "approve-posting": "included",
+            "confirm-post": "included",
+            "reportable": "included"
+          },
+          "pauseAt": null,
+          "milestones": {
+            "ms-deal-setup": 202.8169014084507,
+            "ms-cash-config": 253.52112676056336,
+            "ms-matching": 266.19718309859155,
+            "ms-reconciliation": 549.2957746478874,
+            "ms-posted": 600
+          }
+        },
+        "m-future": {
+          "visits": [
+            {
+              "id": "v-deal-initiated",
+              "nodeId": "deal-initiated",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-auto-config-deal",
+              "nodeId": "auto-config-deal",
+              "start": 0,
+              "end": 8.823529411764707
+            },
+            {
+              "id": "v-exception-deal",
+              "nodeId": "exception-deal",
+              "start": 8.823529411764707,
+              "end": 8.823529411764707
+            },
+            {
+              "id": "v-review-deal",
+              "nodeId": "review-deal",
+              "start": 8.823529411764707,
+              "end": 26.470588235294116
+            },
+            {
+              "id": "v-ingest-match",
+              "nodeId": "ingest-match",
+              "start": 8.823529411764707,
+              "end": 15.882352941176471
+            },
+            {
+              "id": "v-match-found",
+              "nodeId": "match-found",
+              "start": 15.882352941176471,
+              "end": 15.882352941176471
+            },
+            {
+              "id": "v-resolve-match",
+              "nodeId": "resolve-match",
+              "start": 15.882352941176471,
+              "end": 29.11764705882353
+            },
+            {
+              "id": "v-auto-reconcile",
+              "nodeId": "auto-reconcile",
+              "start": 15.882352941176471,
+              "end": 22.941176470588236
+            },
+            {
+              "id": "v-approval-needed",
+              "nodeId": "approval-needed",
+              "start": 22.941176470588236,
+              "end": 22.941176470588236
+            },
+            {
+              "id": "v-approve-posting",
+              "nodeId": "approve-posting",
+              "start": 22.941176470588236,
+              "end": 29.11764705882353
+            },
+            {
+              "id": "v-post-confirm",
+              "nodeId": "post-confirm",
+              "start": 22.941176470588236,
+              "end": 30
+            },
+            {
+              "id": "v-reportable",
+              "nodeId": "reportable",
+              "start": 30,
+              "end": 30
+            },
+            {
+              "id": "v-qa-audit-sample",
+              "nodeId": "qa-audit-sample",
+              "start": 22.941176470588236,
+              "end": 30
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-deal-initiated-auto-config-deal",
+              "fromVisitId": "v-deal-initiated",
+              "toVisitId": "v-auto-config-deal"
+            },
+            {
+              "edgeId": "e-auto-config-deal-exception-deal",
+              "fromVisitId": "v-auto-config-deal",
+              "toVisitId": "v-exception-deal"
+            },
+            {
+              "edgeId": "e-exception-deal-review-deal",
+              "fromVisitId": "v-exception-deal",
+              "toVisitId": "v-review-deal"
+            },
+            {
+              "edgeId": "e-exception-deal-ingest-match",
+              "fromVisitId": "v-exception-deal",
+              "toVisitId": "v-ingest-match"
+            },
+            {
+              "edgeId": "e-ingest-match-match-found",
+              "fromVisitId": "v-ingest-match",
+              "toVisitId": "v-match-found"
+            },
+            {
+              "edgeId": "e-match-found-resolve-match",
+              "fromVisitId": "v-match-found",
+              "toVisitId": "v-resolve-match"
+            },
+            {
+              "edgeId": "e-match-found-auto-reconcile",
+              "fromVisitId": "v-match-found",
+              "toVisitId": "v-auto-reconcile"
+            },
+            {
+              "edgeId": "e-auto-reconcile-approval-needed",
+              "fromVisitId": "v-auto-reconcile",
+              "toVisitId": "v-approval-needed"
+            },
+            {
+              "edgeId": "e-approval-needed-approve-posting",
+              "fromVisitId": "v-approval-needed",
+              "toVisitId": "v-approve-posting"
+            },
+            {
+              "edgeId": "e-approval-needed-post-confirm",
+              "fromVisitId": "v-approval-needed",
+              "toVisitId": "v-post-confirm"
+            },
+            {
+              "edgeId": "e-auto-reconcile-qa-audit-sample",
+              "fromVisitId": "v-auto-reconcile",
+              "toVisitId": "v-qa-audit-sample"
+            },
+            {
+              "edgeId": "e-post-confirm-reportable",
+              "fromVisitId": "v-post-confirm",
+              "toVisitId": "v-reportable"
+            }
+          ],
+          "membership": {
+            "deal-initiated": "included",
+            "auto-config-deal": "included",
+            "exception-deal": "included",
+            "review-deal": "included",
+            "ingest-match": "included",
+            "match-found": "included",
+            "resolve-match": "included",
+            "auto-reconcile": "included",
+            "approval-needed": "included",
+            "approve-posting": "included",
+            "post-confirm": "included",
+            "reportable": "included",
+            "qa-audit-sample": "included"
+          },
+          "pauseAt": null,
+          "milestones": {
+            "ms-deal-setup": 8.823529411764707,
+            "ms-cash-config": 8.823529411764707,
+            "ms-matching": 22.941176470588236,
+            "ms-reconciliation": 30,
+            "ms-posted": 30
+          }
+        }
+      },
+      "measures": [
+        {
+          "key": "cycleTime",
+          "label": "Cycle time",
+          "unit": "minute",
+          "values": {
+            "m-current": 600,
+            "m-future": 30
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: −95%."
+        },
+        {
+          "key": "costPerCase",
+          "label": "Cost per case",
+          "unit": "currency",
+          "values": {
+            "m-current": 430,
+            "m-future": 34
+          },
+          "suppliedText": {
+            "m-current": "$430",
+            "m-future": "$34"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: −92%."
+        },
+        {
+          "key": "humanTouches",
+          "label": "Human touches",
+          "unit": "count",
+          "values": {
+            "m-current": 6,
+            "m-future": 1
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: −83%."
+        },
+        {
+          "key": "straight-through",
+          "label": "Straight-through",
+          "unit": "percent",
+          "values": {
+            "m-current": 0,
+            "m-future": 92
+          },
+          "suppliedText": {
+            "m-current": "0%",
+            "m-future": "92%"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: +92pp."
+        },
+        {
+          "key": "net-zero-errors",
+          "label": "Net-zero errors",
+          "unit": "percent",
+          "values": {
+            "m-current": 4,
+            "m-future": 0.5
+          },
+          "suppliedText": {
+            "m-current": "4%",
+            "m-future": "0.5%"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: −3.5pp."
+        },
+        {
+          "key": "throughput-day",
+          "label": "Throughput",
+          "unit": "perDay",
+          "values": {
+            "m-current": 35,
+            "m-future": 150
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: +329%."
+        }
+      ],
+      "economics": {
+        "beforeModelId": "m-current",
+        "afterModelId": "m-future",
+        "supplied": {
+          "beforeCostPerCase": 430,
+          "afterCostPerCase": 34,
+          "costSavedPerCase": 395,
+          "fteCapacity": 0.4,
+          "text": {
+            "cycleSaved": "9.5 hrs",
+            "cycleSavedShare": "95%",
+            "costSaved": "$395",
+            "fte": "0.4"
+          }
+        },
+        "overrides": {}
+      }
+    },
+    {
+      "id": "case-5",
+      "name": "New Deal Onboarding",
+      "statusLabel": "New",
+      "statusTone": "new",
+      "provenance": "illustrative",
+      "summary": "",
+      "attributes": [
+        {
+          "label": "Fund",
+          "value": "Tidewater Municipal"
+        },
+        {
+          "label": "Amount",
+          "value": "$4.4M"
+        }
+      ],
+      "timing": {
+        "method": "population-illustration",
+        "note": "Timings scale one representative route to this case's total; the route itself does not change between cases."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v-deal-initiated",
+              "nodeId": "deal-initiated",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-setup-path",
+              "nodeId": "setup-path",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-setup-submit",
+              "nodeId": "setup-submit",
+              "start": 0,
+              "end": 240
+            },
+            {
+              "id": "v-deal-approved",
+              "nodeId": "deal-approved",
+              "start": 240,
+              "end": 240
+            },
+            {
+              "id": "v-configure-cash",
+              "nodeId": "configure-cash",
+              "start": 240,
+              "end": 300
+            },
+            {
+              "id": "v-send-txn-feeds",
+              "nodeId": "send-txn-feeds",
+              "start": 300,
+              "end": 305
+            },
+            {
+              "id": "v-auto-matched",
+              "nodeId": "auto-matched",
+              "start": 305,
+              "end": 305
+            },
+            {
+              "id": "v-reconcile-match",
+              "nodeId": "reconcile-match",
+              "start": 305,
+              "end": 315
+            },
+            {
+              "id": "v-manual-triage",
+              "nodeId": "manual-triage",
+              "start": 305,
+              "end": 605
+            },
+            {
+              "id": "v-approve-posting",
+              "nodeId": "approve-posting",
+              "start": 605,
+              "end": 650
+            },
+            {
+              "id": "v-confirm-post",
+              "nodeId": "confirm-post",
+              "start": 650,
+              "end": 710
+            },
+            {
+              "id": "v-reportable",
+              "nodeId": "reportable",
+              "start": 710,
+              "end": 710
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-deal-initiated-setup-path",
+              "fromVisitId": "v-deal-initiated",
+              "toVisitId": "v-setup-path"
+            },
+            {
+              "edgeId": "e-setup-path-setup-submit",
+              "fromVisitId": "v-setup-path",
+              "toVisitId": "v-setup-submit"
+            },
+            {
+              "edgeId": "e-setup-submit-deal-approved",
+              "fromVisitId": "v-setup-submit",
+              "toVisitId": "v-deal-approved"
+            },
+            {
+              "edgeId": "e-deal-approved-configure-cash",
+              "fromVisitId": "v-deal-approved",
+              "toVisitId": "v-configure-cash"
+            },
+            {
+              "edgeId": "e-configure-cash-send-txn-feeds",
+              "fromVisitId": "v-configure-cash",
+              "toVisitId": "v-send-txn-feeds"
+            },
+            {
+              "edgeId": "e-send-txn-feeds-auto-matched",
+              "fromVisitId": "v-send-txn-feeds",
+              "toVisitId": "v-auto-matched"
+            },
+            {
+              "edgeId": "e-auto-matched-reconcile-match",
+              "fromVisitId": "v-auto-matched",
+              "toVisitId": "v-reconcile-match"
+            },
+            {
+              "edgeId": "e-auto-matched-manual-triage",
+              "fromVisitId": "v-auto-matched",
+              "toVisitId": "v-manual-triage"
+            },
+            {
+              "edgeId": "e-manual-triage-approve-posting",
+              "fromVisitId": "v-manual-triage",
+              "toVisitId": "v-approve-posting"
+            },
+            {
+              "edgeId": "e-approve-posting-confirm-post",
+              "fromVisitId": "v-approve-posting",
+              "toVisitId": "v-confirm-post"
+            },
+            {
+              "edgeId": "e-confirm-post-reportable",
+              "fromVisitId": "v-confirm-post",
+              "toVisitId": "v-reportable"
+            }
+          ],
+          "membership": {
+            "deal-initiated": "included",
+            "setup-path": "included",
+            "setup-submit": "included",
+            "deal-approved": "included",
+            "denied": "unknown",
+            "configure-cash": "included",
+            "send-txn-feeds": "included",
+            "auto-matched": "included",
+            "reconcile-match": "included",
+            "manual-triage": "included",
+            "approve-posting": "included",
+            "confirm-post": "included",
+            "reportable": "included"
+          },
+          "pauseAt": null,
+          "milestones": {
+            "ms-deal-setup": 240,
+            "ms-cash-config": 300,
+            "ms-matching": 315,
+            "ms-reconciliation": 650,
+            "ms-posted": 710
+          }
+        },
+        "m-future": {
+          "visits": [
+            {
+              "id": "v-deal-initiated",
+              "nodeId": "deal-initiated",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-auto-config-deal",
+              "nodeId": "auto-config-deal",
+              "start": 0,
+              "end": 10
+            },
+            {
+              "id": "v-exception-deal",
+              "nodeId": "exception-deal",
+              "start": 10,
+              "end": 10
+            },
+            {
+              "id": "v-review-deal",
+              "nodeId": "review-deal",
+              "start": 10,
+              "end": 30
+            },
+            {
+              "id": "v-ingest-match",
+              "nodeId": "ingest-match",
+              "start": 10,
+              "end": 18
+            },
+            {
+              "id": "v-match-found",
+              "nodeId": "match-found",
+              "start": 18,
+              "end": 18
+            },
+            {
+              "id": "v-resolve-match",
+              "nodeId": "resolve-match",
+              "start": 18,
+              "end": 33
+            },
+            {
+              "id": "v-auto-reconcile",
+              "nodeId": "auto-reconcile",
+              "start": 18,
+              "end": 26
+            },
+            {
+              "id": "v-approval-needed",
+              "nodeId": "approval-needed",
+              "start": 26,
+              "end": 26
+            },
+            {
+              "id": "v-approve-posting",
+              "nodeId": "approve-posting",
+              "start": 26,
+              "end": 33
+            },
+            {
+              "id": "v-post-confirm",
+              "nodeId": "post-confirm",
+              "start": 26,
+              "end": 34
+            },
+            {
+              "id": "v-reportable",
+              "nodeId": "reportable",
+              "start": 34,
+              "end": 34
+            },
+            {
+              "id": "v-qa-audit-sample",
+              "nodeId": "qa-audit-sample",
+              "start": 26,
+              "end": 34
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-deal-initiated-auto-config-deal",
+              "fromVisitId": "v-deal-initiated",
+              "toVisitId": "v-auto-config-deal"
+            },
+            {
+              "edgeId": "e-auto-config-deal-exception-deal",
+              "fromVisitId": "v-auto-config-deal",
+              "toVisitId": "v-exception-deal"
+            },
+            {
+              "edgeId": "e-exception-deal-review-deal",
+              "fromVisitId": "v-exception-deal",
+              "toVisitId": "v-review-deal"
+            },
+            {
+              "edgeId": "e-exception-deal-ingest-match",
+              "fromVisitId": "v-exception-deal",
+              "toVisitId": "v-ingest-match"
+            },
+            {
+              "edgeId": "e-ingest-match-match-found",
+              "fromVisitId": "v-ingest-match",
+              "toVisitId": "v-match-found"
+            },
+            {
+              "edgeId": "e-match-found-resolve-match",
+              "fromVisitId": "v-match-found",
+              "toVisitId": "v-resolve-match"
+            },
+            {
+              "edgeId": "e-match-found-auto-reconcile",
+              "fromVisitId": "v-match-found",
+              "toVisitId": "v-auto-reconcile"
+            },
+            {
+              "edgeId": "e-auto-reconcile-approval-needed",
+              "fromVisitId": "v-auto-reconcile",
+              "toVisitId": "v-approval-needed"
+            },
+            {
+              "edgeId": "e-approval-needed-approve-posting",
+              "fromVisitId": "v-approval-needed",
+              "toVisitId": "v-approve-posting"
+            },
+            {
+              "edgeId": "e-approval-needed-post-confirm",
+              "fromVisitId": "v-approval-needed",
+              "toVisitId": "v-post-confirm"
+            },
+            {
+              "edgeId": "e-auto-reconcile-qa-audit-sample",
+              "fromVisitId": "v-auto-reconcile",
+              "toVisitId": "v-qa-audit-sample"
+            },
+            {
+              "edgeId": "e-post-confirm-reportable",
+              "fromVisitId": "v-post-confirm",
+              "toVisitId": "v-reportable"
+            }
+          ],
+          "membership": {
+            "deal-initiated": "included",
+            "auto-config-deal": "included",
+            "exception-deal": "included",
+            "review-deal": "included",
+            "ingest-match": "included",
+            "match-found": "included",
+            "resolve-match": "included",
+            "auto-reconcile": "included",
+            "approval-needed": "included",
+            "approve-posting": "included",
+            "post-confirm": "included",
+            "reportable": "included",
+            "qa-audit-sample": "included"
+          },
+          "pauseAt": null,
+          "milestones": {
+            "ms-deal-setup": 10,
+            "ms-cash-config": 10,
+            "ms-matching": 26,
+            "ms-reconciliation": 34,
+            "ms-posted": 34
+          }
+        }
+      },
+      "measures": [
+        {
+          "key": "cycleTime",
+          "label": "Cycle time",
+          "unit": "minute",
+          "values": {
+            "m-current": 710,
+            "m-future": 34
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: −95%."
+        },
+        {
+          "key": "costPerCase",
+          "label": "Cost per case",
+          "unit": "currency",
+          "values": {
+            "m-current": 520,
+            "m-future": 40
+          },
+          "suppliedText": {
+            "m-current": "$520",
+            "m-future": "$40"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: −92%."
+        },
+        {
+          "key": "humanTouches",
+          "label": "Human touches",
+          "unit": "count",
+          "values": {
+            "m-current": 7,
+            "m-future": 2
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: −71%."
+        },
+        {
+          "key": "straight-through",
+          "label": "Straight-through",
+          "unit": "percent",
+          "values": {
+            "m-current": 0,
+            "m-future": 90
+          },
+          "suppliedText": {
+            "m-current": "0%",
+            "m-future": "90%"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: +90pp."
+        },
+        {
+          "key": "match-accuracy",
+          "label": "Match accuracy",
+          "unit": "percent",
+          "values": {
+            "m-current": 91,
+            "m-future": 98
+          },
+          "suppliedText": {
+            "m-current": "91%",
+            "m-future": "98%"
+          },
+          "status": "supplied",
+          "note": "Change as supplied: +7pp."
+        },
+        {
+          "key": "throughput-day",
+          "label": "Throughput",
+          "unit": "perDay",
+          "values": {
+            "m-current": 30,
+            "m-future": 140
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Change as supplied: +367%."
+        }
+      ],
+      "economics": {
+        "beforeModelId": "m-current",
+        "afterModelId": "m-future",
+        "supplied": {
+          "beforeCostPerCase": 520,
+          "afterCostPerCase": 40,
+          "costSavedPerCase": 480,
+          "fteCapacity": 0.5,
+          "text": {
+            "cycleSaved": "11.3 hrs (proj.)",
+            "cycleSavedShare": "95%",
+            "costSaved": "$480",
+            "fte": "0.5"
+          }
+        },
+        "overrides": {}
+      }
+    }
+  ],
+  "records": [],
+  "evidence": [
+    {
+      "id": "ev-source-bpmn",
+      "title": "E2E Transaction Matching current-state BPMN (GLOBB / CT Operations)",
+      "locator": "Named in the source process.js footer; the file is not in the repository.",
+      "extractedFact": "Current-state lanes, steps and sequence flows.",
+      "status": "unavailable",
+      "reviewer": "",
+      "reviewDate": "",
+      "link": null
+    }
+  ],
+  "assumptions": [],
+  "narratives": [],
+  "migration": {
+    "sourceFormat": "racer window.PROCESS (shared lane catalog)",
+    "sourceFiles": [
+      "archive/racer-v1/process.js"
+    ],
+    "convertedAt": "2026-09-25T00:00:00.000Z",
+    "warnings": [
+      {
+        "code": "semantic.gateway",
+        "message": "Current state: gateway \"Setup path?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "path": "setup-path"
+      },
+      {
+        "code": "semantic.gateway",
+        "message": "Current state: gateway \"Deal approved?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "path": "deal-approved"
+      },
+      {
+        "code": "semantic.gateway",
+        "message": "Current state: gateway \"Auto-matched?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "path": "auto-matched"
+      },
+      {
+        "code": "semantic.gateway",
+        "message": "Proposed future state: gateway \"Exception deal?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "path": "exception-deal"
+      },
+      {
+        "code": "semantic.gateway",
+        "message": "Proposed future state: gateway \"Match found?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "path": "match-found"
+      },
+      {
+        "code": "semantic.gateway",
+        "message": "Proposed future state: gateway \"Approval needed?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "path": "approval-needed"
+      },
+      {
+        "code": "field.role",
+        "message": "Proposed future state: step badges such as \"AI\" and \"HITL\" are now derived from the step tags.",
+        "path": ""
+      },
+      {
+        "code": "membership.unconfirmed",
+        "message": "Current state: \"Denied\" is an end event outside the scheduled route and is not marked optional. Its membership is Not confirmed until someone reviews it.",
+        "path": ""
+      },
+      {
+        "code": "membership.population",
+        "message": "Current state: every case schedules 2 outcomes of \"Setup path?\". The source shows a batch of items, so all scheduled branches appear in the scenario.",
+        "path": "setup-path"
+      },
+      {
+        "code": "membership.population",
+        "message": "Current state: every case schedules 2 outcomes of \"Auto-matched?\". The source shows a batch of items, so all scheduled branches appear in the scenario.",
+        "path": "auto-matched"
+      },
+      {
+        "code": "membership.population",
+        "message": "Proposed future state: every case schedules 2 outcomes of \"Exception deal?\". The source shows a batch of items, so all scheduled branches appear in the scenario.",
+        "path": "exception-deal"
+      },
+      {
+        "code": "membership.population",
+        "message": "Proposed future state: every case schedules 2 outcomes of \"Match found?\". The source shows a batch of items, so all scheduled branches appear in the scenario.",
+        "path": "match-found"
+      },
+      {
+        "code": "membership.population",
+        "message": "Proposed future state: every case schedules 2 outcomes of \"Approval needed?\". The source shows a batch of items, so all scheduled branches appear in the scenario.",
+        "path": "approval-needed"
+      },
+      {
+        "code": "economics.drivers",
+        "message": "The source declares no economic assumptions, so supplied cost and capacity figures cannot be reconciled.",
+        "path": ""
+      },
+      {
+        "code": "timing.scaled",
+        "message": "All 5 cases scale the same representative route. Selecting a case changes timing, not routing.",
+        "path": ""
+      }
+    ]
+  }
+}

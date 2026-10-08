@@ -1,0 +1,436 @@
+{
+  "schema": "bpmviz.ai-result",
+  "schemaVersion": 1,
+  "task": "opportunities",
+  "engagementId": "eng-underwriting-current",
+  "engagementRevision": 0,
+  "baselineModelId": null,
+  "generated": {
+    "tool": "bpmviz-ai",
+    "provider": "claude",
+    "model": "claude-opus-5[1m]",
+    "surface": "cli",
+    "at": "2026-10-02T15:55:52.388Z",
+    "jobId": "job-1b37b66dfdaa",
+    "plan": "commercial"
+  },
+  "dataHandling": {
+    "confidentiality": "internal",
+    "dataStatus": "demonstration",
+    "approvalConfirmed": false,
+    "trainingOptOutConfirmed": false,
+    "writtenApproval": "",
+    "sensitiveIncluded": false
+  },
+  "sources": [],
+  "notes": "I drafted 16 suggestions from the current-state model: 8 opportunities, 2 pain points and 6 questions, ordered by likely usefulness in the workshop. The engagement contains no existing records, is marked as demonstration data with every step unvalidated, and the source BPMN file is marked unavailable, so all effort and elapsed figures quoted in the suggestions are repeated from the model as stated rather than treated as measured; several suggestions depend on branch frequencies that the engagement does not provide.",
+  "warnings": [
+    {
+      "code": "source.gap",
+      "message": "The engagement has no existing records and every step is marked unvalidated, so no suggestion could be built on prior client-confirmed findings. All suggestions are drawn from the step details alone.",
+      "path": "engagement.records"
+    },
+    {
+      "code": "source.gap",
+      "message": "Data status is demonstration and the three economic assumptions, fully loaded hourly rate, annual eligible volume and productive hours per person, are marked illustrative. Where I cite 400 cases a year I label it as illustrative, and I have not converted any effort figure into a cost or headcount saving.",
+      "path": "engagement.assumptions"
+    },
+    {
+      "code": "source.gap",
+      "message": "The source BPMN file named as evidence is marked unavailable, so the step details, gateway outcomes and timings could not be checked against the underlying model.",
+      "path": "evidence.ev-source-bpmn"
+    },
+    {
+      "code": "source.gap",
+      "message": "No branch frequencies are given for the decline, desk only, treaty fits, authority referral, negotiate and lost paths, because the engagement schedules only one representative route. This limits the confidence on suggestions that depend on how often those branches are taken.",
+      "path": "m-current"
+    },
+    {
+      "code": "source.conflict",
+      "message": "Scrub SOV and Geocode and Ingest SOV into CAT Platform are both described as typed as service tasks in the source BPMN, while their notes say the work is performed with heavy manual mapping and quality assurance. I treated them as manual steps, which is what the step descriptions and effort figures support.",
+      "path": "scrub-sov-geocode"
+    },
+    {
+      "code": "assumption",
+      "message": "I read the join note on Risk Insights Reunited, 5040 and 2880 minutes, against the declared 480 business minutes per day to describe the idle wait as roughly 4.5 business days. That conversion is mine, not stated in the engagement.",
+      "path": "risk-insights-reunited"
+    }
+  ],
+  "payload": {
+    "suggestions": [
+      {
+        "ref": "s1",
+        "kind": "opportunity",
+        "title": "Run appetite and capacity triage before the full schedule scrub",
+        "description": "Today the submission goes through Scrub SOV and Geocode before Appetite and Capacity Triage. Submissions that fail the appetite or capacity test have already absorbed a full scrub and geocode cycle. Running the appetite rules on the raw submission first, and scrubbing only what passes, removes that wasted effort. Any location data the rules genuinely need, such as total insured value band and geography, can be read from the raw schedule or requested as a short pre-check.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "clearance-approved",
+          "scrub-sov-geocode",
+          "appetite-capacity-triage",
+          "within-appetite"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "high",
+        "opportunity": {
+          "intervention": "eliminate",
+          "simplerAlternative": "There is no lighter option than not doing the work. A manual rule of thumb before scrubbing would be lighter still, but the appetite rules engine already exists, so running it first costs no new tooling and gives a consistent answer.",
+          "expectedBenefit": "Removes one scrub and geocode cycle for every submission that is later declined for appetite or capacity. The engagement puts that step at 4 to 8 active hours for a 100 to 500 location schedule. The share of submissions declined on appetite is not in the engagement, so the total saving cannot be stated.",
+          "affectedVolume": "Submissions that pass clearance and are then declined on appetite or capacity. The engagement declares an illustrative 400 eligible cases a year; the decline share is unknown.",
+          "effort": "S",
+          "risk": "Some appetite and capacity rules may depend on cleaned location data, for example aggregate capacity by geocoded zone. If the raw schedule is too poor, triage could give a false pass or a false decline.",
+          "dependencies": "Appetite rules engine and aggregate capacity tracker must be able to run on an unscrubbed schedule, or a minimum data set for triage must be defined.",
+          "validationAction": "Ask the Underwriting Operations Manager for clearance and appetite decline counts for the last 12 months, and walk through the triage rules with an Underwriting Assistant to identify which ones truly need scrubbed and geocoded data."
+        },
+        "confidence": "medium",
+        "rationale": "The model sequences Scrub SOV and Geocode ahead of Appetite and Capacity Triage, and the Within Appetite gateway can send a submission to Send Decline Letter after the scrub effort has been spent."
+      },
+      {
+        "ref": "s2",
+        "kind": "opportunity",
+        "title": "Prepare the schedule of values once for both underwriting and CAT modelling",
+        "description": "Scrub SOV and Geocode cleans addresses, resolves occupancy codes and geocodes locations. Ingest SOV into CAT Platform then maps occupancy and construction codes again and resolves geocoding warnings again, in a different system and by a different team. A single prepared schedule, held in a format the CAT platform accepts, would let the modelling analyst load rather than re-map.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "scrub-sov-geocode",
+          "ingest-sov-into-cat-platform"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "high",
+        "opportunity": {
+          "intervention": "integrate",
+          "simplerAlternative": "A shared template alone, which would be standardisation, does not remove the second pass, because the two steps use different code sets and different systems. A mapping table plus a load interface between the scrubbing tool and the CAT platform is what removes the duplicate work.",
+          "expectedBenefit": "Removes a second round of occupancy, construction and geocode mapping on every schedule that reaches CAT modelling, and reduces the chance that the two teams hold different versions of the same schedule. The engagement gives no separate effort figure for the ingest step, so the saving is qualitative.",
+          "affectedVolume": "Every submission that reaches the parallel analysis fork. The engagement declares an illustrative 400 eligible cases a year.",
+          "effort": "M",
+          "risk": "CAT platform code sets are vendor specific. Mapping once up front can hide modelling judgement that the analyst currently applies case by case.",
+          "dependencies": "Agreement on a single occupancy and construction code set between Underwriting Assistants and the CAT modelling team; export or load capability in the scrubbing tool and the CAT platform.",
+          "validationAction": "Sit with a CAT Modelling Analyst through one real ingest and record which fields are re-mapped and which geocode warnings are re-resolved after the scrub, then compare with the Underwriting Assistant's scrub output for the same account."
+        },
+        "confidence": "medium",
+        "rationale": "Both Scrub SOV and Geocode and Ingest SOV into CAT Platform describe occupancy and construction code mapping and geocode resolution, which suggests the same data is handled twice by two teams."
+      },
+      {
+        "ref": "s3",
+        "kind": "opportunity",
+        "title": "Start facultative placement in parallel with pricing, forms and the authority check",
+        "description": "Obtain Fac Binder from the Market sits on the critical path between Structure Fac Placement Slip and Exceeds UW Authority, and the engagement describes it as about 4 business days of elapsed external market time. Most of the slip content, exposure summary, probable maximum loss and CAT metrics, is available once Determine Layering and Participation is complete. Starting the slip and the market approach at that point, and running pricing, forms selection and the authority check alongside, takes the external wait off the critical path.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "determine-layering-participation",
+          "technical-pricing-rating",
+          "select-forms-endorsements",
+          "fac-reinsurance-required",
+          "structure-fac-placement-slip",
+          "obtain-fac-binder-from-market",
+          "exceeds-uw-authority"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "high",
+        "opportunity": {
+          "intervention": "orchestrate",
+          "simplerAlternative": "Simply moving the facultative gateway earlier is not enough on its own, because final terms can still change during pricing and forms selection. A parallel branch with a defined trigger point and a rule for re-approaching the market after a material change is needed to avoid shopping terms twice.",
+          "expectedBenefit": "Takes an external wait of about 4 business days, as stated in the engagement, off the critical path for cases that need facultative support. The quote reaches the broker sooner, which matters where competing carriers are quoting.",
+          "affectedVolume": "Submissions where the desired gross line exceeds net retention and treaty capacity. The representative route assumes facultative is required, but the actual share is not in the engagement.",
+          "effort": "M",
+          "risk": "Approaching the market on provisional terms can cost credibility with reinsurers if terms then move, and can create rework in the Ceded Reinsurance team. Cases that are later declined or lost would have consumed market effort.",
+          "dependencies": "Risk engineering probable maximum loss and CAT metrics must be available before the slip is drafted, so this depends on the timing of the parallel analysis join.",
+          "validationAction": "Ask the Ceded Reinsurance Analyst how often slip terms change between first market approach and binder, and review recent placements to see how much of the slip content was already fixed at the layering stage."
+        },
+        "confidence": "medium",
+        "rationale": "The model places Obtain Fac Binder from the Market in sequence before the authority gateway, tags it a bottleneck with an external wait type, and notes about 4 business days elapsed."
+      },
+      {
+        "ref": "s4",
+        "kind": "opportunity",
+        "title": "Decide on the on-site survey at intake instead of after the desk review",
+        "description": "On-site Survey Needed sits after Desk Review of COPE and Protections, so the scheduling clock for Perform On-Site Loss Prevention Survey only starts once the engineer has worked the file. The decision rules named in the model, total insured value, occupancy, prior surveys and loss history, are mostly knowable at intake. Writing these rules down and applying them when the submission is assigned would let scheduling with the insured begin while the desk review and CAT work proceed.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "assign-to-underwriter",
+          "review-cope-exposure-loss-runs",
+          "initiate-parallel-analysis",
+          "desk-review-cope-protections",
+          "on-site-survey-needed",
+          "perform-on-site-loss-prevention-survey",
+          "risk-insights-reunited"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "high",
+        "opportunity": {
+          "intervention": "standardize",
+          "simplerAlternative": "Removing or shortening the desk review is not appropriate, because the engineer's judgement on protections and prior loss patterns is still needed. Writing the survey trigger down so it can be applied earlier is the lighter change.",
+          "expectedBenefit": "Starts the insured scheduling conversation earlier on the branch that the model identifies as the longest. The engagement notes the survey takes about 5 business days elapsed and that the parallel join waits on the risk engineering branch rather than the CAT branch.",
+          "affectedVolume": "Submissions where a physical survey is required. The representative route assumes a survey is required, but the actual share is not in the engagement.",
+          "effort": "M",
+          "risk": "An early rule will sometimes order a survey that the engineer would have waived after the desk review, which adds cost and insured burden. It will also sometimes miss a survey the desk review would have triggered.",
+          "dependencies": "Agreement from Risk Engineering on the trigger criteria; access to prior survey history at intake.",
+          "validationAction": "Ask the Risk Engineering lead to review the last 20 survey decisions and say which could have been made from intake data alone, and ask who contacts the insured to schedule and how long that contact takes."
+        },
+        "confidence": "medium",
+        "rationale": "The join note states that Risk Insights Reunited waits on the risk engineering branch, and the survey step carries the longest elapsed time in that branch with scheduling named as a pain."
+      },
+      {
+        "ref": "s5",
+        "kind": "opportunity",
+        "title": "Publish a location level data standard for brokers and check submissions against it at intake",
+        "description": "Scrub SOV and Geocode carries two stated pains: location level completeness varies widely by broker, and occupancy and construction free text needs interpretation. A published schedule template with required fields and controlled values for occupancy and construction, plus a completeness check run when the submission arrives, moves the correction back to the party that holds the data. Brokers who submit complete data get a faster quote, which gives them a reason to comply.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "submission-received",
+          "check-clearance-dedup",
+          "scrub-sov-geocode"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "high",
+        "opportunity": {
+          "intervention": "standardize",
+          "simplerAlternative": "Asking brokers for better data without a published schema and an intake check is close to the current position and has not fixed the variation. The standard needs defined fields, controlled values and a visible completeness result to change behaviour.",
+          "expectedBenefit": "Reduces the interpretation work in the scrub step, which the engagement puts at 4 to 8 active hours for a 100 to 500 location schedule, and reduces downstream rework in CAT mapping. The size of the reduction depends on broker adoption and is not supported by figures in the engagement.",
+          "affectedVolume": "All incoming submissions with a schedule of values. The engagement declares an illustrative 400 eligible cases a year.",
+          "effort": "M",
+          "risk": "Brokers may resist a carrier specific format, particularly on competitive accounts, and a hard completeness gate could cost submissions. The standard needs a soft landing with the largest producers first.",
+          "dependencies": "Distribution relationships with producing brokers; the submission mailbox and broker portal must be able to run the completeness check.",
+          "validationAction": "Ask Underwriting Assistants to score the last 20 schedules for completeness by broker, and review with the distribution lead which brokers carry enough volume to justify starting with them."
+        },
+        "confidence": "high",
+        "rationale": "The Scrub SOV and Geocode step states that location level completeness varies wildly by broker and that occupancy and construction free text requires interpretation."
+      },
+      {
+        "ref": "s6",
+        "kind": "opportunity",
+        "title": "Automate name and address matching in clearance",
+        "description": "Check Clearance and Dedup relies on manual keyword search across the clearance system, the policy administration system and the CRM, and the stated pain is that this misses variants of insured names. Fuzzy matching on insured name, legal entity suffix and location address, run across all three systems at once and returning a ranked candidate list for the assistant to confirm, addresses the stated failure directly.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "check-clearance-dedup",
+          "clearance-approved"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "medium",
+        "opportunity": {
+          "intervention": "deterministic-automation",
+          "simplerAlternative": "A single federated search box across the three systems, which would be integration, puts the same keyword search in one place but still misses spelling variants, abbreviations and entity suffixes. A matching rule set is what addresses the stated miss.",
+          "expectedBenefit": "Fewer missed duplicates and broker of record conflicts, and less of the 30 to 45 active minutes per submission that the engagement reports for this step. The current miss rate is not in the engagement.",
+          "affectedVolume": "Every incoming submission. The engagement declares an illustrative 400 eligible cases a year.",
+          "effort": "M",
+          "risk": "Fuzzy matching produces false positives that still need assistant judgement, so the step becomes a review rather than a search. Broker of record conflicts remain a commercial decision.",
+          "dependencies": "Read access to the clearance system, the policy administration system and the CRM; agreement on a confidence threshold for automatic clear.",
+          "validationAction": "Ask the Underwriting Operations Manager whether missed duplicates or broker of record conflicts are logged, and pull a sample of submissions to test how often a name variant would have been caught by matching rules."
+        },
+        "confidence": "high",
+        "rationale": "Check Clearance and Dedup states the pain that manual keyword search misses variants of insured names, and reports 30 to 45 active minutes per submission across three systems."
+      },
+      {
+        "ref": "s7",
+        "kind": "opportunity",
+        "title": "AI assisted submission digest for the underwriter review",
+        "description": "Review COPE, Exposure and Loss Runs takes about 10 to 14 hours across two business days, and the stated pain is fragmented data across the schedule, the application, the loss runs and the broker email thread. A drafted digest that pulls the key facts into one view, with each fact linked back to its source document, would let the underwriter spend time on judgement rather than assembly. The underwriter keeps the decision and confirms the facts.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "review-cope-exposure-loss-runs"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "high",
+        "opportunity": {
+          "intervention": "ai-assist",
+          "simplerAlternative": "Bringing the documents into one file view, which would be integration, helps with navigation but does not reduce the reading and reconciling of free text COPE narrative, loss run detail and email correspondence, which is where the effort sits. A structured summary of unstructured content is what reduces the work.",
+          "expectedBenefit": "Reduces preparation time inside a step the engagement puts at 10 to 14 hours per submission and tags a bottleneck. No figure for the reduction is supported by the engagement.",
+          "affectedVolume": "Every submission assigned to an underwriter. The engagement declares an illustrative 400 eligible cases a year.",
+          "effort": "L",
+          "risk": "A digest that misstates a loss or a protection feature could carry into risk selection. Source links and underwriter confirmation are needed, and the digest should not be treated as a reviewed document.",
+          "dependencies": "Documents must be retrievable in one place, including the broker email thread; data handling rules for insured information.",
+          "validationAction": "Ask two underwriters to split their 10 to 14 hours between finding and reading data and forming a judgement, and test a digest on three recent submissions where the outcome is already known."
+        },
+        "confidence": "medium",
+        "rationale": "Review COPE, Exposure and Loss Runs is tagged a bottleneck, reports 10 to 14 hours of effort and names fragmented data across four sources as its pain."
+      },
+      {
+        "ref": "s8",
+        "kind": "pain",
+        "title": "CAT results wait several days at the parallel join before anyone uses them",
+        "description": "The note on Risk Insights Reunited states that the join waits on the longer of the risk engineering branch at 5040 minutes and the CAT branch at 2880 minutes. On the business calendar of 480 minutes a day declared in the engagement, that is about 10.5 days against 6 days, so finished CAT output sits unused for roughly 4.5 business days. Underwriters may already be working around this informally. Worth asking whether layering and pricing can begin on CAT results while the engineering report is still open, and what would have to be revisited if the report changes the picture.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "risk-insights-reunited",
+          "run-wind-flood-quake-aal-pml",
+          "perform-on-site-loss-prevention-survey",
+          "publish-risk-report-pml-mfl-recs",
+          "determine-layering-participation"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "medium",
+        "opportunity": null,
+        "confidence": "high",
+        "rationale": "The note on Risk Insights Reunited states the join waits on the maximum of the two branches, 5040 against 2880 minutes, and the engagement declares 480 business minutes per day."
+      },
+      {
+        "ref": "s9",
+        "kind": "pain",
+        "title": "The negotiate loop returns all the way to layering and may repeat facultative placement",
+        "description": "A negotiate outcome at Broker Response sends the case back to Determine Layering and Participation, which means pricing and forms selection are repeated and the facultative gateway is reached again. Where a facultative binder has already been obtained on the original structure, renegotiated terms may require going back to the reinsurance market, which the engagement describes as about 4 business days of external time. The engagement does not say how often the negotiate path is taken or how many loops a typical case goes through.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "broker-response",
+          "determine-layering-participation",
+          "technical-pricing-rating",
+          "select-forms-endorsements",
+          "fac-reinsurance-required",
+          "structure-fac-placement-slip",
+          "obtain-fac-binder-from-market"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "medium",
+        "opportunity": null,
+        "confidence": "medium",
+        "rationale": "The loop connector from Broker Response back to Determine Layering and Participation re-enters the pricing, forms and facultative sequence, and Obtain Fac Binder from the Market is an external wait of about 4 business days."
+      },
+      {
+        "ref": "s10",
+        "kind": "opportunity",
+        "title": "Carry the underwriter's form and endorsement selections straight into policy assembly",
+        "description": "Select Forms and Endorsements records the underwriter's choice of forms, endorsements, sublimits and manuscript wording. Assemble Dec Sheet, Forms and Endorsements then builds the policy package, at about 2 business days, and QA and Reinsurance Reconciliation checks every policy field afterwards. If Policy Operations rebuilds the schedule of forms by hand from the quote and binder, carrying the structured selection through would cut both the assembly work and the QA exceptions.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "select-forms-endorsements",
+          "assemble-multi-option-quote",
+          "assemble-dec-sheet-forms-endorsements",
+          "qa-reinsurance-reconciliation"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "",
+        "opportunity": {
+          "intervention": "integrate",
+          "simplerAlternative": "A standard forms checklist handed from underwriting to policy operations would reduce ambiguity but still leaves the selections to be entered a second time. Passing the structured selection between the systems is what removes the re-entry and the transcription errors.",
+          "expectedBenefit": "Less re-entry in a step the engagement puts at about 2 business days, and fewer field level discrepancies for the four eyes QA to find. The engagement does not say how much of the assembly work is re-entry, so the benefit is qualitative.",
+          "affectedVolume": "Every bound policy. The engagement does not state how many of the illustrative 400 annual submissions bind.",
+          "effort": "M",
+          "risk": "Manuscript wording deviations drafted by the underwriter may not map cleanly to policy system endorsement records, so part of the work will remain manual.",
+          "dependencies": "A shared forms library between the quoting tool and the policy administration system.",
+          "validationAction": "Ask a Policy Operations Analyst to show how the schedule of forms is built for one recent policy and whether the underwriter's selections are re-entered, and ask what the four eyes QA most often finds."
+        },
+        "confidence": "low",
+        "rationale": "Select Forms and Endorsements and Assemble Dec Sheet, Forms and Endorsements both work on the same form set in different lanes, which suggests re-entry, though the engagement does not state it."
+      },
+      {
+        "ref": "s11",
+        "kind": "opportunity",
+        "title": "Standard account level CAT run profiles and a reserved queue slot",
+        "description": "Run Wind, Flood and Quake AAL and PML is described as about 2 business days including the run queue and interpretation, and is tagged a bottleneck. Part of that time is queue wait rather than analyst work. Agreeing a standard run profile for large commercial property accounts, and reserving model capacity for account level runs separate from portfolio runs, would shorten the wait without changing the analysis.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "ingest-sov-into-cat-platform",
+          "run-wind-flood-quake-aal-pml"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "",
+        "opportunity": {
+          "intervention": "standardize",
+          "simplerAlternative": "Nothing simpler is available that affects the queue. Eliminating or simplifying the run itself is not possible because the AAL and PML output is required for layering and for the facultative slip.",
+          "expectedBenefit": "Shortens the queue portion of the roughly 2 business days reported for this step. The split between queue wait and analyst interpretation is not in the engagement.",
+          "affectedVolume": "Every submission that reaches CAT modelling. The engagement declares an illustrative 400 eligible cases a year.",
+          "effort": "S",
+          "risk": "Reserving capacity for account runs can delay portfolio roll up runs, which have their own reporting deadlines.",
+          "dependencies": "Model licence and compute capacity; agreement with exposure management on portfolio run scheduling.",
+          "validationAction": "Ask the CAT Modelling Analyst to split the 2 days into queue wait, run time and interpretation for the last ten accounts, and ask exposure management what else competes for the same model capacity."
+        },
+        "confidence": "low",
+        "rationale": "Run Wind, Flood and Quake AAL and PML is tagged a bottleneck and its effort note names the run queue as part of the roughly 2 business days."
+      },
+      {
+        "ref": "s12",
+        "kind": "question",
+        "title": "How many submissions are declined at clearance and appetite, and how far do they get first?",
+        "description": "The decline path through Send Decline Letter is drawn from both the Clearance Approved and Within Appetite gateways but is not scheduled in the representative route, so the engagement gives no volumes. The decline share determines the value of moving triage ahead of the schedule scrub and of a broker data standard. Ask the Underwriting Operations Manager for 12 months of submission counts split by outcome, and for how many declined submissions had already been scrubbed.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "clearance-approved",
+          "within-appetite",
+          "send-decline-letter",
+          "rejected-clearance-appetite",
+          "scrub-sov-geocode"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "high",
+        "opportunity": null,
+        "confidence": "high",
+        "rationale": "The engagement summary says the off route branches including decline are drawn but not scheduled, and no volume data is given for them."
+      },
+      {
+        "ref": "s13",
+        "kind": "question",
+        "title": "What share of submissions needs an on-site survey and facultative reinsurance?",
+        "description": "The representative route assumes a physical survey is required and that facultative reinsurance is required, and these two branches carry the longest elapsed times in the model, about 5 business days and about 4 business days. If most accounts take the desk only and treaty fits paths, the representative case overstates the typical cycle time and the priority of the related suggestions should change. Ask Risk Engineering and the Ceded Reinsurance team for the split over the last year.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "on-site-survey-needed",
+          "perform-on-site-loss-prevention-survey",
+          "fac-reinsurance-required",
+          "obtain-fac-binder-from-market"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "high",
+        "opportunity": null,
+        "confidence": "high",
+        "rationale": "The notes on On-site Survey Needed and Fac Reinsurance Required state that the representative route selects yes on both, and no branch frequencies are given."
+      },
+      {
+        "ref": "s14",
+        "kind": "question",
+        "title": "Are the effort and elapsed time figures measured or estimated?",
+        "description": "The engagement is marked as demonstration data, every step is marked unvalidated, and the hourly rate, annual volume and productive hours per person are all marked illustrative. The source BPMN file named in the evidence is marked unavailable. Before any of these suggestions is used in a business case, the workshop should establish which figures come from system data, which from a time study and which are informed estimates. Ask the Underwriting Operations Manager what the policy administration system and the clearance system can report on cycle time per stage.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "check-clearance-dedup",
+          "scrub-sov-geocode",
+          "review-cope-exposure-loss-runs",
+          "perform-on-site-loss-prevention-survey",
+          "run-wind-flood-quake-aal-pml",
+          "obtain-fac-binder-from-market",
+          "assemble-dec-sheet-forms-endorsements"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "high",
+        "opportunity": null,
+        "confidence": "high",
+        "rationale": "The engagement sets data status to demonstration, marks the three economic assumptions illustrative and marks the source BPMN evidence unavailable, while every step is unvalidated."
+      },
+      {
+        "ref": "s15",
+        "kind": "question",
+        "title": "Why is sanctions screening run only just before bind?",
+        "description": "OFAC and sanctions screening appears once, in Validate Subjectivities and OFAC, after the bind order has been received. By that point the submission has absorbed the schedule scrub, underwriter review, risk engineering, CAT modelling and possibly a facultative placement. Ask the compliance owner whether a screen at clearance is feasible and whether a late sanctions hit has ever stopped a case after bind order.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "check-clearance-dedup",
+          "validate-subjectivities-ofac",
+          "process-bind-order",
+          "issue-formal-binder"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "medium",
+        "opportunity": null,
+        "confidence": "medium",
+        "rationale": "Validate Subjectivities and OFAC is the only step listing sanctions screening as a control, and it sits after Process Bind Order in the model."
+      },
+      {
+        "ref": "s16",
+        "kind": "question",
+        "title": "How often do cases exceed underwriting authority, and how long does referral take?",
+        "description": "Review Technical Referral and Authority Sign-off are drawn as available controls but are off the representative route, so no frequency or turnaround is recorded. Referral sits between the facultative placement and the quote, so a slow referral loop would delay the quote to the broker in a competitive situation. Ask the Technical UW Authority how many submissions are referred, what triggers referral most often, and how long sign-off typically takes.",
+        "linkedModelId": "m-current",
+        "linkedNodeIds": [
+          "exceeds-uw-authority",
+          "review-technical-referral",
+          "authority-sign-off",
+          "assemble-multi-option-quote"
+        ],
+        "basedOnRecordIds": [],
+        "priority": "medium",
+        "opportunity": null,
+        "confidence": "high",
+        "rationale": "The notes on Exceeds UW Authority and Review Technical Referral state that the representative case is within authority and that the referral path is preserved as an available control with no timings."
+      }
+    ]
+  }
+}
