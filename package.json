@@ -1,0 +1,27 @@
+{
+  "name": "bpmviz",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Process workshop workbench: replay a process, capture client findings against it, and hand off a portable engagement file.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test \"tests/unit/*.test.mjs\"",
+    "test:browser": "node --test --test-concurrency=1 \"tests/browser/*.test.mjs\"",
+    "test:all": "npm test && npm run test:browser && npm run check",
+    "build:examples": "node tools/build-examples.mjs",
+    "validate": "node tools/validate-engagement.mjs",
+    "convert": "node tools/convert-legacy.mjs",
+    "screenshots": "node tools/screenshots.mjs",
+    "serve": "node tools/serve.mjs",
+    "check": "node tools/check-style.mjs && node tools/check-prose.mjs",
+    "ai": "node tools/ai/cli.mjs",
+    "smoke:ai": "node tools/ai/smoke.mjs"
+  },
+  "devDependencies": {
+    "pdfjs-dist": "6.3.289",
+    "playwright-core": "1.63.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

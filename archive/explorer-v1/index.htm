@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>BPMN Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark" id="brand-mark"></div>
+      <div class="brand-text">
+        <div class="t1" id="brand-app-name">—</div>
+        <div class="t2" id="brand-subtitle">—</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span><span class="pulse"></span> <span id="brand-header-status">—</span></span>
+      <span id="hdr-clock">—</span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="tb-group">
+      <span class="tb-label" id="tb-label-sample">Item</span>
+      <select id="sub-select" class="btn"></select>
+    </div>
+    <div class="tb-group">
+      <button id="btn-restart" class="btn" title="Restart (R)">⏮</button>
+      <button id="btn-play" class="btn active" title="Play / Pause (Space or click canvas)">❚❚</button>
+      <button id="btn-end" class="btn" title="Jump to current (E)">⏭</button>
+      <span class="speed-pill" id="speed-pill" title="Click to cycle speed">1× speed (slow-mo)</span>
+    </div>
+    <div class="tb-group scrubber-wrap">
+      <div class="scrubber" id="scrubber">
+        <div class="scrubber-fill" id="scrubber-fill"></div>
+        <div class="scrubber-thumb" id="scrubber-thumb"></div>
+      </div>
+      <div class="scrubber-time" id="scrubber-time">00:00 / 00:00</div>
+    </div>
+    <div class="tb-group">
+      <button class="btn" id="t-heat" title="Lane heat-map">Heat</button>
+      <button class="btn active" id="t-metrics" title="SLA bars on tasks">Metrics</button>
+      <button class="btn active" id="t-labels" title="Flow labels">Labels</button>
+      <button class="btn" id="t-stars" title="Background starfield">Stars</button>
+    </div>
+    <div class="tb-group">
+      <button class="btn" id="z-out" title="Zoom out (-)">−</button>
+      <button class="btn" id="z-fit" title="Show all (F)">All</button>
+      <button class="btn" id="z-in" title="Zoom in (+)">+</button>
+    </div>
+    <div class="tb-group" style="margin-left:auto;">
+      <button class="btn" id="btn-reset" title="Reset to default view (0)">Reset</button>
+      <button class="btn" id="btn-help" title="Help (?)">?</button>
+    </div>
+  </div>
+
+  <div class="canvas-wrap" id="canvas-wrap">
+    <canvas class="starfield" id="starfield" style="display:none;"></canvas>
+    <div class="canvas-stage">
+      <svg class="bpmn" id="bpmn" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="g-task" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#2a3756"/>
+            <stop offset="100%" stop-color="#162038"/>
+          </linearGradient>
+          <linearGradient id="g-task-active" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#2570a4"/>
+            <stop offset="100%" stop-color="#0c2842"/>
+          </linearGradient>
+          <linearGradient id="g-task-done" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#1a3a2a"/>
+            <stop offset="100%" stop-color="#0c2418"/>
+          </linearGradient>
+          <linearGradient id="g-task-stuck" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#6a4218"/>
+            <stop offset="100%" stop-color="#2a1c08"/>
+          </linearGradient>
+          <linearGradient id="g-lane-shelf" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="rgba(30,42,70,0.35)"/>
+            <stop offset="100%" stop-color="rgba(8,14,26,0.05)"/>
+          </linearGradient>
+          <radialGradient id="g-token" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0%" stop-color="#fff"/>
+            <stop offset="40%" stop-color="#7dd3fc"/>
+            <stop offset="100%" stop-color="rgba(125,211,252,0)"/>
+          </radialGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-strong" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#3a4a6e"/>
+          </marker>
+          <marker id="arrow-done" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#4ade80"/>
+          </marker>
+          <marker id="arrow-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#7dd3fc"/>
+          </marker>
+        </defs>
+        <g id="bpmn-root"></g>
+      </svg>
+    </div>
+    <div class="play-hint" id="play-hint"><span class="dot"></span> <span id="play-hint-text">Live · slow-mo · click canvas or press Space to pause</span></div>
+    <div class="legend">
+      <div class="item"><span class="sw" style="background: linear-gradient(135deg,#2a3756,#162038); border:1px solid #3a4a6e;"></span> Pending</div>
+      <div class="item"><span class="sw" style="background: linear-gradient(135deg,#2570a4,#0c2842); border:1px solid #7dd3fc; box-shadow:0 0 6px #7dd3fc;"></span> Active</div>
+      <div class="item"><span class="sw" style="background: linear-gradient(135deg,#1a3a2a,#0c2418); border:1px solid #4ade80;"></span> Complete</div>
+      <div class="item"><span class="sw" style="background: linear-gradient(135deg,#6a4218,#2a1c08); border:1px solid #fbbf24;"></span> Bottleneck</div>
+    </div>
+    <div class="minimap" id="minimap">
+      <div class="minimap-head">
+        <span>Process Overview</span>
+        <span class="progress-readout" id="mini-progress">0%</span>
+      </div>
+      <div class="minimap-svg-wrap">
+        <svg id="minimap-svg" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="minimap-foot">click or drag to navigate · cyan box = current view</div>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="panel-h"><span id="sample-list-title">Active items</span> · <span id="sample-list-count">0 in flight</span> <span id="portfolio-clock" style="color:var(--ink-1); font-variant-numeric: tabular-nums; text-transform:none; letter-spacing:0;">—</span></div>
+    <div id="sub-list"></div>
+
+    <div class="panel-h">Selected · <span id="detail-source" style="color:var(--ink-1); text-transform:none; letter-spacing:0;">click any node</span></div>
+    <div class="detail-panel" id="detail-panel">
+      <div style="color:var(--ink-2); font-size:11.5px;">Click any task, gateway, or event in the canvas to inspect its definition, current execution state, and SLA performance. Click empty canvas space (or press Space) to pause / resume.</div>
+    </div>
+
+    <div class="panel-h">Live telemetry</div>
+    <div class="event-log" id="event-log"></div>
+    <div class="scroll-hint">Most recent events for the selected item. Press <kbd>Space</kbd> or click empty canvas to pause stream.</div>
+  </aside>
+
+  <footer>
+    <span>Drag canvas to pan · scroll to zoom · click empty canvas / <kbd>Space</kbd> to pause · <kbd>?</kbd> for help</span>
+    <span><span id="brand-footer-org">—</span> · <a id="brand-footer-link" href="#" target="_blank">—</a></span>
+  </footer>
+</div>
+
+<div class="hover-tip" id="tip"></div>
+
+<div class="modal-bg" id="help-modal">
+  <div class="modal" id="help-modal-content">
+    <button class="close-x" id="help-close">×</button>
+    <!-- populated by visualizer from BRANDING.help -->
+  </div>
+</div>
+
+<!-- Load order matters: branding → process → samples → visualizer -->
+<script src="js/branding.js"></script>
+<script src="js/process.js"></script>
+<script src="js/samples.js"></script>
+<script src="js/visualizer.js"></script>
+</body>
+</html>

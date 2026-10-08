@@ -1,0 +1,2937 @@
+{
+  "schema": "bpmviz.engagement",
+  "schemaVersion": 1,
+  "id": "eng-underwriting-current",
+  "revision": 0,
+  "createdAt": "2026-09-25T00:00:00.000Z",
+  "updatedAt": "2026-09-25T00:00:00.000Z",
+  "meta": {
+    "clientDisplayName": "Commercial P&C insurer (illustrative)",
+    "engagementName": "Underwriting current-state workshop",
+    "processName": "Large commercial property underwriting and issuance",
+    "confidentiality": "internal",
+    "dataStatus": "demonstration",
+    "timeBasis": {
+      "unit": "minute",
+      "calendar": "business",
+      "businessMinutesPerDay": 480
+    },
+    "currency": "USD",
+    "disclosure": "Illustrative. The structure comes from the source BPMN; timings, volumes and costs are assumptions.",
+    "summary": "Click any activity for business detail. All 5 cases scale the same representative route: clearance passes → in appetite → physical survey required → fac reinsurance required → within authority → broker binds → policy issued. Off-route branches (decline, referral-decline, submission-lost, negotiate loop) are drawn but not scheduled.",
+    "credits": "Sample from the original BPMVIZ race explorer by Doug Ross (MIT License)."
+  },
+  "milestones": [
+    {
+      "id": "ms-received",
+      "name": "Received",
+      "position": 0.02
+    },
+    {
+      "id": "ms-cleared",
+      "name": "Cleared",
+      "position": 0.15
+    },
+    {
+      "id": "ms-assessed",
+      "name": "Assessed",
+      "position": 0.42
+    },
+    {
+      "id": "ms-quoted",
+      "name": "Quoted",
+      "position": 0.65
+    },
+    {
+      "id": "ms-bound",
+      "name": "Bound",
+      "position": 0.88
+    },
+    {
+      "id": "ms-issued",
+      "name": "Issued",
+      "position": 1
+    }
+  ],
+  "models": [
+    {
+      "id": "m-current",
+      "role": "current",
+      "name": "Current state",
+      "version": 1,
+      "status": "baseline",
+      "locked": false,
+      "basedOn": null,
+      "sourceRefs": [
+        "ev-source-bpmn"
+      ],
+      "notes": "Current state: manual underwriting workflow (from the BPMN)",
+      "lanes": [
+        {
+          "id": "ua",
+          "name": "Underwriting Assistant / Operations",
+          "role": "Intake, clearance, scrubbing, subjectivities",
+          "type": "human"
+        },
+        {
+          "id": "uw",
+          "name": "Commercial Property Underwriter",
+          "role": "Risk selection, structuring, pricing, quoting, bind",
+          "type": "human"
+        },
+        {
+          "id": "riskeng",
+          "name": "Risk Engineering & Loss Prevention",
+          "role": "COPE desk review, site survey, PML/MFL report",
+          "type": "human"
+        },
+        {
+          "id": "catmodel",
+          "name": "Exposure Management & CAT Modeling",
+          "role": "SOV ingest, wind/flood/quake AAL & PML",
+          "type": "human"
+        },
+        {
+          "id": "cededre",
+          "name": "Ceded Reinsurance / Fac Placement",
+          "role": "Facultative slip, market placement",
+          "type": "human"
+        },
+        {
+          "id": "uwauth",
+          "name": "Technical UW Authority / Management",
+          "role": "Referral review, sign-off",
+          "type": "human"
+        },
+        {
+          "id": "policyops",
+          "name": "Policy Operations & Issuance",
+          "role": "Forms assembly, QA, PAS booking, delivery",
+          "type": "human"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "submission-received",
+          "label": "Submission Received",
+          "sub": "From broker (email / API)",
+          "semanticType": "startEvent",
+          "laneId": "ua",
+          "sourceIds": [
+            "Start_SubmissionReceived"
+          ],
+          "details": {
+            "desc": "Broker transmits a large-commercial property submission (SOV, loss runs, application, supplemental questionnaires).",
+            "who": "Producing broker",
+            "owner": "Underwriting Assistant",
+            "inputs": [
+              "Submission email/API payload",
+              "SOV workbook",
+              "5-yr loss runs",
+              "ACORD 125/140"
+            ],
+            "systems": [
+              "Submission mailbox",
+              "Broker portal"
+            ],
+            "note": "Maps to BPMN Start_SubmissionReceived (message start event)."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "check-clearance-dedup",
+          "label": "Check Clearance & Dedup",
+          "sub": "Manual UA review",
+          "semanticType": "task",
+          "laneId": "ua",
+          "sourceIds": [
+            "Task_ClearanceAndDedup"
+          ],
+          "details": {
+            "desc": "UA searches PAS and clearance system to prevent duplicate quoting, broker-of-record conflicts, and prior declinations.",
+            "who": "Underwriting Assistant",
+            "owner": "UW Ops Manager",
+            "sla": "Target: same business day",
+            "effort": "~30–45 min active per submission",
+            "systems": [
+              "Clearance system",
+              "Policy Admin System (PAS)",
+              "CRM"
+            ],
+            "controls": [
+              "Broker-of-record rule",
+              "Duplicate-account check"
+            ],
+            "pain": [
+              "Manual keyword search misses variants of insured names",
+              "Broker BOR letters not always attached"
+            ],
+            "note": "Maps to BPMN Task_ClearanceAndDedup."
+          },
+          "tags": {
+            "bottleneck": true,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "clearance-approved",
+          "label": "Clearance Approved?",
+          "sub": "Exclusive gateway",
+          "semanticType": "exclusiveGateway",
+          "laneId": "ua",
+          "sourceIds": [
+            "Gate_ClearancePassed"
+          ],
+          "details": {
+            "desc": "Exclusive gateway on clearance outcome.",
+            "decisionRules": [
+              "Clear → SOV scrub",
+              "Conflict/Duplicate → decline letter"
+            ],
+            "note": "Maps to BPMN Gate_ClearancePassed."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "send-decline-letter",
+          "label": "Send Decline Letter",
+          "sub": "Off representative route",
+          "semanticType": "task",
+          "laneId": "ua",
+          "sourceIds": [],
+          "details": {
+            "desc": "Standard decline letter for clearance conflicts or out-of-appetite submissions.",
+            "who": "Underwriting Assistant",
+            "note": "Not on animated route. Also target of AppetiteNo path."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": true,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "rejected-clearance-appetite",
+          "label": "Rejected (Clearance/Appetite)",
+          "sub": "Off route",
+          "semanticType": "endEvent",
+          "laneId": "ua",
+          "sourceIds": [],
+          "details": {
+            "desc": "Submission closed with decline/rejection notification.",
+            "note": "Off representative route."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": true,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "scrub-sov-geocode",
+          "label": "Scrub SOV & Geocode",
+          "sub": "Manual data quality",
+          "semanticType": "task",
+          "laneId": "ua",
+          "sourceIds": [
+            "Task_ScrubSOVAndGeocode"
+          ],
+          "details": {
+            "desc": "UA cleans SOV inconsistencies (COPE gaps, TIV rounding, address normalization), geocodes locations, resolves occupancy codes.",
+            "who": "Underwriting Assistant",
+            "effort": "~4–8 active hrs for 100–500 location SOV",
+            "systems": [
+              "Excel / SOV tooling",
+              "Geocoding service"
+            ],
+            "pain": [
+              "Location-level completeness varies wildly by broker",
+              "Occupancy/construction free-text requires interpretation"
+            ],
+            "note": "Maps to BPMN Task_ScrubSOVAndGeocode (service task, but performed with heavy manual QA)."
+          },
+          "tags": {
+            "bottleneck": true,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "appetite-capacity-triage",
+          "label": "Appetite & Capacity Triage",
+          "sub": "Rules check",
+          "semanticType": "task",
+          "laneId": "ua",
+          "sourceIds": [
+            "Task_TriageAppetite"
+          ],
+          "details": {
+            "desc": "Line-of-business rules check: occupancy appetite, TIV bands, geography, aggregate capacity availability.",
+            "who": "UW Assistant, supported by rules engine",
+            "systems": [
+              "Appetite rules engine",
+              "Aggregate capacity tracker"
+            ],
+            "note": "Maps to BPMN Task_TriageAppetite (business rule task)."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "within-appetite",
+          "label": "Within Appetite?",
+          "sub": "Exclusive gateway",
+          "semanticType": "exclusiveGateway",
+          "laneId": "ua",
+          "sourceIds": [
+            "Gate_AppetiteCheck"
+          ],
+          "details": {
+            "desc": "Exclusive gateway on appetite outcome.",
+            "decisionRules": [
+              "In appetite → Assign UW",
+              "Out of appetite → decline letter"
+            ],
+            "note": "Maps to BPMN Gate_AppetiteCheck."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "assign-to-underwriter",
+          "label": "Assign to Underwriter",
+          "sub": "Queue-based routing",
+          "semanticType": "task",
+          "laneId": "ua",
+          "sourceIds": [
+            "Task_AssignUnderwriter"
+          ],
+          "details": {
+            "desc": "Routes submission to the appropriate commercial property UW by geography, industry, and TIV band.",
+            "who": "UW Ops team",
+            "note": "Maps to BPMN Task_AssignUnderwriter."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "review-cope-exposure-loss-runs",
+          "label": "Review COPE, Exposure & Loss Runs",
+          "sub": "UW intake review",
+          "semanticType": "task",
+          "laneId": "uw",
+          "sourceIds": [
+            "Task_ReviewSubmissionCOPE"
+          ],
+          "details": {
+            "desc": "UW reviews submission holistically: COPE data, loss history, protections, occupancy, business continuity exposures.",
+            "who": "Commercial Property Underwriter",
+            "effort": "~10–14 hrs across 2 business days",
+            "pain": [
+              "Fragmented data across SOV, application, loss runs, broker email thread"
+            ],
+            "note": "Maps to BPMN Task_ReviewSubmissionCOPE."
+          },
+          "tags": {
+            "bottleneck": true,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "initiate-parallel-analysis",
+          "label": "Initiate Parallel Analysis",
+          "sub": "Parallel fork",
+          "semanticType": "parallelGateway",
+          "laneId": "uw",
+          "sourceIds": [
+            "Fork_Assessments"
+          ],
+          "details": {
+            "desc": "Parallel gateway forking Risk Engineering desk review and CAT modeling ingestion.",
+            "note": "Maps to BPMN Fork_Assessments (parallel gateway)."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "desk-review-cope-protections",
+          "label": "Desk Review: COPE & Protections",
+          "sub": "Engineer paperwork",
+          "semanticType": "task",
+          "laneId": "riskeng",
+          "sourceIds": [
+            "Task_ReviewCOPEAndProtections"
+          ],
+          "details": {
+            "desc": "Risk engineer reviews COPE narrative, sprinkler classifications, protective systems, prior loss patterns.",
+            "who": "Risk Engineer",
+            "systems": [
+              "Engineering knowledge base"
+            ],
+            "note": "Maps to BPMN Task_ReviewCOPEAndProtections."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "on-site-survey-needed",
+          "label": "On-site Survey Needed?",
+          "sub": "Exclusive gateway",
+          "semanticType": "exclusiveGateway",
+          "laneId": "riskeng",
+          "sourceIds": [
+            "Gate_PhysicalSurveyNeeded"
+          ],
+          "details": {
+            "desc": "Engineer determines whether physical inspection is required based on TIV, occupancy, prior surveys, and loss history.",
+            "decisionRules": [
+              "Yes → schedule site survey",
+              "No → desk-only report"
+            ],
+            "note": "Maps to BPMN Gate_PhysicalSurveyNeeded. Representative route selects YES."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "perform-on-site-loss-prevention-survey",
+          "label": "Perform On-Site Loss Prevention Survey",
+          "sub": "Travel + inspection",
+          "semanticType": "task",
+          "laneId": "riskeng",
+          "sourceIds": [
+            "Task_PerformPhysicalSiteSurvey"
+          ],
+          "details": {
+            "desc": "Field engineer visits site(s): construction verification, sprinkler test records, housekeeping, hot-work programs, business continuity walkthrough.",
+            "who": "Field Risk Engineer",
+            "effort": "~5 business days elapsed (scheduling, travel, inspection, notes)",
+            "pain": [
+              "Scheduling with insured",
+              "Multi-location schedules extend elapsed time significantly"
+            ],
+            "dependencies": [
+              "Insured availability",
+              "Travel logistics"
+            ],
+            "note": "Maps to BPMN Task_PerformPhysicalSiteSurvey. Physical dependency that cannot be automated away."
+          },
+          "tags": {
+            "bottleneck": true,
+            "agent": false,
+            "humanReview": true,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "publish-risk-report-pml-mfl-recs",
+          "label": "Publish Risk Report: PML, MFL & Recs",
+          "sub": "Engineer authored",
+          "semanticType": "task",
+          "laneId": "riskeng",
+          "sourceIds": [
+            "Task_CompleteEngineeringAssessment"
+          ],
+          "details": {
+            "desc": "Formal risk engineering report: Probable Maximum Loss, Maximum Foreseeable Loss, protection assessment, recommendations.",
+            "who": "Risk Engineer",
+            "outputs": [
+              "PML/MFL report",
+              "Recs schedule"
+            ],
+            "note": "Maps to BPMN Task_CompleteEngineeringAssessment."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "ingest-sov-into-cat-platform",
+          "label": "Ingest SOV into CAT Platform",
+          "sub": "Manual mapping/QA",
+          "semanticType": "task",
+          "laneId": "catmodel",
+          "sourceIds": [
+            "Task_IngestSOVCATPlatform"
+          ],
+          "details": {
+            "desc": "Analyst loads scrubbed SOV into RMS/AIR, maps occupancy/construction codes, resolves geocoding warnings.",
+            "who": "CAT Modeling Analyst",
+            "systems": [
+              "RMS RiskLink",
+              "AIR Touchstone"
+            ],
+            "note": "Maps to BPMN Task_IngestSOVCATPlatform. BPMN types it service task, but requires manual mapping QA."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "run-wind-flood-quake-aal-pml",
+          "label": "Run Wind/Flood/Quake AAL & PML",
+          "sub": "Model runs + interpretation",
+          "semanticType": "task",
+          "laneId": "catmodel",
+          "sourceIds": [
+            "Task_RunCATLossMetrics"
+          ],
+          "details": {
+            "desc": "Executes CAT model runs, produces AAL, OEP/AEP curves at portfolio and account level, interprets uncertainty.",
+            "who": "CAT Modeling Analyst",
+            "effort": "~2 business days including run queue + interpretation",
+            "outputs": [
+              "AAL by peril",
+              "PML curves",
+              "Portfolio impact memo"
+            ],
+            "note": "Maps to BPMN Task_RunCATLossMetrics."
+          },
+          "tags": {
+            "bottleneck": true,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "risk-insights-reunited",
+          "label": "Risk Insights Reunited",
+          "sub": "Parallel join",
+          "semanticType": "parallelGateway",
+          "laneId": "uw",
+          "sourceIds": [
+            "Join_Assessments"
+          ],
+          "details": {
+            "desc": "Join synchronizes RE and CAT results before UW can structure layering.",
+            "note": "Maps to BPMN Join_Assessments. Waits on max(RE=5040, CAT=2880) → 5040."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "determine-layering-participation",
+          "label": "Determine Layering & Participation",
+          "sub": "Lead/Quota/Excess design",
+          "semanticType": "task",
+          "laneId": "uw",
+          "sourceIds": [
+            "Task_DetermineLayeringStructure"
+          ],
+          "details": {
+            "desc": "Structures the placement: attachment, layers, participations, order of layers, quota share vs excess strategy.",
+            "who": "Commercial Property Underwriter",
+            "note": "Maps to BPMN Task_DetermineLayeringStructure. Also negotiate-loop return target."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "technical-pricing-rating",
+          "label": "Technical Pricing & Rating",
+          "sub": "Rate + credits/debits + CAT load",
+          "semanticType": "task",
+          "laneId": "uw",
+          "sourceIds": [
+            "Task_TechnicalPricingExperienceRating"
+          ],
+          "details": {
+            "desc": "Technical rate calc, schedule credits/debits, CAT loads, experience-rating credibility blending.",
+            "who": "Commercial Property Underwriter",
+            "systems": [
+              "Rating engine",
+              "Experience modification tool"
+            ],
+            "note": "Maps to BPMN Task_TechnicalPricingExperienceRating (business rule task)."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "select-forms-endorsements",
+          "label": "Select Forms & Endorsements",
+          "sub": "ISO / Manuscript",
+          "semanticType": "task",
+          "laneId": "uw",
+          "sourceIds": [
+            "Task_SelectCoverageFormsManuscript"
+          ],
+          "details": {
+            "desc": "Selects policy forms, endorsements, sublimits; drafts any manuscript wording deviations.",
+            "who": "Commercial Property Underwriter",
+            "note": "Maps to BPMN Task_SelectCoverageFormsManuscript."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "fac-reinsurance-required",
+          "label": "Fac Reinsurance Required?",
+          "sub": "Exclusive gateway",
+          "semanticType": "exclusiveGateway",
+          "laneId": "uw",
+          "sourceIds": [
+            "Gate_ReinsuranceRequired"
+          ],
+          "details": {
+            "desc": "Determines if the desired gross line exceeds net retention and treaty capacity, requiring facultative placement.",
+            "decisionRules": [
+              "Yes → structure fac",
+              "No → skip to authority check"
+            ],
+            "note": "Maps to BPMN Gate_ReinsuranceRequired. Representative route selects YES."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "structure-fac-placement-slip",
+          "label": "Structure Fac Placement Slip",
+          "sub": "Slip drafting",
+          "semanticType": "task",
+          "laneId": "cededre",
+          "sourceIds": [
+            "Task_StructureFacPlacement"
+          ],
+          "details": {
+            "desc": "Ceded team drafts fac slip: exposure summary, PML, CAT metrics, layer being ceded, terms sought.",
+            "who": "Ceded Reinsurance Analyst",
+            "note": "Maps to BPMN Task_StructureFacPlacement."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "obtain-fac-binder-from-market",
+          "label": "Obtain Fac Binder from Market",
+          "sub": "External reinsurance market",
+          "semanticType": "task",
+          "laneId": "cededre",
+          "sourceIds": [
+            "Task_ObtainFacBinder"
+          ],
+          "details": {
+            "desc": "Presents slip to fac reinsurance market, negotiates terms, obtains signed lines and binder confirmation.",
+            "who": "Ceded Reinsurance Broker & Analyst",
+            "effort": "~4 business days elapsed (market shopping, quotes, sign-down)",
+            "dependencies": [
+              "External reinsurer response time",
+              "Market conditions"
+            ],
+            "note": "Maps to BPMN Task_ObtainFacBinder. External counterparty wait that persists after AI adoption."
+          },
+          "tags": {
+            "bottleneck": true,
+            "agent": false,
+            "humanReview": true,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": "external"
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "exceeds-uw-authority",
+          "label": "Exceeds UW Authority?",
+          "sub": "Exclusive gateway",
+          "semanticType": "exclusiveGateway",
+          "laneId": "uw",
+          "sourceIds": [
+            "Gate_AuthorityLimitExceeded"
+          ],
+          "details": {
+            "desc": "Compares proposed terms (limit, deductible structure, manuscript wording) against delegated UW authority.",
+            "decisionRules": [
+              "Exceeds → referral to authority",
+              "Within → assemble quote"
+            ],
+            "note": "Maps to BPMN Gate_AuthorityLimitExceeded. Representative route selects WITHIN AUTHORITY."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "review-technical-referral",
+          "label": "Review Technical Referral",
+          "sub": "Off representative route",
+          "semanticType": "task",
+          "laneId": "uwauth",
+          "sourceIds": [],
+          "details": {
+            "desc": "Technical UW authority reviews out-of-authority items and signs off, modifies, or declines.",
+            "who": "Technical UW Authority / UW Manager",
+            "note": "Off animated route (representative case is within authority). Preserved as available control."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": true,
+            "optional": true,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "authority-sign-off",
+          "label": "Authority Sign-off?",
+          "sub": "Off route",
+          "semanticType": "gateway",
+          "laneId": "uwauth",
+          "sourceIds": [],
+          "details": {
+            "desc": "Approved / endorsed → quote; declined → risk exit.",
+            "note": "Off animated route."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": true,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "risk-declined-by-authority",
+          "label": "Risk Declined by Authority",
+          "sub": "Off route",
+          "semanticType": "endEvent",
+          "laneId": "uwauth",
+          "sourceIds": [],
+          "details": {
+            "desc": "Terminal: declined by authority.",
+            "note": "Off animated route."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": true,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "assemble-multi-option-quote",
+          "label": "Assemble Multi-Option Quote",
+          "sub": "Primary / Excess / QS",
+          "semanticType": "task",
+          "laneId": "uw",
+          "sourceIds": [
+            "Task_AssembleQuoteOptions"
+          ],
+          "details": {
+            "desc": "Compiles quote proposal: primary, excess layer, quota-share alternatives; premium options; conditions.",
+            "who": "Commercial Property Underwriter",
+            "note": "Maps to BPMN Task_AssembleQuoteOptions."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "deliver-quote-to-broker",
+          "label": "Deliver Quote to Broker",
+          "sub": "Formal proposal",
+          "semanticType": "task",
+          "laneId": "uw",
+          "sourceIds": [
+            "Task_IssueQuoteToBroker"
+          ],
+          "details": {
+            "desc": "Formal quote proposal transmitted to broker with subjectivities list.",
+            "note": "Maps to BPMN Task_IssueQuoteToBroker."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "broker-response",
+          "label": "Broker Response",
+          "sub": "Bind / Negotiate / Lost",
+          "semanticType": "gateway",
+          "laneId": "uw",
+          "sourceIds": [
+            "Gate_BrokerDecision"
+          ],
+          "details": {
+            "desc": "Gateway includes broker decision wait time (illustrative ~3–4 business days for large commercial).",
+            "decisionRules": [
+              "Bind order → process bind",
+              "Negotiate → return to layering",
+              "Declined/expired → lost"
+            ],
+            "dependencies": [
+              "Broker/insured decision cycle",
+              "Competing carrier quotes"
+            ],
+            "note": "Maps to BPMN Gate_BrokerDecision. Representative route selects BIND."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": true,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": "external"
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "submission-lost",
+          "label": "Submission Lost",
+          "sub": "Off route",
+          "semanticType": "endEvent",
+          "laneId": "uw",
+          "sourceIds": [],
+          "details": {
+            "desc": "Terminal: declined or expired.",
+            "note": "Off animated route."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": true,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "unknown",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "process-bind-order",
+          "label": "Process Bind Order",
+          "sub": "Review signed terms",
+          "semanticType": "task",
+          "laneId": "uw",
+          "sourceIds": [
+            "Task_ProcessBindOrder"
+          ],
+          "details": {
+            "desc": "UW receives bind order, reconciles against issued quote, notes any last-minute changes.",
+            "note": "Maps to BPMN Task_ProcessBindOrder."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "validate-subjectivities-ofac",
+          "label": "Validate Subjectivities & OFAC",
+          "sub": "Pre-bind clearance",
+          "semanticType": "task",
+          "laneId": "ua",
+          "sourceIds": [
+            "Task_ValidateSubjectivities"
+          ],
+          "details": {
+            "desc": "Reviews all pre-bind subjectivities cleared (COPE updates, financials, sanctions/OFAC screening).",
+            "who": "Underwriting Assistant / Compliance",
+            "controls": [
+              "OFAC/sanctions screening",
+              "Subjectivities log sign-off"
+            ],
+            "note": "Maps to BPMN Task_ValidateSubjectivities."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": true,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "issue-formal-binder",
+          "label": "Issue Formal Binder",
+          "sub": "Legal commitment",
+          "semanticType": "task",
+          "laneId": "uw",
+          "sourceIds": [
+            "Task_IssueFormalBinder"
+          ],
+          "details": {
+            "desc": "Executes legally binding binder confirmation to broker.",
+            "note": "Maps to BPMN Task_IssueFormalBinder."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "assemble-dec-sheet-forms-endorsements",
+          "label": "Assemble Dec Sheet, Forms & Endorsements",
+          "sub": "Policy compilation",
+          "semanticType": "task",
+          "laneId": "policyops",
+          "sourceIds": [
+            "Task_AssemblePolicyForms"
+          ],
+          "details": {
+            "desc": "Assembles the final policy package: dec sheet, schedule of forms, manuscript endorsements.",
+            "who": "Policy Operations Analyst",
+            "effort": "~2 business days",
+            "note": "Maps to BPMN Task_AssemblePolicyForms."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "qa-reinsurance-reconciliation",
+          "label": "QA & Reinsurance Reconciliation",
+          "sub": "Pre-issuance audit",
+          "semanticType": "task",
+          "laneId": "policyops",
+          "sourceIds": [
+            "Task_QualityAuditReconciliation"
+          ],
+          "details": {
+            "desc": "Independent QA on all policy fields; ceded reinsurance allocation verified against fac binder and treaty.",
+            "controls": [
+              "4-eyes QA",
+              "Ceded allocation reconciliation"
+            ],
+            "note": "Maps to BPMN Task_QualityAuditReconciliation."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": true,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "book-premium-in-pas-gl",
+          "label": "Book Premium in PAS & GL",
+          "sub": "System of record",
+          "semanticType": "task",
+          "laneId": "policyops",
+          "sourceIds": [
+            "Task_BookPolicyPASBilling"
+          ],
+          "details": {
+            "desc": "Books premium and commission in PAS, triggers GL accounting entries.",
+            "systems": [
+              "PAS",
+              "General Ledger"
+            ],
+            "note": "Maps to BPMN Task_BookPolicyPASBilling (service task)."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "deliver-policy-package-to-broker",
+          "label": "Deliver Policy Package to Broker",
+          "sub": "Contract transmission",
+          "semanticType": "task",
+          "laneId": "policyops",
+          "sourceIds": [
+            "Task_DeliverPolicyPackage"
+          ],
+          "details": {
+            "desc": "Transmits executed policy contract to broker.",
+            "note": "Maps to BPMN Task_DeliverPolicyPackage."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "policy-in-force-serviced",
+          "label": "Policy In Force & Serviced",
+          "sub": "Terminal",
+          "semanticType": "endEvent",
+          "laneId": "policyops",
+          "sourceIds": [
+            "End_PolicyIssuedInForce"
+          ],
+          "details": {
+            "desc": "Policy in force. Ongoing servicing begins.",
+            "note": "Maps to BPMN End_PolicyIssuedInForce."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "source-document",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-source-bpmn"
+            ],
+            "note": "Structure from the source BPMN. Timings are estimates."
+          },
+          "lineage": null,
+          "removed": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-submission-received-check-clearance-dedup",
+          "from": "submission-received",
+          "to": "check-clearance-dedup",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-check-clearance-dedup-clearance-approved",
+          "from": "check-clearance-dedup",
+          "to": "clearance-approved",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-clearance-approved-send-decline-letter",
+          "from": "clearance-approved",
+          "to": "send-decline-letter",
+          "label": "Conflict",
+          "semanticType": "conditional",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-clearance-approved-scrub-sov-geocode",
+          "from": "clearance-approved",
+          "to": "scrub-sov-geocode",
+          "label": "Clear",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-send-decline-letter-rejected-clearance-appetite",
+          "from": "send-decline-letter",
+          "to": "rejected-clearance-appetite",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-scrub-sov-geocode-appetite-capacity-triage",
+          "from": "scrub-sov-geocode",
+          "to": "appetite-capacity-triage",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-appetite-capacity-triage-within-appetite",
+          "from": "appetite-capacity-triage",
+          "to": "within-appetite",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-within-appetite-send-decline-letter",
+          "from": "within-appetite",
+          "to": "send-decline-letter",
+          "label": "Out of Appetite",
+          "semanticType": "conditional",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-within-appetite-assign-to-underwriter",
+          "from": "within-appetite",
+          "to": "assign-to-underwriter",
+          "label": "In Appetite",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-assign-to-underwriter-review-cope-exposure-loss-runs",
+          "from": "assign-to-underwriter",
+          "to": "review-cope-exposure-loss-runs",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-review-cope-exposure-loss-runs-initiate-parallel-analysis",
+          "from": "review-cope-exposure-loss-runs",
+          "to": "initiate-parallel-analysis",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-initiate-parallel-analysis-desk-review-cope-protections",
+          "from": "initiate-parallel-analysis",
+          "to": "desk-review-cope-protections",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-initiate-parallel-analysis-ingest-sov-into-cat-platform",
+          "from": "initiate-parallel-analysis",
+          "to": "ingest-sov-into-cat-platform",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-desk-review-cope-protections-on-site-survey-needed",
+          "from": "desk-review-cope-protections",
+          "to": "on-site-survey-needed",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-on-site-survey-needed-perform-on-site-loss-prevention-survey",
+          "from": "on-site-survey-needed",
+          "to": "perform-on-site-loss-prevention-survey",
+          "label": "Survey Required",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-on-site-survey-needed-publish-risk-report-pml-mfl-recs",
+          "from": "on-site-survey-needed",
+          "to": "publish-risk-report-pml-mfl-recs",
+          "label": "Desk Only",
+          "semanticType": "conditional",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-perform-on-site-loss-prevention-survey-publish-risk-report-pml-mfl-recs",
+          "from": "perform-on-site-loss-prevention-survey",
+          "to": "publish-risk-report-pml-mfl-recs",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-publish-risk-report-pml-mfl-recs-risk-insights-reunited",
+          "from": "publish-risk-report-pml-mfl-recs",
+          "to": "risk-insights-reunited",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-ingest-sov-into-cat-platform-run-wind-flood-quake-aal-pml",
+          "from": "ingest-sov-into-cat-platform",
+          "to": "run-wind-flood-quake-aal-pml",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-run-wind-flood-quake-aal-pml-risk-insights-reunited",
+          "from": "run-wind-flood-quake-aal-pml",
+          "to": "risk-insights-reunited",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-risk-insights-reunited-determine-layering-participation",
+          "from": "risk-insights-reunited",
+          "to": "determine-layering-participation",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-determine-layering-participation-technical-pricing-rating",
+          "from": "determine-layering-participation",
+          "to": "technical-pricing-rating",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-technical-pricing-rating-select-forms-endorsements",
+          "from": "technical-pricing-rating",
+          "to": "select-forms-endorsements",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-select-forms-endorsements-fac-reinsurance-required",
+          "from": "select-forms-endorsements",
+          "to": "fac-reinsurance-required",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-fac-reinsurance-required-structure-fac-placement-slip",
+          "from": "fac-reinsurance-required",
+          "to": "structure-fac-placement-slip",
+          "label": "Yes",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-fac-reinsurance-required-exceeds-uw-authority",
+          "from": "fac-reinsurance-required",
+          "to": "exceeds-uw-authority",
+          "label": "No (Treaty Fits)",
+          "semanticType": "conditional",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-structure-fac-placement-slip-obtain-fac-binder-from-market",
+          "from": "structure-fac-placement-slip",
+          "to": "obtain-fac-binder-from-market",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-obtain-fac-binder-from-market-exceeds-uw-authority",
+          "from": "obtain-fac-binder-from-market",
+          "to": "exceeds-uw-authority",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-exceeds-uw-authority-review-technical-referral",
+          "from": "exceeds-uw-authority",
+          "to": "review-technical-referral",
+          "label": "Exceeds Authority",
+          "semanticType": "conditional",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-exceeds-uw-authority-assemble-multi-option-quote",
+          "from": "exceeds-uw-authority",
+          "to": "assemble-multi-option-quote",
+          "label": "Within Authority",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-review-technical-referral-authority-sign-off",
+          "from": "review-technical-referral",
+          "to": "authority-sign-off",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-authority-sign-off-risk-declined-by-authority",
+          "from": "authority-sign-off",
+          "to": "risk-declined-by-authority",
+          "label": "Declined",
+          "semanticType": "conditional",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-authority-sign-off-assemble-multi-option-quote",
+          "from": "authority-sign-off",
+          "to": "assemble-multi-option-quote",
+          "label": "Approved",
+          "semanticType": "conditional",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-assemble-multi-option-quote-deliver-quote-to-broker",
+          "from": "assemble-multi-option-quote",
+          "to": "deliver-quote-to-broker",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-deliver-quote-to-broker-broker-response",
+          "from": "deliver-quote-to-broker",
+          "to": "broker-response",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-broker-response-submission-lost",
+          "from": "broker-response",
+          "to": "submission-lost",
+          "label": "Lost",
+          "semanticType": "conditional",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-broker-response-determine-layering-participation",
+          "from": "broker-response",
+          "to": "determine-layering-participation",
+          "label": "Negotiate",
+          "semanticType": "loop",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-broker-response-process-bind-order",
+          "from": "broker-response",
+          "to": "process-bind-order",
+          "label": "Bind Order",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-process-bind-order-validate-subjectivities-ofac",
+          "from": "process-bind-order",
+          "to": "validate-subjectivities-ofac",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-validate-subjectivities-ofac-issue-formal-binder",
+          "from": "validate-subjectivities-ofac",
+          "to": "issue-formal-binder",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-issue-formal-binder-assemble-dec-sheet-forms-endorsements",
+          "from": "issue-formal-binder",
+          "to": "assemble-dec-sheet-forms-endorsements",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-assemble-dec-sheet-forms-endorsements-qa-reinsurance-reconciliation",
+          "from": "assemble-dec-sheet-forms-endorsements",
+          "to": "qa-reinsurance-reconciliation",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-qa-reinsurance-reconciliation-book-premium-in-pas-gl",
+          "from": "qa-reinsurance-reconciliation",
+          "to": "book-premium-in-pas-gl",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-book-premium-in-pas-gl-deliver-policy-package-to-broker",
+          "from": "book-premium-in-pas-gl",
+          "to": "deliver-policy-package-to-broker",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-deliver-policy-package-to-broker-policy-in-force-serviced",
+          "from": "deliver-policy-package-to-broker",
+          "to": "policy-in-force-serviced",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        }
+      ],
+      "presentation": {
+        "laneHeight": null,
+        "nodes": {
+          "submission-received": {
+            "x": 0
+          },
+          "check-clearance-dedup": {
+            "x": 1
+          },
+          "clearance-approved": {
+            "x": 2
+          },
+          "send-decline-letter": {
+            "x": 3
+          },
+          "rejected-clearance-appetite": {
+            "x": 4
+          },
+          "scrub-sov-geocode": {
+            "x": 4
+          },
+          "appetite-capacity-triage": {
+            "x": 5
+          },
+          "within-appetite": {
+            "x": 6
+          },
+          "assign-to-underwriter": {
+            "x": 7
+          },
+          "review-cope-exposure-loss-runs": {
+            "x": 8
+          },
+          "initiate-parallel-analysis": {
+            "x": 9
+          },
+          "desk-review-cope-protections": {
+            "x": 10
+          },
+          "on-site-survey-needed": {
+            "x": 11
+          },
+          "perform-on-site-loss-prevention-survey": {
+            "x": 12
+          },
+          "publish-risk-report-pml-mfl-recs": {
+            "x": 13
+          },
+          "ingest-sov-into-cat-platform": {
+            "x": 10
+          },
+          "run-wind-flood-quake-aal-pml": {
+            "x": 11
+          },
+          "risk-insights-reunited": {
+            "x": 12
+          },
+          "determine-layering-participation": {
+            "x": 13
+          },
+          "technical-pricing-rating": {
+            "x": 14
+          },
+          "select-forms-endorsements": {
+            "x": 15
+          },
+          "fac-reinsurance-required": {
+            "x": 16
+          },
+          "structure-fac-placement-slip": {
+            "x": 17
+          },
+          "obtain-fac-binder-from-market": {
+            "x": 18
+          },
+          "exceeds-uw-authority": {
+            "x": 19
+          },
+          "review-technical-referral": {
+            "x": 20
+          },
+          "authority-sign-off": {
+            "x": 21
+          },
+          "risk-declined-by-authority": {
+            "x": 22
+          },
+          "assemble-multi-option-quote": {
+            "x": 20
+          },
+          "deliver-quote-to-broker": {
+            "x": 21
+          },
+          "broker-response": {
+            "x": 22
+          },
+          "submission-lost": {
+            "x": 23
+          },
+          "process-bind-order": {
+            "x": 23
+          },
+          "validate-subjectivities-ofac": {
+            "x": 24
+          },
+          "issue-formal-binder": {
+            "x": 25
+          },
+          "assemble-dec-sheet-forms-endorsements": {
+            "x": 26
+          },
+          "qa-reinsurance-reconciliation": {
+            "x": 27
+          },
+          "book-premium-in-pas-gl": {
+            "x": 28
+          },
+          "deliver-policy-package-to-broker": {
+            "x": 29
+          },
+          "policy-in-force-serviced": {
+            "x": 30
+          }
+        }
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "case-3",
+      "name": "National Manufacturing Schedule, $1B TIV (Representative)",
+      "statusLabel": "Illustrative, representative",
+      "statusTone": "progress",
+      "provenance": "illustrative",
+      "summary": "Illustrative: 120-location multi-state, wind & convective storm exposure, fac required",
+      "attributes": [
+        {
+          "label": "Exposure",
+          "value": "$1B TIV / $12.5M premium"
+        }
+      ],
+      "timing": {
+        "method": "proportional-scale",
+        "note": "Timings scale one representative route to this case's total; the route itself does not change between cases."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v-submission-received",
+              "nodeId": "submission-received",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v-check-clearance-dedup",
+              "nodeId": "check-clearance-dedup",
+              "start": 0,
+              "end": 120
+            },
+            {
+              "id": "v-clearance-approved",
+              "nodeId": "clearance-approved",
+              "start": 120,
+              "end": 120
+            },
+            {
+              "id": "v-scrub-sov-geocode",
+              "nodeId": "scrub-sov-geocode",
+              "start": 120,
+              "end": 480
+            },
+            {
+              "id": "v-appetite-capacity-triage",
+              "nodeId": "appetite-capacity-triage",
+              "start": 480,
+              "end": 600
+            },
+            {
+              "id": "v-within-appetite",
+              "nodeId": "within-appetite",
+              "start": 600,
+              "end": 600
+            },
+            {
+              "id": "v-assign-to-underwriter",
+              "nodeId": "assign-to-underwriter",
+              "start": 600,
+              "end": 720
+            },
+            {
+              "id": "v-review-cope-exposure-loss-runs",
+              "nodeId": "review-cope-exposure-loss-runs",
+              "start": 720,
+              "end": 1680
+            },
+            {
+              "id": "v-initiate-parallel-analysis",
+              "nodeId": "initiate-parallel-analysis",
+              "start": 1680,
+              "end": 1680
+            },
+            {
+              "id": "v-desk-review-cope-protections",
+              "nodeId": "desk-review-cope-protections",
+              "start": 1680,
+              "end": 2160
+            },
+            {
+              "id": "v-on-site-survey-needed",
+              "nodeId": "on-site-survey-needed",
+              "start": 2160,
+              "end": 2160
+            },
+            {
+              "id": "v-perform-on-site-loss-prevention-survey",
+              "nodeId": "perform-on-site-loss-prevention-survey",
+              "start": 2160,
+              "end": 4560
+            },
+            {
+              "id": "v-publish-risk-report-pml-mfl-recs",
+              "nodeId": "publish-risk-report-pml-mfl-recs",
+              "start": 4560,
+              "end": 5040
+            },
+            {
+              "id": "v-ingest-sov-into-cat-platform",
+              "nodeId": "ingest-sov-into-cat-platform",
+              "start": 1680,
+              "end": 1920
+            },
+            {
+              "id": "v-run-wind-flood-quake-aal-pml",
+              "nodeId": "run-wind-flood-quake-aal-pml",
+              "start": 1920,
+              "end": 2880
+            },
+            {
+              "id": "v-risk-insights-reunited",
+              "nodeId": "risk-insights-reunited",
+              "start": 5040,
+              "end": 5040
+            },
+            {
+              "id": "v-determine-layering-participation",
+              "nodeId": "determine-layering-participation",
+              "start": 5040,
+              "end": 5520
+            },
+            {
+              "id": "v-technical-pricing-rating",
+              "nodeId": "technical-pricing-rating",
+              "start": 5520,
+              "end": 6240
+            },
+            {
+              "id": "v-select-forms-endorsements",
+              "nodeId": "select-forms-endorsements",
+              "start": 6240,
+              "end": 6720
+            },
+            {
+              "id": "v-fac-reinsurance-required",
+              "nodeId": "fac-reinsurance-required",
+              "start": 6720,
+              "end": 6720
+            },
+            {
+              "id": "v-structure-fac-placement-slip",
+              "nodeId": "structure-fac-placement-slip",
+              "start": 6720,
+              "end": 7200
+            },
+            {
+              "id": "v-obtain-fac-binder-from-market",
+              "nodeId": "obtain-fac-binder-from-market",
+              "start": 7200,
+              "end": 9120
+            },
+            {
+              "id": "v-exceeds-uw-authority",
+              "nodeId": "exceeds-uw-authority",
+              "start": 9120,
+              "end": 9120
+            },
+            {
+              "id": "v-assemble-multi-option-quote",
+              "nodeId": "assemble-multi-option-quote",
+              "start": 9120,
+              "end": 9600
+            },
+            {
+              "id": "v-deliver-quote-to-broker",
+              "nodeId": "deliver-quote-to-broker",
+              "start": 9600,
+              "end": 9720
+            },
+            {
+              "id": "v-broker-response",
+              "nodeId": "broker-response",
+              "start": 9720,
+              "end": 11640
+            },
+            {
+              "id": "v-process-bind-order",
+              "nodeId": "process-bind-order",
+              "start": 11640,
+              "end": 12120
+            },
+            {
+              "id": "v-validate-subjectivities-ofac",
+              "nodeId": "validate-subjectivities-ofac",
+              "start": 12120,
+              "end": 13080
+            },
+            {
+              "id": "v-issue-formal-binder",
+              "nodeId": "issue-formal-binder",
+              "start": 13080,
+              "end": 13200
+            },
+            {
+              "id": "v-assemble-dec-sheet-forms-endorsements",
+              "nodeId": "assemble-dec-sheet-forms-endorsements",
+              "start": 13200,
+              "end": 14160
+            },
+            {
+              "id": "v-qa-reinsurance-reconciliation",
+              "nodeId": "qa-reinsurance-reconciliation",
+              "start": 14160,
+              "end": 14880
+            },
+            {
+              "id": "v-book-premium-in-pas-gl",
+              "nodeId": "book-premium-in-pas-gl",
+              "start": 14880,
+              "end": 15120
+            },
+            {
+              "id": "v-deliver-policy-package-to-broker",
+              "nodeId": "deliver-policy-package-to-broker",
+              "start": 15120,
+              "end": 15360
+            },
+            {
+              "id": "v-policy-in-force-serviced",
+              "nodeId": "policy-in-force-serviced",
+              "start": 15360,
+              "end": 15360
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-submission-received-check-clearance-dedup",
+              "fromVisitId": "v-submission-received",
+              "toVisitId": "v-check-clearance-dedup"
+            },
+            {
+              "edgeId": "e-check-clearance-dedup-clearance-approved",
+              "fromVisitId": "v-check-clearance-dedup",
+              "toVisitId": "v-clearance-approved"
+            },
+            {
+              "edgeId": "e-clearance-approved-scrub-sov-geocode",
+              "fromVisitId": "v-clearance-approved",
+              "toVisitId": "v-scrub-sov-geocode"
+            },
+            {
+              "edgeId": "e-scrub-sov-geocode-appetite-capacity-triage",
+              "fromVisitId": "v-scrub-sov-geocode",
+              "toVisitId": "v-appetite-capacity-triage"
+            },
+            {
+              "edgeId": "e-appetite-capacity-triage-within-appetite",
+              "fromVisitId": "v-appetite-capacity-triage",
+              "toVisitId": "v-within-appetite"
+            },
+            {
+              "edgeId": "e-within-appetite-assign-to-underwriter",
+              "fromVisitId": "v-within-appetite",
+              "toVisitId": "v-assign-to-underwriter"
+            },
+            {
+              "edgeId": "e-assign-to-underwriter-review-cope-exposure-loss-runs",
+              "fromVisitId": "v-assign-to-underwriter",
+              "toVisitId": "v-review-cope-exposure-loss-runs"
+            },
+            {
+              "edgeId": "e-review-cope-exposure-loss-runs-initiate-parallel-analysis",
+              "fromVisitId": "v-review-cope-exposure-loss-runs",
+              "toVisitId": "v-initiate-parallel-analysis"
+            },
+            {
+              "edgeId": "e-initiate-parallel-analysis-desk-review-cope-protections",
+              "fromVisitId": "v-initiate-parallel-analysis",
+              "toVisitId": "v-desk-review-cope-protections"
+            },
+            {
+              "edgeId": "e-initiate-parallel-analysis-ingest-sov-into-cat-platform",
+              "fromVisitId": "v-initiate-parallel-analysis",
+              "toVisitId": "v-ingest-sov-into-cat-platform"
+            },
+            {
+              "edgeId": "e-ingest-sov-into-cat-platform-run-wind-flood-quake-aal-pml",
+              "fromVisitId": "v-ingest-sov-into-cat-platform",
+              "toVisitId": "v-run-wind-flood-quake-aal-pml"
+            },
+            {
+              "edgeId": "e-desk-review-cope-protections-on-site-survey-needed",
+              "fromVisitId": "v-desk-review-cope-protections",
+              "toVisitId": "v-on-site-survey-needed"
+            },
+            {
+              "edgeId": "e-on-site-survey-needed-perform-on-site-loss-prevention-survey",
+              "fromVisitId": "v-on-site-survey-needed",
+              "toVisitId": "v-perform-on-site-loss-prevention-survey"
+            },
+            {
+              "edgeId": "e-perform-on-site-loss-prevention-survey-publish-risk-report-pml-mfl-recs",
+              "fromVisitId": "v-perform-on-site-loss-prevention-survey",
+              "toVisitId": "v-publish-risk-report-pml-mfl-recs"
+            },
+            {
+              "edgeId": "e-publish-risk-report-pml-mfl-recs-risk-insights-reunited",
+              "fromVisitId": "v-publish-risk-report-pml-mfl-recs",
+              "toVisitId": "v-risk-insights-reunited"
+            },
+            {
+              "edgeId": "e-run-wind-flood-quake-aal-pml-risk-insights-reunited",
+              "fromVisitId": "v-run-wind-flood-quake-aal-pml",
+              "toVisitId": "v-risk-insights-reunited"
+            },
+            {
+              "edgeId": "e-risk-insights-reunited-determine-layering-participation",
+              "fromVisitId": "v-risk-insights-reunited",
+              "toVisitId": "v-determine-layering-participation"
+            },
+            {
+              "edgeId": "e-determine-layering-participation-technical-pricing-rating",
+              "fromVisitId": "v-determine-layering-participation",
+              "toVisitId": "v-technical-pricing-rating"
+            },
+            {
+              "edgeId": "e-technical-pricing-rating-select-forms-endorsements",
+              "fromVisitId": "v-technical-pricing-rating",
+              "toVisitId": "v-select-forms-endorsements"
+            },
+            {
+              "edgeId": "e-select-forms-endorsements-fac-reinsurance-required",
+              "fromVisitId": "v-select-forms-endorsements",
+              "toVisitId": "v-fac-reinsurance-required"
+            },
+            {
+              "edgeId": "e-fac-reinsurance-required-structure-fac-placement-slip",
+              "fromVisitId": "v-fac-reinsurance-required",
+              "toVisitId": "v-structure-fac-placement-slip"
+            },
+            {
+              "edgeId": "e-structure-fac-placement-slip-obtain-fac-binder-from-market",
+              "fromVisitId": "v-structure-fac-placement-slip",
+              "toVisitId": "v-obtain-fac-binder-from-market"
+            },
+            {
+              "edgeId": "e-obtain-fac-binder-from-market-exceeds-uw-authority",
+              "fromVisitId": "v-obtain-fac-binder-from-market",
+              "toVisitId": "v-exceeds-uw-authority"
+            },
+            {
+              "edgeId": "e-exceeds-uw-authority-assemble-multi-option-quote",
+              "fromVisitId": "v-exceeds-uw-authority",
+              "toVisitId": "v-assemble-multi-option-quote"
+            },
+            {
+              "edgeId": "e-assemble-multi-option-quote-deliver-quote-to-broker",
+              "fromVisitId": "v-assemble-multi-option-quote",
+              "toVisitId": "v-deliver-quote-to-broker"
+            },
+            {
+              "edgeId": "e-deliver-quote-to-broker-broker-response",
+              "fromVisitId": "v-deliver-quote-to-broker",
+              "toVisitId": "v-broker-response"
+            },
+            {
+              "edgeId": "e-broker-response-process-bind-order",
+              "fromVisitId": "v-broker-response",
+              "toVisitId": "v-process-bind-order"
+            },
+            {
+              "edgeId": "e-process-bind-order-validate-subjectivities-ofac",
+              "fromVisitId": "v-process-bind-order",
+              "toVisitId": "v-validate-subjectivities-ofac"
+            },
+            {
+              "edgeId": "e-validate-subjectivities-ofac-issue-formal-binder",
+              "fromVisitId": "v-validate-subjectivities-ofac",
+              "toVisitId": "v-issue-formal-binder"
+            },
+            {
+              "edgeId": "e-issue-formal-binder-assemble-dec-sheet-forms-endorsements",
+              "fromVisitId": "v-issue-formal-binder",
+              "toVisitId": "v-assemble-dec-sheet-forms-endorsements"
+            },
+            {
+              "edgeId": "e-assemble-dec-sheet-forms-endorsements-qa-reinsurance-reconciliation",
+              "fromVisitId": "v-assemble-dec-sheet-forms-endorsements",
+              "toVisitId": "v-qa-reinsurance-reconciliation"
+            },
+            {
+              "edgeId": "e-qa-reinsurance-reconciliation-book-premium-in-pas-gl",
+              "fromVisitId": "v-qa-reinsurance-reconciliation",
+              "toVisitId": "v-book-premium-in-pas-gl"
+            },
+            {
+              "edgeId": "e-book-premium-in-pas-gl-deliver-policy-package-to-broker",
+              "fromVisitId": "v-book-premium-in-pas-gl",
+              "toVisitId": "v-deliver-policy-package-to-broker"
+            },
+            {
+              "edgeId": "e-deliver-policy-package-to-broker-policy-in-force-serviced",
+              "fromVisitId": "v-deliver-policy-package-to-broker",
+              "toVisitId": "v-policy-in-force-serviced"
+            }
+          ],
+          "membership": {
+            "submission-received": "included",
+            "check-clearance-dedup": "included",
+            "clearance-approved": "included",
+            "send-decline-letter": "excluded",
+            "rejected-clearance-appetite": "excluded",
+            "scrub-sov-geocode": "included",
+            "appetite-capacity-triage": "included",
+            "within-appetite": "included",
+            "assign-to-underwriter": "included",
+            "review-cope-exposure-loss-runs": "included",
+            "initiate-parallel-analysis": "included",
+            "desk-review-cope-protections": "included",
+            "on-site-survey-needed": "included",
+            "perform-on-site-loss-prevention-survey": "included",
+            "publish-risk-report-pml-mfl-recs": "included",
+            "ingest-sov-into-cat-platform": "included",
+            "run-wind-flood-quake-aal-pml": "included",
+            "risk-insights-reunited": "included",
+            "determine-layering-participation": "included",
+            "technical-pricing-rating": "included",
+            "select-forms-endorsements": "included",
+            "fac-reinsurance-required": "included",
+            "structure-fac-placement-slip": "included",
+            "obtain-fac-binder-from-market": "included",
+            "exceeds-uw-authority": "included",
+            "review-technical-referral": "excluded",
+            "authority-sign-off": "excluded",
+            "risk-declined-by-authority": "excluded",
+            "assemble-multi-option-quote": "included",
+            "deliver-quote-to-broker": "included",
+            "broker-response": "included",
+            "submission-lost": "excluded",
+            "process-bind-order": "included",
+            "validate-subjectivities-ofac": "included",
+            "issue-formal-binder": "included",
+            "assemble-dec-sheet-forms-endorsements": "included",
+            "qa-reinsurance-reconciliation": "included",
+            "book-premium-in-pas-gl": "included",
+            "deliver-policy-package-to-broker": "included",
+            "policy-in-force-serviced": "included"
+          },
+          "pauseAt": null,
+          "milestones": {
+            "ms-received": 0,
+            "ms-cleared": 720,
+            "ms-assessed": 5040,
+            "ms-quoted": 9720,
+            "ms-bound": 13200,
+            "ms-issued": 15360
+          }
+        }
+      },
+      "measures": [
+        {
+          "key": "cycleTime",
+          "label": "Cycle time",
+          "unit": "businessDay",
+          "values": {
+            "m-current": 32
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": ""
+        },
+        {
+          "key": "humanTouch",
+          "label": "Human touch effort",
+          "unit": "hour",
+          "values": {
+            "m-current": 55
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": ""
+        },
+        {
+          "key": "handoffs",
+          "label": "Handoffs",
+          "unit": "count",
+          "values": {
+            "m-current": 19
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": ""
+        },
+        {
+          "key": "external-waits",
+          "label": "External waits",
+          "unit": "day",
+          "values": {
+            "m-current": 11
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": ""
+        }
+      ],
+      "economics": null
+    }
+  ],
+  "records": [],
+  "evidence": [
+    {
+      "id": "ev-source-bpmn",
+      "title": "large-commercial-property-sample-underwriting-master-gemflash.bpmn",
+      "locator": "Named in the source process.js header; the file is not in the repository.",
+      "extractedFact": "40 flow nodes across 7 lanes: node identity, lanes, sequence flows, gateway outcomes, parallel fork and join, the negotiate loop, the external facultative market dependency, authority referral and the subjectivities gate.",
+      "status": "unavailable",
+      "reviewer": "",
+      "reviewDate": "",
+      "link": null
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "as-hourly-rate",
+      "key": "hourlyRate",
+      "label": "Fully loaded hourly rate",
+      "value": 150,
+      "unit": "currencyPerHour",
+      "status": "illustrative",
+      "source": "Declared in the source process.js header",
+      "note": ""
+    },
+    {
+      "id": "as-annual-volume",
+      "key": "annualVolume",
+      "label": "Annual eligible volume",
+      "value": 400,
+      "unit": "casesPerYear",
+      "status": "illustrative",
+      "source": "Declared in the source process.js header",
+      "note": ""
+    },
+    {
+      "id": "as-productive-hours-per-fte",
+      "key": "productiveHoursPerFte",
+      "label": "Productive hours per FTE per year",
+      "value": 1800,
+      "unit": "hoursPerYear",
+      "status": "illustrative",
+      "source": "Declared in the source process.js header",
+      "note": ""
+    }
+  ],
+  "narratives": [],
+  "migration": {
+    "sourceFormat": "racer window.PROCESS (independent lanes)",
+    "sourceFiles": [
+      "archive/racer-v2-astra/process.js"
+    ],
+    "convertedAt": "2026-09-25T00:00:00.000Z",
+    "warnings": [
+      {
+        "code": "semantic.gateway",
+        "message": "Current state: gateway \"Authority Sign-off?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "path": "authority-sign-off"
+      },
+      {
+        "code": "semantic.gateway",
+        "message": "Current state: gateway \"Broker Response\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "path": "broker-response"
+      },
+      {
+        "code": "membership.documented",
+        "message": "Current state: 6 off-route steps are marked Not in scenario, as the source documents (Send Decline Letter, Rejected (Clearance/Appetite), Review Technical Referral, Authority Sign-off?, Risk Declined by Authority, Submission Lost).",
+        "path": ""
+      },
+      {
+        "code": "unit.convention",
+        "message": "Mid-Market Manufacturing, $150M TIV: \"External waits (days)\" does not say whether days are business or calendar days; shown as days.",
+        "path": ""
+      },
+      {
+        "code": "unit.convention",
+        "message": "Regional Retail Portfolio, $500M TIV: \"External waits (days)\" does not say whether days are business or calendar days; shown as days.",
+        "path": ""
+      },
+      {
+        "code": "unit.convention",
+        "message": "National Manufacturing Schedule, $1B TIV (Representative): \"External waits (days)\" does not say whether days are business or calendar days; shown as days.",
+        "path": ""
+      },
+      {
+        "code": "unit.convention",
+        "message": "Multi-State Industrial, $2B TIV: \"External waits (days)\" does not say whether days are business or calendar days; shown as days.",
+        "path": ""
+      },
+      {
+        "code": "unit.convention",
+        "message": "Global Industrial Portfolio, $3.5B TIV: \"External waits (days)\" does not say whether days are business or calendar days; shown as days.",
+        "path": ""
+      },
+      {
+        "code": "timing.scaled",
+        "message": "All 5 cases scale the same representative route. Selecting a case changes timing, not routing.",
+        "path": ""
+      }
+    ]
+  }
+}

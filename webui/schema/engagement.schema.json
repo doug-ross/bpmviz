@@ -1,0 +1,1492 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bpmviz.local/schema/engagement.schema.json",
+  "title": "BPMVIZ engagement",
+  "description": "Portable engagement file for the BPMVIZ process workshop workbench, schema version 1. The validator in webui/js/lib/validate.js enforces this contract and also checks references between objects, timing and economic reconciliation, which JSON Schema cannot express.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "id",
+    "meta",
+    "models"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "bpmviz.engagement"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "$ref": "#/$defs/id"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Increments on every business change."
+    },
+    "createdAt": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "updatedAt": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    },
+    "milestones": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "$ref": "#/$defs/milestone"
+      }
+    },
+    "models": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "$ref": "#/$defs/model"
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    },
+    "records": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/record"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "$ref": "#/$defs/assumption"
+      }
+    },
+    "narratives": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "$ref": "#/$defs/narrative"
+      }
+    },
+    "migration": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/migration"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "clientDisplayName": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "engagementName": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "processName": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "confidentiality": {
+          "enum": [
+            "internal",
+            "client-confidential",
+            "restricted",
+            "public"
+          ]
+        },
+        "dataStatus": {
+          "enum": [
+            "demonstration",
+            "supplied",
+            "observed"
+          ]
+        },
+        "timeBasis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "unit",
+            "calendar"
+          ],
+          "properties": {
+            "unit": {
+              "const": "minute"
+            },
+            "calendar": {
+              "enum": [
+                "calendar",
+                "business"
+              ]
+            },
+            "businessMinutesPerDay": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 1440
+            }
+          }
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "disclosure": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "credits": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "milestone": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "position": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "lane": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "role": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "type": {
+          "enum": [
+            "human",
+            "agent",
+            "external"
+          ]
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "semanticType",
+        "laneId"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "sub": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "semanticType": {
+          "enum": [
+            "startEvent",
+            "messageStartEvent",
+            "timerStartEvent",
+            "endEvent",
+            "terminateEndEvent",
+            "intermediateEvent",
+            "messageEvent",
+            "task",
+            "userTask",
+            "manualTask",
+            "serviceTask",
+            "scriptTask",
+            "businessRuleTask",
+            "sendTask",
+            "receiveTask",
+            "subProcess",
+            "callActivity",
+            "exclusiveGateway",
+            "parallelGateway",
+            "inclusiveGateway",
+            "eventBasedGateway",
+            "gateway",
+            "unsupported"
+          ],
+          "description": "Other values load as 'unsupported' with a warning."
+        },
+        "sourceType": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "laneId": {
+          "$ref": "#/$defs/id"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": "IDs of the source BPMN elements this step represents."
+        },
+        "details": {
+          "type": "object",
+          "description": "Free-form business detail. Known keys: desc, who, owner, authority, systems, inputs, outputs, activities, pain, controls, risks, exceptions, escalation, decisionRules, audit, kpis, volume, sla, effort, handoff, dependencies, note, evidence, assumptions, confidence, dataQuality."
+        },
+        "tags": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "bottleneck": {
+              "type": "boolean"
+            },
+            "agent": {
+              "type": "boolean"
+            },
+            "humanReview": {
+              "type": "boolean"
+            },
+            "optional": {
+              "type": "boolean"
+            },
+            "sampled": {
+              "type": "boolean"
+            }
+          }
+        },
+        "measures": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "typicalDuration": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "required": [
+                "value",
+                "unit"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "unit": {
+                  "enum": [
+                    "minute",
+                    "businessMinute",
+                    "hour",
+                    "businessDay",
+                    "calendarDay",
+                    "day",
+                    "week",
+                    "count",
+                    "perDay",
+                    "percent",
+                    "currency",
+                    "currencyPerHour",
+                    "fte",
+                    "casesPerYear",
+                    "hoursPerYear",
+                    "text"
+                  ]
+                }
+              }
+            },
+            "slaTarget": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "required": [
+                "value",
+                "unit"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "unit": {
+                  "enum": [
+                    "minute",
+                    "businessMinute",
+                    "hour",
+                    "businessDay",
+                    "calendarDay",
+                    "day",
+                    "week",
+                    "count",
+                    "perDay",
+                    "percent",
+                    "currency",
+                    "currencyPerHour",
+                    "fte",
+                    "casesPerYear",
+                    "hoursPerYear",
+                    "text"
+                  ]
+                }
+              }
+            },
+            "touchEffort": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "required": [
+                "value",
+                "unit"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "unit": {
+                  "enum": [
+                    "minute",
+                    "businessMinute",
+                    "hour",
+                    "businessDay",
+                    "calendarDay",
+                    "day",
+                    "week",
+                    "count",
+                    "perDay",
+                    "percent",
+                    "currency",
+                    "currencyPerHour",
+                    "fte",
+                    "casesPerYear",
+                    "hoursPerYear",
+                    "text"
+                  ]
+                }
+              }
+            },
+            "waitType": {
+              "enum": [
+                "",
+                "none",
+                "queue",
+                "external",
+                "other"
+              ]
+            }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "source": {
+              "enum": [
+                "unknown",
+                "source-document",
+                "client",
+                "consultant-estimate",
+                "generated",
+                "workshop"
+              ]
+            },
+            "validation": {
+              "enum": [
+                "unvalidated",
+                "validated",
+                "disputed"
+              ]
+            },
+            "evidenceRefs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/id"
+              }
+            },
+            "note": {
+              "type": "string",
+              "maxLength": 4000
+            }
+          }
+        },
+        "lineage": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "baselineNodeId": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/id"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "change": {
+                  "enum": [
+                    "unchanged",
+                    "modified",
+                    "added",
+                    "removed"
+                  ]
+                },
+                "rationale": {
+                  "type": "string",
+                  "maxLength": 4000
+                }
+              }
+            }
+          ]
+        },
+        "removed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": [
+        "id",
+        "from",
+        "to"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "from": {
+          "$ref": "#/$defs/id"
+        },
+        "to": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "semanticType": {
+          "enum": [
+            "sequence",
+            "conditional",
+            "default",
+            "loop",
+            "sample",
+            "message"
+          ]
+        },
+        "dashed": {
+          "type": "boolean"
+        },
+        "emphasis": {
+          "enum": [
+            "",
+            "early"
+          ]
+        },
+        "removed": {
+          "type": "boolean"
+        },
+        "lineage": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "change": {
+                  "enum": [
+                    "unchanged",
+                    "modified",
+                    "added",
+                    "removed"
+                  ]
+                },
+                "rationale": {
+                  "type": "string",
+                  "maxLength": 4000
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "required": [
+        "id",
+        "role",
+        "lanes",
+        "nodes",
+        "edges"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "role": {
+          "enum": [
+            "current",
+            "future"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "enum": [
+            "baseline",
+            "draft",
+            "proposed"
+          ]
+        },
+        "locked": {
+          "type": "boolean",
+          "description": "True for a baseline that a future-state draft is based on."
+        },
+        "basedOn": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "modelId": {
+                  "$ref": "#/$defs/id"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          ]
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "generated": {
+          "$ref": "#/$defs/generated"
+        },
+        "lanes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 60,
+          "items": {
+            "$ref": "#/$defs/lane"
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2000,
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "$ref": "#/$defs/edge"
+          }
+        },
+        "presentation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "laneHeight": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 60,
+              "maximum": 400
+            },
+            "nodes": {
+              "type": "object",
+              "description": "Column position per step ID; fractions are allowed. Steps without a position are laid out along the flow.",
+              "additionalProperties": {
+                "type": "object",
+                "required": [
+                  "x"
+                ],
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "visit": {
+      "type": "object",
+      "required": [
+        "id",
+        "nodeId",
+        "start",
+        "end"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "nodeId": {
+          "$ref": "#/$defs/id"
+        },
+        "start": {
+          "type": "number",
+          "minimum": 0
+        },
+        "end": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "required": [
+        "edgeId",
+        "fromVisitId",
+        "toVisitId"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "edgeId": {
+          "$ref": "#/$defs/id"
+        },
+        "fromVisitId": {
+          "$ref": "#/$defs/id"
+        },
+        "toVisitId": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "visits": {
+          "type": "array",
+          "maxItems": 20000,
+          "items": {
+            "$ref": "#/$defs/visit"
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/transition"
+          },
+          "description": "Omit to have transitions derived from visit timing and connectors."
+        },
+        "membership": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "included",
+              "excluded",
+              "unknown"
+            ]
+          },
+          "description": "Per step ID: included, excluded (shown as Not in scenario) or unknown (shown as Not confirmed)."
+        },
+        "pauseAt": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "milestones": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "measure": {
+      "type": "object",
+      "required": [
+        "key",
+        "unit",
+        "values"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "unit": {
+          "enum": [
+            "minute",
+            "businessMinute",
+            "hour",
+            "businessDay",
+            "calendarDay",
+            "day",
+            "week",
+            "count",
+            "perDay",
+            "percent",
+            "currency",
+            "currencyPerHour",
+            "fte",
+            "casesPerYear",
+            "hoursPerYear",
+            "text"
+          ]
+        },
+        "values": {
+          "type": "object",
+          "description": "Value per model ID.",
+          "additionalProperties": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "suppliedText": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "status": {
+          "enum": [
+            "supplied",
+            "calculated",
+            "validated"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "statusLabel": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "statusTone": {
+          "enum": [
+            "done",
+            "progress",
+            "stuck",
+            "new",
+            ""
+          ]
+        },
+        "provenance": {
+          "enum": [
+            "illustrative",
+            "supplied",
+            "observed"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500
+              }
+            }
+          }
+        },
+        "timing": {
+          "type": "object",
+          "properties": {
+            "method": {
+              "enum": [
+                "explicit-visits",
+                "proportional-scale",
+                "population-illustration"
+              ]
+            },
+            "note": {
+              "type": "string",
+              "maxLength": 2000
+            }
+          }
+        },
+        "runs": {
+          "type": "object",
+          "description": "Run per model ID.",
+          "additionalProperties": {
+            "$ref": "#/$defs/run"
+          }
+        },
+        "measures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/measure"
+          }
+        },
+        "economics": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "beforeModelId": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/id"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "afterModelId": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/id"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "supplied": {
+                  "type": "object",
+                  "properties": {
+                    "beforeCostPerCase": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "afterCostPerCase": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "costSavedPerCase": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "fteCapacity": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "text": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string",
+                        "maxLength": 300
+                      }
+                    }
+                  }
+                },
+                "overrides": {
+                  "type": "object",
+                  "description": "Scenario-specific driver values, keyed by driver.",
+                  "additionalProperties": {
+                    "type": "object",
+                    "required": [
+                      "value"
+                    ],
+                    "properties": {
+                      "value": {
+                        "type": "number"
+                      },
+                      "status": {
+                        "enum": [
+                          "illustrative",
+                          "supplied",
+                          "validated"
+                        ]
+                      },
+                      "note": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "record": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "title"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "pain",
+            "opportunity",
+            "question",
+            "decision",
+            "action",
+            "assumption",
+            "note"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "owner": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "status": {
+          "enum": [
+            "open",
+            "in-progress",
+            "done",
+            "dropped"
+          ]
+        },
+        "priority": {
+          "enum": [
+            "",
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "linkedModelId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "linkedModelVersion": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "linkedNodeIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "sensitive": {
+          "type": "boolean"
+        },
+        "includeInHandoff": {
+          "type": "boolean"
+        },
+        "opportunity": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "intervention": {
+                  "enum": [
+                    "",
+                    "eliminate",
+                    "simplify",
+                    "standardize",
+                    "integrate",
+                    "orchestrate",
+                    "deterministic-automation",
+                    "self-service",
+                    "ai-assist",
+                    "ai-agent",
+                    "control-data"
+                  ]
+                },
+                "simplerAlternative": {
+                  "type": "string",
+                  "maxLength": 4000
+                },
+                "expectedBenefit": {
+                  "type": "string",
+                  "maxLength": 4000
+                },
+                "affectedVolume": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "effort": {
+                  "enum": [
+                    "",
+                    "S",
+                    "M",
+                    "L"
+                  ]
+                },
+                "risk": {
+                  "type": "string",
+                  "maxLength": 4000
+                },
+                "dependencies": {
+                  "type": "string",
+                  "maxLength": 4000
+                },
+                "validationAction": {
+                  "type": "string",
+                  "maxLength": 4000
+                },
+                "aiAssessment": {
+                  "type": "object",
+                  "properties": {
+                    "inputStructure": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "dataAvailability": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "judgment": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "exceptions": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "authority": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "humanReview": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "auditability": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "failureHandling": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "mode": {
+                      "enum": [
+                        "",
+                        "assist",
+                        "autonomous"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "generated": {
+          "$ref": "#/$defs/generated"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 40
+        }
+      }
+    },
+    "generated": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Present when an AI assistant drafted the item. Handoff, presenter and CSV exports leave out unreviewed AI drafts by default.",
+      "properties": {
+        "task": {
+          "enum": [
+            "extract",
+            "opportunities",
+            "future-state",
+            "summary"
+          ]
+        },
+        "provider": {
+          "enum": [
+            "claude",
+            "codex",
+            "other"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "surface": {
+          "enum": [
+            "cli",
+            "skill",
+            "app"
+          ]
+        },
+        "at": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "jobId": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "plan": {
+          "enum": [
+            "unknown",
+            "commercial",
+            "consumer"
+          ]
+        },
+        "reviewed": {
+          "type": "boolean"
+        },
+        "reviewedAt": {
+          "type": "string",
+          "maxLength": 40
+        }
+      }
+    },
+    "narrative": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "executive-summary"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 12000
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "reviewed"
+          ]
+        },
+        "generated": {
+          "$ref": "#/$defs/generated"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 40
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "locator": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "extractedFact": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "status": {
+          "enum": [
+            "unreviewed",
+            "validated",
+            "disputed",
+            "unavailable"
+          ]
+        },
+        "reviewer": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "reviewDate": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "link": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^https?://"
+            }
+          ],
+          "description": "Only http and https links are kept."
+        }
+      }
+    },
+    "assumption": {
+      "type": "object",
+      "required": [
+        "id",
+        "key"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "key": {
+          "type": "string",
+          "description": "Known driver keys: hourlyRate, annualVolume, productiveHoursPerFte, incrementalCostPerCase, beforeNonLaborCostPerCase, afterNonLaborCostPerCase, oneTimeInvestment."
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "status": {
+          "enum": [
+            "illustrative",
+            "supplied",
+            "validated"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "migration": {
+      "type": "object",
+      "properties": {
+        "sourceFormat": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "sourceFiles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "convertedAt": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "message": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "path": {
+                "type": "string",
+                "maxLength": 300
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
