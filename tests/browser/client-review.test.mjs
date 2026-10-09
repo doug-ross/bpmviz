@@ -320,3 +320,58 @@ test("responses for another engagement or over the size limit are refused; an un
   assert.match(await s2.page.textContent("#rv-panel"), /Latest answer per item \(4\)/);
   clean(s2.problems);
 });
+
+test("the Client review tab follows the open engagement, and Download again leaves out records now sensitive", async t => {
+  const s = await openApp(t, "#example=underwriting-current-state");
+  if (!s) return;
+  const p = s.page;
+  await p.waitForSelector(".node");
+  const tabIds = () => p.$$eval(".subtabs [role=tab]", els => els.map(e => e.id));
+  await addFindings(p);
+  await p.click("#tab-records");
+  assert.equal((await tabIds()).includes("rv-tab-client-review"), false, "no tab before the engagement has a pack");
+  // A pack made from the Present bar lists the tab; Undo removes it again.
+  await makePack(p, "html");
+  await p.click("#tab-records");
+  assert.equal((await tabIds()).includes("rv-tab-client-review"), true);
+  await p.evaluate(() => window.BPMVIZ.app.store.undo());
+  assert.equal((await tabIds()).includes("rv-tab-client-review"), false, "undo of the only pack removes the tab");
+  await makePack(p, "html");
+  await p.click("#tab-records");
+  assert.equal((await tabIds()).includes("rv-tab-client-review"), true);
+  // An engagement with review data opened straight into Records lists the tab; a blank one does not.
+  const saved = await p.evaluate(() => window.BPMVIZ.exporting.engagementToJson(window.BPMVIZ.app.store.get()));
+  await p.evaluate(json => window.BPMVIZ.app.loadEngagement(window.BPMVIZ.validate.validateEngagement(JSON.parse(json)).engagement, { ws: "records" }), saved);
+  await p.waitForSelector("#rv-tab-client-review");
+  const blank = await p.evaluate(json => {
+    const e = JSON.parse(json);
+    e.id = "eng-blank";
+    e.reviewPacks = [];
+    e.reviews = [];
+    return JSON.stringify(e);
+  }, saved);
+  await p.evaluate(json => window.BPMVIZ.app.loadEngagement(window.BPMVIZ.validate.validateEngagement(JSON.parse(json)).engagement, { ws: "records" }), blank);
+  await p.waitForFunction(() => !document.getElementById("rv-tab-client-review") && !!document.getElementById("rv-tab-records"));
+  await p.evaluate(json => window.BPMVIZ.app.loadEngagement(window.BPMVIZ.validate.validateEngagement(JSON.parse(json)).engagement, { ws: "process" }), saved);
+  await p.waitForSelector(".node");
+  await p.click("#tab-records");
+  await p.click("#rv-tab-client-review");
+  // The finding in the pack is marked sensitive after the pack was made.
+  const before = await p.evaluate(() => window.BPMVIZ.app.store.get().reviewPacks[0].items.length);
+  await p.evaluate(() => {
+    const app = window.BPMVIZ.app;
+    const r = app.store.get().records.find(x => x.title === "SOV rekeyed by hand");
+    app.dispatch("record/update", { id: r.id, patch: { sensitive: true } });
+  });
+  const again = await download(p, () => p.click("#rv-panel button:has-text('Download again')"));
+  const html = again.bytes.toString("utf8");
+  const data = reviewPack.readPackHtml(html);
+  assert.equal(data.items.length, before - 1);
+  assert.equal(data.items.some(it => it.kind === "record"), false);
+  assert.equal(html.includes("SOV rekeyed by hand"), false);
+  await p.waitForSelector("dialog[open]");
+  assert.match(await p.textContent("dialog[open]"), /1 item of the 36 in the pack was left out/);
+  await p.click("dialog[open] .dlg-foot .btn-primary");
+  await p.waitForFunction(() => !document.querySelector("dialog[open]"));
+  clean(s.problems);
+});
