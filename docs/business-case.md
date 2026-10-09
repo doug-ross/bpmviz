@@ -23,7 +23,7 @@ As you fill in the effort and duration fields, a line under the form estimates t
 
 All figures are economics-shaped outputs: each one lists its formula, its inputs and the weakest status among them, and a missing required input leaves the result blank.
 
-- **Human hours per affected case** = sum over the affected steps of (typed touch effort in hours, or the observed median duration) times visits per affected case. Visits default to one when no event log supplies them, and that assumption is noted. Gateways and events among the linked steps are not counted as work.
+- **Human hours per affected case** = sum over the affected steps of (typed touch effort in hours, or the observed median duration) times visits per affected case. Visits default to one when no event log supplies them, and that assumption is noted. When the share of cases affected also comes from the event log, a step's visits are weighted by the fraction of the affected cases that reach that step, so a step only some of them visit is not charged to every affected case. When the share is typed by hand, the event log cannot say which affected cases reach which step, so visits assume every affected case visits every linked step, and that assumption is noted too. Gateways and events among the linked steps are not counted as work.
 - **Human hours saved per year** = annual volume times share of cases affected times human hours per affected case times effort reduction. Annual volume comes from the engagement's assumptions, or from the event log's annualized period when no assumption is set.
 - **Labor cost of the hours saved per year** = human hours saved per year times the hourly rate.
 - **Modeled net annual benefit** = labor cost of the hours saved per year minus the annual running cost (zero, noted, when not recorded). This is a modeled benefit, not realized cash: adoption and ramp-up are not included.
@@ -45,8 +45,8 @@ Each opportunity's value is compared with the median value among opportunities t
 
 | | Low effort (S or M) | High effort (L) |
 | --- | --- | --- |
-| Above the median value | Quick win (suggested wave: now) | Major project (suggested wave: next) |
-| At or below the median value | Fill-in (suggested wave: later) | Reconsider (suggested wave: later) |
+| At or above the median value | Quick win (suggested wave: now) | Major project (suggested wave: next) |
+| Below the median value | Fill-in (suggested wave: later) | Reconsider (suggested wave: later) |
 
 The **Matrix** opportunity view charts the scored opportunities into these four quadrants and lists every opportunity, scored or not, in an equivalent table with its rank, effort, value, basis, quadrant, suggested wave and actual wave.
 
@@ -54,7 +54,9 @@ The **Waves** opportunity view lays opportunities out in columns by wave, with e
 
 ## The CFO one-pager
 
-The **Business case** present mode is printable. It opens on a portfolio page: every ranked opportunity, with the wave totals (net annual benefit, one-time cost and redeployable capacity) for now, next and later. A select above the page switches to a single opportunity's one-page business case: its headline figures, affected steps, note and any inputs still missing. The handoff summary carries a shorter version of the same table after the opportunities section, so a reader who never opens the present view still sees the modeled value and the wave plan.
+The **Business case** present mode is printable. It opens on a portfolio page: every ranked opportunity, with the wave totals (net annual benefit, one-time cost and redeployable capacity) for now, next and later. A select above the page switches to a single opportunity's one-page business case: its headline figures, affected steps, note and any inputs still missing. The handoff summary carries a shorter version of the same table after the opportunities section, built from only the opportunities kept in the handoff, so a reader who never opens the present view still sees the modeled value and the wave plan.
+
+Because the total adds every planned wave together, two opportunities that change the same step in different waves would otherwise double-count that step's savings with no warning. The portfolio page and the handoff both name any step changed by opportunities planned in more than one wave, in a note under the totals.
 
 ## The opportunity/setWaves command
 
