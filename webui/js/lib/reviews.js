@@ -140,7 +140,8 @@
    * position, then findings by kind.
    * opts: { modelId, steps (default true), kinds (record kinds, default pain,
    *   opportunity, decision, assumption), includeSensitive, includeUnreviewedAi,
-   *   itemRefs (only these, for downloading a recorded pack again) }
+   *   itemRefs (only these, for downloading a recorded pack again; records
+   *   still pass the sensitive, AI draft, dropped and handoff checks) }
    * Returns [{ itemRef, kind, type, lane, label, details }].
    */
   function buildPackItems(e, opts) {
@@ -158,7 +159,10 @@
         .forEach(({ n }) => items.push(resolveItem(e, stepRef(model.id, n.id))));
     }
     const kinds = only ? FINDING_KINDS : (Array.isArray(o.kinds) ? o.kinds : []).filter(k => FINDING_KINDS.includes(k));
-    const records = only ? e.records.filter(r => only.has(recordRef(r.id))) : candidateRecords(e, Object.assign({}, o, { modelId: model ? model.id : o.modelId }));
+    // A recorded pack downloaded again still leaves out records that are now
+    // sensitive, unreviewed AI drafts, dropped or out of the handoff.
+    const records = only ? candidateRecords(e, Object.assign({}, o, { modelId: null })).filter(r => only.has(recordRef(r.id))) :
+      candidateRecords(e, Object.assign({}, o, { modelId: model ? model.id : o.modelId }));
     kinds.forEach(kind => records.filter(r => r.kind === kind).forEach(r => items.push(resolveItem(e, recordRef(r.id)))));
     return items.filter(Boolean).slice(0, L.reviewEntries).map(it => ({
       itemRef: it.itemRef, kind: it.kind, type: it.type, lane: it.lane, label: it.label, details: it.details
@@ -224,6 +228,23 @@
     return text(iso).slice(0, 10);
   }
 
+  /*
+   * Text for a workbook cell. The writer stores text as inline strings, so
+   * nothing is a formula when the file opens, but a reviewer who edits a cell
+   * that starts with = + - @ (or a tab or carriage return), or saves the sheet
+   * as CSV, would turn it into one. Such text gets a leading apostrophe, the
+   * same rule as the CSV exports (util.csvCell). plainCell removes it again
+   * when the workbook is read back.
+   */
+  const FORMULA_START = /^[=+\-@\t\r]/;
+  function safeCell(v) {
+    return typeof v === "string" && FORMULA_START.test(v) ? "'" + v : v;
+  }
+  function plainCell(v) {
+    const t = text(v);
+    return /^'[=+\-@\t\r]/.test(t) ? t.slice(1) : t;
+  }
+
   /**
    * The Excel version of a pack, for xlsx.writeWorkbook: an About sheet with
    * instructions and the reviewer's details, a Review sheet with one row per
@@ -260,14 +281,15 @@
     if (payload.note) about.push(["Note from the team", payload.note], []);
     about.push(["Pack reference", pack.id], ["Engagement reference", payload.engagementId], ["Engagement revision", payload.engagementRevision]);
     const review = [REVIEW_HEADERS.slice()].concat(items.map(it => [it.itemRef, it.type, it.lane, it.label, it.details, "", ""]));
+    const safe = rows => rows.map(row => row.map(safeCell));
     const sheets = [
-      { name: ABOUT_SHEET, rows: about, columns: [24, 90], headerRows: 1 },
-      { name: REVIEW_SHEET, rows: review, columns: [30, 16, 24, 40, 70, 14, 60], freeze: 1, headerRows: 1,
+      { name: ABOUT_SHEET, rows: safe(about), columns: [24, 90], headerRows: 1 },
+      { name: REVIEW_SHEET, rows: safe(review), columns: [30, 16, 24, 40, 70, 14, 60], freeze: 1, headerRows: 1,
         validations: items.length ? [{ range: "F2:F" + (items.length + 1), list: verdictWords }] : [] },
-      { name: PACK_SHEET, hidden: true, rows: [
+      { name: PACK_SHEET, hidden: true, rows: safe([
         ["schema", schema.REVIEW_PACK_ID], ["schemaVersion", 1], ["packId", pack.id], ["engagementId", payload.engagementId],
         ["engagementRevision", payload.engagementRevision], ["format", "xlsx"]
-      ] }
+      ]) }
     ];
     return {
       sheets,
@@ -311,8 +333,8 @@
     const out = new Map();
     if (!sheet) return out;
     (sheet.rows || []).forEach(row => {
-      const k = norm(row && row[0]);
-      if (k && !out.has(k)) out.set(k, row[1]);
+      const k = norm(plainCell(row && row[0]));
+      if (k && !out.has(k)) out.set(k, typeof row[1] === "string" ? plainCell(row[1]) : row[1]);
     });
     return out;
   }
@@ -372,12 +394,12 @@
     const entries = [];
     sheet.rows.slice(headerAt + 1).forEach(row => {
       const r = row || [];
-      const itemRef = text(r[cols.itemRef]).trim();
+      const itemRef = plainCell(r[cols.itemRef]).trim();
       if (!itemRef) return;
       entries.push({
         itemRef,
-        verdict: normalizeVerdict(r[cols.verdict]),
-        comment: cols.comment === undefined ? "" : text(r[cols.comment]).trim()
+        verdict: normalizeVerdict(plainCell(r[cols.verdict])),
+        comment: cols.comment === undefined ? "" : plainCell(r[cols.comment]).trim()
       });
     });
     const response = {
@@ -481,6 +503,9 @@
       warnings.push(issue("review.again", "A response from " + who(again.reviewer) + " to this pack, submitted at the same time, was already imported on " + dateOnly(again.receivedAt) + ". Importing it again adds a second copy.", "warning"));
     }
     const latest = latestVerdicts(e);
+    // Ordered as latestVerdicts will order the stored review: by the submission
+    // date, or by the time it is received (now) when the response has none.
+    const answeredAt = response.submittedAt || util.nowIso();
     const counts = Object.assign({}, empty);
     const items = [];
     response.entries.forEach(en => {
@@ -496,7 +521,7 @@
           "\" in the pack. Check that the answer still applies.", "warning"));
       }
       const prev = latest.get(en.itemRef) || null;
-      const superseded = !!(prev && compareTimes(response.submittedAt, prev.at) < 0);
+      const superseded = !!(prev && compareTimes(answeredAt, prev.at) < 0);
       if (prev && en.verdict && prev.verdict !== en.verdict) {
         warnings.push(issue("review.conflict", "\"" + clip(it.label, 80) + "\": " + who(prev.reviewer) + " answered " + schema.label("reviewVerdict", prev.verdict).toLowerCase() +
           (prev.at ? " on " + dateOnly(prev.at) : "") + "; this response says " + schema.label("reviewVerdict", en.verdict).toLowerCase() + ". " +
