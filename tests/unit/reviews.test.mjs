@@ -352,3 +352,81 @@ test("review commands are registered once and check their input", () => {
   assert.equal(store.get().reviews[0].id, r.id);
   assert.deepEqual(store.get().reviews[0].applied, { validations: 0, questions: 0, evidenceId: null });
 });
+
+test("Excel pack text that starts like a formula is neutralized and reads back unchanged", async () => {
+  const store = storeLib.createStore(engagement());
+  store.dispatch("node/update", { modelId: "m-current", nodeId: "work", patch: { label: "=HYPERLINK(\"http://evil\",\"x\")", details: { desc: "+cmd|' /C calc'!A0" } } });
+  store.dispatch("record/update", { id: "r-pain", patch: { title: "-2 days of rework", description: "@SUM(1)" } });
+  const e = store.get();
+  const items = reviews.buildPackItems(e, { modelId: "m-current" });
+  const pack = reviews.newPack(e, { format: "xlsx", stakeholder: { name: "@SUM(1)", role: "=1+1", organization: "+Org" }, modelId: "m-current", note: "-Answer by Friday" }, items);
+  store.dispatch("review/recordPack", { pack });
+  const spec = reviews.workbookSpec(pack, reviews.packPayload(store.get(), pack, items));
+  const risky = /^[=+\-@\t\r]/;
+  spec.sheets.forEach(s => s.rows.forEach(row => row.forEach(cell => {
+    assert.equal(typeof cell === "string" && risky.test(cell), false, s.name + ": " + cell);
+  })));
+  const review = spec.sheets.find(s => s.name === "Review").rows;
+  const work = review.find(r => r[0] === "step/m-current/work");
+  assert.equal(work[3], "'=HYPERLINK(\"http://evil\",\"x\")");
+  assert.match(work[4], /^'\+cmd/);
+  assert.equal(review.find(r => r[0] === "record/r-pain")[3], "'-2 days of rework");
+  const about = spec.sheets.find(s => s.name === "About").rows;
+  assert.equal(about.find(r => r[0] === "Your name")[1], "'@SUM(1)");
+  assert.equal(about.find(r => r[0] === "Note from the team")[1], "'-Answer by Friday");
+  // The written sheets hold no text that starts like a formula either.
+  xlsx.writeWorkbook(spec).filter(p => /^xl\/worksheets\/sheet\d+\.xml$/.test(p.name)).forEach(p => {
+    for (const m of p.data.matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)) assert.equal(risky.test(m[1]), false, p.name + ": " + m[1]);
+  });
+  // Read back as written, and after the reviewer edits the name cell (Excel then stores it without the apostrophe).
+  work[5] = "Confirm";
+  work[6] = "=not a formula";
+  const r1 = reviews.responseFromWorkbook(await xlsx.readWorkbookAsync(await xlsx.workbookBytesAsync(spec, { deflateRaw }), { inflateRaw }));
+  assert.deepEqual(r1.reviewer, { name: "@SUM(1)", role: "=1+1", organization: "+Org" });
+  assert.deepEqual(r1.entries.find(x => x.itemRef === "step/m-current/work"), { itemRef: "step/m-current/work", verdict: "confirm", comment: "=not a formula" });
+  about.find(r => r[0] === "Your name")[1] = "@SUM(1)";
+  const r2 = reviews.responseFromWorkbook(await xlsx.readWorkbookAsync(await xlsx.workbookBytesAsync(spec, { deflateRaw }), { inflateRaw }));
+  assert.equal(r2.reviewer.name, "@SUM(1)");
+  assert.equal(r2.packId, pack.id);
+});
+
+test("a pack downloaded again leaves out records that became sensitive or left the handoff", () => {
+  const store = storeLib.createStore(engagement());
+  const { pack } = packed(store);
+  const refs = pack.items.map(i => i.itemRef);
+  assert.ok(refs.includes("record/r-pain") && refs.includes("record/r-opp"));
+  const again = scope => reviews.buildPackItems(store.get(), Object.assign({ modelId: pack.modelId, itemRefs: refs }, scope || {})).map(i => i.itemRef);
+  assert.deepEqual(again(), refs);
+  store.dispatch("record/update", { id: "r-pain", patch: { sensitive: true } });
+  store.dispatch("record/update", { id: "r-opp", patch: { includeInHandoff: false } });
+  const left = again();
+  assert.equal(left.includes("record/r-pain"), false);
+  assert.equal(left.includes("record/r-opp"), false);
+  assert.equal(left.length, refs.length - 2);
+  assert.equal(again({ includeSensitive: true }).includes("record/r-pain"), true, "the Present bar choice still applies");
+  store.dispatch("record/update", { id: "r-pain", patch: { status: "dropped" } });
+  assert.equal(again({ includeSensitive: true }).includes("record/r-pain"), false);
+});
+
+test("an Excel response without a date that follows a dated response is the current answer", async () => {
+  const store = storeLib.createStore(engagement());
+  const { pack, payload } = packed(store);
+  let e = store.get();
+  const html = reviews.prepareApply(e, response(e, pack.id, [{ itemRef: "step/m-current/work", verdict: "dispute", comment: "Not like this" }], { submittedAt: "2026-01-01T09:00:00Z" }));
+  store.dispatch("review/apply", reviews.buildApplyPayload(e, html, { questions: false, evidence: false }));
+  const spec = reviews.workbookSpec(pack, payload);
+  spec.sheets[1].rows.find(r => r[0] === "step/m-current/work")[5] = "Confirm";
+  const fromXlsx = reviews.responseFromWorkbook(await xlsx.readWorkbookAsync(await xlsx.workbookBytesAsync(spec, { deflateRaw }), { inflateRaw }));
+  assert.equal(fromXlsx.submittedAt, "");
+  e = store.get();
+  const p = reviews.prepareApply(e, fromXlsx);
+  assert.equal(p.ok, true, JSON.stringify(p.errors));
+  const it = p.items.find(x => x.itemRef === "step/m-current/work");
+  assert.equal(it.superseded, false);
+  assert.equal(it.targetValidation, "validated");
+  assert.match(p.warnings.find(w => w.code === "review.conflict").message, /The latest answer becomes current/);
+  store.dispatch("review/apply", reviews.buildApplyPayload(e, p, { questions: false, evidence: false }));
+  e = store.get();
+  assert.equal(e.models[0].nodes.find(n => n.id === "work").provenance.validation, "validated");
+  assert.equal(reviews.latestVerdicts(e).get("step/m-current/work").verdict, "confirm", "the validation and the latest answer agree");
+});
