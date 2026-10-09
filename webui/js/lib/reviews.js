@@ -85,7 +85,8 @@
       const node = model && model.nodes.find(n => n.id === p.nodeId);
       if (!node) return null;
       const d = node.details || {};
-      const details = [detailText(d.desc) || text(node.sub), d.who ? "Who: " + detailText(d.who) : "", d.systems ? "Systems: " + detailText(d.systems) : ""]
+      const sentence = t => (t && !/[.!?]$/.test(t.trim()) ? t.trim() + "." : t.trim());
+      const details = [sentence(detailText(d.desc) || text(node.sub)), d.who ? sentence("Who: " + detailText(d.who)) : "", d.systems ? sentence("Systems: " + detailText(d.systems)) : ""]
         .filter(Boolean).join(" ");
       return { itemRef, kind: "step", modelId: model.id, nodeId: node.id, recordId: null, model, node, record: null,
         label: node.label, type: typeLabelOf(node), lane: laneName(model, node.laneId), details: clip(details, 1200) };
