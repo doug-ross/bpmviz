@@ -78,6 +78,29 @@ test("the value case editor estimates value as it is filled in, and the opportun
   clean(s.problems);
 });
 
+test("saving the dialog without changes keeps the value case's own scope (modelId and nodeIds)", async t => {
+  const s = await open(t, "#example=underwriting&ws=records");
+  if (!s) return;
+  const p = s.page;
+  await giveTouchEffort(p);
+  await p.evaluate(() => window.BPMVIZ.app.dispatch("record/add", { record: { kind: "opportunity", title: "Keep my scope",
+    linkedModelId: "m-current", linkedNodeIds: ["scrub-sov-geocode", "appetite-capacity-triage"],
+    opportunity: { effort: "M", valueCase: {
+      modelId: "m-current", nodeIds: ["appetite-capacity-triage"],
+      effortReductionPct: 40, shareOfCasesPct: 50, confidence: "medium", basis: "supplied"
+    } } } }));
+  await p.click("#rv-tab-opportunities");
+  await p.click("text=Keep my scope");
+  await p.waitForSelector("dialog[open] #bc-vc-effort-pct");
+  await p.click("dialog[open] .dlg-foot .btn-primary");
+  await p.waitForFunction(() => !document.querySelector("dialog[open]"));
+  const vc = await p.evaluate(() => window.BPMVIZ.app.store.get().records.find(r => r.title === "Keep my scope").opportunity.valueCase);
+  assert.equal(vc.modelId, "m-current");
+  assert.deepEqual(vc.nodeIds, ["appetite-capacity-triage"]);
+  assert.equal(vc.effortReductionPct, 40);
+  clean(s.problems);
+});
+
 test("the value case editor can block saving when a source needs an event log that is not chosen", async t => {
   const s = await open(t, "#example=underwriting&ws=records");
   if (!s) return;
@@ -90,6 +113,46 @@ test("the value case editor can block saving when a source needs an event log th
   await p.click("dialog[open] .dlg-foot .btn-primary");
   assert.match(await p.textContent("dialog[open] .error-text"), /Choose an event log/);
   await p.keyboard.press("Escape");
+  clean(s.problems);
+});
+
+test("leaving the value case blank does not record an empty one", async t => {
+  const s = await open(t, "#example=underwriting&ws=records");
+  if (!s) return;
+  const p = s.page;
+  await p.click("#rv-tab-opportunities");
+  await p.click("#rv-add");
+  await p.waitForSelector("dialog[open] #bc-vc-effort-pct");
+  await p.fill("dialog[open] input[required]", "Not modeled yet");
+  await p.click("dialog[open] .dlg-foot .btn-primary");
+  await p.waitForFunction(() => !document.querySelector("dialog[open]"));
+  const saved = await p.evaluate(() => window.BPMVIZ.app.store.get().records.find(r => r.title === "Not modeled yet").opportunity);
+  assert.equal(saved.valueCase, undefined, "no value case field was touched, so none should be recorded");
+  const cell = await p.textContent("#rv-panel table tbody tr td:nth-child(6)");
+  assert.match(cell, /Not modeled/);
+  clean(s.problems);
+});
+
+test("the handoff table only lists opportunities kept in the handoff", async t => {
+  const s = await open(t, "#example=underwriting&ws=records");
+  if (!s) return;
+  const p = s.page;
+  await giveTouchEffort(p);
+  await p.evaluate(() => {
+    const d = window.BPMVIZ.app.dispatch;
+    const steps = ["scrub-sov-geocode", "appetite-capacity-triage"];
+    const valueCase = { effortReductionPct: 50, shareOfCasesPct: 50, confidence: "high", basis: "supplied" };
+    d("record/add", { record: { kind: "opportunity", title: "Kept in handoff", linkedModelId: "m-current", linkedNodeIds: steps,
+      opportunity: { effort: "M", wave: "now", valueCase } } });
+    d("record/add", { record: { kind: "opportunity", title: "Dropped from handoff", linkedModelId: "m-current", linkedNodeIds: steps,
+      opportunity: { effort: "M", wave: "now", valueCase }, includeInHandoff: false } });
+  });
+  await p.click("#tab-present");
+  await p.click("#pr-handoff");
+  await p.waitForSelector("#handoff-doc");
+  const text = await p.textContent("#handoff-doc");
+  assert.match(text, /Kept in handoff/);
+  assert.doesNotMatch(text, /Dropped from handoff/);
   clean(s.problems);
 });
 
