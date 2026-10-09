@@ -142,5 +142,22 @@
     return NAMES[d] || "comma";
   }
 
-  return { CANDIDATES, stripBom, detectDelimiter, createReader, parse, delimiterName };
+  /*
+   * Bytes to text with the rule the browser import uses: a UTF-8 or UTF-16
+   * byte order mark wins, then strict UTF-8, then Windows-1252 (what Excel
+   * on Windows writes for "CSV").
+   */
+  function decodeText(bytes) {
+    const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    if (b.length >= 3 && b[0] === 0xef && b[1] === 0xbb && b[2] === 0xbf) return new TextDecoder("utf-8").decode(b.subarray(3));
+    if (b.length >= 2 && b[0] === 0xff && b[1] === 0xfe) return new TextDecoder("utf-16le").decode(b.subarray(2));
+    if (b.length >= 2 && b[0] === 0xfe && b[1] === 0xff) return new TextDecoder("utf-16be").decode(b.subarray(2));
+    try {
+      return new TextDecoder("utf-8", { fatal: true }).decode(b);
+    } catch (_) {
+      return new TextDecoder("windows-1252").decode(b);
+    }
+  }
+
+  return { CANDIDATES, stripBom, decodeText, detectDelimiter, createReader, parse, delimiterName };
 });

@@ -16,6 +16,11 @@ const ai = require(path.join(root, "webui", "js", "lib", "ai-results.js"));
 
 export const MAX_REPAIRS = 2;
 export const TASKS = ["extract", "opportunities", "future-state", "summary", "log-mapping"];
+const SECRET_ADVICE = {
+  extract: "Remove credentials from the sources", opportunities: "Remove credentials from the engagement",
+  "future-state": "Remove credentials from the engagement", summary: "Remove credentials from the engagement",
+  "log-mapping": "Check the activity names and the model steps"
+};
 const TIMEOUT_MS = { extract: 20 * 60000, opportunities: 8 * 60000, "future-state": 10 * 60000, summary: 6 * 60000, "log-mapping": 6 * 60000 };
 
 /*
@@ -130,6 +135,10 @@ export async function runTask(o) {
     if (input && input.excluded.activities) {
       warnings.push({ code: "input.activities", path: "activities", message: "Only the " + input.activities.length + " most frequent activity names were sent; " + input.excluded.activities + " were not." });
     }
+    if (input && input.excluded.secretActivities) {
+      const n = input.excluded.secretActivities;
+      warnings.push({ code: "input.secret", path: "activities", message: n + " activity name" + (n === 1 ? " that looks" : "s that look") + " like a credential " + (n === 1 ? "was" : "were") + " not sent. Map " + (n === 1 ? "it" : "them") + " by hand in the event-log import." });
+    }
     if (input && input.excluded.sensitiveRecords) {
       warnings.push({ code: "input.sensitive", path: "records", message: input.excluded.sensitiveRecords + " sensitive records were not sent." });
     }
@@ -193,7 +202,7 @@ export async function runTask(o) {
       let review = null;
       if (validation) {
         const secret = validation.errors.find(x => x.code === "output.secret");
-        if (secret) throw new AiFailure("output.secret", "The draft contained what looks like a credential (" + secret.path + "), so it was not kept. Remove credentials from the sources and run the task again.");
+        if (secret) throw new AiFailure("output.secret", "The draft contained what looks like a credential (" + secret.path + "), so it was not kept. " + SECRET_ADVICE[task] + " and run the task again.");
         validation.errors.forEach(x => problems.push(x));
         if (validation.ok && e) {
           review = ai.prepareReview(validation.result, e, reviewContext);

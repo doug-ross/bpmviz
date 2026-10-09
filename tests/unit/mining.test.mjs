@@ -172,6 +172,46 @@ test("without the end-step rule every case counts, and an unknown pair has no co
   assert.equal(r.scenarios.length, 0);
 });
 
+test("cases with no mapped event are not reported as incomplete, and without end steps no case counts as complete", () => {
+  const model = tinyEngagement().models[0];
+  const events = [];
+  for (let c = 0; c < 5; c++) events.push({ c, a: "Coffee break", s: c * 60000, e: c * 60000 + 1000, i: events.length });
+  events.push({ c: 5, a: "Do the work", s: 0, e: 60000, i: events.length }, { c: 5, a: "Done", s: 120000, e: 120000, i: events.length + 1 });
+  events.push({ c: 6, a: "Fix", s: 0, e: 60000, i: events.length + 2 });
+  const mapping = { "Do the work": "work", Done: "end", Fix: "fix" };
+  const free = mining.aggregate({ model, events, mapping, mode: "start-end", requireEnd: false, topVariants: 0, dataStatus: "observed" });
+  assert.equal(free.dataset.source.excludedIncompleteCases, 0, "no end-step rule applied");
+  assert.deepEqual([free.counts.noMapped, free.dataset.cases.count, free.dataset.cases.complete], [5, 2, 0]);
+  assert.ok(free.warnings.some(w => w.code === "mining.unmapped" && /^5 cases have no event mapped/.test(w.message)));
+  assert.ok(free.warnings.some(w => w.code === "mining.noEndSteps"));
+  const ruled = mining.aggregate({ model, events, mapping, mode: "start-end", endNodeIds: ["end"], topVariants: 0, dataStatus: "observed" });
+  assert.equal(ruled.dataset.source.excludedIncompleteCases, 1, "only the case ending at Fix is incomplete");
+  assert.deepEqual([ruled.counts.noMapped, ruled.dataset.cases.count, ruled.dataset.cases.complete], [5, 1, 1]);
+  assert.ok(!ruled.warnings.some(w => w.code === "mining.noEndSteps"));
+  const open = mining.aggregate({ model, events, mapping, mode: "start-end", endNodeIds: ["end"], requireEnd: false, topVariants: 0, dataStatus: "observed" });
+  assert.deepEqual([open.dataset.cases.count, open.dataset.cases.complete, open.dataset.source.excludedIncompleteCases], [2, 1, 0]);
+});
+
+test("long variants that differ only after the stored steps are one variant row", () => {
+  const model = tinyEngagement().models[0];
+  const limit = lib("schema").LIMITS.variantSteps;
+  const events = [];
+  for (let c = 0; c < 2; c++) {
+    for (let k = 0; k < 400; k++) {
+      const a = k > 250 && c === 1 ? (k % 3 ? "Do the work" : "Fix") : (k % 2 ? "Fix" : "Do the work");
+      events.push({ c, a, s: k * 60000, e: k * 60000 + 30000, i: events.length });
+    }
+  }
+  const r = mining.aggregate({ model, events, mapping: { "Do the work": "work", Fix: "fix" }, mode: "start-end", requireEnd: false, topVariants: 0, dataStatus: "observed" });
+  const d = r.dataset;
+  assert.equal(d.variants.length, 1);
+  assert.deepEqual([d.variants[0].nodeIds.length, d.variants[0].cases, d.variants[0].share], [limit, 2, 1]);
+  assert.match(r.warnings.find(w => w.code === "mining.variantSteps").message, /^1 variant is longer than 200 steps.*counted as one variant/);
+  const ids = d.variants.map(v => v.nodeIds.join(">"));
+  assert.equal(new Set(ids).size, ids.length, "stored variant rows are distinct");
+  assert.deepEqual(validate.sanitizeDataset(d, loaded(tinyEngagement())).errors, []);
+});
+
 test("only the top 100 variants are kept; the rest are counted, and case shares become bounds", () => {
   const model = tinyEngagement().models[0];
   const events = [];
