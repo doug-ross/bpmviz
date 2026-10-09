@@ -212,15 +212,22 @@ test("the Business case present mode shows a portfolio page and a single opportu
   if (!s) return;
   const p = s.page;
   await giveTouchEffort(p);
-  await p.evaluate(() => window.BPMVIZ.app.dispatch("record/add", { record: { kind: "opportunity", title: "Printable opportunity",
-    linkedModelId: "m-current", linkedNodeIds: ["scrub-sov-geocode", "appetite-capacity-triage"],
-    opportunity: { effort: "M", wave: "now", valueCase: { effortReductionPct: 50, shareOfCasesPct: 50, oneTimeCost: 5000, confidence: "high", basis: "supplied" } } } }));
+  await p.evaluate(() => {
+    const d = window.BPMVIZ.app.dispatch;
+    d("record/add", { record: { kind: "opportunity", title: "Printable opportunity",
+      linkedModelId: "m-current", linkedNodeIds: ["scrub-sov-geocode", "appetite-capacity-triage"],
+      opportunity: { effort: "M", wave: "now", valueCase: { effortReductionPct: 50, shareOfCasesPct: 50, oneTimeCost: 5000, confidence: "high", basis: "supplied" } } } });
+    // Planned but with no net annual benefit yet, so the portfolio total is incomplete.
+    d("record/add", { record: { kind: "opportunity", title: "Not yet modeled",
+      linkedModelId: "m-current", linkedNodeIds: ["scrub-sov-geocode"], opportunity: { effort: "S", wave: "next" } } });
+  });
   await p.click("#tab-present");
   await p.click("#pr-mode-business-case");
   await p.waitForSelector("#bc-portfolio");
   assert.equal(await p.$eval("#bc-portfolio", el => el.parentElement.className), "handoff", "a printable mode prints like the handoff");
   assert.match(await p.textContent("#bc-portfolio"), /Printable opportunity/);
   assert.match(await p.textContent("#bc-portfolio"), /\$22,500/);
+  assert.match(await p.textContent("#bc-portfolio"), /1 opportunity not yet counted/, "singular, not \"1 opportunities\"");
   await p.selectOption("#bc-present-select", { label: "Printable opportunity" });
   await p.waitForSelector("#bc-onepager");
   assert.match(await p.textContent("#bc-onepager"), /Business case: Printable opportunity/);
@@ -231,5 +238,6 @@ test("the Business case present mode shows a portfolio page and a single opportu
   await p.waitForSelector("#handoff-doc");
   assert.match(await p.textContent("#handoff-doc"), /Opportunity value and waves/);
   assert.match(await p.textContent("#handoff-doc"), /Printable opportunity/);
+  assert.match(await p.textContent("#handoff-doc"), /left out of the money totals/, "the handoff renders the portfolio's notes, not just the total line");
   clean(s.problems);
 });
