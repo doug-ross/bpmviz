@@ -1,1 +1,6 @@
 /* Styles for the client tool exports feature (exports slice). Owned by that slice; see docs/extensions.md. Use the tokens in tokens.css. */
+
+.export-dialog .export-toggles { display: flex; flex-wrap: wrap; gap: var(--space-4); margin: var(--space-3) 0 var(--space-4); }
+.export-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.export-section .field { margin: var(--space-3) 0; }
+.export-actions { margin-top: var(--space-3); }
