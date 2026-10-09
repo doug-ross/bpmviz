@@ -7,12 +7,12 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./util.js"), require("./schema.js"));
+    module.exports = factory(require("./util.js"), require("./schema.js"), require("./validate.js"));
   } else {
     const B = root.BPMVIZ = root.BPMVIZ || {};
-    B.store = factory(B.util, B.schema);
+    B.store = factory(B.util, B.schema, B.validate);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, validate) {
   "use strict";
 
   class StoreError extends Error {
@@ -139,14 +139,19 @@
       evidenceRefs: Array.isArray(input.evidenceRefs) ? input.evidenceRefs.filter(id => e.evidence.some(x => x.id === id)) : [],
       sensitive: input.sensitive === true,
       includeInHandoff: input.includeInHandoff !== false,
-      opportunity: kind === "opportunity" ? opportunityFields(input.opportunity || {}) : null,
+      opportunity: kind === "opportunity" ? opportunityFields(input.opportunity || {}, e, { linkedModelId: model ? model.id : null, linkedNodeIds }) : null,
       createdAt: now, updatedAt: now
     };
   }
 
-  function opportunityFields(o) {
+  /*
+   * wave and valueCase are kept only when given, so records written before
+   * they existed keep their shape. valueCase goes through the validator's
+   * sanitizer, which removes references that do not resolve.
+   */
+  function opportunityFields(o, e, record) {
     const ai = o.aiAssessment || {};
-    return {
+    const out = {
       intervention: enumValue("intervention", o.intervention || "", ""),
       simplerAlternative: cleanText(o.simplerAlternative, 4000),
       expectedBenefit: cleanText(o.expectedBenefit, 4000),
@@ -163,6 +168,19 @@
         mode: ["assist", "autonomous", ""].includes(ai.mode) ? ai.mode : ""
       }
     };
+    if (o.wave !== undefined && o.wave !== null) out.wave = enumValue("wave", o.wave, "");
+    if (o.valueCase !== undefined && o.valueCase !== null) {
+      const r = validate.sanitizeValueCase(o.valueCase, e, record);
+      if (r.errors.length) throw new StoreError("invalid", "Value case: " + r.errors[0].message);
+      out.valueCase = r.value;
+    }
+    return out;
+  }
+
+  /* Drops review items and entries that point at something that no longer exists. */
+  function pruneReviewRefs(e, gone) {
+    (e.reviewPacks || []).forEach(p => { p.items = p.items.filter(it => !gone(it.itemRef)); });
+    (e.reviews || []).forEach(r => { r.entries = r.entries.filter(it => !gone(it.itemRef)); });
   }
 
   function nextColumn(model, fromId, toId) {
@@ -227,6 +245,7 @@
       const before = e.records.length;
       e.records = e.records.filter(r => r.id !== p.id);
       if (e.records.length === before) throw new StoreError("not-found", "Record not found.");
+      pruneReviewRefs(e, ref => ref === "record/" + p.id);
       return { id: p.id };
     },
 
@@ -281,6 +300,7 @@
         m.sourceRefs = m.sourceRefs.filter(id => id !== p.id);
         m.nodes.forEach(n => { n.provenance.evidenceRefs = n.provenance.evidenceRefs.filter(id => id !== p.id); });
       });
+      (e.reviews || []).forEach(r => { if (r.applied && r.applied.evidenceId === p.id) r.applied.evidenceId = null; });
       return { id: p.id };
     },
 
@@ -375,8 +395,20 @@
       e.models = e.models.filter(x => x.id !== m.id);
       const base = e.models.find(x => x.id === m.basedOn.modelId);
       if (base && !e.models.some(x => x.basedOn && x.basedOn.modelId === base.id)) base.locked = false;
-      e.records.forEach(r => { if (r.linkedModelId === m.id) { r.linkedModelId = null; r.linkedNodeIds = []; } });
+      const live = new Set(e.models.flatMap(x => x.nodes.map(n => n.id)));
+      e.records.forEach(r => {
+        if (r.linkedModelId === m.id) { r.linkedModelId = null; r.linkedNodeIds = []; }
+        const vc = r.opportunity && r.opportunity.valueCase;
+        if (vc) {
+          if (vc.modelId === m.id) vc.modelId = null;
+          vc.nodeIds = vc.nodeIds.filter(id => live.has(id));
+        }
+      });
       e.scenarios.forEach(s => { delete s.runs[m.id]; });
+      // Event logs mapped to the deleted draft stay, detached from any model.
+      (e.datasets || []).forEach(d => { if (d.modelId === m.id) d.modelId = null; });
+      (e.reviewPacks || []).forEach(pk => { if (pk.modelId === m.id) pk.modelId = null; });
+      pruneReviewRefs(e, ref => ref.indexOf("step/" + m.id + "/") === 0);
       return { modelId: m.id };
     },
 
@@ -511,6 +543,58 @@
       return { kind: p.kind };
     },
 
+    /* Renames an event log, or changes its role, comparison, data status or notes. */
+    "dataset/update"(e, p) {
+      const d = (e.datasets || []).find(x => x.id === p.id);
+      if (!d) throw new StoreError("not-found", "Event log not found.");
+      const patch = p.patch || {};
+      if (patch.name !== undefined) {
+        const name = cleanText(patch.name, 200).trim();
+        if (!name) throw new StoreError("invalid", "An event log needs a name.");
+        d.name = name;
+      }
+      if (patch.role !== undefined) d.role = enumValue("datasetRole", patch.role, d.role);
+      if (patch.dataStatus !== undefined) d.dataStatus = enumValue("dataStatus", patch.dataStatus, d.dataStatus);
+      if (patch.notes !== undefined) d.notes = cleanText(patch.notes, 4000);
+      if (patch.comparesToDatasetId !== undefined) {
+        const target = patch.comparesToDatasetId;
+        if (target === null || target === "") d.comparesToDatasetId = null;
+        else {
+          if (target === d.id) throw new StoreError("invalid", "An event log cannot be compared with itself.");
+          if (!e.datasets.some(x => x.id === target)) throw new StoreError("not-found", "The event log to compare with was not found.");
+          d.comparesToDatasetId = target;
+        }
+      }
+      return { id: d.id };
+    },
+
+    /*
+     * Deletes an event log. Scenarios made from it are deleted too when
+     * removeScenarios is true; otherwise they stay without the link.
+     */
+    "dataset/delete"(e, p) {
+      const list = e.datasets || [];
+      const d = list.find(x => x.id === p.id);
+      if (!d) throw new StoreError("not-found", "Event log not found.");
+      e.datasets = list.filter(x => x.id !== d.id);
+      e.datasets.forEach(x => { if (x.comparesToDatasetId === d.id) x.comparesToDatasetId = null; });
+      const made = new Set(d.scenarioIds.concat(e.scenarios.filter(s => s.observedFrom && s.observedFrom.datasetId === d.id).map(s => s.id)));
+      let removed = 0;
+      if (p.removeScenarios === true) {
+        const before = e.scenarios.length;
+        e.scenarios = e.scenarios.filter(s => !made.has(s.id));
+        removed = before - e.scenarios.length;
+        e.datasets.forEach(x => { x.scenarioIds = x.scenarioIds.filter(id => !made.has(id)); });
+      } else {
+        e.scenarios.forEach(s => { if (s.observedFrom && s.observedFrom.datasetId === d.id) delete s.observedFrom; });
+      }
+      e.records.forEach(r => {
+        const vc = r.opportunity && r.opportunity.valueCase;
+        if (vc && vc.datasetId === d.id) vc.datasetId = null;
+      });
+      return { id: d.id, scenariosRemoved: removed };
+    },
+
     /* AI suggestions become records in one step, each marked as an AI draft. */
     "ai/applySuggestions"(e, p) {
       const records = Array.isArray(p.records) ? p.records : [];
@@ -633,5 +717,23 @@
     };
   }
 
-  return { createStore, StoreError, COMMANDS, DETAIL_KEYS };
+  /**
+   * Adds commands from a feature module: { "area/verb"(draft, payload) { ... } }.
+   * A name that is already taken throws, so two features cannot claim one command.
+   */
+  function registerCommands(defs) {
+    if (!defs || typeof defs !== "object") throw new TypeError("registerCommands needs an object of command handlers.");
+    const names = Object.keys(defs);
+    names.forEach(name => {
+      if (!/^[a-z][A-Za-z-]*\/[A-Za-z][A-Za-z-]*$/.test(name)) throw new TypeError("Command names look like area/verb: " + name);
+      if (typeof defs[name] !== "function") throw new TypeError("Command " + name + " needs a handler function.");
+      if (Object.prototype.hasOwnProperty.call(COMMANDS, name)) throw new Error("Command " + name + " is already registered.");
+    });
+    names.forEach(name => { COMMANDS[name] = defs[name]; });
+    return names;
+  }
+
+  const helpers = { findModel, findNode, editableModel, applyNodePatch, newRecord, cleanText, enumValue, StoreError };
+
+  return { createStore, StoreError, COMMANDS, DETAIL_KEYS, registerCommands, helpers };
 });

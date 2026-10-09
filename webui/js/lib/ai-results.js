@@ -95,6 +95,16 @@
         items: strict({ text: S, supportingRecordIds: IDS, supportingFigures: { type: "array", items: S } })
       },
       caveats: { type: "array", items: S }
+    }),
+    "log-mapping": strict({
+      mappings: {
+        type: "array",
+        items: strict({
+          activity: S, nodeId: NULLABLE_S,
+          confidence: { type: "string", enum: CONFIDENCE },
+          rationale: S
+        })
+      }
     })
   };
 
@@ -288,7 +298,30 @@
     if (ev) note(ev + " evidence item" + (ev === 1 ? " was" : "s were") + " marked reviewed; set to not reviewed.");
     if (links) note(links + " evidence link" + (links === 1 ? " was" : "s were") + " removed. Add links yourself after checking them.");
     e.scenarios.forEach(s => { if (s.provenance === "observed") { s.provenance = "supplied"; note("Scenario " + s.name + " changed from observed to supplied."); } });
-    e.assumptions.forEach(a => { if (a.status === "validated") { a.status = "supplied"; note("Assumption " + a.label + " changed from validated to supplied."); } });
+    e.assumptions.forEach(a => {
+      if (a.status === "validated" || a.status === "observed") { note("Assumption " + a.label + " changed from " + a.status + " to supplied."); a.status = "supplied"; }
+    });
+    // Observed data comes from an event log a person imports, never from an extraction.
+    const DROP = { datasets: "event log", reviewPacks: "review pack", reviews: "client review" };
+    Object.keys(DROP).forEach(key => {
+      if (!Array.isArray(e[key])) return;
+      if (e[key].length) note(e[key].length + " " + DROP[key] + (e[key].length === 1 ? " was" : "s were") + " removed. Import event logs and reviews yourself.", key);
+      delete e[key];
+    });
+    let observed = 0;
+    e.scenarios.forEach(s => {
+      if (s.observedFrom) { delete s.observedFrom; observed++; }
+      (s.measures || []).forEach(m => { if (m.status === "observed") { m.status = "supplied"; observed++; } });
+      const ov = (s.economics && s.economics.overrides) || {};
+      Object.keys(ov).forEach(k => { if (ov[k].status === "observed") { ov[k].status = "supplied"; observed++; } });
+    });
+    e.records.forEach(r => {
+      const vc = r.opportunity && r.opportunity.valueCase;
+      if (!vc) return;
+      if (vc.datasetId || vc.shareSource === "dataset" || vc.effortSource === "dataset") { vc.datasetId = null; vc.shareSource = "manual"; vc.effortSource = "node"; observed++; }
+      if (vc.basis === "observed" || vc.basis === "validated") { vc.basis = "supplied"; observed++; }
+    });
+    if (observed) note(observed + " observed or validated figure" + (observed === 1 ? " was" : "s were") + " set to supplied.");
     e.records.forEach(r => { r.generated = Object.assign({}, mark); });
     return { engagement: e, changes };
   }
@@ -395,6 +428,30 @@
     return parts.join("\n\n");
   }
 
+  function sanitizeLogMapping(p, errors, warnings) {
+    const max = schema.LIMITS.aiActivities;
+    if (p.mappings.length > max) warnings.push({ code: "payload.truncated", message: "Only the first " + max + " mappings are kept.", path: "payload.mappings" });
+    const seen = new Set();
+    const mappings = [];
+    p.mappings.slice(0, max).forEach((m, i) => {
+      const path = "payload.mappings[" + i + "]";
+      const activity = text(m.activity, 300).trim();
+      if (!activity) { errors.push({ path: path + ".activity", message: "Each mapping needs the activity name." }); return; }
+      if (seen.has(activity)) {
+        warnings.push({ code: "payload.duplicate", message: "Activity \"" + activity.slice(0, 60) + "\" is mapped twice; the first mapping is kept.", path });
+        return;
+      }
+      seen.add(activity);
+      let nodeId = m.nodeId === null || m.nodeId === "" ? null : m.nodeId;
+      if (nodeId !== null && !util.isValidId(nodeId)) {
+        warnings.push({ code: "payload.reference", message: "The step for \"" + activity.slice(0, 60) + "\" is not a valid ID; the activity stays unmapped.", path: path + ".nodeId" });
+        nodeId = null;
+      }
+      mappings.push({ activity, nodeId, confidence: m.confidence, rationale: text(m.rationale, 2000) });
+    });
+    return { mappings };
+  }
+
   /* ---------- The result file ---------- */
 
   function isAiResult(data) {
@@ -442,6 +499,7 @@
     };
     if (task !== "extract" && !result.engagementId) errors.push({ path: "engagementId", message: "The result does not say which engagement it was made for." });
     if (task === "future-state" && !result.baselineModelId) errors.push({ path: "baselineModelId", message: "A future-state result needs the baseline model ID." });
+    if (task === "log-mapping" && !result.baselineModelId) errors.push({ path: "baselineModelId", message: "A log-mapping result needs the ID of the model the activities are mapped to." });
 
     scanSecrets({ payload: input.payload, notes: input.notes, warnings: input.warnings }).forEach(hit => {
       errors.push({ path: hit.path, code: "output.secret", message: "This looks like " + hit.kind + ". The result was not loaded. Remove it from the sources and run the task again." });
@@ -471,6 +529,7 @@
     if (shapeErrors.length) return done(result);
     if (task === "opportunities") result.payload = sanitizeOpportunities(payload, errors, warnings);
     else if (task === "future-state") result.payload = sanitizeFutureState(payload, errors, warnings);
+    else if (task === "log-mapping") result.payload = sanitizeLogMapping(payload, errors, warnings);
     else result.payload = sanitizeSummary(payload, errors, warnings);
     return done(result);
   }
@@ -599,6 +658,7 @@
   function buildTaskInput(engagement, task, options) {
     const o = options || {};
     const e = engagement;
+    if (task === "log-mapping") return logMappingInput(e, o);
     const records = e.records.filter(r => (o.includeSensitive || !r.sensitive) &&
       (task !== "summary" || o.includeUnreviewedAi || !exporting.isUnreviewedAi(r)));
     const baseline = e.models.find(m => m.id === o.baselineModelId) || e.models.find(m => m.role === "current");
@@ -635,6 +695,43 @@
       };
     }
     return input;
+  }
+
+  /*
+   * For log mapping the AI sees the steps of one model (ID, label, lane,
+   * description) and the activity names from the log. No events, case IDs,
+   * resource names, timings or counts are sent. options: { modelId, activities: [{ name, events }] }.
+   * The most frequent names are sent first, up to LIMITS.aiActivities.
+   */
+  function logMappingInput(e, o) {
+    const model = e.models.find(m => m.id === o.modelId) || e.models.find(m => m.role === "current") || null;
+    const lanes = new Map(model ? model.lanes.map(l => [l.id, l.name]) : []);
+    const seen = new Set();
+    const acts = [];
+    (Array.isArray(o.activities) ? o.activities : []).forEach(a => {
+      const name = text(a && typeof a === "object" ? a.name : a, 300).trim();
+      if (!name || seen.has(name)) return;
+      seen.add(name);
+      acts.push({ name, events: a && util.isFiniteNumber(a.events) ? a.events : 0 });
+    });
+    acts.sort((a, b) => b.events - a.events);
+    const sent = acts.slice(0, schema.LIMITS.aiActivities);
+    const desc = n => {
+      const d = n.details && n.details.desc;
+      return d == null ? "" : text(Array.isArray(d) ? d.join(" ") : d, 1000);
+    };
+    return {
+      task: "log-mapping",
+      engagementId: e.id,
+      engagementRevision: e.revision,
+      modelId: model ? model.id : null,
+      baselineModelId: model ? model.id : null,
+      engagement: compact({ processName: e.meta.processName }),
+      steps: model ? model.nodes.filter(n => !n.removed && schema.typeInfo(n.semanticType).shape !== "gateway")
+        .map(n => compact({ id: n.id, label: n.label, lane: lanes.get(n.laneId) || "", description: desc(n) })) : [],
+      activities: sent.map(a => a.name),
+      excluded: { activities: acts.length - sent.length }
+    };
   }
 
   /* ---------- Figures in a drafted summary ---------- */
@@ -829,12 +926,39 @@
     return [{ key: "summary", index: 0, title: p.title, text: p.text, keyPoints: p.keyPoints, caveats: p.caveats, problems: [], notes }];
   }
 
+  /*
+   * Log-mapping items. context.activities, when given, lists the activity
+   * names that were sent; a mapping for any other name cannot be applied.
+   */
+  function logMappingItems(result, engagement, out, context) {
+    const model = engagement.models.find(m => m.id === result.baselineModelId);
+    if (!model) { out.errors.push({ path: "baselineModelId", message: "The model " + result.baselineModelId + " is not in this engagement." }); return []; }
+    out.baseline = { id: model.id, name: model.name, version: model.version };
+    const nodes = new Map(model.nodes.filter(n => !n.removed).map(n => [n.id, n]));
+    const names = context && Array.isArray(context.activities) ?
+      new Set(context.activities.map(a => (a && typeof a === "object" ? a.name : a)).filter(x => typeof x === "string").map(x => x.trim())) : null;
+    return result.payload.mappings.map((m, i) => {
+      const problems = [], notes = [];
+      const node = m.nodeId ? nodes.get(m.nodeId) : null;
+      if (m.nodeId && !node) problems.push("Step " + m.nodeId + " is not in " + model.name + ".");
+      else if (node && schema.typeInfo(node.semanticType).shape === "gateway") problems.push("A gateway is a decision point, not an activity. Choose a step instead.");
+      if (names && !names.has(m.activity)) problems.push("The activity \"" + m.activity + "\" was not sent to the assistant.");
+      if (!m.nodeId) notes.push("No matching step suggested; the activity stays unmapped.");
+      return {
+        key: "m" + i, index: i, activity: m.activity, nodeId: m.nodeId, stepLabel: node ? node.label : "",
+        confidence: m.confidence, rationale: m.rationale,
+        title: m.activity + (node ? " to " + node.label : ""), problems, notes
+      };
+    });
+  }
+
   /**
    * Lists the items a person reviews before applying a result.
    * Returns { task, errors, warnings, items, baseline, engagementSummary }.
-   * Items with problems cannot be applied.
+   * Items with problems cannot be applied. context is optional and used by
+   * log mapping (see logMappingItems).
    */
-  function prepareReview(result, engagement) {
+  function prepareReview(result, engagement, context) {
     const out = { task: result.task, errors: [], warnings: [], items: [], baseline: null, engagementSummary: null };
     const st = staleCheck(result, engagement);
     if (st.error) { out.errors.push({ path: "engagementId", message: st.error }); return out; }
@@ -847,13 +971,16 @@
     }
     if (result.task === "opportunities") out.items = opportunityItems(result, engagement);
     else if (result.task === "future-state") out.items = futureStateItems(result, engagement, out);
+    else if (result.task === "log-mapping") out.items = logMappingItems(result, engagement, out, context);
     else out.items = summaryItems(result, engagement, out);
     return out;
   }
 
   /**
    * The store command that applies the chosen items: { type, payload }.
-   * For an extraction it is { type: "open", engagement }.
+   * For an extraction it is { type: "open", engagement }. For log mapping it
+   * is { type: "log-mapping/proposals", payload }: proposals for the import
+   * wizard to show, not a store command.
    */
   function applyCommand(result, review, selectedKeys) {
     const chosen = new Set(selectedKeys || []);
@@ -863,6 +990,16 @@
     if (!picked.length) return null;
     if (result.task === "opportunities") {
       return { type: "ai/applySuggestions", payload: { records: picked.map(it => it.record), stamp } };
+    }
+    if (result.task === "log-mapping") {
+      return {
+        type: "log-mapping/proposals",
+        payload: {
+          modelId: result.baselineModelId,
+          mappings: picked.map(it => ({ activity: it.activity, nodeId: it.nodeId, method: "ai", confidence: it.confidence, rationale: it.rationale })),
+          stamp
+        }
+      };
     }
     if (result.task === "summary") {
       const p = result.payload;

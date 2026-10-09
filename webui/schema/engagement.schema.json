@@ -88,6 +88,30 @@
         "$ref": "#/$defs/narrative"
       }
     },
+    "datasets": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "$ref": "#/$defs/dataset"
+      },
+      "description": "Aggregates of imported event logs. Optional."
+    },
+    "reviewPacks": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "$ref": "#/$defs/reviewPack"
+      },
+      "description": "Review packs sent to client stakeholders. Optional."
+    },
+    "reviews": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/$defs/review"
+      },
+      "description": "Client reviews received and applied. Optional."
+    },
     "migration": {
       "anyOf": [
         {
@@ -858,6 +882,7 @@
           "enum": [
             "supplied",
             "calculated",
+            "observed",
             "validated"
           ]
         },
@@ -951,6 +976,30 @@
             "$ref": "#/$defs/measure"
           }
         },
+        "observedFrom": {
+          "type": "object",
+          "required": [
+            "datasetId"
+          ],
+          "additionalProperties": false,
+          "description": "Present when the scenario was generated from an event log.",
+          "properties": {
+            "datasetId": {
+              "$ref": "#/$defs/id"
+            },
+            "variantId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80
+            },
+            "caseLabel": {
+              "type": "string",
+              "maxLength": 200
+            }
+          }
+        },
         "economics": {
           "anyOf": [
             {
@@ -1032,6 +1081,7 @@
                         "enum": [
                           "illustrative",
                           "supplied",
+                          "observed",
                           "validated"
                         ]
                       },
@@ -1188,6 +1238,17 @@
                   "type": "string",
                   "maxLength": 4000
                 },
+                "wave": {
+                  "enum": [
+                    "",
+                    "now",
+                    "next",
+                    "later"
+                  ]
+                },
+                "valueCase": {
+                  "$ref": "#/$defs/valueCase"
+                },
                 "aiAssessment": {
                   "type": "object",
                   "properties": {
@@ -1259,7 +1320,8 @@
             "extract",
             "opportunities",
             "future-state",
-            "summary"
+            "summary",
+            "log-mapping"
           ]
         },
         "provider": {
@@ -1435,6 +1497,7 @@
           "enum": [
             "illustrative",
             "supplied",
+            "observed",
             "validated"
           ]
         },
@@ -1445,6 +1508,794 @@
         "note": {
           "type": "string",
           "maxLength": 2000
+        }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "n"
+      ],
+      "description": "Summary statistics in minutes of the dataset time basis (counts for eventsPerCase). Percentiles use linear interpolation.",
+      "properties": {
+        "n": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mean": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "p10": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "p25": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "p50": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "p75": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "p90": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    },
+    "dataset": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "description": "Aggregates of one event log: never events, case IDs or resource names.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "role": {
+          "enum": [
+            "baseline",
+            "after"
+          ]
+        },
+        "comparesToDatasetId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "modelId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dataStatus": {
+          "enum": [
+            "demonstration",
+            "supplied",
+            "observed"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fileName": {
+              "type": "string",
+              "maxLength": 260
+            },
+            "format": {
+              "enum": [
+                "csv",
+                "tsv",
+                "xlsx"
+              ]
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^([0-9a-f]{64})?$"
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "events": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "timestampMode": {
+              "enum": [
+                "single",
+                "start-end"
+              ]
+            },
+            "caseIds": {
+              "enum": [
+                "hashed",
+                "sequence",
+                "original"
+              ]
+            },
+            "resources": {
+              "enum": [
+                "dropped",
+                "counted"
+              ]
+            },
+            "droppedRows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unmatchedEvents": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "excludedIncompleteCases": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "period": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "start": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "end": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "days": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "timeBasis": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "calendar": {
+              "enum": [
+                "calendar",
+                "business"
+              ]
+            },
+            "businessMinutesPerDay": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "dayStartMinute": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1439
+            }
+          }
+        },
+        "mapping": {
+          "type": "array",
+          "maxItems": 2000,
+          "items": {
+            "type": "object",
+            "required": [
+              "activity"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "activity": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "nodeId": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/id"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "method": {
+                "enum": [
+                  "exact",
+                  "fuzzy",
+                  "ai",
+                  "manual",
+                  "ignored"
+                ]
+              },
+              "events": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "cases": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "complete": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "arrivalsPerDay": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "annualizedVolume": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "cycleTime": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/stats"
+                }
+              ]
+            },
+            "eventsPerCase": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/stats"
+                }
+              ]
+            }
+          }
+        },
+        "steps": {
+          "type": "array",
+          "maxItems": 2000,
+          "items": {
+            "type": "object",
+            "required": [
+              "nodeId"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "nodeId": {
+                "$ref": "#/$defs/id"
+              },
+              "visits": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "cases": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "caseShare": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              },
+              "reworkCases": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "reworkRate": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              },
+              "duration": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/$defs/stats"
+                  }
+                ]
+              },
+              "wait": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/$defs/stats"
+                  }
+                ]
+              },
+              "sojourn": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/$defs/stats"
+                  }
+                ]
+              },
+              "resources": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "handoffRate": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "maxItems": 2000,
+          "items": {
+            "type": "object",
+            "required": [
+              "fromNodeId",
+              "toNodeId"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "fromNodeId": {
+                "$ref": "#/$defs/id"
+              },
+              "toNodeId": {
+                "$ref": "#/$defs/id"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "edgeIds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/id"
+                }
+              }
+            }
+          }
+        },
+        "variants": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "nodeIds"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "nodeIds": {
+                "type": "array",
+                "maxItems": 200,
+                "items": {
+                  "$ref": "#/$defs/id"
+                }
+              },
+              "cases": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "share": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              },
+              "cycleTime": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/$defs/stats"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "otherVariants": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variants": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cases": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "scenarioIds": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      }
+    },
+    "valueCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Figures behind an opportunity's modeled value. Empty nodeIds means the record's linked steps.",
+      "properties": {
+        "modelId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "nodeIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "effortReductionPct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "durationReductionPct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "shareOfCasesPct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "shareSource": {
+          "enum": [
+            "manual",
+            "dataset"
+          ]
+        },
+        "effortSource": {
+          "enum": [
+            "node",
+            "dataset"
+          ]
+        },
+        "datasetId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "oneTimeCost": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "annualRunningCost": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "confidence": {
+          "enum": [
+            "",
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "basis": {
+          "enum": [
+            "illustrative",
+            "supplied",
+            "observed",
+            "validated"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "role": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "organization": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    },
+    "itemRef": {
+      "type": "string",
+      "pattern": "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|record/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79})$",
+      "description": "step/<modelId>/<nodeId> or record/<recordId>."
+    },
+    "reviewPack": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "format": {
+          "enum": [
+            "html",
+            "xlsx"
+          ]
+        },
+        "stakeholder": {
+          "$ref": "#/$defs/person"
+        },
+        "engagementRevision": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "modelId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "required": [
+              "itemRef"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "itemRef": {
+                "$ref": "#/$defs/itemRef"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 300
+              }
+            }
+          }
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "packId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receivedAt": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "submittedAt": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "source": {
+          "enum": [
+            "html",
+            "xlsx"
+          ]
+        },
+        "reviewer": {
+          "$ref": "#/$defs/person"
+        },
+        "generalComment": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "entries": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "required": [
+              "itemRef",
+              "verdict"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "itemRef": {
+                "$ref": "#/$defs/itemRef"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "verdict": {
+                "enum": [
+                  "confirm",
+                  "dispute",
+                  "unsure"
+                ]
+              },
+              "comment": {
+                "type": "string",
+                "maxLength": 4000
+              }
+            }
+          }
+        },
+        "applied": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "validations": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "questions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "evidenceId": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/id"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
         }
       }
     },

@@ -47,3 +47,17 @@ export function tinyEngagement() {
     scenarios: [], records: [], evidence: [], assumptions: []
   };
 }
+
+/**
+ * A dataset fixture from tests/fixtures/datasets: tiny-baseline and tiny-after
+ * fit tinyEngagement(); underwriting-baseline and underwriting-after fit the
+ * underwriting-current-state example. Each call returns a fresh copy.
+ */
+export function datasetFixture(name) {
+  return JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "datasets", name + ".dataset.json"), "utf8"));
+}
+
+/** The tiny baseline dataset, for tinyEngagement(). */
+export function tinyDataset() {
+  return datasetFixture("tiny-baseline");
+}

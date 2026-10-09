@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bpmviz.local/schema/review-response.schema.json",
+  "title": "BPMVIZ review response",
+  "description": "A client reviewer's answers to a review pack, schema version 1. The app imports it with Open; validateReviewResponse in webui/js/lib/validate.js enforces this contract and refuses a response made for another engagement.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "packId",
+    "engagementId",
+    "entries"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "bpmviz.review-response"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "packId": {
+      "$ref": "#/$defs/id"
+    },
+    "engagementId": {
+      "$ref": "#/$defs/id"
+    },
+    "engagementRevision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "format": {
+      "enum": [
+        "html",
+        "xlsx"
+      ]
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "role": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "organization": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    },
+    "submittedAt": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "generalComment": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "entries": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "required": [
+          "itemRef"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "itemRef": {
+            "type": "string",
+            "pattern": "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|record/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79})$",
+            "description": "step/<modelId>/<nodeId> or record/<recordId>."
+          },
+          "verdict": {
+            "enum": [
+              "",
+              "confirm",
+              "dispute",
+              "unsure"
+            ],
+            "description": "Empty when the reviewer gave no verdict."
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 4000
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
+    }
+  }
+}

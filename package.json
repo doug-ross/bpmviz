@@ -14,6 +14,7 @@
     "screenshots": "node tools/screenshots.mjs",
     "serve": "node tools/serve.mjs",
     "check": "node tools/check-style.mjs && node tools/check-prose.mjs",
+    "fix:ascii": "node tools/escape-ascii.mjs",
     "ai": "node tools/ai/cli.mjs",
     "smoke:ai": "node tools/ai/smoke.mjs"
   },

@@ -1,0 +1,294 @@
+{
+  "id": "ds-tiny-baseline",
+  "name": "Tiny baseline log",
+  "role": "baseline",
+  "comparesToDatasetId": null,
+  "modelId": "m-current",
+  "dataStatus": "demonstration",
+  "createdAt": "2026-02-01T00:00:00.000Z",
+  "source": {
+    "fileName": "tiny-baseline.csv",
+    "format": "csv",
+    "sha256": "",
+    "rows": 343,
+    "events": 340,
+    "timestampMode": "start-end",
+    "caseIds": "hashed",
+    "resources": "counted",
+    "droppedRows": 3,
+    "unmatchedEvents": 3,
+    "excludedIncompleteCases": 2
+  },
+  "period": {
+    "start": "2026-01-05T00:00:00.000Z",
+    "end": "2026-01-30T00:00:00.000Z",
+    "days": 25
+  },
+  "timeBasis": {
+    "calendar": "calendar",
+    "businessMinutesPerDay": 480,
+    "dayStartMinute": 540
+  },
+  "mapping": [
+    {
+      "activity": "Start",
+      "nodeId": "start",
+      "method": "exact",
+      "events": 100
+    },
+    {
+      "activity": "Do the work",
+      "nodeId": "work",
+      "method": "exact",
+      "events": 120
+    },
+    {
+      "activity": "Done",
+      "nodeId": "end",
+      "method": "exact",
+      "events": 100
+    },
+    {
+      "activity": "Fix",
+      "nodeId": "fix",
+      "method": "exact",
+      "events": 20
+    },
+    {
+      "activity": "Coffee break",
+      "nodeId": null,
+      "method": "ignored",
+      "events": 3
+    }
+  ],
+  "cases": {
+    "count": 100,
+    "complete": 100,
+    "arrivalsPerDay": 4,
+    "annualizedVolume": 1460,
+    "cycleTime": {
+      "n": 100,
+      "mean": 110.4,
+      "min": 28.8,
+      "p10": 48,
+      "p25": 72,
+      "p50": 96,
+      "p75": 134.4,
+      "p90": 192,
+      "max": 288
+    },
+    "eventsPerCase": {
+      "n": 100,
+      "mean": 3.91,
+      "min": 1.02,
+      "p10": 1.7,
+      "p25": 2.55,
+      "p50": 3.4,
+      "p75": 4.76,
+      "p90": 6.8,
+      "max": 10.2
+    }
+  },
+  "steps": [
+    {
+      "nodeId": "start",
+      "visits": 100,
+      "cases": 100,
+      "caseShare": 1,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": null,
+      "wait": null,
+      "sojourn": null,
+      "resources": null,
+      "handoffRate": null
+    },
+    {
+      "nodeId": "work",
+      "visits": 120,
+      "cases": 100,
+      "caseShare": 1,
+      "reworkCases": 20,
+      "reworkRate": 0.2,
+      "duration": {
+        "n": 120,
+        "mean": 51.75,
+        "min": 13.5,
+        "p10": 22.5,
+        "p25": 33.75,
+        "p50": 45,
+        "p75": 63,
+        "p90": 90,
+        "max": 135
+      },
+      "wait": {
+        "n": 120,
+        "mean": 31.05,
+        "min": 8.1,
+        "p10": 13.5,
+        "p25": 20.25,
+        "p50": 27,
+        "p75": 37.8,
+        "p90": 54,
+        "max": 81
+      },
+      "sojourn": {
+        "n": 120,
+        "mean": 82.8,
+        "min": 21.6,
+        "p10": 36,
+        "p25": 54,
+        "p50": 72,
+        "p75": 100.8,
+        "p90": 144,
+        "max": 216
+      },
+      "resources": 2,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "end",
+      "visits": 100,
+      "cases": 100,
+      "caseShare": 1,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": null,
+      "wait": null,
+      "sojourn": null,
+      "resources": null,
+      "handoffRate": null
+    },
+    {
+      "nodeId": "fix",
+      "visits": 20,
+      "cases": 20,
+      "caseShare": 0.2,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 20,
+        "mean": 34.5,
+        "min": 9,
+        "p10": 15,
+        "p25": 22.5,
+        "p50": 30,
+        "p75": 42,
+        "p90": 60,
+        "max": 90
+      },
+      "wait": {
+        "n": 20,
+        "mean": 20.7,
+        "min": 5.4,
+        "p10": 9,
+        "p25": 13.5,
+        "p50": 18,
+        "p75": 25.2,
+        "p90": 36,
+        "max": 54
+      },
+      "sojourn": {
+        "n": 20,
+        "mean": 55.2,
+        "min": 14.4,
+        "p10": 24,
+        "p25": 36,
+        "p50": 48,
+        "p75": 67.2,
+        "p90": 96,
+        "max": 144
+      },
+      "resources": 5,
+      "handoffRate": 0.25
+    }
+  ],
+  "transitions": [
+    {
+      "fromNodeId": "start",
+      "toNodeId": "work",
+      "count": 100,
+      "edgeIds": [
+        "e1"
+      ]
+    },
+    {
+      "fromNodeId": "work",
+      "toNodeId": "end",
+      "count": 100,
+      "edgeIds": [
+        "e2",
+        "e5"
+      ]
+    },
+    {
+      "fromNodeId": "work",
+      "toNodeId": "fix",
+      "count": 20,
+      "edgeIds": [
+        "e2",
+        "e3"
+      ]
+    },
+    {
+      "fromNodeId": "fix",
+      "toNodeId": "work",
+      "count": 20,
+      "edgeIds": [
+        "e4"
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "v1",
+      "nodeIds": [
+        "start",
+        "work",
+        "end"
+      ],
+      "cases": 80,
+      "share": 0.8,
+      "cycleTime": {
+        "n": 80,
+        "mean": 82.8,
+        "min": 21.6,
+        "p10": 36,
+        "p25": 54,
+        "p50": 72,
+        "p75": 100.8,
+        "p90": 144,
+        "max": 216
+      }
+    },
+    {
+      "id": "v2",
+      "nodeIds": [
+        "start",
+        "work",
+        "fix",
+        "work",
+        "end"
+      ],
+      "cases": 20,
+      "share": 0.2,
+      "cycleTime": {
+        "n": 20,
+        "mean": 220.8,
+        "min": 57.6,
+        "p10": 96,
+        "p25": 144,
+        "p50": 192,
+        "p75": 268.8,
+        "p90": 384,
+        "max": 576
+      }
+    }
+  ],
+  "otherVariants": {
+    "variants": 0,
+    "cases": 0
+  },
+  "scenarioIds": [],
+  "notes": "Synthetic demonstration data for tests. Not from a real engagement."
+}

@@ -64,7 +64,7 @@
       ["consultant-estimate", "Consultant estimate"], ["generated", "Generated draft"], ["workshop", "Workshop capture"]
     ],
     validation: [["unvalidated", "Not validated"], ["validated", "Validated"], ["disputed", "Disputed"]],
-    assumptionStatus: [["illustrative", "Illustrative"], ["supplied", "Supplied"], ["validated", "Validated"]],
+    assumptionStatus: [["illustrative", "Illustrative"], ["supplied", "Supplied"], ["observed", "Observed"], ["validated", "Validated"]],
     waitType: [["", "Not set"], ["none", "No wait"], ["queue", "Queue wait"], ["external", "External party wait"], ["other", "Other delay"]],
     edgeType: [
       ["sequence", "Sequence"], ["conditional", "Conditional"], ["default", "Default"],
@@ -73,7 +73,8 @@
     change: [["unchanged", "Unchanged"], ["modified", "Modified"], ["added", "Added"], ["removed", "Removed"]],
     aiTask: [
       ["extract", "Extract a current state"], ["opportunities", "Suggest opportunities"],
-      ["future-state", "Draft a future state"], ["summary", "Draft a handoff summary"]
+      ["future-state", "Draft a future state"], ["summary", "Draft a handoff summary"],
+      ["log-mapping", "Map event log activities to steps"]
     ],
     aiProvider: [["claude", "Claude (Claude Code)"], ["codex", "ChatGPT (Codex)"], ["other", "Other assistant"]],
     aiSurface: [["cli", "Command line"], ["skill", "Agent skill"], ["app", "In-app helper"]],
@@ -83,7 +84,20 @@
       ["consumer", "Consumer plan (Claude Pro or Max, ChatGPT Plus or Pro)"]
     ],
     narrativeKind: [["executive-summary", "Executive summary"]],
-    narrativeStatus: [["draft", "Draft"], ["reviewed", "Reviewed"]]
+    narrativeStatus: [["draft", "Draft"], ["reviewed", "Reviewed"]],
+    datasetRole: [["baseline", "Baseline"], ["after", "After the change"]],
+    logFormat: [["csv", "Comma-separated text"], ["tsv", "Tab-separated text"], ["xlsx", "Excel workbook"]],
+    timestampMode: [["single", "One timestamp per event"], ["start-end", "Start and end timestamps"]],
+    caseIdHandling: [["hashed", "Hashed"], ["sequence", "Numbered in sequence"], ["original", "Original IDs kept"]],
+    mappingMethod: [
+      ["exact", "Same name"], ["fuzzy", "Similar name"], ["ai", "Suggested by AI"],
+      ["manual", "Chosen by hand"], ["ignored", "Left out"]
+    ],
+    wave: [["", "Not set"], ["now", "Now"], ["next", "Next"], ["later", "Later"]],
+    confidence: [["", "Not set"], ["low", "Low"], ["medium", "Medium"], ["high", "High"]],
+    valueInputSource: [["manual", "Entered by hand"], ["dataset", "From an event log"]],
+    reviewVerdict: [["confirm", "Confirm"], ["dispute", "Dispute"], ["unsure", "Not sure"]],
+    reviewFormat: [["html", "Web page"], ["xlsx", "Excel workbook"]]
   };
 
   const ENUMS = {};
@@ -154,8 +168,26 @@
     assumptions: 500,
     narratives: 20,
     stringLength: 20000,
-    detailDepth: 5
+    detailDepth: 5,
+    datasets: 12,
+    datasetMapping: 2000,
+    datasetVariants: 100,
+    variantSteps: 200,
+    datasetTransitions: 2000,
+    scenariosPerDataset: 10,
+    eventLogBytes: 25 * 1024 * 1024,
+    eventLogEvents: 200000,
+    eventLogCases: 100000,
+    aiActivities: 500,
+    reviewPacks: 100,
+    reviews: 200,
+    reviewEntries: 5000,
+    reviewResponseBytes: 2 * 1024 * 1024
   };
+
+  /* Files exchanged with client reviewers (see docs/extensions.md). */
+  const REVIEW_RESPONSE_ID = "bpmviz.review-response";
+  const REVIEW_PACK_ID = "bpmviz.review-pack";
 
   function blankEngagement(meta) {
     const now = util.nowIso();
@@ -186,6 +218,9 @@
       evidence: [],
       assumptions: [],
       narratives: [],
+      datasets: [],
+      reviewPacks: [],
+      reviews: [],
       migration: null
     };
   }
@@ -197,6 +232,6 @@
 
   return {
     SCHEMA_ID, SCHEMA_VERSION, ENUMS, LABELS, SEMANTIC_TYPES, RECORD_KIND_ORDER,
-    DRIVERS, LIMITS, typeInfo, blankEngagement, label
+    DRIVERS, LIMITS, REVIEW_RESPONSE_ID, REVIEW_PACK_ID, typeInfo, blankEngagement, label
   };
 });
