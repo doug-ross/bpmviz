@@ -21,7 +21,7 @@ dialog.dlg.li-dialog { width: min(1100px, calc(100vw - 32px)); }
 .li-radio input { margin-top: 2px; }
 .li-keep { display: grid; gap: var(--space-2); padding-left: var(--space-5); }
 .li-keep[hidden] { display: none; }
-.li-ends { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-1) var(--space-3); max-height: 180px; overflow: auto; }
+.li-ends { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-1) var(--space-3); max-height: 180px; overflow: auto; }
 .li-warnings h4 { margin: 0 0 var(--space-1); font-size: var(--fs-small); }
 
 /* Event logs in Records */
