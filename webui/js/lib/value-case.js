@@ -100,12 +100,19 @@
     if (scope.skipped.length) notes.push("Not counted as work steps: " + scope.skipped.join(", ") + ".");
     if (vc.datasetId && !dataset) notes.push("The linked event log is no longer in the engagement.");
 
-    // Hours per affected case, step by step.
+    // Hours per affected case, step by step. A step's visits come from the
+    // event log when it has them. When the share of cases affected also
+    // comes from the event log, each step's visits are weighted by the
+    // fraction of the affected cases that reach that particular step (its
+    // case share divided by the affected share), so a step only some
+    // affected cases visit is not charged to every affected case.
+    const datasetShare = (vc.shareSource === "dataset" && dataset) ? dq.caseShareForNodes(dataset, scope.nodeIds) : null;
     let assumedVisits = 0;
+    let shareAssumedEven = false;
     const stepInputs = scope.nodes.map(n => {
       let hours = null, status = null;
+      const s = dataset ? dq.step(dataset, n.id) : null;
       if (vc.effortSource === "dataset") {
-        const s = dataset ? dq.step(dataset, n.id) : null;
         const minutes = s ? p50(s.duration) : null;
         hours = minutes === null ? null : minutes / 60;
         status = dsBasis;
@@ -114,13 +121,20 @@
         hours = hoursOf(n.measures && n.measures.touchEffort);
         status = nodeStatus(n);
       }
-      let visits = dataset ? dq.visitsPerCase(dataset, n.id) : null;
+      let visits = s && s.cases > 0 ? s.visits / s.cases : null;
       let visitStatus = dsBasis;
-      if (visits === null) { visits = 1; visitStatus = null; assumedVisits++; }
+      if (visits === null) {
+        visits = 1; visitStatus = null; assumedVisits++;
+      } else if (datasetShare && datasetShare.value > 0 && util.isFiniteNumber(s.caseShare)) {
+        visits *= Math.min(1, s.caseShare / datasetShare.value);
+      } else {
+        shareAssumedEven = true;
+      }
       const label = (vc.effortSource === "dataset" ? "Observed median duration x visits, " : "Touch effort x visits, ") + n.label;
       return inp(label, hours === null ? null : hours * visits, "hour", weakest([status || "supplied"].concat(visitStatus ? [visitStatus] : [])));
     });
     if (assumedVisits) notes.push("One visit per affected case is assumed for " + assumedVisits + " step" + (assumedVisits === 1 ? "" : "s") + " without event-log data.");
+    if (shareAssumedEven && scope.nodes.length > 1) notes.push("The share of cases affected is assumed to apply evenly across every affected step; the event log cannot say which affected cases reach which step.");
     if (vc.effortSource === "dataset") notes.push("Observed step duration stands in for effort; it can include waiting inside the step.");
     const hoursPerCase = output({
       key: "hoursPerCase", label: "Human hours per affected case", unit: "hour",
@@ -295,8 +309,11 @@
    * Totals per wave: { waves: [{ wave, label, recordIds, annualHoursSaved,
    * netAnnualBenefit, oneTimeCost, fteReleased, incomplete }], total, overlaps, notes }.
    * Sums cover opportunities with that figure; incomplete counts those without
-   * a net annual benefit. total covers now, next and later. overlaps lists
-   * steps that two or more opportunities in one wave both change.
+   * a net annual benefit. total covers now, next and later, and also carries
+   * total.overlaps: steps that two or more planned opportunities change,
+   * whichever waves they are in, since the total adds every wave together.
+   * overlaps (top level) lists only steps shared by opportunities in the
+   * same wave, for the Waves board.
    */
   function portfolio(e, opts) {
     const records = opportunities(e, opts);
@@ -333,8 +350,29 @@
       });
       byStep.forEach(x => { if (x.recordIds.length > 1) overlaps.push(x); });
     });
+    // The total adds every planned wave together, so two opportunities that
+    // change the same step in different waves would otherwise be counted
+    // twice with no warning. Look for shared steps across the whole planned
+    // set, not just within one wave.
+    const byStepAcrossWaves = new Map();
+    planned.forEach(r => {
+      const w = waveOf(r);
+      const scope = affected(e, r);
+      scope.nodes.forEach(n => {
+        const key = scope.model.id + "|" + n.id;
+        if (!byStepAcrossWaves.has(key)) byStepAcrossWaves.set(key, { modelId: scope.model.id, nodeId: n.id, label: n.label, recordIds: [], waves: new Set() });
+        const entry = byStepAcrossWaves.get(key);
+        entry.recordIds.push(r.id);
+        entry.waves.add(w);
+      });
+    });
+    const totalOverlaps = [];
+    byStepAcrossWaves.forEach(x => { if (x.waves.size > 1) totalOverlaps.push({ modelId: x.modelId, nodeId: x.nodeId, label: x.label, recordIds: x.recordIds, waves: [...x.waves] }); });
+    total.overlaps = totalOverlaps;
     const notes = ["Wave totals add opportunities planned together. They are modeled figures, not realized savings."];
     if (overlaps.length) notes.push(overlaps.length + " step" + (overlaps.length === 1 ? " is" : "s are") + " changed by more than one opportunity in the same wave, so their savings may be counted twice.");
+    if (totalOverlaps.length) notes.push(totalOverlaps.length + " step" + (totalOverlaps.length === 1 ? " is" : "s are") +
+      " changed by opportunities planned in more than one wave, so the total may count part of their savings twice: " + totalOverlaps.map(x => x.label).join(", ") + ".");
     if (total.incomplete) notes.push(total.incomplete + " planned opportunit" + (total.incomplete === 1 ? "y has" : "ies have") + " no net annual benefit yet and " + (total.incomplete === 1 ? "is" : "are") + " left out of the money totals.");
     return { waves, total, overlaps, notes };
   }
