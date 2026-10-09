@@ -503,7 +503,7 @@
           h("thead", null, h("tr", null, h("th", { scope: "col" }, "Activity in the log"), h("th", { scope: "col", class: "num" }, "Events"),
             h("th", { scope: "col" }, "Step"), h("th", { scope: "col" }, "Accept"), h("th", { scope: "col" }, "How it was matched"))),
           tbody)),
-        h("p", { class: "note" }, "Ask AI and Save names send or save the activity names only, never times, case IDs or people. Activity names are client material, so the data-handling rules apply."));
+        h("p", { class: "note" }, "Only the activity names are ever sent to an AI assistant or saved for the command line, never times, case IDs or people. Activity names are client material, so the data-handling rules apply."));
     }
 
     /* Step 4: privacy and options. */
