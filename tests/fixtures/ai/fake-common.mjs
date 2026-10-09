@@ -1,5 +1,5 @@
 // Shared behavior for the fake claude and codex programs used by the runner tests.
-// FAKE_AI_MODE is a comma-separated list, one entry per run: ok, invalid, secret,
+// FAKE_AI_MODE is a comma-separated list, one entry per run (every task, including log-mapping): ok, invalid, secret,
 // usage-limit, unexpected-tool, hang, denied. FAKE_AI_STATE counts the runs and
 // FAKE_AI_LOG receives one JSON line per run with what the fake was given.
 import fs from "node:fs";
@@ -35,6 +35,12 @@ export function envSeen() {
 function between(prompt, tag) {
   const m = prompt.match(new RegExp("<<<" + tag + " ([0-9a-f]+)>>>\\n([\\s\\S]*?)\\n<<<END " + tag + " \\1>>>"));
   return m ? m[2] : null;
+}
+
+/* The task input in the prompt, for checking what was sent. */
+export function inputOf(prompt) {
+  const text = between(prompt, "ENGAGEMENT");
+  return text ? JSON.parse(text) : null;
 }
 
 export function taskOf(prompt) {
@@ -77,7 +83,30 @@ export function payloadFor(task, prompt, mode) {
   if (task === "summary") {
     return { title: "Summary", text: bad ? "" : "The process has one main bottleneck.", keyPoints: [{ text: "Clearance is manual.", supportingRecordIds: [], supportingFigures: [] }], caveats: ["Figures are illustrative."] };
   }
+  if (task === "log-mapping") return logMappingFor(input, bad);
   return null;
+}
+
+/*
+ * Log mapping: each activity goes to the step whose label shares the most
+ * words with it, or stays unmapped. In invalid mode the first mapping names
+ * a step that does not exist, so the runner has to repair it.
+ */
+function logMappingFor(input, bad) {
+  const words = t => String(t).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(w => w.length > 2 && w !== "the" && w !== "and");
+  const steps = (input && input.steps) || [];
+  const names = (input && input.activities) || [];
+  return { mappings: names.map((activity, i) => {
+    const mine = new Set(words(activity));
+    let best = null, score = 0;
+    steps.forEach(s => {
+      const n = words(s.label).filter(w => mine.has(w)).length;
+      if (n > score) { best = s; score = n; }
+    });
+    const nodeId = bad && i === 0 ? "no-such-step" : best ? best.id : null;
+    return { activity, nodeId, confidence: score > 1 ? "high" : score ? "medium" : "low",
+      rationale: best ? "The activity names the same work as " + best.label + "." : "No step describes this activity." };
+  }) };
 }
 
 /* A small engagement as an extraction would produce it, with things the draft rules must undo. */
