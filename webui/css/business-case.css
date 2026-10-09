@@ -1,1 +1,20 @@
 /* Styles for the value case and business case feature (value slice). Owned by that slice; see docs/extensions.md. Use the tokens in tokens.css. */
+
+.bc-matrix { max-width: 680px; margin: 0 auto var(--space-4); }
+.bc-quadrant { fill: var(--surface-muted); stroke: var(--border); stroke-width: 1; }
+.bc-quadrant-label { font-size: 13px; font-weight: var(--fw-medium); fill: var(--ink); }
+.bc-axis-label { font-size: 12px; fill: var(--ink-muted); }
+.bc-dot { fill: var(--primary); stroke: var(--surface); stroke-width: 2; }
+.bc-dot-rank { font-size: 10px; font-weight: var(--fw-bold); fill: var(--primary-ink); pointer-events: none; }
+
+.bc-wave-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--space-4); align-items: start; }
+.bc-wave-col { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-3); display: grid; gap: var(--space-3); align-content: start; }
+.bc-wave-col h3 { font-size: var(--fs-h3); }
+.bc-wave-totals { font-size: var(--fs-caption); color: var(--ink-muted); margin: calc(var(--space-2) * -1) 0 0; }
+.bc-wave-empty { font-size: var(--fs-small); color: var(--ink-muted); margin: 0; }
+.bc-wave-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--space-2); display: grid; gap: 4px; }
+.bc-wave-card .title { font-weight: var(--fw-medium); color: var(--ink); }
+.bc-wave-card .field { gap: 2px; }
+.bc-wave-card .select { min-height: 32px; }
+
+.bc-onepager .stat-row { margin-bottom: var(--space-3); }
