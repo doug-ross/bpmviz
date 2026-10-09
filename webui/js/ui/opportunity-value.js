@@ -11,7 +11,7 @@
   "use strict";
   const B = root.BPMVIZ = root.BPMVIZ || {};
   const { h, s } = B.dom;
-  const { schema, units, util, valueCase, businessCase, datasetQuery } = B;
+  const { schema, units, util, valueCase, businessCase, datasetQuery, exporting } = B;
   const { field, textarea } = B.forms;
 
   function unitsCtxOf(e) {
@@ -69,23 +69,28 @@
     }
 
     function currentValueCase() {
-      return {
-        modelId: null, nodeIds: [],
+      // Start from the stored value case so a scope set another way (an
+      // imported value case, or one that names a model or a subset of
+      // steps) survives a save that never touches those fields.
+      return Object.assign({}, existing, {
         effortReductionPct: numberOf(effortReduction), durationReductionPct: numberOf(durationReduction),
         shareOfCasesPct: numberOf(shareOfCases), shareSource: shareSourceSel.value,
         effortSource: effortSourceSel.value, datasetId: datasetSel.value || null,
         oneTimeCost: numberOf(oneTimeCost), annualRunningCost: numberOf(runningCost),
         confidence: confidenceSel.value, basis: basisSel.value, note: note.value
-      };
+      });
+    }
+
+    function touchedFields(vc) {
+      return vc.effortReductionPct !== null || vc.durationReductionPct !== null ||
+        vc.shareOfCasesPct !== null || vc.oneTimeCost !== null || vc.datasetId !== null;
     }
 
     function updatePreview() {
       datasetField.hidden = !needsDataset();
       shareField.hidden = shareSourceSel.value === "dataset";
       const vc = currentValueCase();
-      const touched = vc.effortReductionPct !== null || vc.durationReductionPct !== null ||
-        vc.shareOfCasesPct !== null || vc.oneTimeCost !== null || vc.datasetId !== null;
-      if (!touched) { preview.textContent = "Fill in the effort or duration reduction to estimate the value of this opportunity."; return; }
+      if (!touchedFields(vc)) { preview.textContent = "Fill in the effort or duration reduction to estimate the value of this opportunity."; return; }
       const draft = Object.assign({}, record, { opportunity: Object.assign({}, record.opportunity, { valueCase: vc }) });
       let result;
       try { result = valueCase.compute(e, draft, { scenarioId: ctx.scenarioId }); } catch (err) { preview.textContent = "Could not estimate the value from these figures yet."; return; }
@@ -113,7 +118,12 @@
 
     return {
       el,
-      collect: () => ({ wave: waveSel.value, valueCase: currentValueCase() }),
+      collect: () => {
+        const vc = currentValueCase();
+        const hadValueCase = !!(record.opportunity && record.opportunity.valueCase);
+        if (!hadValueCase && !touchedFields(vc)) return { wave: waveSel.value };
+        return { wave: waveSel.value, valueCase: vc };
+      },
       check: () => (needsDataset() && !datasetSel.value ? "Choose an event log, or switch the effort or share of cases to a typed value." : null)
     };
   }
@@ -260,7 +270,8 @@
       h("p", { class: "lede" }, "Every tracked opportunity, ranked by modeled value against effort, with totals for the waves planned so far."),
       h("div", { class: "stat-row" },
         stat(page.total.netAnnualBenefit === null ? "Not yet modeled" : units.formatMeasure(page.total.netAnnualBenefit, "currency", c),
-          "Net annual benefit, waves now, next and later", page.total.incomplete ? page.total.incomplete + " opportunities not yet counted" : "Modeled, not realized"),
+          "Net annual benefit, waves now, next and later",
+          page.total.incomplete ? page.total.incomplete + " opportunit" + (page.total.incomplete === 1 ? "y" : "ies") + " not yet counted" : "Modeled, not realized"),
         stat(page.total.fteReleased === null ? "Not yet modeled" : util.formatNumber(page.total.fteReleased, 1) + " FTE",
           "Redeployable capacity across planned waves", "Time that can be redeployed, not headcount"),
         stat(page.total.oneTimeCost === null ? "Not yet recorded" : units.formatMeasure(page.total.oneTimeCost, "currency", c), "One-time cost across planned waves", "")),
@@ -334,7 +345,8 @@
     id: "value-summary", after: "opportunity",
     render(hd, ctx) {
       const e = ctx.engagement;
-      const page = businessCase.buildPortfolioPager(e, { scenarioId: ctx.scenarioId, includeSensitive: ctx.includeSensitive, includeUnreviewedAi: ctx.includeUnreviewedAi });
+      const ids = exporting.selectRecords(e, { includeSensitive: ctx.includeSensitive, includeUnreviewedAi: ctx.includeUnreviewedAi, handoffOnly: true }).map(r => r.id);
+      const page = businessCase.buildPortfolioPager(e, { scenarioId: ctx.scenarioId, includeSensitive: ctx.includeSensitive, includeUnreviewedAi: ctx.includeUnreviewedAi, ids });
       if (!page.rows.length) return null;
       const c = unitsCtxOf(e);
       return [
@@ -348,8 +360,7 @@
             h("td", null, r.quadrantLabel || h("span", { class: "muted" }, "Not scored")),
             h("td", null, r.waveLabel)))))),
         page.total.netAnnualBenefit !== null ? h("p", null, "Planned waves together: " + units.formatMeasure(page.total.netAnnualBenefit, "currency", c) + " modeled net annual benefit a year.") : null,
-        page.overlaps.length ? h("p", { class: "note" }, page.overlaps.length + " step" + (page.overlaps.length === 1 ? " is" : "s are") +
-          " changed by more than one opportunity in the same wave.") : null
+        page.notes.map(n => h("p", { class: "note" }, n))
       ];
     }
   });
