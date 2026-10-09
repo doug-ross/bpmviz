@@ -97,7 +97,7 @@ Exit codes: 0 done, 1 failed, 2 wrong usage, 3 stopped by the data-handling rule
 
 `npm run ai -- text <file>` prints the text BPMVIZ reads from a document, which is a quick way to see what an assistant will get from a PDF or a slide deck. `npm run ai -- input <task> --in <file>` prints exactly what a task sends; for log-mapping add `--activities <file>`.
 
-For log mapping the assistant sees the steps of one model (ID, label, swimlane and description, without gateways) and the activity names, most frequent first, up to 500 of them. It never sees events, times, case IDs, counts or people. A mapping to a step that is not in the model, to a gateway, or for a name that was not sent cannot be used.
+For log mapping the assistant sees the steps of one model (ID, label, swimlane and description, without gateways) and the activity names, most frequent first, up to 500 of them. It never sees events, times, case IDs, counts or people. Activity names that look like a key or token are left out before anything is sent, and the result says how many. A mapping to a step that is not in the model, to a gateway, or for a name that was not sent cannot be used.
 
 ## Agent skills
 
@@ -137,7 +137,7 @@ The helper accepts requests only from the page it served, in the tab that used t
 - **No history.** Sessions are not saved (`--no-session-persistence`, `--ephemeral`). Each job works in a new temporary folder that is removed when it ends.
 - **Sources are data.** Documents are fenced with markers that carry a random code, and the assistant is told to report any instruction it finds in them rather than follow it. Such reports appear as warnings in the review.
 - **Drafts stay drafts.** An extraction has every step set to not validated, every source to not reviewed and every link removed, and it takes the confidentiality and data status you declared. Suggestions and changes that point at steps that do not exist cannot be applied.
-- **Credentials are caught.** A result that contains something that looks like a key, token or private key is refused.
+- **Credentials are caught.** A result that contains something that looks like a key, token or private key is refused. For log mapping, activity names that look like one are not sent at all.
 - **Figures are traced.** A drafted summary is checked against the engagement's figures, and any number that cannot be found is flagged for review.
 - **A person decides.** Nothing is applied until you tick it, and applied items stay marked as AI drafts until someone reviews them.
 

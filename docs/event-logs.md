@@ -49,10 +49,10 @@ Each activity maps to one step at most. Several activities may map to the same s
 - **Chosen by hand.** Pick a step in the list; your choice counts as accepted.
 - **Left out.** An activity without a step is not counted. Its events show as "events not mapped".
 
-An AI assistant can suggest steps for the names that are still unmapped. It only ever sees the activity names and the steps of the model (ID, label, swimlane and description): no times, case IDs, counts or people. Activity names are client material, so the data-handling rules in [ai.md](ai.md) apply.
+An AI assistant can suggest steps for the names that are still unmapped. It only ever sees the activity names and the steps of the model (ID, label, swimlane and description): no times, case IDs, counts or people. Activity names are client material, so the data-handling rules in [ai.md](ai.md) apply. A name that looks like a key or token is never sent; it stays in the activities step for you to map by hand.
 
 - **In the app with the AI helper** (`npm run serve -- --ai`): **Ask AI for the rest** in the activities step.
-- **On the command line or with an agent skill**: **Save names for the command line** saves the names, one per line, most frequent first. Run `npm run ai -- log-mapping --in <engagement> --activities <names.txt>` (the log file itself also works as `--activities`), or `/bpmviz-log-mapping` in Claude Code or `$bpmviz-log-mapping` in Codex. Then **Load an AI mapping result** in the activities step.
+- **On the command line or with an agent skill**: **Save names for the command line** saves the names, one per line, most frequent first. Run `npm run ai -- log-mapping --in <engagement> --activities <names.txt>` (the log file itself also works as `--activities`, read as UTF-8 or Windows-1252 with the same rule as the import, so the names match), or `/bpmviz-log-mapping` in Claude Code or `$bpmviz-log-mapping` in Codex. Then **Load an AI mapping result** in the activities step.
 
 The suggestions you tick in the review come back into the activities step marked "Suggested by AI". Each one still needs its own tick. A suggestion never replaces a mapping you have ticked.
 
@@ -68,7 +68,7 @@ Events are sorted per case by time, then by their order in the file. Only events
 
 | Figure | Meaning |
 |---|---|
-| Cases | Cases measured. With the end-step rule, a case counts only when its last mapped event is at an end step. By default the end steps are end events and the steps that lead to an end event through gateways and events only; you can change them. Cases left out are counted. |
+| Cases | Cases measured. A case with no event mapped to a step is left out and listed under what to check. With the end-step rule, a case counts only when its last mapped event is at an end step; the cases left out by that rule are stored as incomplete. By default the end steps are end events and the steps that lead to an end event through gateways and events only; you can change them. A case is complete when its last mapped event is at an end step, so with no end steps no case counts as complete. |
 | Cycle time | From the start of the first mapped event of a case to the end of its last. |
 | Visits, cases and share | How often a step occurs, in how many cases, and the share of measured cases that visit it. |
 | Repeat visits | Cases that visit a step more than once, and their share of the cases that visit it. |
@@ -77,7 +77,7 @@ Events are sorted per case by time, then by their order in the file. Only events
 | Time since the previous event | End of an event minus the end of the previous one; with one time per event, the time between the two events. |
 | Statistics | Count, mean, minimum, maximum and the 10th, 25th, 50th (median), 75th and 90th percentiles, with linear interpolation between values. Fewer than 5 values are flagged. |
 | Step pairs | Pairs of consecutive steps in a case, with the connectors between them. A connector path may pass through gateways and events, up to 6 connectors. A pair with no such path is kept and marked as not in the model; parallel branches that interleave in the log show up this way. |
-| Variants | The sequence of steps of a case. The 100 most common are kept; the rest are counted together, which makes the share of cases for a set of steps a range instead of an exact figure. |
+| Variants | The sequence of steps of a case. The 100 most common are kept; the rest are counted together, which makes the share of cases for a set of steps a range instead of an exact figure. A variant stores its first 200 steps, and cases whose first 200 steps are the same count as one variant, so every stored variant is a different sequence. |
 | Annualized volume | Cases per day over the log period (first to last event, at least one day), times 365. A short or seasonal period gives a rough figure. |
 
 ## Scenarios from the log
