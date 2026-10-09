@@ -15,7 +15,33 @@ const require = createRequire(import.meta.url);
 const ai = require(path.join(root, "webui", "js", "lib", "ai-results.js"));
 
 export const MAX_REPAIRS = 2;
-const TIMEOUT_MS = { extract: 20 * 60000, opportunities: 8 * 60000, "future-state": 10 * 60000, summary: 6 * 60000 };
+export const TASKS = ["extract", "opportunities", "future-state", "summary", "log-mapping"];
+const SECRET_ADVICE = {
+  extract: "Remove credentials from the sources", opportunities: "Remove credentials from the engagement",
+  "future-state": "Remove credentials from the engagement", summary: "Remove credentials from the engagement",
+  "log-mapping": "Check the activity names and the model steps"
+};
+const TIMEOUT_MS = { extract: 20 * 60000, opportunities: 8 * 60000, "future-state": 10 * 60000, summary: 6 * 60000, "log-mapping": 6 * 60000 };
+
+/*
+ * Task options passed through to the task input. Log mapping takes
+ * { modelId, activities: [{ name, events }] }: the model to map to and the
+ * activity names from the log (events only order the names; they are not sent).
+ */
+export function cleanTaskOptions(task, raw) {
+  const o = raw && typeof raw === "object" ? raw : {};
+  if (task !== "log-mapping") return {};
+  const seen = new Set();
+  const activities = [];
+  (Array.isArray(o.activities) ? o.activities : []).slice(0, 5000).forEach(a => {
+    const name = String(a && typeof a === "object" ? a.name : a == null ? "" : a).replace(/\s+/g, " ").trim().slice(0, 300);
+    if (!name || seen.has(name)) return;
+    seen.add(name);
+    const events = a && typeof a === "object" && Number.isFinite(a.events) && a.events >= 0 ? Math.floor(a.events) : 0;
+    activities.push({ name, events });
+  });
+  return { modelId: typeof o.modelId === "string" ? o.modelId.slice(0, 80) : undefined, activities };
+}
 
 /** The plan to hold the job to: what the tool reports, or else what the person declared. */
 export function effectivePlan(status, declared) {
@@ -52,7 +78,7 @@ function readDraftFile(job) {
  * options: { task, provider, engagement, sources: [{ name, buffer }], plan, approvalConfirmed,
  *   trainingOptOutConfirmed, writtenApproval, includeSensitive, baselineModelId, model, surface,
  *   confidentiality, dataStatus, processName, clientDisplayName, engagementName, useApiKey,
- *   keep, signal, onEvent, status, timeoutMs }
+ *   keep, signal, onEvent, status, timeoutMs, taskOptions (log mapping: { modelId, activities }) }
  * Resolves { ok, result, errors, warnings, review, rounds, jobId, jobDir, plan }.
  * Throws AiFailure when the job cannot run or the tool fails.
  */
@@ -60,10 +86,17 @@ export async function runTask(o) {
   const provider = PROVIDERS[o.provider];
   if (!provider) throw new AiFailure("input.provider", "Unknown AI tool \"" + o.provider + "\". Use claude or codex.");
   const task = o.task;
-  if (!["extract", "opportunities", "future-state", "summary"].includes(task)) throw new AiFailure("input.task", "Unknown task \"" + task + "\".");
+  if (!TASKS.includes(task)) throw new AiFailure("input.task", "Unknown task \"" + task + "\".");
   const emit = ev => { if (o.onEvent) o.onEvent(ev); };
   const e = o.engagement || null;
   if (task !== "extract" && !e) throw new AiFailure("input.missing", "This task reads an engagement. Give the engagement file with --in.");
+  const taskOptions = cleanTaskOptions(task, o.taskOptions);
+  if (task === "log-mapping") {
+    if (!taskOptions.activities.length) throw new AiFailure("input.missing", "Give the activity names to map, with --activities.");
+    const model = e.models.find(m => m.id === taskOptions.modelId) || (taskOptions.modelId ? null : e.models.find(m => m.role === "current"));
+    if (!model) throw new AiFailure("input.baseline", "The model " + (taskOptions.modelId || "to map to") + " is not in the engagement.");
+    taskOptions.modelId = model.id;
+  }
 
   emit({ type: "stage", stage: "status", message: "Checking " + provider.name + " and its sign-in" });
   const status = o.status || await provider.status(o);
@@ -95,9 +128,17 @@ export async function runTask(o) {
     }
     if (task === "extract" && !job.sources.length) throw new AiFailure("input.missing", "Give at least one source document to extract from.");
 
-    const input = e ? ai.buildTaskInput(e, task, { includeSensitive: o.includeSensitive, baselineModelId: o.baselineModelId }) : null;
-    const baselineModelId = task === "future-state" ? input.baselineModelId : null;
+    const input = e ? ai.buildTaskInput(e, task, Object.assign({ includeSensitive: o.includeSensitive, baselineModelId: o.baselineModelId }, taskOptions)) : null;
+    const baselineModelId = task === "future-state" || task === "log-mapping" ? input.baselineModelId : null;
+    const reviewContext = task === "log-mapping" ? { activities: input.activities } : undefined;
     if (task === "future-state" && !baselineModelId) throw new AiFailure("input.baseline", "The engagement has no current-state model to start from.");
+    if (input && input.excluded.activities) {
+      warnings.push({ code: "input.activities", path: "activities", message: "Only the " + input.activities.length + " most frequent activity names were sent; " + input.excluded.activities + " were not." });
+    }
+    if (input && input.excluded.secretActivities) {
+      const n = input.excluded.secretActivities;
+      warnings.push({ code: "input.secret", path: "activities", message: n + " activity name" + (n === 1 ? " that looks" : "s that look") + " like a credential " + (n === 1 ? "was" : "were") + " not sent. Map " + (n === 1 ? "it" : "them") + " by hand in the event-log import." });
+    }
     if (input && input.excluded.sensitiveRecords) {
       warnings.push({ code: "input.sensitive", path: "records", message: input.excluded.sensitiveRecords + " sensitive records were not sent." });
     }
@@ -161,10 +202,10 @@ export async function runTask(o) {
       let review = null;
       if (validation) {
         const secret = validation.errors.find(x => x.code === "output.secret");
-        if (secret) throw new AiFailure("output.secret", "The draft contained what looks like a credential (" + secret.path + "), so it was not kept. Remove credentials from the sources and run the task again.");
+        if (secret) throw new AiFailure("output.secret", "The draft contained what looks like a credential (" + secret.path + "), so it was not kept. " + SECRET_ADVICE[task] + " and run the task again.");
         validation.errors.forEach(x => problems.push(x));
         if (validation.ok && e) {
-          review = ai.prepareReview(validation.result, e);
+          review = ai.prepareReview(validation.result, e, reviewContext);
           review.errors.forEach(x => problems.push(x));
           review.items.filter(it => it.problems.length).forEach(it => problems.push({ path: "item " + (it.index + 1), message: it.title + ": " + it.problems.join(" ") }));
         }
