@@ -105,6 +105,24 @@ test("applySetWaves moves one or several opportunities and returns their ids", (
   assert.equal(e.records.find(r => r.id === "b").opportunity.wave, "next");
 });
 
+test("buildOnePager keeps a sensitive or unreviewed-AI record out unless the options ask for it", () => {
+  const e = engagement([
+    opp("sensitive", BASE_CASE, { sensitive: true }),
+    opp("draft", BASE_CASE, { generated: { task: "opportunities", provider: "claude", reviewed: false } })
+  ]);
+  assert.equal(bc.buildOnePager(e, "sensitive", {}), null);
+  assert.notEqual(bc.buildOnePager(e, "sensitive", { includeSensitive: true }), null);
+  assert.equal(bc.buildOnePager(e, "draft", {}), null);
+  assert.notEqual(bc.buildOnePager(e, "draft", { includeUnreviewedAi: true }), null);
+});
+
+test("buildOnePager does not print the skipped-steps note twice", () => {
+  const e = engagement([opp("a", BASE_CASE, { linkedNodeIds: ["work", "check"] })]);
+  const page = bc.buildOnePager(e, "a");
+  assert.deepEqual(page.skippedSteps, ["Check"]);
+  assert.equal(page.notes.some(n => /Not counted as work steps/.test(n)), false, "the skippedSteps field already carries this, so the notes list should not repeat it");
+});
+
 test("applySetWaves rejects an empty list, an unknown opportunity and an invalid wave", () => {
   const e = engagement([opp("a", BASE_CASE)]);
   assert.throws(() => bc.applySetWaves(e, { changes: [] }, StoreError), StoreError);

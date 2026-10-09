@@ -33,25 +33,32 @@
    *   confidence, confidenceLabel, basis, outputs (ordered), missing, notes,
    *   affectedSteps, skippedSteps, oneTimeCost, annualRunningCost, note,
    *   rank, quadrant, quadrantLabel, suggestedWave, hasValueCase }.
-   * Returns null when recordId does not name an opportunity in the engagement.
+   * Returns null when recordId does not name an opportunity in the engagement,
+   * or names a sensitive record and opts.includeSensitive is not set, or an
+   * unreviewed AI draft and opts.includeUnreviewedAi is not set (the same
+   * rule as valueCase.opportunities() and exporting.selectRecords).
    * opts: passed through to value-case.js (scenarioId, includeSensitive, includeUnreviewedAi).
    */
   function buildOnePager(e, recordId, opts) {
     const r = findRecord(e, recordId);
     if (!r || r.kind !== "opportunity") return null;
-    const o = r.opportunity || {};
-    const vc = o.valueCase || null;
+    const options = opts || {};
+    if (r.sensitive && !options.includeSensitive) return null;
+    if (r.generated && !r.generated.reviewed && !options.includeUnreviewedAi) return null;
+    const op = r.opportunity || {};
+    const vc = op.valueCase || null;
     const result = valueCase.compute(e, r, opts);
     const scope = valueCase.affected(e, r);
     const ranked = valueCase.rank(e, opts).find(x => x.recordId === r.id) || null;
     const outputs = ONE_PAGER_KEYS.map(key => result.outputs.find(x => x.key === key)).filter(Boolean);
     return {
       recordId: r.id, title: r.title, owner: r.owner || "", status: r.status,
-      intervention: o.intervention ? schema.label("intervention", o.intervention) : "",
-      effort: o.effort ? schema.label("effortSize", o.effort) : "",
-      wave: o.wave || "", waveLabel: schema.label("wave", o.wave || ""),
+      intervention: op.intervention ? schema.label("intervention", op.intervention) : "",
+      effort: op.effort ? schema.label("effortSize", op.effort) : "",
+      wave: op.wave || "", waveLabel: schema.label("wave", op.wave || ""),
       confidence: result.confidence, confidenceLabel: schema.label("confidence", result.confidence || ""),
-      basis: result.basis, outputs, missing: result.missing, notes: result.notes,
+      basis: result.basis, outputs, missing: result.missing,
+      notes: result.notes.filter(n => !/^Not counted as work steps:/.test(n)),
       affectedSteps: scope.nodes.map(n => n.label), skippedSteps: scope.skipped,
       oneTimeCost: vc && util.isFiniteNumber(vc.oneTimeCost) ? vc.oneTimeCost : null,
       annualRunningCost: vc && util.isFiniteNumber(vc.annualRunningCost) ? vc.annualRunningCost : null,

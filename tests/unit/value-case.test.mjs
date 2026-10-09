@@ -100,7 +100,10 @@ test("gateways and events among the linked steps are not counted as work", () =>
 test("an event log supplies effort, visits per case and the share of cases", () => {
   const e = engagement([opp("a", Object.assign({}, BASE_CASE, { effortSource: "dataset", shareSource: "dataset", datasetId: "ds-tiny-baseline", shareOfCasesPct: null }))], { datasets: true });
   const r = vc.compute(e, e.records[0]);
-  close(out(r, "hoursPerCase").value, 45 / 60 * 1.2 + 30 / 60 * 1, "median durations x visits per case");
+  // work is visited by every case (visits per case 1.2); fix is visited by
+  // only 20% of cases, so its visits are weighted down to 1 x 0.2 before
+  // being added to work's, rather than charged to every affected case.
+  close(out(r, "hoursPerCase").value, 45 / 60 * 1.2 + 30 / 60 * 1 * 0.2, "median durations x visits per case, weighted by the share of affected cases that reach each step");
   const share = out(r, "annualHoursSaved").inputs.find(i => /Share of cases/.test(i.label));
   close(share.value, 100, "every case does the work");
   assert.equal(share.status, "illustrative", "a demonstration log gives illustrative figures");
