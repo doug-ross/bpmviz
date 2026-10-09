@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bpmviz.local/schema/ai-result.schema.json",
   "title": "BPMVIZ AI result",
-  "description": "Output of one AI task (extract, opportunities, future-state or summary), schema version 1. The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
+  "description": "Output of one AI task (extract, opportunities, future-state, summary or log-mapping), schema version 1. The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
   "type": "object",
   "required": [
     "schema",
@@ -22,7 +22,8 @@
         "extract",
         "opportunities",
         "future-state",
-        "summary"
+        "summary",
+        "log-mapping"
       ]
     },
     "engagementId": {
@@ -52,7 +53,7 @@
           "type": "null"
         }
       ],
-      "description": "The current-state model a future-state change set applies to."
+      "description": "The current-state model a future-state change set applies to, or the model a log mapping maps activities to."
     },
     "generated": {
       "type": "object",
@@ -201,6 +202,9 @@
         },
         {
           "$ref": "#/$defs/summary"
+        },
+        {
+          "$ref": "#/$defs/logMapping"
         }
       ]
     }
@@ -628,6 +632,50 @@
           "type": "array",
           "items": {
             "type": "string"
+          }
+        }
+      }
+    },
+    "logMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mappings"
+      ],
+      "properties": {
+        "mappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "activity",
+              "nodeId",
+              "confidence",
+              "rationale"
+            ],
+            "properties": {
+              "activity": {
+                "type": "string"
+              },
+              "nodeId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "rationale": {
+                "type": "string"
+              }
+            }
           }
         }
       }

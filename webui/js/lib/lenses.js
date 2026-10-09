@@ -24,6 +24,23 @@
     { id: "evidence", label: "Evidence coverage" }
   ];
 
+  const REGISTERED = new Map();
+
+  /**
+   * Adds a lens from a feature module: { id, label, compute(ctx) }. compute
+   * returns the same shape as computeLens (title, description, unit,
+   * population, coverage, nodes, edges, legend, notes); missing keys get the
+   * empty defaults. A duplicate id throws.
+   */
+  function registerLens(def) {
+    if (!def || typeof def.id !== "string" || !/^[a-z][a-z0-9-]{0,40}$/.test(def.id)) throw new TypeError("A lens needs an id of lowercase letters, digits and hyphens.");
+    if (typeof def.compute !== "function") throw new TypeError("Lens " + def.id + " needs a compute function.");
+    if (LENSES.some(l => l.id === def.id)) throw new Error("Lens " + def.id + " is already registered.");
+    LENSES.push({ id: def.id, label: String(def.label || def.id) });
+    REGISTERED.set(def.id, def);
+    return def;
+  }
+
   function isTask(node) {
     return schema.typeInfo(node.semanticType).shape === "task";
   }
@@ -67,6 +84,10 @@
     };
     const scenarioName = ctx.scenarioName || "the selected scenario";
     if (id === "none") return result;
+    if (REGISTERED.has(id)) {
+      const extra = REGISTERED.get(id).compute(ctx) || {};
+      return Object.assign(result, extra, { id });
+    }
 
     if (id === "time") {
       const inScope = tasks.filter(n => rp && rp.membership.get(n.id) !== "excluded");
@@ -226,5 +247,5 @@
     return result;
   }
 
-  return { LENSES, computeLens };
+  return { LENSES, computeLens, registerLens };
 });

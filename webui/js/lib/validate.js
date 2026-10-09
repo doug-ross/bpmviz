@@ -367,11 +367,15 @@
     return model;
   }
 
-  function sanitizeScenario(c, raw, i, scenarioIds, modelsById) {
-    const path = "scenarios[" + i + "]";
+  /*
+   * datasetIds, when given, is the set of event-log dataset IDs that
+   * observedFrom may point to; a dangling reference is removed with a warning.
+   */
+  function sanitizeScenario(c, raw, i, scenarioIds, modelsById, datasetIds, pathOverride) {
+    const path = pathOverride || "scenarios[" + i + "]";
     const s = obj(c, raw, path, true);
     knownKeys(c, s, path, ["id", "name", "statusLabel", "statusTone", "provenance", "summary", "attributes",
-      "timing", "runs", "measures", "economics"]);
+      "timing", "runs", "measures", "economics", "observedFrom"]);
     const timing = obj(c, s.timing, path + ".timing");
     const scenario = {
       id: idOf(c, s.id, path + ".id", scenarioIds),
@@ -476,7 +480,7 @@
         label: str(c, me.label, mp + ".label", { max: 200 }) || String(me.key || "Measure"),
         unit,
         values, suppliedText,
-        status: ["supplied", "calculated", "validated"].includes(me.status) ? me.status : "supplied",
+        status: MEASURE_STATUS.includes(me.status) ? me.status : "supplied",
         note: str(c, me.note, mp + ".note", { max: 2000 })
       };
     });
@@ -517,13 +521,455 @@
         overrides
       };
     }
+    if (s.observedFrom !== undefined && s.observedFrom !== null) {
+      const op = path + ".observedFrom";
+      const o = obj(c, s.observedFrom, op);
+      knownKeys(c, o, op, ["datasetId", "variantId", "caseLabel"]);
+      const datasetId = util.isValidId(o.datasetId) ? o.datasetId : null;
+      if (!datasetId || (datasetIds && !datasetIds.has(datasetId))) {
+        c.warn(op + ".datasetId", "Event log \"" + String(o.datasetId).slice(0, 60) + "\" not found; the link to it was removed.", "ref.dangling");
+      } else {
+        scenario.observedFrom = {
+          datasetId,
+          variantId: o.variantId == null ? null : str(c, o.variantId, op + ".variantId", { max: 80 }),
+          caseLabel: str(c, o.caseLabel, op + ".caseLabel", { max: 200 })
+        };
+      }
+    }
     return scenario;
+  }
+
+  /* ---------- Event-log datasets, value cases and client reviews (all optional) ---------- */
+
+  const MEASURE_STATUS = ["supplied", "calculated", "observed", "validated"];
+  const STAT_KEYS = ["n", "mean", "min", "p10", "p25", "p50", "p75", "p90", "max"];
+
+  /** Lookup sets for cross-references, built from a sanitized (or partly sanitized) engagement. */
+  function refsOf(e) {
+    const list = key => (e && Array.isArray(e[key]) ? e[key] : []);
+    return {
+      modelsById: new Map(list("models").map(m => [m.id, m])),
+      nodeIndex: new Map(list("models").map(m => [m.id, new Set(m.nodes.map(n => n.id))])),
+      edgeIndex: new Map(list("models").map(m => [m.id, new Set(m.edges.map(x => x.id))])),
+      scenarioIds: new Set(list("scenarios").map(s => s.id)),
+      datasetIds: new Set(list("datasets").map(d => d.id)),
+      recordIds: new Set(list("records").map(r => r.id)),
+      evidenceIds: new Set(list("evidence").map(x => x.id)),
+      packIds: new Set(list("reviewPacks").map(p => p.id))
+    };
+  }
+
+  function count(c, v, path) {
+    return num(c, v, path, { min: 0, integer: true, fallback: 0 });
+  }
+
+  /* An optional reference: null when absent; removed with a warning when it does not resolve. */
+  function optionalRef(c, v, path, known, what) {
+    if (v === undefined || v === null || v === "") return null;
+    if (util.isValidId(v) && known.has(v)) return v;
+    c.warn(path, what + " \"" + String(v).slice(0, 60) + "\" not found; reference removed.", "ref.dangling");
+    return null;
+  }
+
+  function stats(c, v, path) {
+    if (v === undefined || v === null) return null;
+    const s = obj(c, v, path);
+    knownKeys(c, s, path, STAT_KEYS);
+    const out = { n: count(c, s.n, path + ".n") };
+    STAT_KEYS.slice(1).forEach(k => { out[k] = num(c, s[k], path + "." + k); });
+    return out;
+  }
+
+  function share(c, v, path) {
+    return num(c, v, path, { min: 0, max: 1 });
+  }
+
+  /**
+   * One event-log dataset: aggregates only, never events, case IDs or
+   * resource names. refs come from refsOf(); datasetIds are the IDs that
+   * comparesToDatasetId may name; taken collects dataset IDs.
+   */
+  function datasetOf(c, raw, path, refs, datasetIds, taken) {
+    const d = obj(c, raw, path, true);
+    knownKeys(c, d, path, ["id", "name", "role", "comparesToDatasetId", "modelId", "dataStatus", "createdAt", "source", "period",
+      "timeBasis", "mapping", "cases", "steps", "transitions", "variants", "otherVariants", "scenarioIds", "notes"]);
+    const id = idOf(c, d.id, path + ".id", taken);
+    const modelId = optionalRef(c, d.modelId, path + ".modelId", refs.modelsById, "Model");
+    if (d.modelId == null) c.warn(path + ".modelId", "The event log is not linked to a model.", "dataset.model", "info");
+    const nodes = modelId ? refs.nodeIndex.get(modelId) : null;
+    const edges = modelId ? refs.edgeIndex.get(modelId) : null;
+    const nodeRef = (v, p) => {
+      if (!util.isValidId(v)) { c.warn(p, "Ignored an invalid step reference.", "ref.invalid"); return null; }
+      if (nodes && !nodes.has(v)) { c.warn(p, "Step \"" + v + "\" not found; reference removed.", "ref.dangling"); return null; }
+      return v;
+    };
+    let compares = null;
+    if (d.comparesToDatasetId != null && d.comparesToDatasetId !== "") {
+      if (d.comparesToDatasetId === d.id) c.warn(path + ".comparesToDatasetId", "An event log cannot be compared with itself; reference removed.", "ref.dangling");
+      else compares = optionalRef(c, d.comparesToDatasetId, path + ".comparesToDatasetId", datasetIds, "Event log");
+    }
+    const sp = path + ".source";
+    const src = obj(c, d.source, sp);
+    knownKeys(c, src, sp, ["fileName", "format", "sha256", "rows", "events", "timestampMode", "caseIds", "resources",
+      "droppedRows", "unmatchedEvents", "excludedIncompleteCases"]);
+    if (src.sha256 && !/^[0-9a-f]{64}$/.test(String(src.sha256))) c.warn(sp + ".sha256", "The file fingerprint is not a SHA-256 value; it was removed.", "dataset.hash");
+    const pp = path + ".period", tp = path + ".timeBasis", cp = path + ".cases", op = path + ".otherVariants";
+    const period = obj(c, d.period, pp);
+    const tb = obj(c, d.timeBasis, tp);
+    const cases = obj(c, d.cases, cp);
+    const other = obj(c, d.otherVariants, op);
+    knownKeys(c, period, pp, ["start", "end", "days"]);
+    knownKeys(c, tb, tp, ["calendar", "businessMinutesPerDay", "dayStartMinute"]);
+    knownKeys(c, cases, cp, ["count", "complete", "arrivalsPerDay", "annualizedVolume", "cycleTime", "eventsPerCase"]);
+    knownKeys(c, other, op, ["variants", "cases"]);
+    const out = {
+      id,
+      name: str(c, d.name, path + ".name", { max: 200 }).trim() || str(c, src.fileName, sp + ".fileName", { max: 260 }) || "Event log",
+      role: en(c, d.role, "datasetRole", path + ".role"),
+      comparesToDatasetId: compares,
+      modelId,
+      dataStatus: en(c, d.dataStatus, "dataStatus", path + ".dataStatus", { fallback: "supplied" }),
+      createdAt: str(c, d.createdAt, path + ".createdAt", { max: 40 }),
+      source: {
+        fileName: str(c, src.fileName, sp + ".fileName", { max: 260 }),
+        format: en(c, src.format, "logFormat", sp + ".format"),
+        sha256: /^[0-9a-f]{64}$/.test(String(src.sha256 || "")) ? src.sha256 : "",
+        rows: count(c, src.rows, sp + ".rows"),
+        events: count(c, src.events, sp + ".events"),
+        timestampMode: en(c, src.timestampMode, "timestampMode", sp + ".timestampMode"),
+        caseIds: en(c, src.caseIds, "caseIdHandling", sp + ".caseIds"),
+        resources: src.resources === "counted" ? "counted" : "dropped",
+        droppedRows: count(c, src.droppedRows, sp + ".droppedRows"),
+        unmatchedEvents: count(c, src.unmatchedEvents, sp + ".unmatchedEvents"),
+        excludedIncompleteCases: count(c, src.excludedIncompleteCases, sp + ".excludedIncompleteCases")
+      },
+      period: {
+        start: str(c, period.start, pp + ".start", { max: 40 }),
+        end: str(c, period.end, pp + ".end", { max: 40 }),
+        days: num(c, period.days, pp + ".days", { min: 0 })
+      },
+      timeBasis: {
+        calendar: en(c, tb.calendar, "timeCalendar", tp + ".calendar"),
+        businessMinutesPerDay: num(c, tb.businessMinutesPerDay, tp + ".businessMinutesPerDay", { min: 1, max: 1440, fallback: 480 }),
+        dayStartMinute: num(c, tb.dayStartMinute, tp + ".dayStartMinute", { min: 0, max: 1439, integer: true, fallback: 540 })
+      },
+      mapping: [],
+      cases: {
+        count: count(c, cases.count, cp + ".count"),
+        complete: count(c, cases.complete, cp + ".complete"),
+        arrivalsPerDay: num(c, cases.arrivalsPerDay, cp + ".arrivalsPerDay", { min: 0 }),
+        annualizedVolume: num(c, cases.annualizedVolume, cp + ".annualizedVolume", { min: 0 }),
+        cycleTime: stats(c, cases.cycleTime, cp + ".cycleTime"),
+        eventsPerCase: stats(c, cases.eventsPerCase, cp + ".eventsPerCase")
+      },
+      steps: [], transitions: [], variants: [],
+      otherVariants: { variants: count(c, other.variants, op + ".variants"), cases: count(c, other.cases, op + ".cases") },
+      scenarioIds: [],
+      notes: str(c, d.notes, path + ".notes", { max: 4000 })
+    };
+    const activities = new Set();
+    arr(c, d.mapping, path + ".mapping", L.datasetMapping).forEach((m, j) => {
+      const mp = path + ".mapping[" + j + "]";
+      const row = obj(c, m, mp, true);
+      knownKeys(c, row, mp, ["activity", "nodeId", "method", "events"]);
+      const activity = str(c, row.activity, mp + ".activity", { max: 300 });
+      if (!activity.trim()) { c.warn(mp + ".activity", "A mapping row without an activity name was ignored.", "dataset.mapping"); return; }
+      if (activities.has(activity)) { c.warn(mp + ".activity", "Activity \"" + activity.slice(0, 60) + "\" is mapped twice; the first mapping is kept.", "dataset.mapping"); return; }
+      activities.add(activity);
+      out.mapping.push({
+        activity,
+        nodeId: row.nodeId == null || row.nodeId === "" ? null : nodeRef(row.nodeId, mp + ".nodeId"),
+        method: en(c, row.method, "mappingMethod", mp + ".method"),
+        events: count(c, row.events, mp + ".events")
+      });
+    });
+    const stepIds = new Set();
+    arr(c, d.steps, path + ".steps", L.nodesPerModel).forEach((s, j) => {
+      const stp = path + ".steps[" + j + "]";
+      const row = obj(c, s, stp, true);
+      knownKeys(c, row, stp, ["nodeId", "visits", "cases", "caseShare", "reworkCases", "reworkRate", "duration", "wait", "sojourn", "resources", "handoffRate"]);
+      const nodeId = nodeRef(row.nodeId, stp + ".nodeId");
+      if (!nodeId) return;
+      if (stepIds.has(nodeId)) { c.warn(stp + ".nodeId", "Step \"" + nodeId + "\" is listed twice; the first entry is kept.", "dataset.step"); return; }
+      stepIds.add(nodeId);
+      out.steps.push({
+        nodeId,
+        visits: count(c, row.visits, stp + ".visits"),
+        cases: count(c, row.cases, stp + ".cases"),
+        caseShare: share(c, row.caseShare, stp + ".caseShare"),
+        reworkCases: count(c, row.reworkCases, stp + ".reworkCases"),
+        reworkRate: share(c, row.reworkRate, stp + ".reworkRate"),
+        duration: stats(c, row.duration, stp + ".duration"),
+        wait: stats(c, row.wait, stp + ".wait"),
+        sojourn: stats(c, row.sojourn, stp + ".sojourn"),
+        resources: row.resources == null ? null : count(c, row.resources, stp + ".resources"),
+        handoffRate: share(c, row.handoffRate, stp + ".handoffRate")
+      });
+    });
+    arr(c, d.transitions, path + ".transitions", L.datasetTransitions).forEach((t, j) => {
+      const trp = path + ".transitions[" + j + "]";
+      const row = obj(c, t, trp, true);
+      knownKeys(c, row, trp, ["fromNodeId", "toNodeId", "count", "edgeIds"]);
+      const from = nodeRef(row.fromNodeId, trp + ".fromNodeId");
+      const to = nodeRef(row.toNodeId, trp + ".toNodeId");
+      if (!from || !to) return;
+      out.transitions.push({
+        fromNodeId: from, toNodeId: to, count: count(c, row.count, trp + ".count"),
+        edgeIds: idList(c, row.edgeIds, trp + ".edgeIds").filter(x => {
+          if (!edges || edges.has(x)) return true;
+          c.warn(trp + ".edgeIds", "Connector \"" + x + "\" not found; reference removed.", "ref.dangling");
+          return false;
+        })
+      });
+    });
+    const variantIds = new Set();
+    arr(c, d.variants, path + ".variants", L.datasetVariants).forEach((v, j) => {
+      const vp = path + ".variants[" + j + "]";
+      const row = obj(c, v, vp, true);
+      knownKeys(c, row, vp, ["id", "nodeIds", "cases", "share", "cycleTime"]);
+      out.variants.push({
+        id: idOf(c, row.id, vp + ".id", variantIds),
+        nodeIds: arr(c, row.nodeIds, vp + ".nodeIds", L.variantSteps).map((x, k) => nodeRef(x, vp + ".nodeIds[" + k + "]")).filter(Boolean),
+        cases: count(c, row.cases, vp + ".cases"),
+        share: share(c, row.share, vp + ".share"),
+        cycleTime: stats(c, row.cycleTime, vp + ".cycleTime")
+      });
+    });
+    out.scenarioIds = idList(c, arr(c, d.scenarioIds, path + ".scenarioIds", L.scenariosPerDataset), path + ".scenarioIds").filter(x => {
+      if (refs.scenarioIds.has(x)) return true;
+      c.warn(path + ".scenarioIds", "Scenario \"" + x + "\" not found; reference removed.", "ref.dangling");
+      return false;
+    });
+    return out;
+  }
+
+  const VALUE_CASE_KEYS = ["modelId", "nodeIds", "effortReductionPct", "durationReductionPct", "shareOfCasesPct", "shareSource",
+    "effortSource", "datasetId", "oneTimeCost", "annualRunningCost", "confidence", "basis", "note"];
+
+  /* The figures behind an opportunity's value. Empty nodeIds means the record's linked steps. */
+  function valueCaseOf(c, raw, path, refs, record) {
+    const v = obj(c, raw, path);
+    knownKeys(c, v, path, VALUE_CASE_KEYS);
+    const modelId = optionalRef(c, v.modelId, path + ".modelId", refs.modelsById, "Model");
+    const scope = modelId || (record && record.linkedModelId) || null;
+    const nodeIds = idList(c, v.nodeIds, path + ".nodeIds").filter(id => {
+      const ok = scope && refs.nodeIndex.has(scope) ? refs.nodeIndex.get(scope).has(id) : [...refs.nodeIndex.values()].some(s => s.has(id));
+      if (!ok) c.warn(path + ".nodeIds", "Step \"" + id + "\" not found; reference removed.", "ref.dangling");
+      return ok;
+    });
+    const pct = key => num(c, v[key], path + "." + key, { min: 0, max: 100 });
+    const money = key => num(c, v[key], path + "." + key, { min: 0 });
+    return {
+      modelId, nodeIds: [...new Set(nodeIds)],
+      effortReductionPct: pct("effortReductionPct"),
+      durationReductionPct: pct("durationReductionPct"),
+      shareOfCasesPct: pct("shareOfCasesPct"),
+      shareSource: en(c, v.shareSource, "valueInputSource", path + ".shareSource"),
+      effortSource: v.effortSource === "dataset" ? "dataset" : "node",
+      datasetId: optionalRef(c, v.datasetId, path + ".datasetId", refs.datasetIds, "Event log"),
+      oneTimeCost: money("oneTimeCost"),
+      annualRunningCost: money("annualRunningCost"),
+      confidence: en(c, v.confidence, "confidence", path + ".confidence", { fallback: "" }),
+      basis: en(c, v.basis, "assumptionStatus", path + ".basis"),
+      note: str(c, v.note, path + ".note", { max: 2000 })
+    };
+  }
+
+  /**
+   * Splits an item reference: "step/<modelId>/<nodeId>" or "record/<recordId>".
+   * Returns { kind: "step", modelId, nodeId }, { kind: "record", recordId } or null.
+   */
+  function parseItemRef(ref) {
+    if (typeof ref !== "string" || ref.length > 200) return null;
+    const parts = ref.split("/");
+    if (parts[0] === "step" && parts.length === 3 && util.isValidId(parts[1]) && util.isValidId(parts[2])) return { kind: "step", modelId: parts[1], nodeId: parts[2] };
+    if (parts[0] === "record" && parts.length === 2 && util.isValidId(parts[1])) return { kind: "record", recordId: parts[1] };
+    return null;
+  }
+
+  function itemRefResolves(ref, refs) {
+    const p = parseItemRef(ref);
+    if (!p) return false;
+    if (p.kind === "record") return refs.recordIds.has(p.recordId);
+    return refs.nodeIndex.has(p.modelId) && refs.nodeIndex.get(p.modelId).has(p.nodeId);
+  }
+
+  /* A reference to a reviewed item. Unreadable or dangling references give null with a warning. */
+  function itemRefOf(c, v, path, refs) {
+    if (!parseItemRef(v)) { c.warn(path, "Ignored an invalid item reference.", "ref.invalid"); return null; }
+    if (refs && !itemRefResolves(v, refs)) { c.warn(path, "Item \"" + String(v).slice(0, 120) + "\" not found; it was left out.", "ref.dangling"); return null; }
+    return v;
+  }
+
+  function personOf(c, v, path) {
+    const p = obj(c, v, path);
+    knownKeys(c, p, path, ["name", "role", "organization"]);
+    return {
+      name: str(c, p.name, path + ".name", { max: 200 }),
+      role: str(c, p.role, path + ".role", { max: 200 }),
+      organization: str(c, p.organization, path + ".organization", { max: 200 })
+    };
+  }
+
+  function reviewPackOf(c, raw, path, refs, taken) {
+    const p = obj(c, raw, path, true);
+    knownKeys(c, p, path, ["id", "createdAt", "format", "stakeholder", "engagementRevision", "modelId", "items", "note"]);
+    return {
+      id: idOf(c, p.id, path + ".id", taken),
+      createdAt: str(c, p.createdAt, path + ".createdAt", { max: 40 }),
+      format: en(c, p.format, "reviewFormat", path + ".format"),
+      stakeholder: personOf(c, p.stakeholder, path + ".stakeholder"),
+      engagementRevision: num(c, p.engagementRevision, path + ".engagementRevision", { min: 0, integer: true }),
+      modelId: optionalRef(c, p.modelId, path + ".modelId", refs.modelsById, "Model"),
+      items: arr(c, p.items, path + ".items", L.reviewEntries).map((it, j) => {
+        const ip = path + ".items[" + j + "]";
+        const x = obj(c, it, ip, true);
+        knownKeys(c, x, ip, ["itemRef", "label"]);
+        const itemRef = itemRefOf(c, x.itemRef, ip + ".itemRef", refs);
+        return itemRef ? { itemRef, label: str(c, x.label, ip + ".label", { max: 300 }) } : null;
+      }).filter(Boolean),
+      note: str(c, p.note, path + ".note", { max: 4000 })
+    };
+  }
+
+  function reviewOf(c, raw, path, refs, taken) {
+    const r = obj(c, raw, path, true);
+    knownKeys(c, r, path, ["id", "packId", "receivedAt", "submittedAt", "source", "reviewer", "generalComment", "entries", "applied"]);
+    const ap = path + ".applied";
+    const applied = obj(c, r.applied, ap);
+    knownKeys(c, applied, ap, ["validations", "questions", "evidenceId"]);
+    return {
+      id: idOf(c, r.id, path + ".id", taken),
+      packId: optionalRef(c, r.packId, path + ".packId", refs.packIds, "Review pack"),
+      receivedAt: str(c, r.receivedAt, path + ".receivedAt", { max: 40 }),
+      submittedAt: str(c, r.submittedAt, path + ".submittedAt", { max: 40 }),
+      source: en(c, r.source, "reviewFormat", path + ".source"),
+      reviewer: personOf(c, r.reviewer, path + ".reviewer"),
+      generalComment: str(c, r.generalComment, path + ".generalComment", { max: 4000 }),
+      entries: arr(c, r.entries, path + ".entries", L.reviewEntries).map((it, j) => {
+        const ip = path + ".entries[" + j + "]";
+        const x = obj(c, it, ip, true);
+        knownKeys(c, x, ip, ["itemRef", "label", "verdict", "comment"]);
+        const itemRef = itemRefOf(c, x.itemRef, ip + ".itemRef", refs);
+        return itemRef ? {
+          itemRef, label: str(c, x.label, ip + ".label", { max: 300 }),
+          verdict: en(c, x.verdict, "reviewVerdict", ip + ".verdict", { fallback: "unsure" }),
+          comment: str(c, x.comment, ip + ".comment", { max: 4000 })
+        } : null;
+      }).filter(Boolean),
+      applied: {
+        validations: count(c, applied.validations, ap + ".validations"),
+        questions: count(c, applied.questions, ap + ".questions"),
+        evidenceId: optionalRef(c, applied.evidenceId, ap + ".evidenceId", refs.evidenceIds, "Evidence")
+      }
+    };
+  }
+
+  function noteIgnored(c) {
+    if (c.ignored.length) {
+      c.warn("", "Ignored " + c.ignored.length + " unrecognized field" + (c.ignored.length === 1 ? "" : "s") + ": " +
+        c.ignored.slice(0, 8).join(", ") + (c.ignored.length > 8 ? ", ..." : "") + ".", "fields.ignored", "info");
+    }
+  }
+
+  /* Runs one sanitizer on its own checker: { value, errors, warnings }. Check errors before using value. */
+  function standalone(fn) {
+    const c = new Checker();
+    const value = fn(c);
+    noteIgnored(c);
+    return { value, errors: c.errors, warnings: c.warnings };
+  }
+
+  /** A dataset that is not yet in engagement e (its ID must be new). */
+  function sanitizeDataset(raw, e) {
+    const refs = refsOf(e);
+    return standalone(c => datasetOf(c, raw, "dataset", refs, refs.datasetIds, new Set(refs.datasetIds)));
+  }
+
+  /** An opportunity's value case, checked against engagement e and the record it belongs to. */
+  function sanitizeValueCase(raw, e, record) {
+    return standalone(c => valueCaseOf(c, raw, "valueCase", refsOf(e), record || null));
+  }
+
+  /** A scenario that is not yet in engagement e, such as one generated from an event log. */
+  function sanitizeScenarioFor(raw, e) {
+    const refs = refsOf(e);
+    return standalone(c => sanitizeScenario(c, raw, (e.scenarios || []).length, new Set(refs.scenarioIds), refs.modelsById, refs.datasetIds, "scenario"));
+  }
+
+  /** A review pack that is not yet in engagement e. */
+  function sanitizeReviewPack(raw, e) {
+    const refs = refsOf(e);
+    return standalone(c => reviewPackOf(c, raw, "reviewPack", refs, new Set(refs.packIds)));
+  }
+
+  /** A received review that is not yet in engagement e. */
+  function sanitizeReview(raw, e) {
+    const refs = refsOf(e);
+    return standalone(c => reviewOf(c, raw, "review", refs, new Set(((e && e.reviews) || []).map(x => x.id))));
+  }
+
+  /**
+   * Checks a client's review response file (schema bpmviz.review-response).
+   * With an engagement, a response made for another engagement is refused and
+   * entries for items that no longer exist are left out with a warning.
+   * Returns { ok, errors, warnings, response }; response is null when errors exist.
+   */
+  function validateReviewResponse(data, e) {
+    const c = new Checker();
+    const done = response => {
+      noteIgnored(c);
+      const ok = c.errors.length === 0;
+      return { ok, errors: c.errors, warnings: c.warnings, response: ok ? response : null };
+    };
+    if (!util.isPlainObject(data) || data.schema !== schema.REVIEW_RESPONSE_ID) {
+      c.error("schema", "This is not a BPMVIZ review response (expected schema \"" + schema.REVIEW_RESPONSE_ID + "\").");
+      return done(null);
+    }
+    if (data.schemaVersion !== 1) {
+      c.error("schemaVersion", Number(data.schemaVersion) > 1 ? "This review response was made by a newer version of BPMVIZ." : "Unknown review response version.");
+      return done(null);
+    }
+    knownKeys(c, data, "", ["schema", "schemaVersion", "packId", "engagementId", "engagementRevision", "format", "reviewer",
+      "submittedAt", "generalComment", "entries"]);
+    const refs = e ? refsOf(e) : null;
+    const response = {
+      schema: schema.REVIEW_RESPONSE_ID, schemaVersion: 1,
+      packId: idOf(c, data.packId, "packId"),
+      engagementId: idOf(c, data.engagementId, "engagementId"),
+      engagementRevision: num(c, data.engagementRevision, "engagementRevision", { min: 0, integer: true }),
+      format: en(c, data.format, "reviewFormat", "format"),
+      reviewer: personOf(c, data.reviewer, "reviewer"),
+      submittedAt: str(c, data.submittedAt, "submittedAt", { max: 40 }),
+      generalComment: str(c, data.generalComment, "generalComment", { max: 4000 }),
+      entries: []
+    };
+    if (e && response.engagementId && response.engagementId !== e.id) {
+      c.error("engagementId", "This response was made for a different engagement (" + response.engagementId + "). Open that engagement, then import the response again.");
+    }
+    const byRef = new Map();
+    arr(c, data.entries, "entries", L.reviewEntries).forEach((it, j) => {
+      const ip = "entries[" + j + "]";
+      const x = obj(c, it, ip, true);
+      knownKeys(c, x, ip, ["itemRef", "verdict", "comment"]);
+      const itemRef = itemRefOf(c, x.itemRef, ip + ".itemRef", refs);
+      if (!itemRef) return;
+      let verdict = x.verdict == null ? "" : x.verdict;
+      if (verdict !== "" && !schema.ENUMS.reviewVerdict.includes(verdict)) {
+        c.warn(ip + ".verdict", "Unrecognized verdict \"" + String(verdict).slice(0, 40) + "\"; treated as no answer.", "enum.unknown");
+        verdict = "";
+      }
+      if (byRef.has(itemRef)) c.warn(ip, "Item \"" + itemRef + "\" is answered twice; the later answer is kept.", "review.duplicate");
+      byRef.set(itemRef, { itemRef, verdict, comment: str(c, x.comment, ip + ".comment", { max: 4000 }) });
+    });
+    response.entries = [...byRef.values()];
+    return done(response);
   }
 
   const AI_KEYS = ["inputStructure", "dataAvailability", "judgment", "exceptions", "authority",
     "humanReview", "auditability", "failureHandling"];
 
-  function sanitizeRecord(c, raw, i, ids, nodeIndex, modelsById) {
+  function sanitizeRecord(c, raw, i, ids, nodeIndex, modelsById, refs) {
     const path = "records[" + i + "]";
     const r = obj(c, raw, path, true);
     knownKeys(c, r, path, ["id", "kind", "title", "description", "owner", "status", "priority", "linkedModelId",
@@ -571,6 +1017,10 @@
           Object.fromEntries(AI_KEYS.map(k => [k, str(c, ai[k], op + ".aiAssessment." + k, { max: 2000 })])),
           { mode: ["assist", "autonomous", ""].includes(ai.mode) ? ai.mode : "" })
       };
+      if (o.wave !== undefined) record.opportunity.wave = en(c, o.wave, "wave", op + ".wave", { fallback: "" });
+      if (o.valueCase !== undefined && o.valueCase !== null) {
+        record.opportunity.valueCase = valueCaseOf(c, o.valueCase, op + ".valueCase", refs || refsOf(null), record);
+      }
     }
     const generated = sanitizeGenerated(c, r.generated, path + ".generated");
     if (generated) record.generated = generated;
@@ -640,7 +1090,8 @@
     migrated.notes.forEach(n => c.warn("schemaVersion", n, "migration", "info"));
     const raw = migrated.engagement;
     knownKeys(c, raw, "", ["schema", "schemaVersion", "id", "revision", "createdAt", "updatedAt", "meta",
-      "milestones", "models", "scenarios", "records", "evidence", "assumptions", "narratives", "migration"]);
+      "milestones", "models", "scenarios", "records", "evidence", "assumptions", "narratives", "datasets", "reviewPacks", "reviews",
+      "migration"]);
 
     const out = {
       schema: schema.SCHEMA_ID,
@@ -684,22 +1135,43 @@
       });
     });
 
+    // Dataset IDs are collected first so scenarios and datasets can refer to each other.
+    const rawDatasets = raw.datasets === undefined || raw.datasets === null ? null : arr(c, raw.datasets, "datasets", L.datasets);
+    const datasetIds = new Set((rawDatasets || []).filter(d => util.isPlainObject(d) && util.isValidId(d.id)).map(d => d.id));
     const scenarioIds = new Set();
     arr(c, raw.scenarios, "scenarios", L.scenarios).forEach((s, i) =>
-      out.scenarios.push(sanitizeScenario(c, s, i, scenarioIds, modelsById)));
+      out.scenarios.push(sanitizeScenario(c, s, i, scenarioIds, modelsById, datasetIds)));
+
+    if (rawDatasets) {
+      const refs = refsOf(out);
+      const taken = new Set();
+      out.datasets = rawDatasets.map((d, i) => datasetOf(c, d, "datasets[" + i + "]", refs, datasetIds, taken));
+    }
 
     const evidenceIds = new Set();
     arr(c, raw.evidence, "evidence", L.evidence).forEach((e, i) => out.evidence.push(sanitizeEvidence(c, e, i, evidenceIds)));
 
     const nodeIndex = new Map(out.models.map(m => [m.id, new Set(m.nodes.map(n => n.id))]));
     const recordIds = new Set();
-    arr(c, raw.records, "records", L.records).forEach((r, i) => out.records.push(sanitizeRecord(c, r, i, recordIds, nodeIndex, modelsById)));
+    const recordRefs = refsOf(out);
+    arr(c, raw.records, "records", L.records).forEach((r, i) => out.records.push(sanitizeRecord(c, r, i, recordIds, nodeIndex, modelsById, recordRefs)));
 
     const assumptionIds = new Set();
     arr(c, raw.assumptions, "assumptions", L.assumptions).forEach((a, i) => out.assumptions.push(sanitizeAssumption(c, a, i, assumptionIds)));
 
     const narrativeKinds = new Set();
     arr(c, raw.narratives, "narratives", L.narratives).forEach((n, i) => out.narratives.push(sanitizeNarrative(c, n, i, narrativeKinds)));
+
+    if (raw.reviewPacks !== undefined && raw.reviewPacks !== null) {
+      const refs = refsOf(out);
+      const taken = new Set();
+      out.reviewPacks = arr(c, raw.reviewPacks, "reviewPacks", L.reviewPacks).map((p, i) => reviewPackOf(c, p, "reviewPacks[" + i + "]", refs, taken));
+    }
+    if (raw.reviews !== undefined && raw.reviews !== null) {
+      const refs = refsOf(out);
+      const taken = new Set();
+      out.reviews = arr(c, raw.reviews, "reviews", L.reviews).map((r, i) => reviewOf(c, r, "reviews[" + i + "]", refs, taken));
+    }
 
     // Evidence references must resolve.
     const dropDangling = (list, path) => list.filter(id => {
@@ -730,10 +1202,7 @@
       };
     }
 
-    if (c.ignored.length) {
-      c.warn("", "Ignored " + c.ignored.length + " unrecognized field" + (c.ignored.length === 1 ? "" : "s") + ": " +
-        c.ignored.slice(0, 8).join(", ") + (c.ignored.length > 8 ? ", ..." : "") + ".", "fields.ignored", "info");
-    }
+    noteIgnored(c);
 
     if (!c.errors.length) {
       out.scenarios.forEach((s, i) => {
@@ -772,5 +1241,9 @@
     return validateEngagement(data);
   }
 
-  return { validateEngagement, parseEngagementText };
+  return {
+    validateEngagement, parseEngagementText,
+    sanitizeDataset, sanitizeValueCase, sanitizeScenarioFor, sanitizeReviewPack, sanitizeReview, validateReviewResponse,
+    parseItemRef, refsOf
+  };
 });

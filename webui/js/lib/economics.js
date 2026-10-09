@@ -19,7 +19,9 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units) {
   "use strict";
 
-  const STATUS_RANK = { illustrative: 0, supplied: 1, calculated: 1, validated: 2 };
+  /* Weakest first. Observed data ranks above supplied figures and below client validation. */
+  const STATUS_RANK = { illustrative: 0, supplied: 1, calculated: 1, observed: 2, validated: 3 };
+  const RANK_LABEL = ["illustrative", "supplied", "observed", "validated"];
 
   function driverDef(key) {
     return schema.DRIVERS.find(d => d.key === key) || { key, label: key, unit: "" };
@@ -66,17 +68,18 @@
     return null;
   }
 
+  /* Cycle time in minutes with the status of the figure it came from: { value, status }. */
   function cycleMinutes(scenario, modelId, timeBasis) {
     const m = measure(scenario, "cycleTime");
     if (m && m.values && util.isFiniteNumber(m.values[modelId])) {
       const minutes = units.toMinutes(m.values[modelId], m.unit, timeBasis);
-      if (minutes !== null) return minutes;
+      if (minutes !== null) return { value: minutes, status: m.status || "supplied" };
     }
     const run = scenario && scenario.runs && scenario.runs[modelId];
     if (run && Array.isArray(run.visits) && run.visits.length) {
-      return run.visits.reduce((max, v) => Math.max(max, v.end), 0);
+      return { value: run.visits.reduce((max, v) => Math.max(max, v.end), 0), status: "supplied" };
     }
-    return null;
+    return { value: null, status: "supplied" };
   }
 
   /** Inputs for one scenario, gathered from measures, runs and drivers. */
@@ -84,6 +87,8 @@
     const ids = modelIds(engagement, scenario);
     const tb = engagement.meta && engagement.meta.timeBasis;
     const touch = measure(scenario, "humanTouch");
+    const before = cycleMinutes(scenario, ids.before, tb);
+    const after = ids.after ? cycleMinutes(scenario, ids.after, tb) : { value: null, status: "supplied" };
     return {
       ids,
       hasAfter: !!(ids.after && scenario && scenario.runs && scenario.runs[ids.after]) ||
@@ -92,20 +97,23 @@
       beforeHours: hoursValue(touch, ids.before),
       afterHours: hoursValue(touch, ids.after),
       touchStatus: touch ? (touch.status || "supplied") : null,
-      beforeCycle: cycleMinutes(scenario, ids.before, tb),
-      afterCycle: ids.after ? cycleMinutes(scenario, ids.after, tb) : null,
+      beforeCycle: before.value,
+      afterCycle: after.value,
+      beforeCycleStatus: before.status,
+      afterCycleStatus: after.status,
       timeBasis: tb,
       currency: (engagement.meta && engagement.meta.currency) || "USD"
     };
   }
 
+  /* The weakest status in the list, as a label. An empty list gives "validated". */
   function weakest(statuses) {
-    let result = "validated";
+    let rank = STATUS_RANK.validated;
     statuses.forEach(s => {
-      const rank = STATUS_RANK[s] == null ? 0 : STATUS_RANK[s];
-      if (rank < STATUS_RANK[result]) result = rank === 0 ? "illustrative" : "supplied";
+      const r = STATUS_RANK[s] == null ? 0 : STATUS_RANK[s];
+      if (r < rank) rank = r;
     });
-    return result;
+    return RANK_LABEL[rank];
   }
 
   function output(def, parts) {
@@ -218,8 +226,8 @@
         formula: "(current cycle time \u2212 future cycle time) \u00f7 current cycle time \u00d7 100"
       }, {
         inputs: [
-          inp("Current cycle time", x.beforeCycle, "minute", "supplied"),
-          inp("Future cycle time", x.afterCycle, "minute", "supplied")
+          inp("Current cycle time", x.beforeCycle, "minute", x.beforeCycleStatus),
+          inp("Future cycle time", x.afterCycle, "minute", x.afterCycleStatus)
         ],
         compute: () => x.beforeCycle > 0 ? (x.beforeCycle - x.afterCycle) / x.beforeCycle * 100 : null,
         notes: ["Elapsed time only. Cost and capacity use human effort, not cycle time."]
@@ -371,5 +379,8 @@
     return { base: base.value, unit: base.unit, label: base.label, pct: share * 100, rows: rows.filter(r => r.spread > 1e-9) };
   }
 
-  return { driverMap, modelIds, scenarioInputs, computeValue, reconcileScenario, engagementNotes, sensitivity };
+  /* Building blocks for feature modules that produce economics-shaped outputs (see lib/value-case.js). */
+  const helpers = { output, inp, driverInput, weakest };
+
+  return { STATUS_RANK, driverMap, modelIds, scenarioInputs, computeValue, reconcileScenario, engagementNotes, sensitivity, helpers };
 });

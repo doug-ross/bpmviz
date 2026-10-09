@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /*
- * Writes webui/schema/engagement.schema.json and ai-result.schema.json from
- * the enumerations in webui/js/lib/schema.js and the task schemas in
- * ai-results.js, so the published contracts and the validators agree.
+ * Writes webui/schema/engagement.schema.json, ai-result.schema.json and
+ * review-response.schema.json from the enumerations in webui/js/lib/schema.js
+ * and the task schemas in ai-results.js, so the published contracts and the
+ * validators agree.
  *   node tools/build-schema.mjs
  */
 import fs from "node:fs";
@@ -28,6 +29,14 @@ const measureValue = {
 };
 const flags = ["bottleneck", "agent", "humanReview", "optional", "sampled"];
 const aiKeys = ["inputStructure", "dataAvailability", "judgment", "exceptions", "authority", "humanReview", "auditability", "failureHandling"];
+const L = schema.LIMITS;
+const nullableId = { anyOf: [id, { type: "null" }] };
+const count = { type: "integer", minimum: 0 };
+const share = { type: ["number", "null"], minimum: 0, maximum: 1 };
+const percent = { type: ["number", "null"], minimum: 0, maximum: 100 };
+const stats = { anyOf: [{ type: "null" }, { $ref: "#/$defs/stats" }] };
+const itemRef = { type: "string", pattern: "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|record/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79})$",
+  description: "step/<modelId>/<nodeId> or record/<recordId>." };
 
 const doc = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
@@ -54,6 +63,9 @@ const doc = {
     evidence: { type: "array", maxItems: schema.LIMITS.evidence, items: { $ref: "#/$defs/evidence" } },
     assumptions: { type: "array", maxItems: schema.LIMITS.assumptions, items: { $ref: "#/$defs/assumption" } },
     narratives: { type: "array", maxItems: schema.LIMITS.narratives, items: { $ref: "#/$defs/narrative" } },
+    datasets: { type: "array", maxItems: L.datasets, items: { $ref: "#/$defs/dataset" }, description: "Aggregates of imported event logs. Optional." },
+    reviewPacks: { type: "array", maxItems: L.reviewPacks, items: { $ref: "#/$defs/reviewPack" }, description: "Review packs sent to client stakeholders. Optional." },
+    reviews: { type: "array", maxItems: L.reviews, items: { $ref: "#/$defs/review" }, description: "Client reviews received and applied. Optional." },
     migration: { anyOf: [{ type: "null" }, { $ref: "#/$defs/migration" }] }
   },
   $defs: {
@@ -148,7 +160,7 @@ const doc = {
         key: text(80), label: text(200), unit: unitEnum,
         values: { type: "object", description: "Value per model ID.", additionalProperties: { type: ["number", "null"] } },
         suppliedText: { type: "object", additionalProperties: text(200) },
-        status: { enum: ["supplied", "calculated", "validated"] }, note: text(2000)
+        status: { enum: ["supplied", "calculated", "observed", "validated"] }, note: text(2000)
       }
     },
     scenario: {
@@ -160,6 +172,11 @@ const doc = {
         timing: { type: "object", properties: { method: en("timingMethod"), note: text(2000) } },
         runs: { type: "object", description: "Run per model ID.", additionalProperties: { $ref: "#/$defs/run" } },
         measures: { type: "array", items: { $ref: "#/$defs/measure" } },
+        observedFrom: {
+          type: "object", required: ["datasetId"], additionalProperties: false,
+          description: "Present when the scenario was generated from an event log.",
+          properties: { datasetId: id, variantId: { type: ["string", "null"], maxLength: 80 }, caseLabel: text(200) }
+        },
         economics: {
           anyOf: [{ type: "null" }, {
             type: "object", additionalProperties: false,
@@ -194,6 +211,7 @@ const doc = {
             properties: {
               intervention: en("intervention"), simplerAlternative: text(4000), expectedBenefit: text(4000), affectedVolume: text(500),
               effort: en("effortSize"), risk: text(4000), dependencies: text(4000), validationAction: text(4000),
+              wave: en("wave"), valueCase: { $ref: "#/$defs/valueCase" },
               aiAssessment: { type: "object", properties: Object.assign(Object.fromEntries(aiKeys.map(k => [k, text(2000)])), { mode: { enum: ["", "assist", "autonomous"] } }) }
             }
           }]
@@ -231,6 +249,104 @@ const doc = {
         label: text(300), value: { type: ["number", "null"], minimum: 0 }, unit: text(40), status: en("assumptionStatus"), source: text(500), note: text(2000)
       }
     },
+    stats: {
+      type: "object", additionalProperties: false, required: ["n"],
+      description: "Summary statistics in minutes of the dataset time basis (counts for eventsPerCase). Percentiles use linear interpolation.",
+      properties: Object.assign({ n: count }, Object.fromEntries(["mean", "min", "p10", "p25", "p50", "p75", "p90", "max"].map(k => [k, { type: ["number", "null"] }])))
+    },
+    dataset: {
+      type: "object", required: ["id"], additionalProperties: false,
+      description: "Aggregates of one event log: never events, case IDs or resource names.",
+      properties: {
+        id, name: text(200), role: en("datasetRole"), comparesToDatasetId: nullableId, modelId: nullableId,
+        dataStatus: en("dataStatus"), createdAt: text(40),
+        source: {
+          type: "object", additionalProperties: false,
+          properties: {
+            fileName: text(260), format: en("logFormat"), sha256: { type: "string", pattern: "^([0-9a-f]{64})?$" },
+            rows: count, events: count, timestampMode: en("timestampMode"), caseIds: en("caseIdHandling"),
+            resources: { enum: ["dropped", "counted"] }, droppedRows: count, unmatchedEvents: count, excludedIncompleteCases: count
+          }
+        },
+        period: { type: "object", additionalProperties: false, properties: { start: text(40), end: text(40), days: { type: ["number", "null"], minimum: 0 } } },
+        timeBasis: {
+          type: "object", additionalProperties: false,
+          properties: {
+            calendar: en("timeCalendar"), businessMinutesPerDay: { type: "number", minimum: 1, maximum: 1440 },
+            dayStartMinute: { type: "integer", minimum: 0, maximum: 1439 }
+          }
+        },
+        mapping: {
+          type: "array", maxItems: L.datasetMapping,
+          items: { type: "object", required: ["activity"], additionalProperties: false, properties: { activity: text(300), nodeId: nullableId, method: en("mappingMethod"), events: count } }
+        },
+        cases: {
+          type: "object", additionalProperties: false,
+          properties: {
+            count, complete: count, arrivalsPerDay: { type: ["number", "null"], minimum: 0 }, annualizedVolume: { type: ["number", "null"], minimum: 0 },
+            cycleTime: stats, eventsPerCase: stats
+          }
+        },
+        steps: {
+          type: "array", maxItems: L.nodesPerModel,
+          items: {
+            type: "object", required: ["nodeId"], additionalProperties: false,
+            properties: {
+              nodeId: id, visits: count, cases: count, caseShare: share, reworkCases: count, reworkRate: share,
+              duration: stats, wait: stats, sojourn: stats, resources: { type: ["integer", "null"], minimum: 0 }, handoffRate: share
+            }
+          }
+        },
+        transitions: {
+          type: "array", maxItems: L.datasetTransitions,
+          items: { type: "object", required: ["fromNodeId", "toNodeId"], additionalProperties: false, properties: { fromNodeId: id, toNodeId: id, count, edgeIds: ids } }
+        },
+        variants: {
+          type: "array", maxItems: L.datasetVariants,
+          items: {
+            type: "object", required: ["id", "nodeIds"], additionalProperties: false,
+            properties: { id, nodeIds: { type: "array", maxItems: L.variantSteps, items: id }, cases: count, share, cycleTime: stats }
+          }
+        },
+        otherVariants: { type: "object", additionalProperties: false, properties: { variants: count, cases: count } },
+        scenarioIds: { type: "array", maxItems: L.scenariosPerDataset, items: id },
+        notes: text(4000)
+      }
+    },
+    valueCase: {
+      type: "object", additionalProperties: false,
+      description: "Figures behind an opportunity's modeled value. Empty nodeIds means the record's linked steps.",
+      properties: {
+        modelId: nullableId, nodeIds: ids,
+        effortReductionPct: percent, durationReductionPct: percent, shareOfCasesPct: percent,
+        shareSource: en("valueInputSource"), effortSource: { enum: ["node", "dataset"] }, datasetId: nullableId,
+        oneTimeCost: { type: ["number", "null"], minimum: 0 }, annualRunningCost: { type: ["number", "null"], minimum: 0 },
+        confidence: en("confidence"), basis: en("assumptionStatus"), note: text(2000)
+      }
+    },
+    person: { type: "object", additionalProperties: false, properties: { name: text(200), role: text(200), organization: text(200) } },
+    itemRef,
+    reviewPack: {
+      type: "object", required: ["id"], additionalProperties: false,
+      properties: {
+        id, createdAt: text(40), format: en("reviewFormat"), stakeholder: { $ref: "#/$defs/person" },
+        engagementRevision: { type: ["integer", "null"], minimum: 0 }, modelId: nullableId,
+        items: { type: "array", maxItems: L.reviewEntries, items: { type: "object", required: ["itemRef"], additionalProperties: false, properties: { itemRef: { $ref: "#/$defs/itemRef" }, label: text(300) } } },
+        note: text(4000)
+      }
+    },
+    review: {
+      type: "object", required: ["id"], additionalProperties: false,
+      properties: {
+        id, packId: nullableId, receivedAt: text(40), submittedAt: text(40), source: en("reviewFormat"),
+        reviewer: { $ref: "#/$defs/person" }, generalComment: text(4000),
+        entries: {
+          type: "array", maxItems: L.reviewEntries,
+          items: { type: "object", required: ["itemRef", "verdict"], additionalProperties: false, properties: { itemRef: { $ref: "#/$defs/itemRef" }, label: text(300), verdict: en("reviewVerdict"), comment: text(4000) } }
+        },
+        applied: { type: "object", additionalProperties: false, properties: { validations: count, questions: count, evidenceId: nullableId } }
+      }
+    },
     migration: {
       type: "object",
       properties: {
@@ -250,7 +366,7 @@ const resultDoc = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://bpmviz.local/schema/ai-result.schema.json",
   title: "BPMVIZ AI result",
-  description: "Output of one AI task (extract, opportunities, future-state or summary), schema version 1. " +
+  description: "Output of one AI task (extract, opportunities, future-state, summary or log-mapping), schema version 1. " +
     "The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. " +
     "webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
   type: "object",
@@ -261,7 +377,7 @@ const resultDoc = {
     task: en("aiTask"),
     engagementId: { anyOf: [id, { type: "null" }], description: "The engagement the task read. Null for extract." },
     engagementRevision: { type: ["integer", "null"], minimum: 0 },
-    baselineModelId: { anyOf: [id, { type: "null" }], description: "The current-state model a future-state change set applies to." },
+    baselineModelId: { anyOf: [id, { type: "null" }], description: "The current-state model a future-state change set applies to, or the model a log mapping maps activities to." },
     generated: {
       type: "object",
       properties: { tool: text(80), provider: en("aiProvider"), model: text(120), surface: en("aiSurface"), at: text(40), jobId: text(80), plan: en("aiPlan") }
@@ -280,7 +396,7 @@ const resultDoc = {
       description: "extract: { engagement } (see engagement.schema.json). The other tasks use the schemas in $defs.",
       anyOf: [
         { type: "object", required: ["engagement"], properties: { engagement: { $ref: "engagement.schema.json" } } },
-        { $ref: "#/$defs/opportunities" }, { $ref: "#/$defs/futureState" }, { $ref: "#/$defs/summary" }
+        { $ref: "#/$defs/opportunities" }, { $ref: "#/$defs/futureState" }, { $ref: "#/$defs/summary" }, { $ref: "#/$defs/logMapping" }
       ]
     }
   },
@@ -288,9 +404,43 @@ const resultDoc = {
     id: { type: "string", pattern: "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$" },
     opportunities: T.opportunities,
     futureState: T["future-state"],
-    summary: T.summary
+    summary: T.summary,
+    logMapping: T["log-mapping"]
   }
 };
 const resultOut = path.join(root, "webui", "schema", "ai-result.schema.json");
 fs.writeFileSync(resultOut, JSON.stringify(resultDoc, null, 2) + "\n");
 console.log("Wrote " + path.relative(root, resultOut));
+
+const responseDoc = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://bpmviz.local/schema/review-response.schema.json",
+  title: "BPMVIZ review response",
+  description: "A client reviewer's answers to a review pack, schema version 1. The app imports it with Open; " +
+    "validateReviewResponse in webui/js/lib/validate.js enforces this contract and refuses a response made for another engagement.",
+  type: "object",
+  required: ["schema", "schemaVersion", "packId", "engagementId", "entries"],
+  additionalProperties: false,
+  properties: {
+    schema: { const: schema.REVIEW_RESPONSE_ID },
+    schemaVersion: { const: 1 },
+    packId: id,
+    engagementId: id,
+    engagementRevision: { type: ["integer", "null"], minimum: 0 },
+    format: en("reviewFormat"),
+    reviewer: { type: "object", additionalProperties: false, properties: { name: text(200), role: text(200), organization: text(200) } },
+    submittedAt: text(40),
+    generalComment: text(4000),
+    entries: {
+      type: "array", maxItems: L.reviewEntries,
+      items: {
+        type: "object", required: ["itemRef"], additionalProperties: false,
+        properties: { itemRef, verdict: { enum: [""].concat(E.reviewVerdict), description: "Empty when the reviewer gave no verdict." }, comment: text(4000) }
+      }
+    }
+  },
+  $defs: { id: { type: "string", pattern: "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$" } }
+};
+const responseOut = path.join(root, "webui", "schema", "review-response.schema.json");
+fs.writeFileSync(responseOut, JSON.stringify(responseDoc, null, 2) + "\n");
+console.log("Wrote " + path.relative(root, responseOut));
