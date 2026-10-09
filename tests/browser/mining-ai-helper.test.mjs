@@ -1,15 +1,18 @@
 // The event-log import with the local AI helper (mining slice): "Ask AI for
 // the rest" sends the unmapped activity names to a fake Claude through the
 // helper, and the ticked suggestions come back into the wizard unticked.
+// An activity name that looks like a credential is never sent.
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import http from "node:http";
+import os from "node:os";
 import path from "node:path";
 import { launch, watch, root } from "../../tools/lib/browser.mjs";
 import { createBridge } from "../../tools/ai/bridge.mjs";
 
-let browser = null, server = null, bridge = null;
+let browser = null, server = null, bridge = null, scratch = null;
+const KEY = "AKIAABCDEFGHIJKLMNOP";
 const saved = {};
 const KEYS = ["BPMVIZ_CLAUDE_BIN", "BPMVIZ_CODEX_BIN", "FAKE_AI_MODE", "FAKE_AI_STATE", "FAKE_AI_LOG"];
 
@@ -17,6 +20,8 @@ before(async () => {
   KEYS.forEach(k => { saved[k] = process.env[k]; delete process.env[k]; });
   process.env.BPMVIZ_CLAUDE_BIN = path.join(root, "tests", "fixtures", "ai", "fake-claude.mjs");
   process.env.BPMVIZ_CODEX_BIN = path.join(root, "tests", "fixtures", "ai", "fake-codex.mjs");
+  scratch = fs.mkdtempSync(path.join(os.tmpdir(), "bpmviz-logmap-ui-"));
+  process.env.FAKE_AI_LOG = path.join(scratch, "log.jsonl");
   browser = await launch();
   if (!browser) return;
   server = http.createServer((req, res) => bridge.handler(req, res));
@@ -27,6 +32,7 @@ after(async () => {
   if (browser) await browser.close();
   if (server) await new Promise(r => { server.close(r); server.closeAllConnections(); });
   KEYS.forEach(k => { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; });
+  if (scratch) fs.rmSync(scratch, { recursive: true, force: true });
 });
 
 const atStep = (p, n) => p.waitForFunction(k => {
@@ -43,7 +49,8 @@ test("Ask AI for the rest maps the unmapped names through the helper, and each s
   await page.goto(bridge.launchUrl().replace("#ai=", "#example=underwriting-current-state&ai="));
   await page.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && window.BPMVIZ.app.store);
   await page.waitForSelector(".node");
-  await page.setInputFiles("#file-input", { name: "underwriting.csv", mimeType: "text/csv", buffer: fs.readFileSync(path.join(root, "tests", "fixtures", "logs", "underwriting.csv")) });
+  await page.setInputFiles("#file-input", { name: "underwriting.csv", mimeType: "text/csv", buffer: Buffer.concat([fs.readFileSync(path.join(root, "tests", "fixtures", "logs", "underwriting.csv")),
+    Buffer.from("SUB-1001,Login " + KEY + ",2026-02-02 10:00,2026-02-02 10:05,Ops A\n")]) });
   await page.waitForSelector("dialog[open] #li-preview");
   await page.click("#li-next");
   await atStep(page, 2);
@@ -52,6 +59,8 @@ test("Ask AI for the rest maps the unmapped names through the helper, and each s
   await page.click("#li-ask-ai");
   await page.waitForSelector("#ai-start");
   assert.match(await page.textContent("#ai-sent"), /1 activity name from the event log/);
+  assert.match(await page.textContent("#ai-sent-secret"), /^1 activity name that looks like a credential left out; map it by hand$/);
+  assert.doesNotMatch(await page.textContent("#ai-sent"), new RegExp(KEY), "the preview of what is sent leaves it out");
   assert.match(await page.textContent("#ai-sent"), /No events, case IDs, times, counts or people/);
   assert.match(await page.textContent("#ai-gate-message"), /Demonstration or public material may be sent to any plan/);
   await page.click("#ai-start");
@@ -67,6 +76,15 @@ test("Ask AI for the rest maps the unmapped names through the helper, and each s
   assert.equal(row.ok, false);
   assert.match(row.step, /broker/);
   assert.match(row.how, /Suggested by AI, not ticked/);
+  const secretRow = await page.$$eval("#li-map tbody tr", (trs, key) => {
+    const tr = trs.find(x => x.querySelector(".title-cell").textContent.includes(key));
+    return tr ? { step: tr.querySelector("select").value, how: tr.cells[4].textContent } : null;
+  }, KEY);
+  assert.ok(secretRow, "the activity stays in the wizard for manual mapping");
+  assert.equal(secretRow.step, "");
+  const sent = fs.readFileSync(process.env.FAKE_AI_LOG, "utf8");
+  assert.match(sent, /Email the broker/);
+  assert.doesNotMatch(sent, new RegExp(KEY), "the AI tool never received the key");
   assert.equal(await page.evaluate(() => (window.BPMVIZ.app.store.get().datasets || []).length), 0, "nothing is added until the log is added");
   assert.deepEqual(problems.errors, [], "no page or console errors");
   assert.deepEqual(problems.external, [], "only 127.0.0.1 is contacted");

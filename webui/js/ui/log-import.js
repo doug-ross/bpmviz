@@ -120,7 +120,7 @@
       st.sheetIndex = firstUseful >= 0 ? firstUseful : 0;
       if (!st.sheets.length) throw new Error("The workbook has no sheets.");
     } else {
-      st.text = B.files.textOf(f.bytes);
+      st.text = csv.decodeText(f.bytes);
       st.delimiter = f.format === "tsv" ? "\t" : csv.detectDelimiter(st.text);
       await parseText(st, progress);
     }
@@ -641,7 +641,9 @@
         h("dt", null, "Event log"), h("dd", null, d.name + " (" + schema.label("dataStatus", d.dataStatus).toLowerCase() + ")"),
         h("dt", null, "Measured against"), h("dd", null, modelName(app.store.get(), d.modelId)),
         h("dt", null, "Rows read"), h("dd", null, count(built.rows) + ", giving " + plural(d.source.events, "event")),
-        h("dt", null, "Cases measured"), h("dd", null, count(d.cases.count) + (d.source.excludedIncompleteCases ? ", " + count(d.source.excludedIncompleteCases) + " left out" : "")),
+        h("dt", null, "Cases measured"), h("dd", null, count(d.cases.count) +
+          (d.source.excludedIncompleteCases ? ", " + count(d.source.excludedIncompleteCases) + " left out as incomplete" : "") +
+          (r.counts.noMapped ? ", " + count(r.counts.noMapped) + " left out with no mapped event" : "")),
         h("dt", null, "Period"), h("dd", null, mining.periodText(d) + " (" + util.formatNumber(d.period.days, 1) + " days)"),
         h("dt", null, "Annualized volume"), h("dd", null, count(d.cases.annualizedVolume) + " cases per year (cases per day in the period times 365)"),
         h("dt", null, "Median cycle time"), h("dd", null, d.cases.cycleTime ? durationText(d.cases.cycleTime.p50, tb) : "n/a"),
