@@ -2,7 +2,8 @@
  * BPMVIZ client-review: making client review packs and importing the
  * answers. Everything here plugs into the app through BPMVIZ.ext:
  *  - Present bar action "Client review pack" (pr-action-client-review)
- *  - Records tab "Client review" (rv-tab-client-review): packs, responses and the latest answer per item
+ *  - Records tab "Client review" (rv-tab-client-review): packs, responses and the latest answer per item,
+ *    listed while the open engagement has a pack or a response
  *  - Open handles review response files (JSON handler) and filled-in Excel packs (.xlsx handler)
  *  - Process side panel: the latest client answer on a step
  *  - Handoff summary: a Client review section after Evidence
@@ -116,7 +117,6 @@
       let file;
       try { file = await packFile(e, pack, payload); } catch (x) { err.hidden = false; err.textContent = "The pack could not be made: " + (x && x.message ? x.message : x); return; }
       const fileName = packFileName(e, pack) + file.ext;
-      showTab();
       if (!app.dispatch("review/recordPack", { pack }, null, err)) return;
       B.files.downloadBytes(file.bytes, fileName, file.type);
       api.close("made");
@@ -145,16 +145,29 @@
     });
   }
 
-  /* Downloads a recorded pack again, rebuilt from the current engagement with the same pack ID. */
-  async function downloadAgain(app, pack) {
+  const LEFT_OUT_WHY = "they were deleted, or they are now sensitive, AI drafts not yet reviewed, dropped or not marked for the handoff.";
+
+  /*
+   * Downloads a recorded pack again, rebuilt from the current engagement with
+   * the same pack ID. Records are checked again: one that is now sensitive, an
+   * unreviewed AI draft, dropped or out of the handoff is left out, and the
+   * consultant is told how many items that removed.
+   */
+  async function downloadAgain(app, pack, ctx) {
     const e = app.store.get();
-    const items = R.buildPackItems(e, { modelId: pack.modelId, itemRefs: pack.items.map(i => i.itemRef) });
-    if (!items.length) { B.dialogs.messageDialog("Pack not downloaded", "None of the items in this pack exist any more."); return; }
+    const scope = { includeSensitive: !!(ctx && ctx.includeSensitive), includeUnreviewedAi: !!(ctx && ctx.includeUnreviewedAi) };
+    const items = R.buildPackItems(e, Object.assign({ modelId: pack.modelId, itemRefs: pack.items.map(i => i.itemRef) }, scope));
+    const leftOut = pack.items.length - items.length;
+    if (!items.length) { B.dialogs.messageDialog("Pack not downloaded", "None of the " + plural(pack.items.length, "item") + " in this pack can go out any more: " + LEFT_OUT_WHY); return; }
     try {
       const file = await packFile(e, pack, R.packPayload(e, pack, items));
       const fileName = packFileName(e, pack) + file.ext;
       B.files.downloadBytes(file.bytes, fileName, file.type);
-      announce("Review pack saved again as " + fileName + ".");
+      announce("Review pack saved again as " + fileName + (leftOut > 0 ? ", with " + plural(leftOut, "item") + " left out." : "."));
+      if (leftOut > 0) {
+        B.dialogs.messageDialog("Some items were left out", plural(leftOut, "item") + " of the " + pack.items.length + " in the pack " + (leftOut === 1 ? "was" : "were") +
+          " left out of " + fileName + ": " + LEFT_OUT_WHY + " The pack lists " + plural(items.length, "item") + ".");
+      }
     } catch (x) {
       B.dialogs.messageDialog("Pack not downloaded", "The pack could not be made: " + (x && x.message ? x.message : x));
     }
@@ -237,7 +250,6 @@
         const e = app.store.get();
         const payload = R.buildApplyPayload(e, prepared, { validations: optValidation.input.checked, questions: optQuestions.input.checked, evidence: optEvidence.input.checked });
         const nv = payload.validations.length, nq = payload.questions.length;
-        showTab();
         const ok = app.dispatch("review/apply", payload, "Client review from " + (r.reviewer.name || "the reviewer") + " applied: " + plural(nv, "step") + " updated, " + plural(nq, "open question") + " added.", err);
         if (ok) api.close("applied");
         return false;
@@ -315,7 +327,7 @@
           h("td", { class: "num" }, String(p.items.length)),
           h("td", { class: "num" }, String(responsesTo(p.id))),
           h("td", { class: "actions" },
-            h("button", { type: "button", class: "btn btn-ghost", on: { click: () => downloadAgain(app, p) } }, icon("download"), h("span", null, "Download again"), h("span", { class: "sr-only" }, " for " + (p.stakeholder.name || "the client"))),
+            h("button", { type: "button", class: "btn btn-ghost", on: { click: () => downloadAgain(app, p, ctx) } }, icon("download"), h("span", null, "Download again"), h("span", { class: "sr-only" }, " for " + (p.stakeholder.name || "the client"))),
             h("button", { type: "button", class: "btn btn-ghost btn-danger", on: { click: () => {
               B.dialogs.confirmDialog("Delete this review pack?", "The record of the pack is removed. Responses already imported stay, and a response to this pack that arrives later can still be imported; it is then matched by item IDs.", "Delete pack", true)
                 .then(ok => { if (ok) ctx.dispatch("review/deletePack", { id: p.id }, "Review pack deleted."); });
@@ -362,7 +374,6 @@
   /* ---------- Process side panel and handoff ---------- */
 
   function drawerSection(ctx, model, node) {
-    syncTab(ctx.engagement);
     const latest = R.latestVerdicts(ctx.engagement).get(R.stepRef(model.id, node.id));
     if (!latest) return null;
     const earlier = latest.history.slice(0, -1);
@@ -378,7 +389,6 @@
 
   function handoffSection(hd, ctx) {
     const e = ctx.engagement;
-    syncTab(e);
     if (!(e.reviews || []).length) return null;
     const sum = R.summarize(e, { includeSensitive: ctx.includeSensitive, includeUnreviewedAi: ctx.includeUnreviewedAi });
     const open = sum.items.filter(it => it.answer.verdict !== "confirm");
@@ -402,30 +412,43 @@
   const X = B.ext;
 
   /*
-   * The Client review records tab appears once the open engagement has a
-   * review pack or a response, or once a pack is made or a response applied
-   * in this session; it then stays for the session. Making a pack starts from
-   * the Present bar and importing from Open, so nothing is out of reach before.
-   * syncTab runs from the Process side panel (shown when an engagement opens)
-   * and the handoff; showTab runs before this feature's own commands, so the
-   * Records view that renders after the command already lists the tab.
+   * The Client review records tab is listed while the open engagement has a
+   * review pack or a response, and not otherwise. Making a pack starts from
+   * the Present bar and importing from Open, so nothing is out of reach
+   * without the tab. The records tab registry has no visibility option, so
+   * syncTab registers or removes the tab from the open engagement, and runs
+   * before every render of the Records view: the Records view the app
+   * creates is wrapped once, here, before app.js creates it.
    */
-  let tabShown = false;
-  function showTab() {
-    if (tabShown) return;
-    tabShown = true;
-    X.registerRecordsTab({ id: "client-review", order: 10, label: "Client review", count: e => (e.reviews || []).length, render: renderTab });
+  const TAB = { id: "client-review", order: 10, label: "Client review", count: e => (e.reviews || []).length, render: renderTab };
+  function hasReviewData(e) {
+    return !!(e && ((e.reviewPacks || []).length || (e.reviews || []).length));
   }
   function syncTab(e) {
-    if (!tabShown && e && ((e.reviewPacks || []).length || (e.reviews || []).length)) showTab();
+    const want = hasReviewData(e);
+    const listed = X.list("recordsTab").some(t => t.id === TAB.id);
+    if (want && !listed) X.registerRecordsTab(TAB);
+    else if (!want && listed) X.unregister("recordsTab", TAB.id);
+    return want;
+  }
+  const createRecordsView = B.recordsView && B.recordsView.createRecordsView;
+  if (typeof createRecordsView === "function" && !createRecordsView.clientReviewTab) {
+    const wrapped = function (app) {
+      const view = createRecordsView.apply(this, arguments);
+      const synced = fn => function () { syncTab(app && app.store ? app.store.get() : null); return fn.apply(this, arguments); };
+      ["render", "setTab", "setOpportunityView"].forEach(k => { if (typeof view[k] === "function") view[k] = synced(view[k]); });
+      view.onEngagementChange = view.render;
+      return view;
+    };
+    wrapped.clientReviewTab = true;
+    B.recordsView.createRecordsView = wrapped;
   }
 
   X.registerPresentAction({ id: "client-review", order: -10, icon: "person", label: "Client review pack", run: (app, ctx) => packDialog(app, ctx) });
   X.registerJsonHandler({ id: "client-review", schema: schema.REVIEW_RESPONSE_ID, open: jsonOpen });
   X.registerFileHandler({ id: "client-review", extensions: [".xlsx"], priority: 10, maxBytes: schema.LIMITS.fileBytes, probe: isReviewWorkbook, open: workbookOpen });
   X.registerDrawerSection({ id: "client-review", where: "step", render: drawerSection });
-  X.registerDrawerSection({ id: "client-review-overview", where: "overview", render: ctx => { syncTab(ctx.engagement); return null; } });
   X.registerHandoffSection({ id: "client-review", after: "evidence", render: handoffSection });
 
-  B.clientReview = { packDialog, openResponse, isReviewWorkbook, downloadAgain, showTab };
+  B.clientReview = { packDialog, openResponse, isReviewWorkbook, downloadAgain, syncTab };
 })(typeof globalThis !== "undefined" ? globalThis : this);
