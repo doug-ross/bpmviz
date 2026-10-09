@@ -58,8 +58,9 @@
     return util.formatNumber(days, 1) + " " + plural(Math.abs(days), word);
   }
 
+  /* Whole units from 1,000 up: cents on modeled annual figures suggest precision the inputs do not have. */
   function currency(value, code) {
-    const digits = Number.isInteger(value) ? 0 : 2;
+    const digits = Number.isInteger(value) || Math.abs(value) >= 1000 ? 0 : 2;
     try {
       return new Intl.NumberFormat("en-US", {
         style: "currency", currency: code || "USD",
