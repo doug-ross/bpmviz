@@ -67,7 +67,7 @@
     el.footDisc = h("span", { id: "foot-disc" });
     el.foot = h("footer", { class: "appfoot" }, el.footConf, el.footDisc, h("span", { class: "spacer" }),
       h("span", null, "BPMVIZ " + VERSION + " \u00b7 Press ", h("span", { class: "kbd" }, "?"), " for help"));
-    el.fileInput = h("input", { type: "file", id: "file-input", accept: ".json,.bpmn,.xml,application/json,text/xml", hidden: true });
+    el.fileInput = h("input", { type: "file", id: "file-input", accept: BASE_ACCEPT, hidden: true });
 
     app.processView = B.processView.createProcessView(app);
     app.recordsView = B.recordsView.createRecordsView(app);
@@ -88,7 +88,7 @@
     buildMenu();
 
     el.btnNew.addEventListener("click", newEngagementDialog);
-    el.btnOpen.addEventListener("click", () => el.fileInput.click());
+    el.btnOpen.addEventListener("click", () => openPicker());
     el.btnSave.addEventListener("click", () => save(false));
     el.fileInput.addEventListener("change", () => {
       const file = el.fileInput.files && el.fileInput.files[0];
@@ -101,6 +101,14 @@
   }
 
   const TABS = [["process", "Process"], ["records", "Records"], ["value", "Value"], ["present", "Present"]];
+  const BASE_ACCEPT = ".json,.bpmn,.xml,application/json,text/xml";
+
+  /* Opens the file picker, accepting the file types that registered features read as well. */
+  function openPicker() {
+    el.fileInput.accept = [BASE_ACCEPT].concat(B.ext.extraExtensions()).join(",");
+    el.fileInput.click();
+  }
+  app.openPicker = openPicker;
 
   function buildTabs() {
     clear(el.tabs);
@@ -118,28 +126,42 @@
     el.tabs.appendChild(el.revision);
   }
 
-  function buildMenu() {
-    const items = [
+  /* Menu entries. Registered items (BPMVIZ.ext.registerMenuItem) join their group. */
+  function menuItems() {
+    const group = name => B.ext.list("menuItem").filter(m => m.group === name)
+      .map(m => [m.icon || "info", m.label, () => B.ext.guard("menuItem", m, () => m.run(app)), !!m.needsEngagement, null, "menu-" + m.id]);
+    return [
       ["settings", "Engagement settings", () => B.forms.settingsDialog(app), true],
       ["undo", "Undo last change", () => undo(), true, "Ctrl+Z"],
       ["save", "Save as a new file", () => save(true), true],
+      ...group("export"),
       "-",
-      ["upload", "Import a BPMN file", () => el.fileInput.click(), false],
+      ["upload", "Import a BPMN file", () => openPicker(), false],
+      ...group("import"),
       ["list", "Local drafts and recovery", () => draftsDialog(), false],
       B.aiPanel.enabled ? ["agent", "Draft with AI", () => B.aiPanel.chooseTask(app), false] : null,
+      ...group("ai"),
       ["trash", "Clear local data", () => clearLocalData(), false],
       "-",
       ["moon", "Switch light or dark theme", () => toggleTheme(), false],
       ["help", "Help and keyboard shortcuts", () => helpDialog(), false, "?"],
       ["info", "About and data handling", () => aboutDialog(), false]
-    ];
-    items.filter(Boolean).forEach(item => {
+    ].filter(Boolean);
+  }
+
+  function fillMenu() {
+    clear(el.menu);
+    menuItems().forEach(item => {
       if (item === "-") { el.menu.appendChild(h("hr")); return; }
-      const [ic, label, fn, needsEngagement, kbd] = item;
-      const b = h("button", { type: "button", role: "menuitem", tabindex: -1, dataset: { needs: needsEngagement ? "1" : "" } }, icon(ic), label, kbd ? h("span", { class: "kbd" }, kbd) : null);
+      const [ic, label, fn, needsEngagement, kbd, id] = item;
+      const b = h("button", { type: "button", role: "menuitem", tabindex: -1, id: id || null, dataset: { needs: needsEngagement ? "1" : "" } }, icon(ic), label, kbd ? h("span", { class: "kbd" }, kbd) : null);
       b.addEventListener("click", () => { closeMenu(); fn(); });
       el.menu.appendChild(b);
     });
+  }
+
+  function buildMenu() {
+    fillMenu();
     el.btnMenu.addEventListener("click", () => (el.menu.hidden ? openMenu() : closeMenu()));
     el.menu.addEventListener("keydown", ev => {
       const buttons = [...el.menu.querySelectorAll("button:not([disabled])")];
@@ -153,6 +175,7 @@
   }
 
   function openMenu() {
+    fillMenu();
     el.menu.querySelectorAll("button").forEach(b => { b.disabled = b.dataset.needs === "1" && !app.store; });
     el.menu.hidden = false;
     el.btnMenu.setAttribute("aria-expanded", "true");
@@ -398,7 +421,39 @@
     });
   }
 
+  /*
+   * Registered file handlers (BPMVIZ.ext.registerFileHandler) see the file
+   * first, by extension and priority, before the 10 MB text read below.
+   * Returns true when a handler took the file.
+   */
+  async function openWithHandler(file) {
+    const handlers = B.ext.fileHandlersFor(file.name);
+    if (!handlers.length) return false;
+    const fit = handlers.filter(x => file.size <= x.maxBytes);
+    if (!fit.length) {
+      messageDialog("File not opened", "The file is larger than the " + Math.round(Math.max(...handlers.map(x => x.maxBytes)) / 1048576) + " MB limit for this kind of file.");
+      return true;
+    }
+    let bytes;
+    try { bytes = await B.files.readBytes(file, Math.max(...fit.map(x => x.maxBytes))); } catch (err) { messageDialog("File not opened", err.message); return true; }
+    for (const handler of fit) {
+      let take = true;
+      if (handler.probe) {
+        try { take = !!(await handler.probe(bytes, file.name)); } catch (err) { console.warn("BPMVIZ fileHandler " + handler.id + " probe failed:", err); take = false; }
+      }
+      if (!take) continue;
+      try {
+        await handler.open(app, file, bytes);
+      } catch (err) {
+        messageDialog("File not opened", h("div", null, h("p", null, (err && err.message) || String(err)), h("p", { class: "small muted" }, "The engagement that was open is unchanged.")));
+      }
+      return true;
+    }
+    return false;
+  }
+
   async function openFile(file) {
+    if (await openWithHandler(file)) return;
     let text;
     try { text = await readFileText(file); } catch (err) { messageDialog("File not opened", err.message); return; }
     const isXml = /\.(bpmn|xml)$/i.test(file.name) || /^\s*</.test(text);
@@ -416,6 +471,15 @@
     } else {
       let data = null;
       try { data = JSON.parse(text); } catch (_) { /* parseEngagementText reports it */ }
+      const jsonHandler = data && typeof data.schema === "string" ? B.ext.list("jsonHandler").find(x => x.schema === data.schema) : null;
+      if (jsonHandler) {
+        try {
+          await jsonHandler.open(app, data, { fileName: file.name });
+        } catch (err) {
+          messageDialog("File not opened", h("div", null, h("p", null, (err && err.message) || String(err)), h("p", { class: "small muted" }, "The engagement that was open is unchanged.")));
+        }
+        return;
+      }
       if (B.aiResults.isAiResult(data)) {
         B.aiPanel.openResult(app, B.aiResults.validateAiResult(data), { fileName: file.name });
         return;
@@ -500,6 +564,7 @@
     });
   }
   app.cloneBaseline = cloneBaseline;
+  app.openFile = openFile;
   app.openRecordDialog = record => B.forms.recordDialog(app, record);
   app.insertStepDialog = (m, n) => B.forms.insertStepDialog(app, m, n);
   app.removeStepDialog = (m, n) => B.forms.removeStepDialog(app, m, n);
@@ -544,7 +609,7 @@
           h("div", { class: "field" }, h("label", { for: "new-data" }, "Data status"), data),
           h("div", { class: "field" }, h("label", { for: "new-conf" }, "Confidentiality"), conf))),
       actions: [
-        { label: "Import BPMN instead", onClick: () => { el.fileInput.click(); } },
+        { label: "Import BPMN instead", onClick: () => { openPicker(); } },
         { label: "Cancel" },
         { label: "Create engagement", variant: "btn-primary", onClick: () => {
           const x = examples.find(e => e.id === template.value);
@@ -665,11 +730,16 @@
     const examples = B.bundledExamples || [];
     const drafts = app.drafts.listDrafts();
     const openBtn = h("button", { type: "button", class: "btn btn-primary btn-lg", id: "start-open" }, icon("open"), "Open an engagement file");
-    openBtn.addEventListener("click", () => el.fileInput.click());
+    openBtn.addEventListener("click", () => openPicker());
     const bpmnBtn = h("button", { type: "button", class: "btn btn-lg", id: "start-bpmn" }, icon("upload"), "Import a BPMN file");
-    bpmnBtn.addEventListener("click", () => el.fileInput.click());
+    bpmnBtn.addEventListener("click", () => openPicker());
     const newBtn = h("button", { type: "button", class: "btn btn-lg", id: "start-new" }, icon("filePlus"), "New from a template");
     newBtn.addEventListener("click", newEngagementDialog);
+    const extraBtns = B.ext.list("startAction").map(a => {
+      const b = h("button", { type: "button", class: "btn btn-lg", id: "start-" + a.id }, icon(a.icon || "info"), a.label);
+      b.addEventListener("click", () => B.ext.guard("startAction", a, () => a.run(app)));
+      return b;
+    });
     const aiBtn = B.aiPanel.enabled ? h("button", { type: "button", class: "btn btn-lg", id: "start-ai" }, icon("agent"), "Extract from documents with AI") : null;
     if (aiBtn) aiBtn.addEventListener("click", () => B.aiPanel.openTask(app, "extract"));
     panel.appendChild(h("div", { class: "ws-scroll" }, h("div", { class: "start" },
@@ -678,7 +748,7 @@
           h("span", { class: "eyebrow" }, "Process workshop workbench"),
           h("h2", null, "Walk the process with the client, and leave with a record of what you found."),
           h("p", null, "Replay a current-state process, correct it with the people who run it, capture pain points, opportunities and decisions against each step, then hand off a portable engagement file and a printable summary."),
-          h("div", { class: "start-actions" }, openBtn, bpmnBtn, newBtn, aiBtn),
+          h("div", { class: "start-actions" }, openBtn, bpmnBtn, newBtn, extraBtns, aiBtn),
           h("p", { class: "note" }, app.storageProblem || !app.drafts.available() ?
             "Browser storage is not available here, so recovery drafts are off. Save engagement files to keep your work." :
             B.aiPanel.enabled ? "Everything stays in this browser and in the files you save, except the AI tasks you start, which go to your own Claude Code or Codex account." :
@@ -715,7 +785,7 @@
     if (document.querySelector("dialog[open]")) return;
     const mod = ev.ctrlKey || ev.metaKey;
     if (mod && (ev.key === "s" || ev.key === "S")) { ev.preventDefault(); if (app.store) save(ev.shiftKey); return; }
-    if (mod && (ev.key === "o" || ev.key === "O")) { ev.preventDefault(); el.fileInput.click(); return; }
+    if (mod && (ev.key === "o" || ev.key === "O")) { ev.preventDefault(); openPicker(); return; }
     if (mod && (ev.key === "z" || ev.key === "Z") && !isTypingTarget(ev.target)) { ev.preventDefault(); undo(); return; }
     if (ev.key === "?" && !isTypingTarget(ev.target)) { ev.preventDefault(); helpDialog(); return; }
     if (app.workspace === "process" && app.store) app.processView.handleKey(ev);

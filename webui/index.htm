@@ -10,6 +10,11 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/mining.css">
+<link rel="stylesheet" href="css/business-case.css">
+<link rel="stylesheet" href="css/client-review.css">
+<link rel="stylesheet" href="css/client-exports.css">
+<link rel="stylesheet" href="css/benefits.css">
 </head>
 <body>
 <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
@@ -34,9 +39,28 @@
 <script src="js/lib/bpmn.js"></script>
 <script src="js/lib/ai-results.js"></script>
 
+<!-- Shared file formats and feature libraries (see docs/extensions.md) -->
+<script src="js/lib/zip.js"></script>
+<script src="js/lib/ooxml.js"></script>
+<script src="js/lib/xlsx.js"></script>
+<script src="js/lib/dataset-query.js"></script>
+<script src="js/lib/value-case.js"></script>
+<script src="js/lib/csv.js"></script>
+<script src="js/lib/fuzzy.js"></script>
+<script src="js/lib/mining.js"></script>
+<script src="js/lib/business-case.js"></script>
+<script src="js/lib/reviews.js"></script>
+<script src="js/lib/review-pack.js"></script>
+<script src="js/lib/pptx.js"></script>
+<script src="js/lib/bpmn-export.js"></script>
+<script src="js/lib/backlog.js"></script>
+<script src="js/lib/benefits.js"></script>
+
 <!-- Interface -->
 <script src="js/ui/dom.js"></script>
 <script src="js/ui/dialogs.js"></script>
+<script src="js/ui/ext.js"></script>
+<script src="js/ui/files.js"></script>
 <script src="js/ui/textfit.js"></script>
 <script src="js/ui/diagram.js"></script>
 <script src="js/ui/drawer.js"></script>
@@ -46,6 +70,14 @@
 <script src="js/ui/value-view.js"></script>
 <script src="js/ui/present-view.js"></script>
 <script src="js/ui/ai-panel.js"></script>
+
+<!-- Features: each registers with BPMVIZ.ext before the app starts -->
+<script src="js/ui/log-import.js"></script>
+<script src="js/ui/opportunity-value.js"></script>
+<script src="js/ui/client-review.js"></script>
+<script src="js/ui/client-exports.js"></script>
+<script src="js/ui/benefits-view.js"></script>
+
 <script src="js/app.js"></script>
 </body>
 </html>

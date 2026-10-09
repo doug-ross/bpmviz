@@ -75,8 +75,7 @@
       el.findInput = h("input", { class: "input", id: "pv-find", type: "search", placeholder: "Find a step, role or system",
         role: "combobox", "aria-expanded": "false", "aria-controls": "pv-find-list", "aria-autocomplete": "list", autocomplete: "off", spellcheck: "false" });
       el.findList = h("ul", { class: "find-results", id: "pv-find-list", role: "listbox", "aria-label": "Matching steps", hidden: true });
-      el.lensSel = h("select", { class: "select", id: "pv-lens", "aria-label": "Lens" },
-        lenses.LENSES.map(l => h("option", { value: l.id }, l.label)));
+      el.lensSel = h("select", { class: "select", id: "pv-lens", "aria-label": "Lens" });
       el.readable = h("button", { type: "button", class: "btn", id: "pv-readable", title: "Readable view (0)", "aria-pressed": "true" }, "Readable");
       el.widthBtn = h("button", { type: "button", class: "btn", id: "pv-width", title: "Fit the width (W)", "aria-pressed": "false" }, "Width");
       el.overviewBtn = iconButton("overview", "Overview of every lane (F); labels may be too small to read", { id: "pv-overview", "aria-pressed": "false" }, { showLabel: true, title: "Overview (F)" });
@@ -193,6 +192,15 @@
       if (!e.scenarios.some(x => x.id === view.scenarioId)) view.scenarioId = e.scenarios.length ? e.scenarios[0].id : "";
       el.scenarioSel.value = view.scenarioId;
       el.scenarioSel.disabled = !e.scenarios.length;
+      // Lenses, including any registered with lenses.registerLens since the last build.
+      const lensIds = lenses.LENSES.map(l => l.id).join("|");
+      if (el.lensSel.dataset.ids !== lensIds) {
+        clear(el.lensSel);
+        lenses.LENSES.forEach(l => el.lensSel.appendChild(h("option", { value: l.id }, l.label)));
+        el.lensSel.dataset.ids = lensIds;
+      }
+      if (!lenses.LENSES.some(l => l.id === view.lens)) view.lens = "none";
+      el.lensSel.value = view.lens;
     }
 
     function computeReplays() {
@@ -554,6 +562,7 @@
       const e = eng();
       const sc = scenario();
       return {
+        app, includeSensitive: false, includeUnreviewedAi: false, scenarioId: view.scenarioId || "", rerender: () => renderSide(),
         engagement: e, scenario: sc, replays, t: view.t, selected: view.selected, tab: view.drawerTab || "summary",
         primaryModel: displayedModels()[0],
         positions: (modelId, nodeId) => positions.get(modelId + "|" + nodeId) || 0,
@@ -719,7 +728,8 @@
 
     function onEngagementChange(event) {
       const type = event.type;
-      const structural = type === "replace" || type === "undo" || type.startsWith("model/") || type === "node/update" || type === "meta/update" || type === "ai/applyFutureState";
+      const structural = type === "replace" || type === "undo" || type.startsWith("model/") || type === "node/update" || type === "meta/update" || type === "ai/applyFutureState" ||
+        B.ext.isStructural(type);
       if (type === "replace") {
         view.selected = null; view.t = 0; view.playing = false; view.lens = view.lens || "none";
         if (raf) { cancelAnimationFrame(raf); raf = 0; }
@@ -740,6 +750,7 @@
       if (!built) return;
       if (type.startsWith("record/") || type === "ai/applySuggestions") refreshRecordCounts();
       if (type.startsWith("measure/") || type.startsWith("assumption/") || type.startsWith("scenario/") || type.startsWith("evidence/")) lensCache.clear();
+      if (B.ext.isRefresh(type)) { lensCache.clear(); refreshRecordCounts(); applyLens(); }
       renderSide();
     }
 

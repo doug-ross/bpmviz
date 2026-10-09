@@ -17,6 +17,9 @@
     const ORIGINS = [["", "Any origin"], ["workshop", "Workshop"], ["ai-draft", "AI draft, not reviewed"], ["ai-reviewed", "AI draft, reviewed"]];
     const originOf = r => !r.generated ? "workshop" : r.generated.reviewed ? "ai-reviewed" : "ai-draft";
     let tab = "records";
+    let oppView = "register";
+    const ctx = extra => B.ext.context(app, Object.assign({ rerender: render }, extra || {}));
+    const customTab = () => B.ext.list("recordsTab").find(t => t.id === tab) || null;
 
     function eng() { return app.store.get(); }
 
@@ -55,12 +58,17 @@
       const e = eng();
       const opps = e.records.filter(r => r.kind === "opportunity").length;
       const review = app.reviewItems().length;
+      const ext = B.ext.list("recordsTab");
       const items = [["records", "Records", e.records.length], ["opportunities", "Opportunities", opps],
-        ["evidence", "Evidence", e.evidence.length], ["review", "Review", review]];
+        ["evidence", "Evidence", e.evidence.length]]
+        .concat(ext.map(t => [t.id, t.label, t.count ? B.ext.guard("recordsTab", t, () => t.count(e), null) : null]))
+        .concat([["review", "Review", review]]);
+      if (!items.some(x => x[0] === tab)) tab = "records";
+      const custom = ext.some(t => t.id === tab);
       clear(el.tabs);
       items.forEach(([id, label, count]) => {
         const b = h("button", { type: "button", class: "tab", role: "tab", id: "rv-tab-" + id, "aria-selected": String(tab === id),
-          "aria-controls": "rv-panel", tabindex: tab === id ? 0 : -1 }, label, h("span", { class: "count" }, String(count)));
+          "aria-controls": "rv-panel", tabindex: tab === id ? 0 : -1 }, label, count === null || count === undefined ? null : h("span", { class: "count" }, String(count)));
         b.addEventListener("click", () => { tab = id; render(); });
         b.addEventListener("keydown", ev => {
           const i = items.findIndex(x => x[0] === id);
@@ -70,10 +78,10 @@
         el.tabs.appendChild(b);
       });
       el.panel.setAttribute("aria-labelledby", "rv-tab-" + tab);
-      el.add.hidden = tab === "review";
+      el.add.hidden = tab === "review" || custom;
       el.add.lastChild.textContent = tab === "evidence" ? "Add source" : tab === "opportunities" ? "Add opportunity" : "Add record";
-      el.csv.hidden = tab === "evidence" || tab === "review";
-      if (el.ai) el.ai.hidden = tab === "evidence" || tab === "review";
+      el.csv.hidden = tab === "evidence" || tab === "review" || custom;
+      if (el.ai) el.ai.hidden = tab === "evidence" || tab === "review" || custom;
     }
 
     function filtered(e) {
@@ -134,6 +142,13 @@
           h("span", { class: "grow" }, drafts.length + (drafts.length === 1 ? " AI draft is" : " AI drafts are") + " shown and not yet reviewed. They stay out of the handoff and exports until someone checks them."),
           h("button", { type: "button", class: "btn", id: "rv-mark-reviewed", on: { click: () => markReviewed(drafts) } }, icon("check"), "Mark shown drafts reviewed")));
       }
+      const view = tab === "opportunities" && oppView !== "register" ? B.ext.list("opportunityView").find(v => v.id === oppView) : null;
+      if (view) {
+        const host = h("div", { id: "rv-oppview-host" });
+        el.tableHost.appendChild(host);
+        B.ext.guard("opportunityView", view, () => view.render(host, ctx({ records: rows })));
+        return;
+      }
       if (!rows.length) {
         el.tableHost.appendChild(h("div", { class: "empty" }, e.records.length ?
           "No records match these filters." : "No records yet. Select a step on the process canvas and use Capture, or add a record here."));
@@ -141,17 +156,24 @@
       }
       let head, body;
       if (tab === "opportunities") {
-        head = ["Opportunity", "Intervention", "Linked steps", "Expected benefit", "Effort", "Validation action", "Owner", "Status"];
-        body = rows.map(r => {
-          const o = r.opportunity || {};
-          return tr(r, [
-            titleCell(r),
-            o.intervention ? schema.label("intervention", o.intervention) : h("span", { class: "muted" }, "Not chosen"),
-            stepLinks(r, labels), o.expectedBenefit || "", o.effort ? schema.label("effortSize", o.effort) : "",
-            o.validationAction || h("span", { class: "muted" }, "None recorded"), r.owner || h("span", { class: "muted" }, "Unassigned"),
-            badge(schema.label("recordStatus", r.status), STATUS_TONE[r.status])
-          ]);
+        const opp = r => r.opportunity || {};
+        const cols = [
+          ["Opportunity", r => titleCell(r)],
+          ["Intervention", r => opp(r).intervention ? schema.label("intervention", opp(r).intervention) : h("span", { class: "muted" }, "Not chosen")],
+          ["Linked steps", r => stepLinks(r, labels)],
+          ["Expected benefit", r => opp(r).expectedBenefit || ""],
+          ["Effort", r => opp(r).effort ? schema.label("effortSize", opp(r).effort) : ""],
+          ["Validation action", r => opp(r).validationAction || h("span", { class: "muted" }, "None recorded")],
+          ["Owner", r => r.owner || h("span", { class: "muted" }, "Unassigned")],
+          ["Status", r => badge(schema.label("recordStatus", r.status), STATUS_TONE[r.status])]
+        ];
+        const c = ctx();
+        B.ext.list("opportunityColumn").forEach(def => {
+          const at = cols.findIndex(x => x[0] === def.after);
+          cols.splice(at >= 0 ? at + 1 : cols.length, 0, [def.header, r => B.ext.guard("opportunityColumn", def, () => def.cell(r, c), "")]);
         });
+        head = cols.map(x => x[0]);
+        body = rows.map(r => tr(r, cols.map(x => x[1](r))));
       } else {
         head = ["Type", "Record", "Linked steps", "Owner", "Status", "Priority", "Updated"];
         body = rows.map(r => tr(r, [
@@ -194,12 +216,34 @@
       const e = eng();
       el.tableHost = h("div");
       el.count = h("p", { class: "note", "aria-live": "polite" });
-      el.panel.append(filterBar(e), el.count, el.tableHost);
+      el.panel.append(filterBar(e), tab === "opportunities" ? viewSwitcher() : null, el.count, el.tableHost);
       if (tab === "opportunities") {
         el.panel.prepend(h("p", { class: "small", style: { maxWidth: "80ch" } },
           "Each opportunity links a pain point or step to an intervention. Simpler options such as eliminating, standardizing or integrating come before automation and AI in the list, and each entry asks why the simpler option is not enough."));
       }
       renderTable();
+    }
+
+    /* Register plus the registered opportunity views; shown only when a feature adds a view. */
+    function viewSwitcher() {
+      const views = B.ext.list("opportunityView");
+      if (!views.length) { oppView = "register"; return null; }
+      if (oppView !== "register" && !views.some(v => v.id === oppView)) oppView = "register";
+      const group = h("div", { class: "btn-group", role: "group", "aria-label": "Opportunity view", style: { marginBottom: "var(--space-2)" } });
+      [{ id: "register", label: "Register" }].concat(views).forEach(v => {
+        const b = h("button", { type: "button", class: "btn", id: "rv-oppview-" + v.id, "aria-pressed": String(oppView === v.id) }, v.label);
+        b.addEventListener("click", () => {
+          oppView = v.id;
+          group.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+          renderTable();
+        });
+        group.appendChild(b);
+      });
+      return group;
+    }
+
+    function renderCustom(def) {
+      B.ext.guard("recordsTab", def, () => def.render(el.panel, ctx()));
     }
 
     function renderEvidence() {
@@ -260,7 +304,9 @@
       if (!el.root) return;
       renderTabs();
       clear(el.panel);
-      if (tab === "evidence") renderEvidence();
+      const custom = customTab();
+      if (custom) renderCustom(custom);
+      else if (tab === "evidence") renderEvidence();
       else if (tab === "review") renderReview();
       else renderRecords();
     }
@@ -282,8 +328,9 @@
     }
 
     function setTab(id) { tab = id; render(); }
+    function setOpportunityView(id) { oppView = id || "register"; if (tab !== "opportunities") tab = "opportunities"; render(); }
 
-    return { build, render, setTab, onEngagementChange: render };
+    return { build, render, setTab, setOpportunityView, onEngagementChange: render };
   }
 
   B.recordsView = { createRecordsView };

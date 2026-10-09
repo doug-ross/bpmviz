@@ -286,8 +286,11 @@
           if (g.sub) g.sub.setAttribute("visibility", text ? "hidden" : "visible");
         }
         g.classList.toggle("lens-cat", !!(hit && hit.category));
-        const cats = ["queue", "external", "other", "handoff", "ok", "warn", "breach", "none", "tagged", "validated", "referenced", "estimated"];
-        cats.forEach(c => g.classList.toggle("lens-" + c, !!(hit && hit.category === c)));
+        // One lens-<category> class at a time, whatever categories a lens uses.
+        const cat = hit && hit.category ? "lens-" + String(hit.category).replace(/[^A-Za-z0-9_-]/g, "") : "";
+        if (g.lensCatClass && g.lensCatClass !== cat) g.classList.remove(g.lensCatClass);
+        if (cat) g.classList.add(cat);
+        g.lensCatClass = cat;
       });
       this.edgeEls.forEach((item, id) => item.el.classList.toggle("lens-hit", !!(lens && lens.edges[id])));
     }
