@@ -220,10 +220,16 @@ async function importSampleLog(p, csvText, opts) {
   await p.waitForSelector("dialog[open] #li-choose");
   const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#li-choose")]);
   await chooser.setFiles(path.join(root, "docs", "samples", "underwriting-baseline.csv"));
-  await p.waitForSelector("#li-model");
+  await p.waitForSelector("dialog[open] #li-preview");
+  const ready = n => p.waitForFunction(k => {
+    const el = document.querySelector("dialog[open] .li-step-title");
+    return el && el.textContent.startsWith("Step " + k + " of 5") && !document.getElementById("li-next").disabled;
+  }, n);
+  await ready(1);
   await p.click("#li-next");
-  await p.waitForSelector("#li-format");
+  await ready(2);
   await p.click("#li-next");
+  await ready(3);
   await p.waitForSelector("#li-map-summary");
   await shot(p, "15-log-import.png");
   await context.close();

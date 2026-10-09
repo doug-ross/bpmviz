@@ -74,6 +74,13 @@ test("compareDatasets compares matched steps and rolls up the dataset totals", (
   assert.equal(cmp.caveats.length, 2, "same period length and same volume raise no caveat");
 });
 
+test("compareDatasets does not call a step a small sample just because it has no sojourn", () => {
+  const e = tinyWithDatasets();
+  e.datasets.forEach(d => { d.steps.find(s => s.nodeId === "work").sojourn = null; });
+  const work = benefits.compareDatasets(e, "ds-tiny-baseline", "ds-tiny-after").steps.find(s => s.nodeId === "work");
+  assert.equal(work.smallSample, false, "the first step of a case has no sojourn; 120 and 110 visits are plenty");
+});
+
 test("compareDatasets flags a period or volume that is not comparable", () => {
   const e = tinyWithDatasets();
   const after = e.datasets.find(d => d.id === "ds-tiny-after");

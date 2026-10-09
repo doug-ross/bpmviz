@@ -68,7 +68,8 @@
 
   function overallFacts(cmp, pair, e) {
     const o = cmp.overall;
-    const period = p => (p.start || "?") + " to " + (p.end || "?") + " (" + util.formatNumber(p.days || 0, 0) + " days)";
+    const day = v => (v ? String(v).slice(0, 10) : "?");
+    const period = p => day(p.start) + " to " + day(p.end) + " (" + util.formatNumber(p.days || 0, 0) + " days)";
     return h("dl", { class: "facts" },
       h("dt", null, "Baseline period"), h("dd", null, period(o.period.before)),
       h("dt", null, "After period"), h("dd", null, period(o.period.after)),

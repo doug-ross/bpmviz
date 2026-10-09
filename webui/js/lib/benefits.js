@@ -120,8 +120,9 @@
       }
       const as = dq.step(after, afterNodeId);
       if (!bs.duration && !bs.sojourn && !(as && (as.duration || as.sojourn))) return; // an event or gateway: nothing to compare
-      const small = dq.smallSample(bs.duration, SMALL_SAMPLE_MIN) || dq.smallSample(as && as.duration, SMALL_SAMPLE_MIN) ||
-        dq.smallSample(bs.sojourn, SMALL_SAMPLE_MIN) || dq.smallSample(as && as.sojourn, SMALL_SAMPLE_MIN);
+      // Only statistics a log actually has count: the first step of a case has no sojourn, which is not a small sample.
+      const thin = st => !!st && dq.smallSample(st, SMALL_SAMPLE_MIN);
+      const small = thin(bs.duration) || thin(as && as.duration) || thin(bs.sojourn) || thin(as && as.sojourn);
       if (small) smallSampleSteps++;
       steps.push({
         nodeId: bs.nodeId, afterNodeId, label: nodeLabel(e, baseline.modelId, bs.nodeId),
