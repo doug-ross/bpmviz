@@ -22,13 +22,50 @@
     let camera = null, panes = [];
     const eng = () => app.store.get();
 
+    /* The context registered modes, actions and handoff sections receive. */
+    function extCtx() {
+      return B.ext.context(app, { includeSensitive, includeUnreviewedAi, scenarioId: app.view.scenarioId || "", rerender: render, mode });
+    }
+
+    /* Built-in modes, then modes registered with BPMVIZ.ext.registerPresentMode. */
+    function modes() {
+      return [{ id: "presenter", label: "Presenter view", builtin: true, printable: false },
+        { id: "handoff", label: "Handoff summary", builtin: true, printable: true }].concat(B.ext.list("presentMode"));
+    }
+
+    function renderModeTabs() {
+      const list = modes();
+      const key = list.map(m => m.id).join("|");
+      if (el.modeTabs.dataset.key !== key) {
+        clear(el.modeTabs);
+        list.forEach(m => {
+          const b = h("button", { type: "button", class: "btn", id: m.builtin ? "pr-" + m.id : "pr-mode-" + m.id, dataset: { mode: m.id } }, m.label);
+          b.addEventListener("click", () => { mode = m.id; render(); });
+          el.modeTabs.appendChild(b);
+        });
+        el.modeTabs.dataset.key = key;
+      }
+      el.modeTabs.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+    }
+
+    /* Buttons registered with BPMVIZ.ext.registerPresentAction, before Engagement JSON. */
+    function renderActions() {
+      const list = B.ext.list("presentAction");
+      const key = list.map(a => a.id).join("|");
+      if (el.actions.dataset.key === key) return;
+      clear(el.actions);
+      list.forEach(a => {
+        const b = h("button", { type: "button", class: "btn", id: "pr-action-" + a.id }, icon(a.icon || "download"), a.label);
+        b.addEventListener("click", () => B.ext.guard("presentAction", a, () => a.run(app, extCtx())));
+        el.actions.appendChild(b);
+      });
+      el.actions.dataset.key = key;
+    }
+
     function build() {
       el.modeTabs = h("div", { class: "btn-group", role: "group", "aria-label": "Present mode" });
-      [["presenter", "Presenter view"], ["handoff", "Handoff summary"]].forEach(([id, label]) => {
-        const b = h("button", { type: "button", class: "btn", id: "pr-" + id, "aria-pressed": String(mode === id) }, label);
-        b.addEventListener("click", () => { mode = id; render(); });
-        el.modeTabs.appendChild(b);
-      });
+      el.actions = h("span", { class: "present-actions", style: { display: "contents" } });
+      renderModeTabs();
       el.sensitive = h("input", { type: "checkbox", id: "pr-sensitive" });
       el.sensitive.addEventListener("change", () => { includeSensitive = el.sensitive.checked; render(); });
       el.unreviewed = h("input", { type: "checkbox", id: "pr-unreviewed" });
@@ -48,6 +85,7 @@
         btn("download", "Records CSV", "pr-csv", exportCsv),
         btn("image", "Process SVG", "pr-svg", () => exportDiagram("svg")),
         btn("image", "Process PNG", "pr-png", () => exportDiagram("png")),
+        el.actions,
         btn("save", "Engagement JSON", "pr-json", () => app.saveAs()),
         btn("fullscreen", "Full screen", "pr-full", () => { const t = el.root; if (t.requestFullscreen) t.requestFullscreen().catch(() => {}); }));
       el.content = h("div", { style: { minHeight: "0", overflow: "auto" } });
@@ -144,6 +182,10 @@
     function renderHandoff() {
       const e = eng();
       const hd = exporting.buildHandoff(e, { scenarioId: app.view.scenarioId, includeSensitive, includeUnreviewedAi });
+      const c = extCtx();
+      // Sections registered with BPMVIZ.ext.registerHandoffSection, placed after their anchor.
+      const ext = anchor => B.ext.list("handoffSection").filter(x => x.after === anchor)
+        .map(x => B.ext.guard("handoffSection", x, () => x.render(hd, c), null));
       const sec = (title, kind, cols) => {
         const list = hd.sections[kind];
         if (!list.length) return null;
@@ -168,34 +210,44 @@
           hd.scenario ? [h("dt", null, "Scenario"), h("dd", null, hd.scenario.name + ". " + hd.scenario.provenance + ", " + hd.scenario.timing.toLowerCase() + ".")] : null,
           h("dt", null, "Timing"), h("dd", null, hd.timeBasis)),
         summarySection(e, hd),
+        ext("summary"),
         h("h2", null, "Scope"),
         h("div", { class: "table-wrap" }, h("table", { class: "table" },
-          h("thead", null, h("tr", null, ["Model", "Role", "Version", "Status", "Steps"].map(c => h("th", { scope: "col" }, c)))),
+          h("thead", null, h("tr", null, ["Model", "Role", "Version", "Status", "Steps"].map(col => h("th", { scope: "col" }, col)))),
           h("tbody", null, hd.models.map(m => h("tr", null, h("td", null, m.name), h("td", null, m.role), h("td", null, String(m.version)), h("td", null, m.status), h("td", { class: "num" }, String(m.steps))))))),
+        ext("scope"),
         sec("Pain points", "pain", [["Finding", title], ["Steps", steps], ["Owner", r => r.owner || "Unassigned"], ["Status", r => r.status]]),
+        ext("pain"),
         sec("Opportunities", "opportunity", [["Opportunity", title], ["Intervention", r => r.opportunity ? r.opportunity.intervention || "Not chosen" : ""],
           ["Expected benefit", r => r.opportunity ? r.opportunity.expectedBenefit : ""], ["Next validation", r => r.opportunity ? r.opportunity.validationAction : ""], ["Owner", r => r.owner || "Unassigned"]]),
+        ext("opportunity"),
         sec("Decisions", "decision", [["Decision", title], ["Steps", steps], ["Owner", r => r.owner || "Unassigned"], ["Status", r => r.status]]),
+        ext("decision"),
         sec("Actions", "action", [["Action", title], ["Owner", r => r.owner || "Unassigned"], ["Status", r => r.status], ["Priority", r => r.priority]]),
+        ext("action"),
         sec("Open questions", "question", [["Question", title], ["Steps", steps], ["Owner", r => r.owner || "Unassigned"]]),
+        ext("question"),
         sec("Assumptions captured", "assumption", [["Assumption", title], ["Owner", r => r.owner || "Unassigned"], ["Evidence", r => r.evidence.join("; ") || "None"]]),
         sec("Notes", "note", [["Note", title], ["Steps", steps], ["Owner", r => r.owner || "Unassigned"]]),
         h("h2", null, "Economic assumptions"),
         hd.assumptions.length ? h("div", { class: "table-wrap" }, h("table", { class: "table" },
-          h("thead", null, h("tr", null, ["Assumption", "Value", "Status", "Source"].map(c => h("th", { scope: "col" }, c)))),
+          h("thead", null, h("tr", null, ["Assumption", "Value", "Status", "Source"].map(col => h("th", { scope: "col" }, col)))),
           h("tbody", null, hd.assumptions.map(a => h("tr", null, h("td", null, a.label), h("td", { class: "num" }, a.value), h("td", null, a.status), h("td", null, a.source || "")))))) :
           h("p", null, "No economic assumptions are recorded."),
         hd.value && hd.value.length ? [h("h3", null, "Modeled figures for the scenario"),
           h("ul", null, hd.value.map(v => h("li", null, v.label + ": " + v.text + " (" + v.basis + " inputs; " + v.formula + ")")))] : null,
         hd.reconciliation && hd.reconciliation.warnings.length ? [h("h3", null, "Figures that do not reconcile"),
           h("ul", null, hd.reconciliation.warnings.map(w => h("li", null, w)))] : null,
+        ext("value"),
         h("h2", null, "Evidence"),
         h("p", null, hd.evidence.total + (hd.evidence.total === 1 ? " source" : " sources") + " recorded: " + hd.evidence.validated + " validated, " + hd.evidence.unreviewed + " not reviewed, " +
           hd.evidence.disputed + " disputed, " + hd.evidence.unavailable + " unavailable. " +
           hd.evidence.stepsWithoutProvenance + " of " + hd.evidence.currentSteps + " current-state steps have no recorded provenance."),
+        ext("evidence"),
         hd.excludedSensitive ? h("p", { class: "note" }, hd.excludedSensitive + " sensitive records are not included in this summary.") : null,
         hd.excludedUnreviewedAi ? h("p", { class: "note no-print" }, hd.excludedUnreviewedAi + " AI-drafted records are not yet reviewed and are not included. Review them in Records, or tick Include AI drafts not yet reviewed.") : null,
-        hd.disclosure ? [h("h2", null, "Disclosure"), h("p", null, hd.disclosure)] : null);
+        hd.disclosure ? [h("h2", null, "Disclosure"), h("p", null, hd.disclosure)] : null,
+        ext("end"));
       el.content.appendChild(h("div", { class: "handoff" }, doc));
     }
 
@@ -243,8 +295,10 @@
 
     /* ---------- Exports ---------- */
 
+    /* Prints the current mode when it is printable, otherwise the handoff summary. */
     function printHandoff() {
-      if (mode !== "handoff") { mode = "handoff"; render(); }
+      const current = modes().find(m => m.id === mode);
+      if (!current || !current.printable) { mode = "handoff"; render(); }
       setTimeout(() => window.print(), 50);
     }
 
@@ -324,6 +378,37 @@
       return { text: new XMLSerializer().serializeToString(out), width, height: y };
     }
 
+    /**
+     * Renders the process panes shown in the Process workspace to a PNG:
+     * Promise<{ blob, width, height }> (pixels). opts.scale defaults to 2 and
+     * is capped so neither side passes 16,000 pixels. Rejects when the
+     * Process workspace has not drawn a diagram yet.
+     */
+    function renderPng(opts) {
+      const o = opts || {};
+      return new Promise((resolve, reject) => {
+        const svg = buildSvg();
+        if (!svg) { reject(new Error("Open the Process workspace once so the diagram is drawn, then try again.")); return; }
+        const img = new Image();
+        const url = URL.createObjectURL(new Blob([svg.text], { type: "image/svg+xml" }));
+        img.onload = () => {
+          const scale = Math.min(Number.isFinite(o.scale) && o.scale > 0 ? o.scale : 2, 16000 / svg.width, 16000 / svg.height);
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(svg.width * scale); canvas.height = Math.round(svg.height * scale);
+          const g = canvas.getContext("2d");
+          g.scale(scale, scale);
+          g.drawImage(img, 0, 0);
+          URL.revokeObjectURL(url);
+          canvas.toBlob(blob => {
+            if (blob) resolve({ blob, width: canvas.width, height: canvas.height });
+            else reject(new Error("Your browser could not render the diagram to an image. Use the SVG export instead."));
+          }, "image/png");
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Your browser could not render the diagram to an image. Use the SVG export instead.")); };
+        img.src = url;
+      });
+    }
+
     function exportDiagram(kind) {
       const e = eng();
       if (!app.processView.panes.length) app.goto("process");
@@ -335,34 +420,31 @@
         announce("Process SVG exported.");
         return;
       }
-      const img = new Image();
-      const url = URL.createObjectURL(new Blob([svg.text], { type: "image/svg+xml" }));
-      img.onload = () => {
-        const scale = Math.min(2, 16000 / svg.width, 16000 / svg.height);
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(svg.width * scale); canvas.height = Math.round(svg.height * scale);
-        const g = canvas.getContext("2d");
-        g.scale(scale, scale);
-        g.drawImage(img, 0, 0);
-        URL.revokeObjectURL(url);
-        canvas.toBlob(blob => { if (blob) { downloadBlob(blob, base + ".png"); announce("Process PNG exported."); } }, "image/png");
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); B.dialogs.messageDialog("PNG export failed", "Your browser could not render the diagram to an image. Use the SVG export instead."); };
-      img.src = url;
+      renderPng().then(r => { downloadBlob(r.blob, base + ".png"); announce("Process PNG exported."); })
+        .catch(err => B.dialogs.messageDialog("PNG export failed", err.message));
+    }
+
+    function renderMode() {
+      const def = B.ext.list("presentMode").find(m => m.id === mode);
+      const host = h("div", { class: def.printable ? "handoff" : "present-mode", id: "pr-mode-host" });
+      el.content.appendChild(host);
+      B.ext.guard("presentMode", def, () => def.render(host, extCtx()));
     }
 
     function render() {
       if (!el.root) return;
-      el.modeTabs.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.id === "pr-" + mode)));
+      if (!modes().some(m => m.id === mode)) mode = "presenter";
+      renderModeTabs();
+      renderActions();
       const e = eng();
       el.unreviewedLabel.hidden = !(e.records.some(r => exporting.isUnreviewedAi(r)) || (e.narratives || []).some(n => exporting.isUnreviewedAi(n)));
       if (el.unreviewedLabel.hidden && includeUnreviewedAi) { includeUnreviewedAi = false; el.unreviewed.checked = false; }
       clear(el.content);
       el.content.style.height = mode === "presenter" ? "100%" : "";
-      if (mode === "presenter") renderPresenter(); else renderHandoff();
+      if (mode === "presenter") renderPresenter(); else if (mode === "handoff") renderHandoff(); else renderMode();
     }
 
-    return { build, render, onEngagementChange: render, buildSvg, setMode: m => { mode = m; render(); } };
+    return { build, render, onEngagementChange: render, buildSvg, renderPng, getMode: () => mode, setMode: m => { mode = m; render(); } };
   }
 
   B.presentView = { createPresentView };

@@ -47,6 +47,13 @@
     return units.formatMeasure(m.value, m.unit || "minute", {});
   }
 
+  /* Sections registered with BPMVIZ.ext.registerDrawerSection for one place. */
+  function extSections(ctx, where, model, node) {
+    if (!B.ext) return [];
+    return B.ext.list("drawerSection").filter(s => s.where === where)
+      .map(s => B.ext.guard("drawerSection", s, () => s.render(ctx, model, node), null)).filter(x => x instanceof Node);
+  }
+
   /* ---------------- Overview ---------------- */
 
   function scorecard(ctx) {
@@ -133,6 +140,7 @@
     }
     const card = scorecard(ctx);
     if (card) inner.appendChild(card);
+    extSections(ctx, "overview", ctx.primaryModel, null).forEach(x => inner.appendChild(x));
     const current = e.models.find(m => m.role === "current");
     if (current && !e.models.some(m => m.basedOn && m.basedOn.modelId === current.id)) {
       inner.appendChild(h("section", { class: "side-section" },
@@ -218,6 +226,7 @@
         ["Rationale", node.lineage.rationale || null]
       ]) : null,
       h("div", null, h("button", { type: "button", class: "btn", on: { click: () => ctx.fullDetails(model.id, node.id) } }, icon("list"), "All recorded fields"))));
+    extSections(ctx, "step", model, node).forEach(x => box.appendChild(x));
     return box;
   }
 

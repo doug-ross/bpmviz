@@ -112,6 +112,12 @@
         field("Action authority", aiFields.authority), field("Human review", aiFields.humanReview)),
       h("div", { class: "field-row" },
         field("Auditability", aiFields.auditability), field("Failure handling", aiFields.failureHandling)));
+    // Sections registered with BPMVIZ.ext.registerRecordDialogSection: { el, collect() -> patch, check() -> message or null }.
+    const extCtx = B.ext.context(app, {});
+    const extSections = B.ext.list("recordDialogSection").map(def => {
+      const out = B.ext.guard("recordDialogSection", def, () => def.render(r, extCtx), null);
+      return out && out.el instanceof Node ? { def, out } : null;
+    }).filter(Boolean);
     const oppBlock = h("fieldset", { class: "form-grid", style: { border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "var(--space-3)" } },
       h("legend", { class: "field-label" }, "Opportunity"),
       h("div", { class: "field-row" }, field("Intervention", intervention), field("Effort", effort)),
@@ -120,11 +126,14 @@
       field("Affected volume", volume),
       h("div", { class: "field-row" }, field("Risk", risk), field("Dependencies", deps)),
       field("Next validation action", validation),
+      extSections.map(x => x.out.el),
       aiBlock);
     const syncKind = () => {
       oppBlock.hidden = kind.value !== "opportunity";
       aiBlock.hidden = !(intervention.value === "ai-assist" || intervention.value === "ai-agent");
+      extSections.forEach(x => { x.out.el.hidden = !x.def.kinds.includes(kind.value); });
     };
+    const activeSections = () => extSections.filter(x => x.def.kinds.includes(kind.value));
     kind.addEventListener("change", syncKind);
     intervention.addEventListener("change", syncKind);
     syncKind();
@@ -143,7 +152,7 @@
       oppBlock, err, h("datalist", { id: "rec-owner-list" }, owners.map(x => h("option", { value: x }))));
     body.addEventListener("submit", ev => ev.preventDefault());
 
-    const collect = () => ({
+    const collectBase = () => ({
       kind: kind.value, title: title.value, description: desc.value, owner: owner.value, status: status.value,
       priority: priority.value, linkedModelId: modelSel.value || null,
       linkedNodeIds: Array.from(steps.selectedOptions).map(x => x.value),
@@ -157,6 +166,16 @@
         aiAssessment: Object.assign(Object.fromEntries(Object.keys(aiFields).map(k => [k, aiFields[k].value])), { mode: mode.value })
       } : null
     });
+    const collect = () => {
+      const payload = collectBase();
+      if (payload.opportunity) {
+        activeSections().forEach(x => {
+          const patch = typeof x.out.collect === "function" ? B.ext.guard("recordDialogSection", x.def, () => x.out.collect(), null) : null;
+          if (patch && typeof patch === "object") Object.assign(payload.opportunity, patch);
+        });
+      }
+      return payload;
+    };
 
     const actions = [];
     if (existing) {
@@ -170,6 +189,8 @@
     actions.push({ label: "Cancel" });
     actions.push({ label: existing ? "Save record" : "Add record", variant: "btn-primary", keepOpen: true, onClick: api => {
       if (!title.value.trim()) { err.hidden = false; err.textContent = "Give the record a title."; title.focus(); return false; }
+      const problem = activeSections().map(x => (typeof x.out.check === "function" ? B.ext.guard("recordDialogSection", x.def, () => x.out.check(), null) : null)).find(Boolean);
+      if (problem) { err.hidden = false; err.textContent = String(problem); return false; }
       const payload = collect();
       const ok = existing ?
         app.dispatch("record/update", { id: r.id, patch: payload }, "Record saved", err) :

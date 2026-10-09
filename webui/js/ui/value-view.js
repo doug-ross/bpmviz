@@ -8,7 +8,7 @@
   const { h, clear, icon } = B.dom;
   const { schema, units, economics, util } = B;
   const badge = (t, tone) => B.drawer.badge(t, tone);
-  const BASIS_TONE = { illustrative: "warning", supplied: "info", validated: "success" };
+  const BASIS_TONE = { illustrative: "warning", supplied: "info", observed: "success", validated: "success" };
   const RECON_TONE = { reconciled: "success", unreconciled: "error", "not-checkable": "" };
   const RECON_TEXT = { reconciled: "Reconciles", unreconciled: "Does not reconcile", "not-checkable": "Cannot check" };
 
@@ -181,6 +181,12 @@
         notes.map(n => h("div", { class: "warn-line" }, icon("info"), h("span", null, n.message))));
     }
 
+    /* Sections registered with BPMVIZ.ext.registerValueSection, after the reconciliation card. */
+    function extSections(s) {
+      const c = B.ext.context(app, { scenario: s || null, scenarioId: s ? s.id : "", rerender: render });
+      return B.ext.list("valueSection").map(def => B.ext.guard("valueSection", def, () => def.render(c), null)).filter(x => x instanceof Node);
+    }
+
     function render() {
       if (!el.root) return;
       const e = eng();
@@ -192,11 +198,13 @@
       if (!s) {
         el.body.append(h("div", { class: "value-grid" }, h("div", null, driversCard()),
           h("div", { class: "card" }, h("h3", null, "No scenario to model"), h("p", { class: "small" }, "The value model needs a scenario with human effort per case. Open an engagement with scenario timing, or add one to the engagement file."))));
+        const extra = extSections(null);
+        if (extra.length) el.body.append(h("div", { class: "value-stack" }, extra));
         return;
       }
       el.body.append(
         h("div", { class: "value-grid" }, driversCard(), scenarioCard(s)),
-        h("div", { class: "value-stack" }, resultsCard(s), s.economics ? sensitivityCard(s) : null, reconciliationCard()));
+        h("div", { class: "value-stack" }, resultsCard(s), s.economics ? sensitivityCard(s) : null, reconciliationCard(), extSections(s)));
     }
 
     return { build, render, onEngagementChange: render };
