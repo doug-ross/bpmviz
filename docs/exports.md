@@ -43,7 +43,7 @@ The backlog turns opportunity and action records into items a delivery team can 
 | Opportunity | Epic | Feature |
 | Action | Task | User Story |
 
-Each item carries its linked steps as labels or tags, and acceptance criteria built from the recorded validation action, the value case's targets (effort reduction, duration reduction, share of cases), and any open question linked to the same steps. Choose Jira CSV, Azure DevOps CSV or an Excel workbook with everything on one sheet. A cell that would otherwise look like a spreadsheet formula is neutralized with a leading apostrophe.
+Each item carries its linked steps as labels or tags, and acceptance criteria built from the recorded validation action, the value case's targets (effort reduction, duration reduction, share of cases), and any open question linked to the same steps. Choose Jira CSV, Azure DevOps CSV or an Excel workbook with everything on one sheet. In the two CSV exports, a cell that would otherwise look like a spreadsheet formula is neutralized with a leading apostrophe; the Excel workbook writes its cells as inline strings, which Excel never evaluates as formulas, so no neutralization is needed there.
 
 A pain point, decision, question or note is not itself a backlog item; capture it as an action first if it needs its own ticket.
 
