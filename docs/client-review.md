@@ -19,7 +19,7 @@ What goes into a pack:
 - Sensitive records are left out unless **Include sensitive records** is ticked in the Present bar. AI drafts not yet reviewed are left out unless **Include AI drafts not yet reviewed** is ticked. The pack dialog says which applies.
 - The engagement title, client and engagement names, data status, confidentiality and disclosure. Nothing else from the engagement is in the file: no figures, no other records, no evidence and no notes.
 
-A recorded pack can be downloaded again from the Records tab. It is rebuilt from the current engagement with the same pack reference, so answers to either copy match.
+A recorded pack can be downloaded again from the Records tab. It is rebuilt from the current engagement with the same pack reference, so answers to either copy match. The findings are checked again: a finding that has since been marked sensitive, dropped or taken out of the handoff, or an AI draft not yet reviewed, is left out, and BPMVIZ says how many items were left out. To send a sensitive finding, make a new pack from the Present bar with **Include sensitive records** ticked.
 
 ## The web page pack
 
@@ -41,7 +41,7 @@ The workbook has three sheets:
 - **Review**: one row per item with the columns Item ID, Type, Lane, Item, Details, Verdict and Comment. The Verdict column offers a list of Confirm, Dispute and Not sure.
 - **bpmviz-pack** (hidden): the pack reference, engagement reference and revision.
 
-Every cell is written as text or a number, so no cell is a formula.
+Every cell is written as text or a number, so no cell is a formula. Text that starts with =, +, - or @ (or a tab) gets a leading apostrophe, as in the CSV exports, so it stays text when the reviewer edits the cell or saves the sheet as CSV. BPMVIZ removes the apostrophe again when it reads the workbook back.
 
 When the workbook comes back, open it with **Open**. BPMVIZ recognizes it by the hidden sheet, or by the About and Review sheets when a re-save lost the hidden sheet. Columns on the Review sheet are found by their headers, so moved columns still read. Verdicts are read generously: Yes, Correct and OK count as Confirm; No, Wrong and Disagree count as Dispute; Maybe and Don't know count as Not sure. Anything else is treated as no answer and listed as a warning; it is never read as Confirm. If the workbook has no submission date, the file's last-modified time is used.
 
@@ -68,11 +68,11 @@ Applying works on a locked baseline. It changes only the validation status and e
 
 ### When reviewers disagree
 
-Each response is kept as a separate review. For every item the latest answer, by submission date, is current. Earlier answers stay visible in the Client review tab and in the step's side panel. If you import an older response after a newer one, its answers are recorded but do not overwrite the validation set by the newer one, and the import dialog says so.
+Each response is kept as a separate review. For every item the latest answer, by submission date, is current. A response without a submission date counts from the time it is imported. Earlier answers stay visible in the Client review tab and in the step's side panel. If you import an older response after a newer one, its answers are recorded but do not overwrite the validation set by the newer one, and the import dialog says so.
 
 ## Where the answers show
 
-- **Records, Client review**: this tab appears once the engagement has a review pack or a response. It lists the packs made (with Download again and Delete), the responses received (with what each one changed), and the latest answer for every item with earlier answers beside it. The figures at the top are counted from the latest answer per item.
+- **Records, Client review**: this tab is listed while the open engagement has a review pack or a response, and not for an engagement without them. It lists the packs made (with Download again and Delete), the responses received (with what each one changed), and the latest answer for every item with earlier answers beside it. The figures at the top are counted from the latest answer per item.
 - **Process side panel**: a step that has answers shows a Client review section with the latest answer, the reviewer, the comment, earlier answers and the step's validation status.
 - **Handoff summary**: a Client review section after Evidence lists who responded, the counts per verdict from the latest answer per item, and the items that were disputed or marked not sure with their comments. Sensitive findings and unreviewed AI drafts follow the Present bar settings.
 
