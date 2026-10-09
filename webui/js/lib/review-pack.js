@@ -165,11 +165,12 @@
       const blob = new Blob([JSON.stringify(response, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = el("a", { href: url, download: fileName() });
+      // Saved answers are not "unsaved", so clear the leave-page warning before the download starts.
+      dirty = false;
       doc.body.appendChild(a);
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      dirty = false;
       say("Saved " + fileName() + " with " + countAnswered() + " of " + data.items.length + " items answered. Send this file to the team.");
     }
 
@@ -307,7 +308,7 @@
   ].join("\n");
 
   /* SHA-256 of PACK_SCRIPT and PACK_STYLE, base64, as the content security policy needs them. */
-  const PACK_SCRIPT_SHA256 = "eOtPHDC1cylVhT+RMC335AguB1oWXWY7FS8BqYrz87g=";
+  const PACK_SCRIPT_SHA256 = "XjEvlbdh9hx7oSvljOulSXMRBURi+zM5KcVQShPR05s=";
   const PACK_STYLE_SHA256 = "5dn3qn3UAcR0HU4XWCeOk+9c7kbALAAPPWCgqyff4iA=";
 
   const CSP = "default-src 'none'; script-src 'sha256-" + PACK_SCRIPT_SHA256 + "'; style-src 'sha256-" + PACK_STYLE_SHA256 +

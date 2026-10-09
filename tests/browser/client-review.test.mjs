@@ -40,7 +40,7 @@ async function openApp(t, hash) {
   const page = await ctx.newPage();
   const problems = watch(page);
   await page.goto(fileUrl() + (hash || ""));
-  await page.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && window.BPMVIZ.app.store);
+  await page.waitForFunction(h => window.BPMVIZ && window.BPMVIZ.app && document.getElementById("app") && (!h || !!window.BPMVIZ.app.store), hash || "");
   return { ctx, page, problems };
 }
 
@@ -308,4 +308,15 @@ test("responses for another engagement or over the size limit are refused; an un
   });
   assert.deepEqual(r, { packId: null, entries: 4, evidence: 1, questions: 2 });
   clean(s.problems);
+  // A saved engagement with a review shows the Client review tab when it is opened again.
+  const saved = await p.evaluate(() => window.BPMVIZ.exporting.engagementToJson(window.BPMVIZ.app.store.get()));
+  const s2 = await openApp(t, "");
+  await s2.page.setInputFiles("#file-input", { name: "reviewed.engagement.json", mimeType: "application/json", buffer: Buffer.from(saved) });
+  await s2.page.waitForSelector(".node");
+  await s2.page.click("#tab-records");
+  await s2.page.click("#rv-tab-client-review");
+  assert.equal((await s2.page.textContent("#rv-tab-client-review .count")).trim(), "1");
+  assert.match(await s2.page.textContent("#rv-panel"), /Dana Reviewer, Head of Underwriting Operations, Example Insurer/);
+  assert.match(await s2.page.textContent("#rv-panel"), /Latest answer per item \(4\)/);
+  clean(s2.problems);
 });
