@@ -396,6 +396,9 @@
         h("ul", { class: "plain-list small" },
           h("li", null, input.activities.length + " activity name" + (input.activities.length === 1 ? "" : "s") + " from the event log" +
             (input.excluded.activities ? ", " + input.excluded.activities + " less frequent names left out" : "")),
+          input.excluded.secretActivities ? h("li", { id: "ai-sent-secret" }, input.excluded.secretActivities + " activity name" +
+            (input.excluded.secretActivities === 1 ? " that looks" : "s that look") + " like a credential left out; map " +
+            (input.excluded.secretActivities === 1 ? "it" : "them") + " by hand") : null,
           h("li", null, "The " + input.steps.length + " steps of " + (model ? model.name : "the model") + " (gateways left out): ID, name, swimlane and description")),
         h("p", { class: "small muted" }, "No events, case IDs, times, counts or people from the log, plus the BPMVIZ task instructions."),
         h("details", { class: "small" }, h("summary", null, "Show exactly what is sent"),
