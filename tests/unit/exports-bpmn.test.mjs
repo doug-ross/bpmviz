@@ -74,6 +74,23 @@ test("an id that is not a valid XML name is sanitized and made unique", () => {
   workIds.forEach(id => assert.match(id, /^[A-Za-z_][A-Za-z0-9_.-]*$/));
 });
 
+test("node, edge and lane ids never collide even when their source ids coincide", () => {
+  const e = tinyEngagement();
+  e.models[0].nodes[1].sourceIds = ["Flow_1"]; // a userTask would otherwise take the same id as an edge
+  e.models[0].edges[0].id = "Flow_1";
+  const xml = bpmnExport.exportModel(e, "m-current");
+  const allIds = [];
+  const re = /\sid="([^"]+)"/g;
+  let m;
+  while ((m = re.exec(xml))) allIds.push(m[1]);
+  const seen = new Set();
+  allIds.forEach(id => {
+    assert.ok(!seen.has(id), "id \"" + id + "\" is reused by more than one element");
+    seen.add(id);
+  });
+  assert.ok(seen.has("Flow_1"), "the first claimant still gets to keep the source id");
+});
+
 test("removed steps and their connectors are left out", () => {
   const e = tinyEngagement();
   e.models[0].nodes[3].removed = true; // fix

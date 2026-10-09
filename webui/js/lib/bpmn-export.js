@@ -34,8 +34,7 @@
     return s || "_id";
   }
 
-  function idMapFor(items, sourceOf) {
-    const used = new Set();
+  function idMapFor(items, sourceOf, used) {
     const map = new Map();
     items.forEach(it => {
       const src = sourceOf(it);
@@ -94,9 +93,10 @@
     const lm = lay.models[sub.id];
     const routes = layout.routeAll(sub, lm);
 
-    const nodeId = idMapFor(nodes, n => n.sourceIds && n.sourceIds[0]);
-    const edgeId = idMapFor(edges, ed => ed.id);
-    const laneId = idMapFor(model.lanes, l => l.id);
+    const usedIds = new Set();
+    const nodeId = idMapFor(nodes, n => n.sourceIds && n.sourceIds[0], usedIds);
+    const edgeId = idMapFor(edges, ed => ed.id, usedIds);
+    const laneId = idMapFor(model.lanes, l => l.id, usedIds);
 
     const processId = "Process_" + ncSanitize(model.id || "1");
     const participantId = "Participant_" + ncSanitize(model.id || "1");
