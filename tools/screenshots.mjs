@@ -182,4 +182,113 @@ const seedUnderwriting = () => {
   await new Promise(r => { server.close(r); server.closeAllConnections(); });
 }
 
+// Runs the mining library against a sample event log, inside the page, and
+// adds the result as a dataset the same way the import wizard's Add step
+// does (mining.aggregate followed by the dataset/import command).
+async function importSampleLog(p, csvText, opts) {
+  return p.evaluate(({ csvText, opts }) => {
+    const B = window.BPMVIZ;
+    const app = B.app;
+    const e = app.store.get();
+    const model = e.models.find(m => m.id === opts.modelId);
+    const table = B.mining.tableFromRows(B.csv.parse(csvText).rows);
+    const cols = B.mining.guessColumns(table.header);
+    const fmt = B.mining.detectTimestampFormat(table.rows.map(r => r[cols.mode === "start-end" ? cols.start : cols.timestamp]));
+    const builder = B.mining.createEventBuilder(cols, Object.assign({ mode: cols.mode, format: fmt.format, resources: "dropped" }));
+    builder.add(table.rows, table.firstDataRow);
+    const built = builder.result();
+    const matches = B.fuzzy.matchActivities(B.mining.activitiesOf(built.events), B.mining.mappableSteps(model).map(n => ({ id: n.id, label: n.label })));
+    const mapping = Object.fromEntries(matches.map(m => [m.activity, { nodeId: m.nodeId, method: m.method || "ignored" }]));
+    const ends = B.mining.defaultEndNodes(model, matches.map(m => m.nodeId).filter(Boolean));
+    const result = B.mining.aggregate({
+      model, events: built.events, caseNames: built.caseNames, mapping, mode: cols.mode,
+      timeBasis: e.meta.timeBasis, scenarioTimeBasis: e.meta.timeBasis,
+      endNodeIds: ends, requireEnd: true, resources: "dropped", caseIds: "sequence", topVariants: 3,
+      name: opts.name, role: opts.role, comparesToDatasetId: opts.comparesToDatasetId || null, dataStatus: "demonstration",
+      source: { fileName: opts.fileName, format: "csv", rows: built.rows, droppedRows: built.droppedRows }
+    });
+    return app.store.dispatch("dataset/import", { dataset: result.dataset, scenarios: result.scenarios }).datasetId;
+  }, { csvText, opts });
+}
+
+// 15. Event-log import wizard: the activities step, matching the sample log
+// against the underwriting example.
+{
+  const { p, context } = await page("#example=underwriting-current-state");
+  await p.click("#btn-menu");
+  await p.click("#menu-event-log");
+  await p.waitForSelector("dialog[open] #li-choose");
+  const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#li-choose")]);
+  await chooser.setFiles(path.join(root, "docs", "samples", "underwriting-baseline.csv"));
+  await p.waitForSelector("#li-model");
+  await p.click("#li-next");
+  await p.waitForSelector("#li-format");
+  await p.click("#li-next");
+  await p.waitForSelector("#li-map-summary");
+  await shot(p, "15-log-import.png");
+  await context.close();
+}
+
+// 16. Business case: the Matrix view with a few scored opportunities.
+{
+  const { p, context } = await page("#example=underwriting&ws=records");
+  await p.evaluate(() => {
+    const d = window.BPMVIZ.app.dispatch;
+    d("node/update", { modelId: "m-current", nodeId: "scrub-sov-geocode", patch: { measures: { touchEffort: { value: 30, unit: "minute" } } } });
+    d("node/update", { modelId: "m-current", nodeId: "appetite-capacity-triage", patch: { measures: { touchEffort: { value: 1, unit: "hour" } } } });
+    d("record/add", { record: { kind: "opportunity", title: "Standard SOV template for the top five brokers", linkedModelId: "m-current",
+      linkedNodeIds: ["scrub-sov-geocode"], opportunity: { intervention: "standardize", effort: "M",
+        valueCase: { modelId: "m-current", nodeIds: ["scrub-sov-geocode"], effortReductionPct: 50, shareOfCasesPct: 60, shareSource: "typed", effortSource: "typed",
+          confidence: "high", basis: "supplied", wave: "now" } } } });
+    d("record/add", { record: { kind: "opportunity", title: "Automate appetite and capacity triage", linkedModelId: "m-current",
+      linkedNodeIds: ["appetite-capacity-triage"], opportunity: { intervention: "deterministic-automation", effort: "L",
+        valueCase: { modelId: "m-current", nodeIds: ["appetite-capacity-triage"], effortReductionPct: 70, shareOfCasesPct: 100, shareSource: "typed", effortSource: "typed",
+          confidence: "medium", basis: "supplied", wave: "next" } } } });
+    d("record/add", { record: { kind: "opportunity", title: "Shared mailbox for facultative placement", linkedModelId: "m-current",
+      linkedNodeIds: ["scrub-sov-geocode"], opportunity: { intervention: "simplify", effort: "S",
+        valueCase: { modelId: "m-current", nodeIds: ["scrub-sov-geocode"], effortReductionPct: 10, shareOfCasesPct: 20, shareSource: "typed", effortSource: "typed",
+          confidence: "low", basis: "illustrative", wave: "later" } } } });
+  });
+  await p.click("#rv-tab-opportunities");
+  await p.click("#rv-oppview-matrix");
+  await p.waitForSelector(".bc-matrix");
+  await shot(p, "16-business-case-matrix.png");
+  await context.close();
+}
+
+// 17. Client review pack dialog, filled in and ready to make.
+{
+  const { p, context } = await page("#example=underwriting-current-state");
+  await p.click("#tab-present");
+  await p.click("#pr-action-client-review");
+  await p.waitForSelector("dialog[open] #cr-name");
+  await p.fill("#cr-name", "Dana Reviewer");
+  await p.fill("#cr-role", "Head of Underwriting Operations");
+  await shot(p, "17-client-review-pack.png");
+  await context.close();
+}
+
+// 18. Export for client tools dialog.
+{
+  const { p, context } = await page("#example=underwriting-current-state");
+  await p.click("#tab-present");
+  await p.click("#pr-action-client-exports");
+  await p.waitForSelector("dialog[open]");
+  await shot(p, "18-export-dialog.png");
+  await context.close();
+}
+
+// 19. Benefits: a baseline and an after log compared, from the sample logs.
+{
+  const { p, context } = await page("#example=underwriting-current-state&ws=value");
+  const baselineCsv = fs.readFileSync(path.join(root, "docs", "samples", "underwriting-baseline.csv"), "utf8");
+  const afterCsv = fs.readFileSync(path.join(root, "docs", "samples", "underwriting-after.csv"), "utf8");
+  const baselineId = await importSampleLog(p, baselineCsv, { modelId: "m-current", name: "Baseline", role: "baseline", fileName: "underwriting-baseline.csv" });
+  await importSampleLog(p, afterCsv, { modelId: "m-current", name: "After the change", role: "after", comparesToDatasetId: baselineId, fileName: "underwriting-after.csv" });
+  await p.waitForSelector("#bv-h");
+  await p.evaluate(() => { document.getElementById("bv-section").scrollIntoView({ block: "start" }); });
+  await shot(p, "19-benefits.png");
+  await context.close();
+}
+
 await browser.close();

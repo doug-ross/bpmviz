@@ -76,6 +76,50 @@ Client material goes only to commercial plans, with the engagement lead's approv
 
 `docs/ai.md` covers setup, which plan may take which material, the options, the safety checks and troubleshooting.
 
+### Measure the process from system data
+
+If the client can export a log from the workflow, ticketing or core system that ran the process, BPMVIZ reads it and shows how the process actually ran: how many cases visited each step, how long each step took, which paths cases followed. This gives you real figures to show alongside what the workshop captured, instead of estimates only.
+
+Open the engagement, then choose **More actions, Import an event log**, or just open the log file like any other file. A five-step wizard walks through the file, the columns, matching the log's activity names to the steps of your model, a few options, and a summary of what will be added. Nothing changes in the engagement until the last step. The figures then show on the canvas as two new lenses (observed share of cases, observed time per visit), in the side panel, in the value model and in the handoff.
+
+![Matching activity names from a sample event log to the steps of the underwriting process](docs/screenshots/15-log-import.png)
+
+Only aggregates are kept: counts and times per step, never the individual events, case IDs or the names of people in the log. `docs/event-logs.md` covers the file formats, the timestamp rules, how activities are matched to steps, and what is and is not stored.
+
+### Build the business case for an opportunity
+
+Every opportunity in the register can carry a value case: typed or observed inputs for how much effort it saves, how many cases it affects, and what it costs to deliver. As you fill it in, BPMVIZ estimates the opportunity's annual value right away, using the same formula everywhere it shows up.
+
+The **Matrix** view in Records, Opportunities charts every scored opportunity by value against effort, so you can see quick wins against major projects at a glance. The **Waves** view lays opportunities out by delivery wave (now, next, later) with a running total for each wave. The **Business case** present mode is a printable CFO one-pager: a portfolio page with the wave totals, or a single opportunity's own page with its headline figures and what is still missing.
+
+![Opportunities charted by value and effort in the Matrix view](docs/screenshots/16-business-case-matrix.png)
+
+A missing input leaves a result blank rather than assuming zero, and every figure carries the basis of its weakest input (illustrative, supplied, observed or validated). See `docs/business-case.md` for the formulas and how ranking and the quadrants work.
+
+### Check whether a change actually worked
+
+Once you have an event log from before a change and another from after it, the **Benefits** section in the Value workspace compares the two: what each step actually took, and whether an opportunity's modeled value case was borne out. It never claims savings were "realized": a measured change can be confounded by seasonality, a different volume mix, or a mapping that drifted between the two periods, and the section lists those caveats next to every comparison. A read-only **Observed change** lens on the canvas marks each measured step faster, slower or about the same.
+
+![A step-by-step comparison of a baseline and an after event log](docs/screenshots/19-benefits.png)
+
+Start it from the Value workspace once the engagement has two event-log datasets. See `docs/benefits.md` for how the comparison is built and what each status (Met, Partially met, Not yet, Worse, Not measurable) means.
+
+### Ask a client stakeholder to check the process
+
+A client review pack lists the steps of a process model and the workshop's findings, and asks the reviewer to Confirm, Dispute or mark Not sure on each one, with a comment. Choose **Client review pack** in Present, pick a format (a web page that opens in any browser, or an Excel workbook), choose what to include, and send the file. The reviewer's answers come back as a file you open in BPMVIZ; applying them updates the validation status of the steps, can add open questions for disputed items, and can record the review as an evidence source.
+
+![Setting up a client review pack](docs/screenshots/17-client-review-pack.png)
+
+The pack carries only the steps and the findings chosen for it, plus the engagement's title, data status, confidentiality and disclosure. No figures, other records, evidence or notes go with it, and sensitive findings or unreviewed AI drafts are left out unless you explicitly include them. See `docs/client-review.md` for how the web page and the Excel workbook are kept safe, and how disagreeing responses are reconciled.
+
+### Hand the process to the tools your client already uses
+
+**Export for client tools**, next to Engagement JSON in Present, builds a PowerPoint deck, a BPMN 2.0 diagram, or a Jira, Azure DevOps or Excel backlog from the current engagement. It never changes the engagement, so there is nothing to undo.
+
+![Choosing what to export for the client's tools](docs/screenshots/18-export-dialog.png)
+
+The deck covers scope, findings, opportunities with their modeled value, the wave plan, the current process diagram and next steps, built the same way every time so it opens cleanly in PowerPoint, Keynote or Google Slides. The BPMN export round-trips back through BPMVIZ's own importer. The backlog turns opportunities into epics or features and actions into tasks or stories, with acceptance criteria drawn from the value case. See `docs/exports.md` for what does and does not carry over.
+
 ## Your data
 
 - **The engagement file you save is the record.** Use Save (Ctrl+S) often and store the file like any client document.
@@ -84,6 +128,9 @@ Client material goes only to commercial plans, with the engagement lead's approv
 - **Nothing is fetched from the internet.** Fonts are bundled and the page's content security policy blocks outside connections. Opened from disk, the app cannot contact anything, even to run an AI task; it can still open AI result files.
 - **AI drafts are labeled.** Records, future states and summaries drafted by an AI tool show as AI drafts until someone reviews them, and the handoff and exports leave them out until then.
 - Every screen and export shows whether the content is demonstration data, a supplied scenario or observed data.
+- **An imported event log keeps only aggregates.** The engagement never holds the log's individual events, case IDs or the names of people in it, only counts and times per step. Case IDs are hashed by default, and resources are left out unless you choose to count them, with no names stored either way. See `docs/event-logs.md`.
+- **A client review pack carries only what you chose for it.** Steps, the findings you included, and the engagement's title, data status, confidentiality and disclosure; no figures, other records, evidence or notes. Sensitive findings and unreviewed AI drafts stay out unless included on purpose. The web page pack stores nothing in the browser and sends nothing anywhere. See `docs/client-review.md`.
+- **Export for client tools never changes the engagement.** The PowerPoint deck, BPMN file and backlog it builds respect the same sensitive-record and AI-draft settings as the handoff. See `docs/exports.md`.
 
 ## Bring your own process
 
@@ -137,8 +184,8 @@ The app has no build step. Every file under `webui/js/lib/` works both as a brow
 | Path | Contents |
 |---|---|
 | `webui/index.htm` | The app |
-| `webui/js/lib/` | Model and logic: schema, validation, replay, layout, lenses, economics, store, persistence, exports, BPMN import, AI result files |
-| `webui/js/ui/` | Interface: diagram, process workspace, side panel, forms, records, value and present views, AI review and tasks |
+| `webui/js/lib/` | Model and logic: schema, validation, replay, layout, lenses, economics, store, persistence, exports, BPMN import, AI result files, event-log mining, the value case, benefits comparison, client review packs |
+| `webui/js/ui/` | Interface: diagram, process workspace, side panel, forms, records, value and present views, AI review and tasks, event-log import wizard, opportunity value and the business case, the benefits section, client review and client exports |
 | `webui/css/` | Design tokens (Sogeti palette and Ubuntu type) and app styles |
 | `webui/examples/` | Bundled engagements, generated from `archive/` |
 | `webui/schema/` | JSON Schemas for engagement files and AI result files |
@@ -146,7 +193,7 @@ The app has no build step. Every file under `webui/js/lib/` works both as a brow
 | `tools/ai/` | The AI runner, command line and local helper: Claude Code and Codex commands, document text, prompts, checks |
 | `.claude/skills/`, `.agents/skills/` | The BPMVIZ agent skills for Claude Code and Codex |
 | `tests/` | Unit tests, browser tests and fixtures |
-| `docs/` | AI guide, audit tracker, the September 2026 audit and screenshots |
+| `docs/` | AI guide, event logs, the business case, benefits tracking, client review packs, exports, audit tracker, the September 2026 audit, sample event logs and screenshots |
 | `archive/` | The earlier prototypes and prompts, kept for reference |
 
 ## Audit
