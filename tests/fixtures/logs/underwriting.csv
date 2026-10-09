@@ -1,0 +1,213 @@
+Submission ID,Activity,Start time,Complete time,User
+SUB-1001,Check clearance and dedupe,2026-02-02 10:41,2026-02-02 11:09,Ops A
+SUB-1001,Scrub SOV & Geocode,2026-02-02 12:30,2026-02-02 14:02,Ops B
+SUB-1001,Appetite & Capacity Triage,2026-02-02 15:46,2026-02-02 16:26,Ops A
+SUB-1001,Email the broker,2026-02-02 16:26,2026-02-02 16:31,Ops A
+SUB-1001,Assign to Underwriter,2026-02-02 16:35,2026-02-02 16:49,Ops A
+SUB-1001,"Review COPE, Exposure & Loss Runs",2026-02-03 09:14,2026-02-03 10:45,UW 1
+SUB-1001,Ingest SOV into CAT Platform,2026-02-03 12:44,2026-02-03 13:23,Cat 1
+SUB-1001,Desk Review: COPE & Protections,2026-02-03 14:09,2026-02-03 15:05,Eng 1
+SUB-1001,Run Wind/Flood/Quake AAL & PML,2026-02-03 15:14,2026-02-04 09:31,Cat 1
+SUB-1001,"Publish Risk Report: PML, MFL & Recs",2026-02-04 11:22,2026-02-04 12:37,Eng 1
+SUB-1001,Determine Layering & Participation,2026-02-04 14:06,2026-02-04 14:35,UW 1
+SUB-1001,Technical Pricing & Rating,2026-02-04 15:49,2026-02-05 09:19,UW 1
+SUB-1001,Select Forms & Endorsements,2026-02-05 09:43,2026-02-05 10:22,UW 1
+SUB-1001,Assemble Multi-Option Quote,2026-02-05 10:30,2026-02-05 11:45,UW 2
+SUB-1001,Deliver Quote to Broker,2026-02-05 12:03,2026-02-05 12:12,UW 2
+SUB-1001,Process Bind Order,2026-02-05 13:38,2026-02-05 14:14,UW 2
+SUB-1001,Validate Subjectivities & OFAC,2026-02-05 15:58,2026-02-05 16:54,Ops B
+SUB-1001,Issue Formal Binder,2026-02-06 10:34,2026-02-06 10:58,UW 2
+SUB-1001,"Assemble Dec Sheet, Forms & Endorsements",2026-02-06 11:02,2026-02-06 11:54,Pol 1
+SUB-1001,QA & Reinsurance Reconciliation,2026-02-06 12:12,2026-02-06 13:03,Pol 1
+SUB-1001,Book Premium in PAS & GL,2026-02-06 13:49,2026-02-06 14:06,Pol 1
+SUB-1001,Deliver Policy Package to Broker,2026-02-06 15:41,2026-02-06 15:54,Pol 1
+SUB-1002,Check clearance and dedupe,2026-02-02 14:28,2026-02-02 14:47,Ops A
+SUB-1002,Scrub SOV & Geocode,2026-02-02 15:56,2026-02-03 09:20,Ops B
+SUB-1002,Appetite & Capacity Triage,2026-02-03 09:56,2026-02-03 10:34,Ops A
+SUB-1002,Assign to Underwriter,2026-02-03 11:46,2026-02-03 11:55,Ops A
+SUB-1002,"Review COPE, Exposure & Loss Runs",2026-02-03 13:21,2026-02-03 15:29,UW 1
+SUB-1002,Ingest SOV into CAT Platform,2026-02-03 16:17,2026-02-04 09:21,Cat 1
+SUB-1002,Desk Review: COPE & Protections,2026-02-04 09:49,2026-02-04 10:49,Eng 1
+SUB-1002,Run Wind/Flood/Quake AAL & PML,2026-02-04 12:00,2026-02-04 14:02,Cat 1
+SUB-1002,"Publish Risk Report: PML, MFL & Recs",2026-02-04 14:57,2026-02-04 15:47,Eng 1
+SUB-1002,Determine Layering & Participation,2026-02-04 16:41,2026-02-05 09:11,UW 1
+SUB-1002,Technical Pricing & Rating,2026-02-05 10:44,2026-02-05 11:53,UW 1
+SUB-1002,Select Forms & Endorsements,2026-02-05 12:07,2026-02-05 12:45,UW 1
+SUB-1002,Assemble Multi-Option Quote,2026-02-05 13:57,2026-02-05 15:03,UW 2
+SUB-1002,Deliver Quote to Broker,2026-02-05 16:55,2026-02-06 09:07,UW 2
+SUB-1002,Process Bind Order,2026-02-06 10:05,2026-02-06 10:32,UW 2
+SUB-1002,Validate Subjectivities & OFAC,2026-02-06 11:48,2026-02-06 12:39,Ops B
+SUB-1002,Issue Formal Binder,2026-02-06 13:07,2026-02-06 13:22,UW 2
+SUB-1002,"Assemble Dec Sheet, Forms & Endorsements",2026-02-06 14:36,2026-02-06 15:12,Pol 1
+SUB-1002,QA & Reinsurance Reconciliation,2026-02-06 15:46,2026-02-06 16:41,Pol 1
+SUB-1002,Book Premium in PAS & GL,2026-02-09 10:13,2026-02-09 10:32,Pol 1
+SUB-1002,Deliver Policy Package to Broker,2026-02-09 11:16,2026-02-09 11:31,Pol 1
+SUB-1003,Check clearance and dedupe,2026-02-03 12:22,2026-02-03 12:39,Ops A
+SUB-1003,Scrub SOV & Geocode,2026-02-03 13:50,2026-02-03 14:48,Ops B
+SUB-1003,Appetite & Capacity Triage,2026-02-03 16:33,2026-02-04 09:07,Ops A
+SUB-1003,Assign to Underwriter,2026-02-04 10:01,2026-02-04 10:08,Ops A
+SUB-1003,"Review COPE, Exposure & Loss Runs",2026-02-04 11:47,2026-02-04 13:27,UW 1
+SUB-1003,Ingest SOV into CAT Platform,2026-02-04 13:54,2026-02-04 14:52,Cat 1
+SUB-1003,Desk Review: COPE & Protections,2026-02-04 16:25,2026-02-05 09:45,Eng 1
+SUB-1003,Run Wind/Flood/Quake AAL & PML,2026-02-05 09:45,2026-02-05 11:37,Cat 1
+SUB-1003,"Publish Risk Report: PML, MFL & Recs",2026-02-05 11:50,2026-02-05 13:14,Eng 1
+SUB-1003,Determine Layering & Participation,2026-02-05 13:47,2026-02-05 14:35,UW 1
+SUB-1003,Technical Pricing & Rating,2026-02-05 15:46,2026-02-06 09:45,UW 1
+SUB-1003,Select Forms & Endorsements,2026-02-06 11:12,2026-02-06 11:53,UW 1
+SUB-1003,Assemble Multi-Option Quote,2026-02-06 12:24,2026-02-06 13:11,UW 2
+SUB-1003,Deliver Quote to Broker,2026-02-06 14:10,2026-02-06 14:24,UW 2
+SUB-1003,Process Bind Order,2026-02-06 15:58,2026-02-06 16:28,UW 2
+SUB-1003,Validate Subjectivities & OFAC,2026-02-09 10:21,2026-02-09 11:16,Ops B
+SUB-1003,Issue Formal Binder,2026-02-09 12:16,2026-02-09 12:43,UW 2
+SUB-1003,"Assemble Dec Sheet, Forms & Endorsements",2026-02-09 13:30,2026-02-09 14:34,Pol 1
+SUB-1003,QA & Reinsurance Reconciliation,2026-02-09 16:21,2026-02-10 09:05,Pol 1
+SUB-1003,Book Premium in PAS & GL,2026-02-10 09:46,2026-02-10 10:10,Pol 1
+SUB-1003,Deliver Policy Package to Broker,2026-02-10 11:58,2026-02-10 12:17,Pol 1
+SUB-1004,Check clearance and dedupe,2026-02-03 15:28,2026-02-03 15:41,Ops A
+SUB-1004,Scrub SOV & Geocode,2026-02-03 15:57,2026-02-04 09:39,Ops B
+SUB-1004,Appetite & Capacity Triage,2026-02-04 11:17,2026-02-04 11:41,Ops A
+SUB-1004,Assign to Underwriter,2026-02-04 12:47,2026-02-04 12:55,Ops A
+SUB-1004,"Review COPE, Exposure & Loss Runs",2026-02-04 13:17,2026-02-04 15:27,UW 1
+SUB-1004,Ingest SOV into CAT Platform,2026-02-04 16:44,2026-02-05 10:04,Cat 1
+SUB-1004,Desk Review: COPE & Protections,2026-02-05 11:53,2026-02-05 13:05,Eng 1
+SUB-1004,Run Wind/Flood/Quake AAL & PML,2026-02-05 14:27,2026-02-05 15:50,Cat 1
+SUB-1004,"Publish Risk Report: PML, MFL & Recs",2026-02-06 09:29,2026-02-06 10:21,Eng 1
+SUB-1004,Determine Layering & Participation,2026-02-06 10:58,2026-02-06 11:50,UW 1
+SUB-1004,Technical Pricing & Rating,2026-02-06 12:03,2026-02-06 13:58,UW 1
+SUB-1004,Select Forms & Endorsements,2026-02-06 14:41,2026-02-06 15:06,UW 1
+SUB-1004,Assemble Multi-Option Quote,2026-02-06 16:19,2026-02-09 09:18,UW 2
+SUB-1004,Deliver Quote to Broker,2026-02-09 10:25,2026-02-09 10:45,UW 2
+SUB-1004,Process Bind Order,2026-02-09 11:39,2026-02-09 12:21,UW 2
+SUB-1004,Validate Subjectivities & OFAC,2026-02-09 12:30,2026-02-09 13:18,Ops B
+SUB-1004,Issue Formal Binder,2026-02-09 14:36,2026-02-09 14:51,UW 2
+SUB-1004,"Assemble Dec Sheet, Forms & Endorsements",2026-02-09 16:04,2026-02-10 09:17,Pol 1
+SUB-1004,QA & Reinsurance Reconciliation,2026-02-10 10:27,2026-02-10 10:56,Pol 1
+SUB-1004,Book Premium in PAS & GL,2026-02-10 12:43,2026-02-10 13:03,Pol 1
+SUB-1004,Deliver Policy Package to Broker,2026-02-10 13:55,2026-02-10 14:14,Pol 1
+SUB-1005,Check clearance and dedupe,2026-02-04 13:08,2026-02-04 13:25,Ops A
+SUB-1005,Scrub SOV & Geocode,2026-02-04 13:37,2026-02-04 14:47,Ops B
+SUB-1005,Appetite & Capacity Triage,2026-02-04 14:55,2026-02-04 15:31,Ops A
+SUB-1005,Email the broker,2026-02-04 15:31,2026-02-04 15:36,Ops A
+SUB-1005,Assign to Underwriter,2026-02-05 09:03,2026-02-05 09:14,Ops A
+SUB-1005,"Review COPE, Exposure & Loss Runs",2026-02-05 09:16,2026-02-05 11:07,UW 1
+SUB-1005,Ingest SOV into CAT Platform,2026-02-05 12:45,2026-02-05 13:42,Cat 1
+SUB-1005,Desk Review: COPE & Protections,2026-02-05 14:04,2026-02-05 15:14,Eng 1
+SUB-1005,Run Wind/Flood/Quake AAL & PML,2026-02-05 15:33,2026-02-06 09:42,Cat 1
+SUB-1005,"Publish Risk Report: PML, MFL & Recs",2026-02-06 10:52,2026-02-06 11:43,Eng 1
+SUB-1005,Determine Layering & Participation,2026-02-06 13:02,2026-02-06 13:33,UW 1
+SUB-1005,Technical Pricing & Rating,2026-02-06 15:16,2026-02-06 16:18,UW 1
+SUB-1005,Select Forms & Endorsements,2026-02-09 10:17,2026-02-09 10:38,UW 1
+SUB-1005,Assemble Multi-Option Quote,2026-02-09 11:09,2026-02-09 11:49,UW 2
+SUB-1005,Deliver Quote to Broker,2026-02-09 13:12,2026-02-09 13:26,UW 2
+SUB-1005,Process Bind Order,2026-02-09 14:47,2026-02-09 15:06,UW 2
+SUB-1005,Validate Subjectivities & OFAC,2026-02-09 15:13,2026-02-09 15:40,Ops B
+SUB-1005,Issue Formal Binder,2026-02-09 15:54,2026-02-09 16:14,UW 2
+SUB-1005,"Assemble Dec Sheet, Forms & Endorsements",2026-02-09 16:21,2026-02-10 09:44,Pol 1
+SUB-1005,QA & Reinsurance Reconciliation,2026-02-10 10:22,2026-02-10 10:54,Pol 1
+SUB-1005,Book Premium in PAS & GL,2026-02-10 11:20,2026-02-10 11:37,Pol 1
+SUB-1005,Deliver Policy Package to Broker,2026-02-10 12:33,2026-02-10 12:48,Pol 1
+SUB-1006,Check clearance and dedupe,2026-02-04 16:24,2026-02-04 16:39,Ops A
+SUB-1006,Scrub SOV & Geocode,2026-02-05 09:13,2026-02-05 11:04,Ops B
+SUB-1006,Appetite & Capacity Triage,2026-02-05 12:34,2026-02-05 13:04,Ops A
+SUB-1006,Assign to Underwriter,2026-02-05 13:14,2026-02-05 13:26,Ops A
+SUB-1006,"Review COPE, Exposure & Loss Runs",2026-02-05 14:55,2026-02-05 16:13,UW 1
+SUB-1006,Ingest SOV into CAT Platform,2026-02-05 16:27,2026-02-06 09:18,Cat 1
+SUB-1006,Desk Review: COPE & Protections,2026-02-06 09:44,2026-02-06 10:57,Eng 1
+SUB-1006,Run Wind/Flood/Quake AAL & PML,2026-02-06 12:13,2026-02-06 14:18,Cat 1
+SUB-1006,"Publish Risk Report: PML, MFL & Recs",2026-02-06 16:01,2026-02-09 09:03,Eng 1
+SUB-1006,Determine Layering & Participation,2026-02-09 10:46,2026-02-09 11:31,UW 1
+SUB-1006,Technical Pricing & Rating,2026-02-09 11:47,2026-02-09 13:27,UW 1
+SUB-1006,Select Forms & Endorsements,2026-02-09 14:29,2026-02-09 15:00,UW 1
+SUB-1006,Assemble Multi-Option Quote,2026-02-09 16:33,2026-02-10 09:56,UW 2
+SUB-1006,Deliver Quote to Broker,2026-02-10 11:10,2026-02-10 11:27,UW 2
+SUB-1006,Process Bind Order,2026-02-10 13:13,2026-02-10 13:39,UW 2
+SUB-1006,Validate Subjectivities & OFAC,2026-02-10 15:29,2026-02-10 16:14,Ops B
+SUB-1006,Issue Formal Binder,2026-02-11 09:59,2026-02-11 10:26,UW 2
+SUB-1006,"Assemble Dec Sheet, Forms & Endorsements",2026-02-11 12:18,2026-02-11 13:36,Pol 1
+SUB-1006,QA & Reinsurance Reconciliation,2026-02-11 14:42,2026-02-11 15:10,Pol 1
+SUB-1006,Book Premium in PAS & GL,2026-02-11 16:35,2026-02-11 16:48,Pol 1
+SUB-1006,Deliver Policy Package to Broker,2026-02-12 10:01,2026-02-12 10:10,Pol 1
+SUB-1007,Check clearance and dedupe,2026-02-05 14:42,2026-02-05 15:07,Ops A
+SUB-1007,Send Decline Letter,2026-02-05 15:12,2026-02-05 15:26,Ops A
+SUB-1008,Check clearance and dedupe,2026-02-05 15:18,2026-02-05 15:35,Ops A
+SUB-1008,Send Decline Letter,2026-02-05 16:00,2026-02-05 16:14,Ops A
+SUB-1009,Check clearance and dedupe,2026-02-06 14:48,2026-02-06 15:06,Ops A
+SUB-1009,Send Decline Letter,2026-02-06 16:44,2026-02-06 17:00,Ops A
+SUB-1010,Check clearance and dedupe,2026-02-09 11:57,2026-02-09 12:17,Ops A
+SUB-1010,Scrub SOV & Geocode,2026-02-09 12:28,2026-02-09 13:41,Ops B
+SUB-1010,Appetite & Capacity Triage,2026-02-09 13:42,2026-02-09 14:04,Ops A
+SUB-1010,Assign to Underwriter,2026-02-09 14:42,2026-02-09 14:50,Ops A
+SUB-1010,"Review COPE, Exposure & Loss Runs",2026-02-09 15:54,2026-02-10 10:41,UW 1
+SUB-1010,Ingest SOV into CAT Platform,2026-02-10 11:45,2026-02-10 12:49,Cat 1
+SUB-1010,Desk Review: COPE & Protections,2026-02-10 14:38,2026-02-10 16:39,Eng 1
+SUB-1010,Run Wind/Flood/Quake AAL & PML,2026-02-11 10:31,2026-02-11 12:37,Cat 1
+SUB-1010,"Publish Risk Report: PML, MFL & Recs",2026-02-11 14:06,2026-02-11 14:46,Eng 1
+SUB-1010,Determine Layering & Participation,2026-02-11 15:04,2026-02-11 15:48,UW 1
+SUB-1010,Technical Pricing & Rating,2026-02-12 09:40,2026-02-12 11:21,UW 1
+SUB-1010,Select Forms & Endorsements,2026-02-12 11:23,2026-02-12 11:46,UW 1
+SUB-1010,Assemble Multi-Option Quote,2026-02-12 13:16,2026-02-12 14:30,UW 2
+SUB-1010,Deliver Quote to Broker,2026-02-12 15:57,2026-02-12 16:15,UW 2
+SUB-1011,Check clearance and dedupe,2026-02-09 14:39,2026-02-09 15:02,Ops A
+SUB-1011,Scrub SOV & Geocode,2026-02-09 16:25,2026-02-10 09:51,Ops B
+SUB-1011,Appetite & Capacity Triage,2026-02-10 11:05,2026-02-10 11:29,Ops A
+SUB-1011,Assign to Underwriter,2026-02-10 12:04,2026-02-10 12:10,Ops A
+SUB-1011,"Review COPE, Exposure & Loss Runs",2026-02-10 13:55,2026-02-10 16:37,UW 1
+SUB-1011,Ingest SOV into CAT Platform,2026-02-10 16:49,2026-02-11 09:44,Cat 1
+SUB-1011,Desk Review: COPE & Protections,2026-02-11 10:24,2026-02-11 12:13,Eng 1
+SUB-1011,Run Wind/Flood/Quake AAL & PML,2026-02-11 13:59,2026-02-11 15:22,Cat 1
+SUB-1011,"Publish Risk Report: PML, MFL & Recs",2026-02-11 15:47,2026-02-11 16:28,Eng 1
+SUB-1011,Determine Layering & Participation,2026-02-12 09:49,2026-02-12 10:27,UW 1
+SUB-1011,Technical Pricing & Rating,2026-02-12 11:28,2026-02-12 13:33,UW 1
+SUB-1011,Select Forms & Endorsements,2026-02-12 14:03,2026-02-12 14:37,UW 1
+SUB-1011,Assemble Multi-Option Quote,2026-02-12 16:35,2026-02-13 09:57,UW 2
+SUB-1011,Deliver Quote to Broker,2026-02-13 11:15,2026-02-13 11:32,UW 2
+SUB-1012,Check clearance and dedupe,2026-02-10 10:50,2026-02-10 11:11,Ops A
+SUB-1012,Scrub SOV & Geocode,2026-02-10 12:46,2026-02-10 14:17,Ops B
+SUB-1012,Appetite & Capacity Triage,2026-02-10 14:30,2026-02-10 14:55,Ops A
+SUB-1012,Assign to Underwriter,2026-02-10 16:55,2026-02-11 09:08,Ops A
+SUB-1012,"Review COPE, Exposure & Loss Runs",2026-02-11 11:08,2026-02-11 13:23,UW 1
+SUB-1012,Ingest SOV into CAT Platform,2026-02-11 13:41,2026-02-11 14:49,Cat 1
+SUB-1012,Desk Review: COPE & Protections,2026-02-11 15:21,2026-02-12 09:27,Eng 1
+SUB-1012,Run Wind/Flood/Quake AAL & PML,2026-02-12 10:43,2026-02-12 12:14,Cat 1
+SUB-1012,"Publish Risk Report: PML, MFL & Recs",2026-02-12 14:08,2026-02-12 15:09,Eng 1
+SUB-1012,Determine Layering & Participation,2026-02-12 15:30,2026-02-12 16:24,UW 1
+SUB-1012,Technical Pricing & Rating,2026-02-12 16:29,2026-02-13 09:26,UW 1
+SUB-1012,Select Forms & Endorsements,2026-02-13 10:09,2026-02-13 10:44,UW 1
+SUB-1012,Assemble Multi-Option Quote,2026-02-13 12:21,2026-02-13 13:03,UW 2
+SUB-1012,Deliver Quote to Broker,2026-02-13 14:12,2026-02-13 14:28,UW 2
+SUB-1013,Check clearance and dedupe,2026-02-10 16:51,2026-02-11 09:09,Ops A
+SUB-1013,Scrub SOV & Geocode,2026-02-11 09:28,2026-02-11 11:10,Ops B
+SUB-1013,Appetite & Capacity Triage,2026-02-11 11:46,2026-02-11 12:07,Ops A
+SUB-1013,Email the broker,2026-02-11 12:07,2026-02-11 12:12,Ops A
+SUB-1013,Assign to Underwriter,2026-02-11 12:20,2026-02-11 12:33,Ops A
+SUB-1013,"Review COPE, Exposure & Loss Runs",2026-02-11 13:34,2026-02-11 16:07,UW 1
+SUB-1013,Ingest SOV into CAT Platform,2026-02-12 09:52,2026-02-12 11:13,Cat 1
+SUB-1013,Desk Review: COPE & Protections,2026-02-12 11:36,2026-02-12 13:39,Eng 1
+SUB-1013,Run Wind/Flood/Quake AAL & PML,2026-02-12 14:02,2026-02-12 15:58,Cat 1
+SUB-1013,"Publish Risk Report: PML, MFL & Recs",2026-02-12 16:34,2026-02-13 09:38,Eng 1
+SUB-1013,Determine Layering & Participation,2026-02-13 09:50,2026-02-13 10:20,UW 1
+SUB-1013,Technical Pricing & Rating,2026-02-13 11:13,2026-02-13 12:19,UW 1
+SUB-1014,Check clearance and dedupe,2026-02-11 13:16,2026-02-11 13:29,Ops A
+SUB-1014,Scrub SOV & Geocode,2026-02-11 14:41,2026-02-11 16:08,Ops B
+SUB-1014,Appetite & Capacity Triage,2026-02-11 16:31,2026-02-11 16:52,Ops A
+SUB-1014,Assign to Underwriter,2026-02-12 10:09,2026-02-12 10:16,Ops A
+SUB-1014,"Review COPE, Exposure & Loss Runs",2026-02-12 11:29,2026-02-12 14:03,UW 1
+SUB-1014,Ingest SOV into CAT Platform,2026-02-12 15:22,2026-02-12 16:25,Cat 1
+SUB-1014,Desk Review: COPE & Protections,2026-02-12 16:41,2026-02-13 09:51,Eng 1
+SUB-1014,Run Wind/Flood/Quake AAL & PML,2026-02-13 10:03,2026-02-13 11:25,Cat 1
+SUB-1014,"Publish Risk Report: PML, MFL & Recs",2026-02-13 11:25,2026-02-13 12:03,Eng 1
+SUB-1014,Determine Layering & Participation,2026-02-13 13:11,2026-02-13 13:42,UW 1
+SUB-1014,Technical Pricing & Rating,2026-02-13 14:37,2026-02-13 15:34,UW 1
+SUB-1014,Select Forms & Endorsements,2026-02-16 09:23,2026-02-16 09:45,UW 1
+SUB-1014,Structure Fac Placement Slip,2026-02-16 10:25,2026-02-16 11:48,UW 1
+SUB-1014,Obtain Fac Binder from Market,2026-02-16 13:48,2026-02-17 10:37,UW 1
+SUB-1014,Review Technical Referral,2026-02-17 10:38,2026-02-17 11:35,UW 2
+SUB-1014,Assemble Multi-Option Quote,2026-02-17 13:15,2026-02-17 14:00,UW 2
+SUB-1014,Deliver Quote to Broker,2026-02-17 14:24,2026-02-17 14:44,UW 2
+SUB-1014,Process Bind Order,2026-02-17 16:40,2026-02-18 09:10,UW 2
+SUB-1014,Validate Subjectivities & OFAC,2026-02-18 10:41,2026-02-18 11:30,Ops B
+SUB-1014,Issue Formal Binder,2026-02-18 13:10,2026-02-18 13:33,UW 2
+SUB-1014,"Assemble Dec Sheet, Forms & Endorsements",2026-02-18 14:54,2026-02-18 15:47,Pol 1
+SUB-1014,QA & Reinsurance Reconciliation,2026-02-19 09:22,2026-02-19 09:54,Pol 1
+SUB-1014,Book Premium in PAS & GL,2026-02-19 10:38,2026-02-19 11:06,Pol 1
+SUB-1014,Deliver Policy Package to Broker,2026-02-19 12:58,2026-02-19 13:10,Pol 1

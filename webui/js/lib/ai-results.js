@@ -502,7 +502,8 @@
     if (task === "log-mapping" && !result.baselineModelId) errors.push({ path: "baselineModelId", message: "A log-mapping result needs the ID of the model the activities are mapped to." });
 
     scanSecrets({ payload: input.payload, notes: input.notes, warnings: input.warnings }).forEach(hit => {
-      errors.push({ path: hit.path, code: "output.secret", message: "This looks like " + hit.kind + ". The result was not loaded. Remove it from the sources and run the task again." });
+      errors.push({ path: hit.path, code: "output.secret", message: "This looks like " + hit.kind + ". The result was not loaded. " +
+        (task === "log-mapping" ? "Check the activity names and the model steps" : task === "extract" ? "Remove it from the sources" : "Remove it from the engagement") + " and run the task again." });
     });
 
     const payload = input.payload;
@@ -702,16 +703,20 @@
    * description) and the activity names from the log. No events, case IDs,
    * resource names, timings or counts are sent. options: { modelId, activities: [{ name, events }] }.
    * The most frequent names are sent first, up to LIMITS.aiActivities.
+   * Names that look like credentials are never sent; they are counted in
+   * excluded.secretActivities and stay in the import for manual mapping.
    */
   function logMappingInput(e, o) {
     const model = e.models.find(m => m.id === o.modelId) || e.models.find(m => m.role === "current") || null;
     const lanes = new Map(model ? model.lanes.map(l => [l.id, l.name]) : []);
     const seen = new Set();
     const acts = [];
+    let secretActivities = 0;
     (Array.isArray(o.activities) ? o.activities : []).forEach(a => {
       const name = text(a && typeof a === "object" ? a.name : a, 300).trim();
       if (!name || seen.has(name)) return;
       seen.add(name);
+      if (scanSecrets(name).length) { secretActivities++; return; }
       acts.push({ name, events: a && util.isFiniteNumber(a.events) ? a.events : 0 });
     });
     acts.sort((a, b) => b.events - a.events);
@@ -730,7 +735,7 @@
       steps: model ? model.nodes.filter(n => !n.removed && schema.typeInfo(n.semanticType).shape !== "gateway")
         .map(n => compact({ id: n.id, label: n.label, lane: lanes.get(n.laneId) || "", description: desc(n) })) : [],
       activities: sent.map(a => a.name),
-      excluded: { activities: acts.length - sent.length }
+      excluded: { activities: acts.length - sent.length, secretActivities }
     };
   }
 

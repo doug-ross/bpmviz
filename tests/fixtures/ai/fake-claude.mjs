@@ -1,5 +1,5 @@
 // A stand-in for the claude CLI, for the runner tests. See fake-common.mjs.
-import { readStdin, nextMode, log, envSeen, taskOf, report, payloadFor, extractedEngagement, writeFile } from "./fake-common.mjs";
+import { readStdin, nextMode, log, envSeen, taskOf, inputOf, report, payloadFor, extractedEngagement, writeFile } from "./fake-common.mjs";
 
 const args = process.argv.slice(2);
 const out = obj => process.stdout.write(JSON.stringify(obj) + "\n");
@@ -16,7 +16,8 @@ if (args[0] === "--version") {
   const mode = nextMode();
   const task = taskOf(prompt);
   const toolsArg = args[args.indexOf("--tools") + 1];
-  log({ provider: "claude", mode, task, args, cwd: process.cwd(), env: envSeen(), promptLength: prompt.length, repair: /Repair round/.test(prompt) });
+  log({ provider: "claude", mode, task, args, cwd: process.cwd(), env: envSeen(), promptLength: prompt.length, repair: /Repair round/.test(prompt),
+    input: task === "log-mapping" ? inputOf(prompt) : undefined });
   const tools = (toolsArg ? toolsArg.split(",") : []).concat(["StructuredOutput"]);
   if (mode === "unexpected-tool") tools.push("Bash");
   out({ type: "system", subtype: "init", tools, mcp_servers: [], model: "fake-model", permissionMode: "dontAsk" });

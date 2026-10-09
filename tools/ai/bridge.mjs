@@ -17,7 +17,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { staticHandler } from "../lib/browser.mjs";
 import { PROVIDERS, AiFailure } from "./providers.mjs";
-import { runTask, gateFor } from "./runner.mjs";
+import { runTask, gateFor, TASKS, cleanTaskOptions } from "./runner.mjs";
 import { SOURCE_LIMITS } from "./extract-text.mjs";
 import { root } from "./prompt.mjs";
 
@@ -26,7 +26,6 @@ const validate = require(path.join(root, "webui", "js", "lib", "validate.js"));
 const schema = require(path.join(root, "webui", "js", "lib", "schema.js"));
 
 export const JSON_LIMIT = 12 * 1024 * 1024;
-const TASKS = ["extract", "opportunities", "future-state", "summary"];
 const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY",
   "Cross-Origin-Opener-Policy": "same-origin", "Cross-Origin-Resource-Policy": "same-origin", "Cache-Control": "no-store"
@@ -140,6 +139,8 @@ export function createBridge(options) {
     const names = Array.isArray(body.sourceNames) ? body.sourceNames.slice(0, SOURCE_LIMITS.files + 1).map(n => String(n).slice(0, 260)) : [];
     if (names.length > SOURCE_LIMITS.files) return { ok: false, code: "input.source", message: "At most " + SOURCE_LIMITS.files + " sources per task." };
     if (task === "extract" && !names.length) return { ok: false, code: "input.missing", message: "Choose at least one document." };
+    const taskOptions = cleanTaskOptions(task, body.taskOptions);
+    if (task === "log-mapping" && !taskOptions.activities.length) return { ok: false, code: "input.missing", message: "There are no activity names to map." };
     const opts = {
       task, provider, engagement, plan: body.plan, approvalConfirmed: body.approvalConfirmed === true,
       trainingOptOutConfirmed: body.trainingOptOutConfirmed === true, writtenApproval: typeof body.writtenApproval === "string" ? body.writtenApproval.slice(0, 500) : "",
@@ -150,7 +151,7 @@ export function createBridge(options) {
       processName: typeof body.processName === "string" ? body.processName.slice(0, 200) : "",
       clientDisplayName: typeof body.clientDisplayName === "string" ? body.clientDisplayName.slice(0, 200) : "",
       engagementName: typeof body.engagementName === "string" ? body.engagementName.slice(0, 200) : "",
-      surface: "app"
+      taskOptions, surface: "app"
     };
     // The gate runs here too, so a page that skips its own check still cannot send what the rules forbid.
     const st = (await status()).find(s => s.provider === provider);
