@@ -1,0 +1,18 @@
+{
+  "schema": "bpmviz.review-response",
+  "schemaVersion": 1,
+  "packId": "rp-fixture-1",
+  "engagementId": "eng-underwriting-current",
+  "engagementRevision": 0,
+  "format": "html",
+  "reviewer": { "name": "Dana Reviewer", "role": "Head of Underwriting Operations", "organization": "Example Insurer" },
+  "submittedAt": "2026-03-04T10:00:00.000Z",
+  "generalComment": "The clearance and SOV steps match what we do. Pricing needs a second look.",
+  "entries": [
+    { "itemRef": "step/m-current/check-clearance-dedup", "verdict": "confirm", "comment": "" },
+    { "itemRef": "step/m-current/scrub-sov-geocode", "verdict": "dispute", "comment": "Geocoding is done by the CAT team, not the assistants." },
+    { "itemRef": "step/m-current/run-wind-flood-quake-aal-pml", "verdict": "unsure", "comment": "Only for accounts above the modeling threshold." },
+    { "itemRef": "step/m-current/technical-pricing-rating", "verdict": "confirm", "comment": "" },
+    { "itemRef": "step/m-current/assign-to-underwriter", "verdict": "", "comment": "" }
+  ]
+}
