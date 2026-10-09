@@ -95,11 +95,17 @@
     [model, steps].concat(kinds.map(k => k.input)).forEach(x => x.addEventListener("change", update));
     update();
 
-    const privacy = "The pack holds the names and descriptions of the chosen steps and findings and the engagement title, nothing else. " +
+    const privacy = "The pack holds the chosen steps and findings with their descriptions, and the engagement's title, client, data status, confidentiality and disclosure. Nothing else from the engagement goes in. " +
       (scope.includeSensitive ? "Sensitive records are included because Include sensitive records is ticked in the Present bar. " : "Sensitive records are left out. ") +
       (scope.includeUnreviewedAi ? "AI drafts not yet reviewed are included." : "AI drafts not yet reviewed are left out.");
 
+    let busy = false;
     async function make(api) {
+      if (busy) return;
+      busy = true;
+      try { await makeOnce(api); } finally { busy = false; }
+    }
+    async function makeOnce(api) {
       err.hidden = true;
       if (!name.value.trim()) { err.hidden = false; err.textContent = "Enter the name of the person who will review the pack."; name.focus(); return; }
       const items = R.buildPackItems(e, options());
@@ -110,6 +116,7 @@
       let file;
       try { file = await packFile(e, pack, payload); } catch (x) { err.hidden = false; err.textContent = "The pack could not be made: " + (x && x.message ? x.message : x); return; }
       const fileName = packFileName(e, pack) + file.ext;
+      showTab();
       if (!app.dispatch("review/recordPack", { pack }, null, err)) return;
       B.files.downloadBytes(file.bytes, fileName, file.type);
       api.close("made");
@@ -230,6 +237,7 @@
         const e = app.store.get();
         const payload = R.buildApplyPayload(e, prepared, { validations: optValidation.input.checked, questions: optQuestions.input.checked, evidence: optEvidence.input.checked });
         const nv = payload.validations.length, nq = payload.questions.length;
+        showTab();
         const ok = app.dispatch("review/apply", payload, "Client review from " + (r.reviewer.name || "the reviewer") + " applied: " + plural(nv, "step") + " updated, " + plural(nq, "open question") + " added.", err);
         if (ok) api.close("applied");
         return false;
@@ -354,6 +362,7 @@
   /* ---------- Process side panel and handoff ---------- */
 
   function drawerSection(ctx, model, node) {
+    syncTab(ctx.engagement);
     const latest = R.latestVerdicts(ctx.engagement).get(R.stepRef(model.id, node.id));
     if (!latest) return null;
     const earlier = latest.history.slice(0, -1);
@@ -369,6 +378,7 @@
 
   function handoffSection(hd, ctx) {
     const e = ctx.engagement;
+    syncTab(e);
     if (!(e.reviews || []).length) return null;
     const sum = R.summarize(e, { includeSensitive: ctx.includeSensitive, includeUnreviewedAi: ctx.includeUnreviewedAi });
     const open = sum.items.filter(it => it.answer.verdict !== "confirm");
@@ -384,18 +394,38 @@
             h("td", null, it.label), h("td", null, it.type), h("td", null, schema.label("reviewVerdict", it.answer.verdict)),
             h("td", null, (it.answer.reviewer.name || "Not named") + (it.answer.at ? ", " + formatDay(it.answer.at) : "")),
             h("td", { class: "cr-comment" }, it.answer.comment || "")))))) ] :
-        h("p", null, "Every reviewed item was confirmed."));
+        h("p", null, sum.items.length ? "Every reviewed item in this summary was confirmed." : "The answers concern findings that are left out of this summary."));
   }
 
   /* ---------- Registration ---------- */
 
   const X = B.ext;
-  X.registerPresentAction({ id: "client-review", order: 10, icon: "person", label: "Client review pack", run: (app, ctx) => packDialog(app, ctx) });
+
+  /*
+   * The Client review records tab appears once the open engagement has a
+   * review pack or a response, or once a pack is made or a response applied
+   * in this session; it then stays for the session. Making a pack starts from
+   * the Present bar and importing from Open, so nothing is out of reach before.
+   * syncTab runs from the Process side panel (shown when an engagement opens)
+   * and the handoff; showTab runs before this feature's own commands, so the
+   * Records view that renders after the command already lists the tab.
+   */
+  let tabShown = false;
+  function showTab() {
+    if (tabShown) return;
+    tabShown = true;
+    X.registerRecordsTab({ id: "client-review", order: 10, label: "Client review", count: e => (e.reviews || []).length, render: renderTab });
+  }
+  function syncTab(e) {
+    if (!tabShown && e && ((e.reviewPacks || []).length || (e.reviews || []).length)) showTab();
+  }
+
+  X.registerPresentAction({ id: "client-review", order: -10, icon: "person", label: "Client review pack", run: (app, ctx) => packDialog(app, ctx) });
   X.registerJsonHandler({ id: "client-review", schema: schema.REVIEW_RESPONSE_ID, open: jsonOpen });
   X.registerFileHandler({ id: "client-review", extensions: [".xlsx"], priority: 10, maxBytes: schema.LIMITS.fileBytes, probe: isReviewWorkbook, open: workbookOpen });
-  X.registerRecordsTab({ id: "client-review", order: 10, label: "Client review", count: e => (e.reviews || []).length, render: renderTab });
   X.registerDrawerSection({ id: "client-review", where: "step", render: drawerSection });
+  X.registerDrawerSection({ id: "client-review-overview", where: "overview", render: ctx => { syncTab(ctx.engagement); return null; } });
   X.registerHandoffSection({ id: "client-review", after: "evidence", render: handoffSection });
 
-  B.clientReview = { packDialog, openResponse, isReviewWorkbook, downloadAgain };
+  B.clientReview = { packDialog, openResponse, isReviewWorkbook, downloadAgain, showTab };
 })(typeof globalThis !== "undefined" ? globalThis : this);
