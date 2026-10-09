@@ -822,7 +822,7 @@
       ["Duration, start to end", statText(s.duration, tb, "visits")],
       ["Wait before the step", statText(s.wait, tb, "visits")],
       ["Time since the previous event", statText(s.sojourn, tb, "visits")],
-      ["People involved", s.resources === null ? null : util.formatNumber(s.resources, 0) + " distinct resources"],
+      ["People involved", s.resources === null ? null : util.formatNumber(s.resources, 0) + (s.resources === 1 ? " distinct resource" : " distinct resources")],
       ["Handoffs into the step", s.handoffRate === null ? null : pctText(s.handoffRate) + " of visits change resource"]
     ].filter(p => p[1] !== null && p[1] !== undefined);
   }
@@ -881,8 +881,8 @@
     const tasks = model.nodes.filter(n => shapeOf(n) === "task");
     const d = datasetFor(ctx.engagement, model.id);
     const startEnd = d && d.source.timestampMode === "start-end";
-    const what = startEnd ? "Median time per visit, from the start to the end of each event in the log." :
-      "Median time per visit, measured from the previous event in the case, from an event log.";
+    const what = !d ? "" : "Median time per visit in " + (d.timeBasis.calendar === "business" ? "business" : "calendar") + " time, " +
+      (startEnd ? "from the start to the end of each event in the log." : "measured from the previous event in the case.");
     if (!d) return noDataset(tasks, "Median time per visit of each activity, from an event log.");
     const out = { description: what, unit: units.describeTimeBasis(d.timeBasis), nodes: {}, edges: {}, notes: [] };
     const values = [];

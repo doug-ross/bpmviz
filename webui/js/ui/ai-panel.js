@@ -7,6 +7,10 @@
  * applies them. The ticked items go in as one change, marked as AI drafts,
  * and one Undo reverses them. Opened from disk, the app never makes a
  * request; the task buttons appear only in helper mode.
+ *
+ * A log-mapping result is different: it changes nothing in the engagement.
+ * Its ticked mappings go back to the event-log import (info.onProposals),
+ * where each one still needs its own tick before the log is added.
  */
 (function (root) {
   "use strict";
@@ -20,7 +24,8 @@
     extract: "Review the extracted engagement",
     opportunities: "Review suggested records",
     "future-state": "Review the future-state draft",
-    summary: "Review the drafted summary"
+    summary: "Review the drafted summary",
+    "log-mapping": "Review the suggested activity mappings"
   };
   const PLAN = { unknown: "not stated", commercial: "commercial", consumer: "consumer" };
   const OP_LABEL = { modify: "Change", insert: "Add", remove: "Remove" };
@@ -57,6 +62,9 @@
   }
 
   function itemBody(task, it) {
+    if (task === "log-mapping") {
+      return [para("Step", it.stepLabel || (it.nodeId ? it.nodeId : "No step suggested")), para("Why", it.rationale)];
+    }
     if (task === "opportunities") {
       const o = it.opportunity || {};
       return [
@@ -90,6 +98,10 @@
         " ", badge("Confidence: " + it.confidence, CONF_TONE[it.confidence]), it.priority ? [" ", badge(schema.label("priority", it.priority) + " priority", "")] : null];
     }
     if (task === "future-state") return [badge(OP_LABEL[it.op], OP_TONE[it.op]), " ", h("strong", null, it.title)];
+    if (task === "log-mapping") {
+      return [h("strong", null, it.activity), it.stepLabel ? [" to ", h("strong", null, it.stepLabel)] : " stays unmapped",
+        " ", badge("Confidence: " + it.confidence, CONF_TONE[it.confidence])];
+    }
     return h("strong", null, it.title);
   }
 
@@ -122,6 +134,8 @@
       app.processView.onEngagementChange({ type: "model/view" });
       app.goto("process");
       announce("Future-state draft created from " + count + " AI change" + (count === 1 ? "" : "s") + ". Undo removes it.");
+    } else if (result.task === "log-mapping") {
+      announce(count + " AI mapping" + (count === 1 ? "" : "s") + " added to the import. Tick each one you accept.");
     } else if (result.task === "opportunities") {
       app.goto("records");
       app.recordsView.setTab("records");
@@ -135,7 +149,7 @@
 
   function reviewChanges(app, result, warnings, info) {
     const e = app.store ? app.store.get() : null;
-    const review = aiResults.prepareReview(result, e);
+    const review = aiResults.prepareReview(result, e, info.context);
     if (review.errors.length) {
       messageDialog("This AI draft cannot be applied here", h("div", null,
         h("p", null, (info.fileName || "The draft") + " does not match the open engagement. Nothing was changed."),
@@ -158,7 +172,8 @@
       list.querySelectorAll("input[type=checkbox]").forEach(b => { b.checked = selected.has(b.dataset.key); });
       if (applyBtn) {
         applyBtn.disabled = !selected.size;
-        applyBtn.textContent = single ? "Add as a draft summary" : selected.size ? "Apply " + selected.size + " selected" : "Apply selected";
+        const verb = task === "log-mapping" ? "Use " : "Apply ";
+        applyBtn.textContent = single ? "Add as a draft summary" : selected.size ? verb + selected.size + " selected" : verb + "selected";
       }
     }
     const tools = single ? null : h("div", { class: "ai-tools" },
@@ -171,6 +186,7 @@
       p.summary ? h("p", { class: "small" }, p.summary) : null,
       p.lanes.length ? para("New swimlanes, added when a chosen change uses them", p.lanes.map(l => l.name + " (" + schema.label("laneType", l.type).toLowerCase() + ")").join(", ")) : null) :
       task === "opportunities" ? h("p", { class: "small" }, "Tick the suggestions to add as records. Each one is added as an AI draft, linked to the steps named, and stays out of the handoff until someone marks it reviewed.") :
+      task === "log-mapping" ? h("p", { class: "small" }, "Tick the mappings to bring into the event-log import" + (review.baseline ? " for " + review.baseline.name : "") + ". Each one still needs its own tick in the activities step before the log is added.") :
       h("p", { class: "small" }, "The summary is added as a draft. It stays out of the handoff until someone reviews it, and the printed handoff says it was drafted with AI assistance.");
     const body = h("div", { class: "ai-review" },
       provenanceLine(result),
@@ -178,7 +194,8 @@
       intro,
       tools,
       review.items.length ? list : h("p", { class: "empty" }, "The draft has no items to apply."),
-      h("p", { class: "note" }, single ? "Undo removes the summary again." : task === "future-state" ?
+      h("p", { class: "note" }, single ? "Undo removes the summary again." : task === "log-mapping" ?
+        "Nothing in the engagement changes here. Mappings marked \"Cannot be applied\" name a step that is not in the model, a gateway, or an activity that was not sent." : task === "future-state" ?
         "Changes marked \"Cannot be applied\" refer to steps or connectors that are not in the baseline, or would break the flow. Undo removes the whole draft." :
         "Undo removes every record added in this step."),
       err);
@@ -189,6 +206,12 @@
         { label: "Apply selected", variant: "btn-primary", keepOpen: true, onClick: dlg => {
           const cmd = aiResults.applyCommand(result, review, [...selected]);
           if (!cmd) return false;
+          if (cmd.type === "log-mapping/proposals") {
+            dlg.close();
+            if (info.onProposals) info.onProposals(cmd.payload);
+            afterApply(app, result, null, selected.size);
+            return false;
+          }
           let out;
           try {
             out = app.store.dispatch(cmd.type, cmd.payload);
@@ -259,6 +282,12 @@
     }
     const result = validation.result;
     if (result.task === "extract") return reviewExtraction(app, result, validation.warnings, meta);
+    if (result.task === "log-mapping" && !meta.onProposals) {
+      messageDialog("Open this mapping from the event-log import", h("div", null,
+        h("p", null, (meta.fileName || "This file") + " suggests which step each activity of an event log belongs to. It is used while a log is imported, so nothing was changed."),
+        h("p", { class: "small" }, "Choose More actions, Import an event log, pick the log, and in the activities step choose Load an AI mapping result.")));
+      return null;
+    }
     return reviewChanges(app, result, validation.warnings, meta);
   }
 
@@ -268,13 +297,15 @@
   const TOKEN_KEY = "bpmviz:ai-token";
   const TASK_NAMES = {
     extract: "Extract a current state", opportunities: "Suggest records",
-    "future-state": "Draft a future state", summary: "Draft the handoff summary"
+    "future-state": "Draft a future state", summary: "Draft the handoff summary",
+    "log-mapping": "Map log activities to steps"
   };
   const TASK_HINTS = {
     extract: "Draft a new engagement from process documents: PDF, Word, PowerPoint, diagram images, notes or BPMN.",
     opportunities: "Pain points, opportunities and open questions, linked to the steps of the open engagement.",
     "future-state": "Changes to the current state: steps changed, added and removed, and new swimlanes.",
-    summary: "The executive summary that opens the printed handoff."
+    summary: "The executive summary that opens the printed handoff.",
+    "log-mapping": "Which step each activity name in an event log belongs to. Only the names and the steps are sent."
   };
   const ACCEPT = ".pdf,.docx,.pptx,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.markdown,.csv,.tsv,.json,.bpmn,.xml";
   const helper = { token: null, providers: null, limits: null, problem: "" };
@@ -358,6 +389,18 @@
   /* What goes to the AI tool for a task on the open engagement. */
   function sentSummary(e, task, opts) {
     const input = aiResults.buildTaskInput(e, task, opts);
+    if (task === "log-mapping") {
+      const model = e.models.find(m => m.id === input.modelId);
+      const preview = JSON.stringify(input, null, 1);
+      return h("div", { id: "ai-sent" },
+        h("ul", { class: "plain-list small" },
+          h("li", null, input.activities.length + " activity name" + (input.activities.length === 1 ? "" : "s") + " from the event log" +
+            (input.excluded.activities ? ", " + input.excluded.activities + " less frequent names left out" : "")),
+          h("li", null, "The " + input.steps.length + " steps of " + (model ? model.name : "the model") + " (gateways left out): ID, name, swimlane and description")),
+        h("p", { class: "small muted" }, "No events, case IDs, times, counts or people from the log, plus the BPMVIZ task instructions."),
+        h("details", { class: "small" }, h("summary", null, "Show exactly what is sent"),
+          h("pre", { class: "ai-preview" }, preview.length > 40000 ? preview.slice(0, 40000) + "\n..." : preview)));
+    }
     const models = input.models.map(m => m.name + " (" + m.steps.length + " steps, " + m.connectors.length + " connectors)").join("; ");
     const lines = [models, input.records.length + " records" + (input.excluded.sensitiveRecords ? ", " + input.excluded.sensitiveRecords + " sensitive records left out" : ""),
       input.assumptions.length + " assumptions", input.evidence.length + (input.evidence.length === 1 ? " evidence source" : " evidence sources") + " with their extracted facts"];
@@ -374,8 +417,15 @@
     return gate && gate.missing && gate.missing.length ? h("ul", { class: "plain-list small" }, gate.missing.map(k => h("li", null, aiResults.GATE_TEXT[k]))) : null;
   }
 
-  /** The task dialog: tool and plan, the data-handling check, what is sent, then run. */
-  async function openTask(app, task) {
+  /**
+   * The task dialog: tool and plan, the data-handling check, what is sent, then run.
+   * options: { taskOptions, onProposals }. Log mapping needs taskOptions
+   * ({ modelId, activities: [{ name, events }] }) and onProposals(payload),
+   * which receives the ticked mappings.
+   */
+  async function openTask(app, task, options) {
+    const o = options || {};
+    const taskOptions = o.taskOptions || {};
     if (!(await ensureHelper())) { messageDialog("AI helper not connected", helper.problem); return null; }
     const e = app.store ? app.store.get() : null;
     if (task !== "extract" && !e) { messageDialog("Open an engagement first", "This task works on the open engagement."); return null; }
@@ -444,7 +494,7 @@
       Object.keys(gateRows).forEach(k => { gateRows[k].hidden = !g.requires.includes(k); });
       if (task !== "extract") {
         B.dom.clear(sent);
-        sent.appendChild(sentSummary(e, task, { includeSensitive: sensitive.checked, baselineModelId: baseline.value || undefined }));
+        sent.appendChild(sentSummary(e, task, Object.assign({ includeSensitive: sensitive.checked, baselineModelId: baseline.value || undefined }, taskOptions)));
       } else {
         const list = Array.from(files.files || []);
         B.dom.clear(fileList);
@@ -472,7 +522,7 @@
         h("div", { class: "field-row" }, field("Confidentiality", conf), field("Data status", dataStatus)));
     } else {
       if (task === "future-state" && currents.length > 1) sections.push(field("Start from", baseline));
-      if (hasSensitive) sections.push(h("label", { class: "check" }, sensitive, "Also send records marked sensitive"));
+      if (hasSensitive && task !== "log-mapping") sections.push(h("label", { class: "check" }, sensitive, "Also send records marked sensitive"));
     }
     sections.push(h("section", { class: "ai-warnings", "aria-labelledby": "ai-gate-head" },
       h("h3", { id: "ai-gate-head" }, "Data handling"), gateMsg, gateRows.approval, gateRows.trainingOff, gateRows.writtenApproval));
@@ -496,8 +546,10 @@
           };
           if (task === "extract") Object.assign(body, { confidentiality: conf.value, dataStatus: dataStatus.value, processName: processName.value, clientDisplayName: client.value, engagementName: engName.value });
           else body.engagement = app.store.get();
+          if (task === "log-mapping") body.taskOptions = taskOptions;
+          const info = task === "log-mapping" ? { onProposals: o.onProposals, context: { activities: aiResults.buildTaskInput(app.store.get(), task, taskOptions).activities } } : {};
           dlg.close();
-          runJob(app, task, body, task === "extract" ? Array.from(files.files) : [], chosen);
+          runJob(app, task, body, task === "extract" ? Array.from(files.files) : [], chosen, info);
           return false;
         } }
       ]
@@ -511,7 +563,7 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   /* Runs a task on the helper and shows its progress; the review opens when it finishes. */
-  async function runJob(app, task, body, files, chosen) {
+  async function runJob(app, task, body, files, chosen, info) {
     const status = h("p", { role: "status", id: "ai-status" }, "Starting");
     const log = h("ol", { class: "ai-progress small", id: "ai-log" });
     const clock = h("p", { class: "small muted" });
@@ -568,7 +620,7 @@
         dlg.close();
         call("DELETE", "api/ai/jobs/" + jobId);
         announce("AI task finished. Review the draft.");
-        openResult(app, aiResults.validateAiResult(r.result), { download: r.result });
+        openResult(app, aiResults.validateAiResult(r.result), Object.assign({ download: r.result }, info || {}));
         return;
       }
       if (r.state === "failed" || r.state === "cancelled") {
@@ -581,7 +633,8 @@
 
   function chooseTask(app) {
     const has = !!app.store;
-    const buttons = Object.keys(TASK_NAMES).map(task => h("button", { type: "button", class: "btn ai-task-btn", id: "ai-task-" + task, disabled: task !== "extract" && !has,
+    // Log mapping starts from the event-log import, which has the activity names.
+    const buttons = Object.keys(TASK_NAMES).filter(task => task !== "log-mapping").map(task => h("button", { type: "button", class: "btn ai-task-btn", id: "ai-task-" + task, disabled: task !== "extract" && !has,
       on: { click: () => { api.close(); openTask(app, task); } } },
       h("strong", null, TASK_NAMES[task]), h("span", { class: "small muted" }, TASK_HINTS[task])));
     const api = openDialog({ title: "Draft with AI", eyebrow: "AI task", body: h("div", { class: "ai-task-list" }, buttons,

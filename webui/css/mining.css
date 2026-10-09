@@ -1,1 +1,40 @@
 /* Styles for the event-log import feature (mining slice). Owned by that slice; see docs/extensions.md. Use the tokens in tokens.css. */
+
+/* The wizard */
+dialog.dlg.li-dialog { width: min(1100px, calc(100vw - 32px)); }
+.li-wizard { display: grid; gap: var(--space-3); }
+.li-steps { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: 0; padding: 0 0 var(--space-2); list-style: none; border-bottom: 1px solid var(--border); font-size: var(--fs-small); color: var(--ink-muted); }
+.li-steps li[aria-current="step"] { color: var(--ink); font-weight: var(--fw-bold); }
+.li-steps li.done { color: var(--ink-body); }
+.li-panel { display: grid; gap: var(--space-3); min-height: 240px; }
+.li-panel:focus { outline: none; }
+.li-step-title { margin: 0; font-size: var(--fs-h3); }
+.li-status:empty { display: none; }
+.li-preview { max-height: 320px; }
+.li-preview td { white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.li-map { max-height: 420px; }
+.li-map .select { min-width: 220px; max-width: 320px; }
+.li-tools { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.li-fieldset { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-3); margin: 0; display: grid; gap: var(--space-2); }
+.li-fieldset legend { padding: 0 var(--space-1); font-size: var(--fs-small); font-weight: var(--fw-medium); color: var(--ink); }
+.li-radio { align-items: flex-start; }
+.li-radio input { margin-top: 2px; }
+.li-keep { display: grid; gap: var(--space-2); padding-left: var(--space-5); }
+.li-keep[hidden] { display: none; }
+.li-ends { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-1) var(--space-3); max-height: 180px; overflow: auto; }
+.li-warnings h4 { margin: 0 0 var(--space-1); font-size: var(--fs-small); }
+
+/* Event logs in Records */
+.li-tab-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.li-tab-head p { margin: 0; max-width: 70ch; }
+.li-card { display: grid; gap: var(--space-3); margin-bottom: var(--space-3); }
+.li-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.li-card-head h3 { margin: 0; }
+.li-card-head .spacer { flex: 1; }
+.li-details summary { cursor: pointer; margin-bottom: var(--space-2); }
+.li-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-2); }
+
+@media (max-width: 720px) {
+  .li-map .select { min-width: 160px; }
+  .li-keep { padding-left: 0; }
+}
