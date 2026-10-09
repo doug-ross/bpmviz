@@ -237,17 +237,17 @@ async function importSampleLog(p, csvText, opts) {
     d("node/update", { modelId: "m-current", nodeId: "scrub-sov-geocode", patch: { measures: { touchEffort: { value: 30, unit: "minute" } } } });
     d("node/update", { modelId: "m-current", nodeId: "appetite-capacity-triage", patch: { measures: { touchEffort: { value: 1, unit: "hour" } } } });
     d("record/add", { record: { kind: "opportunity", title: "Standard SOV template for the top five brokers", linkedModelId: "m-current",
-      linkedNodeIds: ["scrub-sov-geocode"], opportunity: { intervention: "standardize", effort: "M",
-        valueCase: { modelId: "m-current", nodeIds: ["scrub-sov-geocode"], effortReductionPct: 50, shareOfCasesPct: 60, shareSource: "typed", effortSource: "typed",
-          confidence: "high", basis: "supplied", wave: "now" } } } });
+      linkedNodeIds: ["scrub-sov-geocode"], opportunity: { intervention: "standardize", effort: "M", wave: "now",
+        valueCase: { modelId: "m-current", nodeIds: ["scrub-sov-geocode"], effortReductionPct: 50, shareOfCasesPct: 60, shareSource: "manual", effortSource: "node",
+          confidence: "high", basis: "supplied" } } } });
     d("record/add", { record: { kind: "opportunity", title: "Automate appetite and capacity triage", linkedModelId: "m-current",
-      linkedNodeIds: ["appetite-capacity-triage"], opportunity: { intervention: "deterministic-automation", effort: "L",
-        valueCase: { modelId: "m-current", nodeIds: ["appetite-capacity-triage"], effortReductionPct: 70, shareOfCasesPct: 100, shareSource: "typed", effortSource: "typed",
-          confidence: "medium", basis: "supplied", wave: "next" } } } });
+      linkedNodeIds: ["appetite-capacity-triage"], opportunity: { intervention: "deterministic-automation", effort: "L", wave: "next",
+        valueCase: { modelId: "m-current", nodeIds: ["appetite-capacity-triage"], effortReductionPct: 70, shareOfCasesPct: 100, shareSource: "manual", effortSource: "node",
+          confidence: "medium", basis: "supplied" } } } });
     d("record/add", { record: { kind: "opportunity", title: "Shared mailbox for facultative placement", linkedModelId: "m-current",
-      linkedNodeIds: ["scrub-sov-geocode"], opportunity: { intervention: "simplify", effort: "S",
-        valueCase: { modelId: "m-current", nodeIds: ["scrub-sov-geocode"], effortReductionPct: 10, shareOfCasesPct: 20, shareSource: "typed", effortSource: "typed",
-          confidence: "low", basis: "illustrative", wave: "later" } } } });
+      linkedNodeIds: ["scrub-sov-geocode"], opportunity: { intervention: "simplify", effort: "S", wave: "later",
+        valueCase: { modelId: "m-current", nodeIds: ["scrub-sov-geocode"], effortReductionPct: 10, shareOfCasesPct: 20, shareSource: "manual", effortSource: "node",
+          confidence: "low", basis: "illustrative" } } } });
   });
   await p.click("#rv-tab-opportunities");
   await p.click("#rv-oppview-matrix");

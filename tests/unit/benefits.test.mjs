@@ -133,9 +133,55 @@ test("expectedVsRealized reports met when the measured change covers most of the
   e.models[0].nodes.find(n => n.id === "fix").measures = { touchEffort: { value: 30, unit: "minute" } };
   const [r] = benefits.expectedVsRealized(e, "ds-tiny-baseline", "ds-tiny-after");
   close(r.expected.value, 14.6, "1,460 cases x 20% x 0.5 h x 10%");
-  close(r.realized.value, (0.5 - 25 / 60) * 0.1 * 1460);
+  close(r.realized.value, (0.5 * 0.2 - 25 / 60 * 0.1) * 1460, "the fix step got faster and half as many cases reach it");
   assert.ok(r.ratio >= 0.8, "ratio " + r.ratio + " should be at least 0.8");
   assert.equal(r.status, "met");
+});
+
+test("expectedVsRealized labels demonstration logs as illustrative and scales with the value case's own volume", () => {
+  const record = expectedCase("v", "work", 1, 45, 100, 100);
+  const e = tinyWithDatasets([record], [{ id: "as-vol", key: "annualVolume", value: 400, status: "supplied" }]);
+  e.models[0].nodes.find(n => n.id === "work").measures = { touchEffort: { value: 45, unit: "minute" } };
+  const [r] = benefits.expectedVsRealized(e, "ds-tiny-baseline", "ds-tiny-after");
+  close(r.expected.value, 300, "400 cases x 100% x 0.75 h x 100%");
+  close(r.realized.value, (0.9 - 0.55) * 400, "the same 400 cases, not the logs' 1,460 a year");
+  assert.equal(r.realized.basis, "illustrative", "both logs are demonstration data");
+  e.datasets.forEach(d => { d.dataStatus = "observed"; });
+  assert.equal(benefits.expectedVsRealized(e, "ds-tiny-baseline", "ds-tiny-after")[0].realized.basis, "observed");
+
+  // Without a volume in the value case, the after log's annualized volume is used and said so.
+  const noVol = tinyWithDatasets([record]);
+  noVol.models[0].nodes.find(n => n.id === "work").measures = { touchEffort: { value: 45, unit: "minute" } };
+  const [r2] = benefits.expectedVsRealized(noVol, "ds-tiny-baseline", "ds-tiny-after");
+  assert.equal(r2.expected, null);
+  close(r2.realized.value, (0.9 - 0.55) * 1460);
+  assert.ok(r2.notes.some(n => /after log's annualized volume/.test(n)));
+  assert.equal(r2.status, "not-measurable");
+});
+
+test("expectedVsRealized counts a step no case reaches any more as no time, and refuses logs on different time bases", () => {
+  const record = expectedCase("w", "fix", 3, 30, 100, 20);
+  const e = tinyWithDatasets([record], [{ id: "as-vol", key: "annualVolume", value: 1460, status: "supplied" }]);
+  e.models[0].nodes.find(n => n.id === "fix").measures = { touchEffort: { value: 30, unit: "minute" } };
+  const after = e.datasets.find(d => d.id === "ds-tiny-after");
+  after.steps = after.steps.filter(s => s.nodeId !== "fix");
+  const [r] = benefits.expectedVsRealized(e, "ds-tiny-baseline", "ds-tiny-after");
+  close(r.realized.value, 0.5 * 0.2 * 1460, "the whole baseline time on the step is gone");
+  assert.ok(r.notes.some(n => /no case in the after log reaches this step/.test(n)));
+  assert.equal(r.status, "met");
+
+  // Not mapped in the after log either: unknown, not zero.
+  after.mapping = after.mapping.filter(m => m.nodeId !== "fix");
+  const [r2] = benefits.expectedVsRealized(e, "ds-tiny-baseline", "ds-tiny-after");
+  assert.equal(r2.realized, null);
+  assert.equal(r2.status, "not-measurable");
+
+  after.timeBasis = { calendar: "business", businessMinutesPerDay: 480, dayStartMinute: 540 };
+  const cmp = benefits.compareDatasets(e, "ds-tiny-baseline", "ds-tiny-after");
+  assert.ok(cmp.caveats.some(c => /measure time differently/.test(c)));
+  const [r3] = benefits.expectedVsRealized(e, "ds-tiny-baseline", "ds-tiny-after");
+  assert.equal(r3.realized, null);
+  assert.ok(r3.notes.some(n => /measure time differently/.test(n)));
 });
 
 test("expectedVsRealized reports worse when the measured change moved the wrong way", () => {
