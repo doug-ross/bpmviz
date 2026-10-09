@@ -124,7 +124,7 @@ export async function readActivities(file, column) {
   if (!fs.existsSync(file) || !fs.statSync(file).isFile()) throw new UsageError("Activities file not found: " + file);
   if (fs.statSync(file).size > schema.LIMITS.eventLogBytes) throw new UsageError(file + " is larger than the " + Math.round(schema.LIMITS.eventLogBytes / 1048576) + " MB limit for event logs.");
   const ext = path.extname(file).toLowerCase();
-  if (ext === ".txt") return countNames(csv.stripBom(fs.readFileSync(file, "utf8")).split(/\r?\n/));
+  if (ext === ".txt") return countNames(csv.decodeText(fs.readFileSync(file)).split(/\r?\n/));
   let rows;
   if (ext === ".xlsx") {
     const inflateRaw = (b, max) => new Uint8Array(zlib.inflateRawSync(b, max ? { maxOutputLength: max } : {}));
@@ -133,7 +133,7 @@ export async function readActivities(file, column) {
     const sheet = wb.sheets.find(x => !x.hidden && x.rows.some(r => r.some(v => v !== null && v !== ""))) || wb.sheets[0];
     rows = sheet ? sheet.rows : [];
   } else if (ext === ".csv" || ext === ".tsv") {
-    rows = csv.parse(fs.readFileSync(file, "utf8"), { delimiter: ext === ".tsv" ? "\t" : undefined }).rows;
+    rows = csv.parse(csv.decodeText(fs.readFileSync(file)), { delimiter: ext === ".tsv" ? "\t" : undefined }).rows;
   } else {
     throw new UsageError("Give the activities as a .txt, .csv, .tsv or .xlsx file.");
   }

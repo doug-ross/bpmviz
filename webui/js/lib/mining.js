@@ -528,7 +528,7 @@
         if (id) mapped.push({ ev, id });
       });
       if (!mapped.length) { noMapped++; return; }
-      const ends = !endSet.size || endSet.has(mapped[mapped.length - 1].id);
+      const ends = endSet.has(mapped[mapped.length - 1].id);
       if (requireEnd && !ends) { excludedIncomplete++; return; }
       included++;
       if (ends) complete++;
@@ -564,8 +564,13 @@
         }
       });
       seen.forEach((n, id) => { const st = stepOf(id); st.cases++; if (n > 1) st.rework++; });
-      const key = mapped.map(x => x.id).join("\u0001");
-      if (!variants.has(key)) variants.set(key, { nodeIds: mapped.map(x => x.id), members: [], order: variants.size });
+      // Variants are told apart by the steps that are stored, so two long
+      // variants that differ only after LIMITS.variantSteps steps are one row.
+      const ids = mapped.map(x => x.id);
+      const stored = ids.slice(0, L.variantSteps);
+      const key = stored.join("\u0001");
+      if (!variants.has(key)) variants.set(key, { nodeIds: stored, truncated: false, members: [], order: variants.size });
+      if (ids.length > stored.length) variants.get(key).truncated = true;
       variants.get(key).members.push({ c, cycle });
     });
 
@@ -601,18 +606,19 @@
     const rest = ranked.slice(L.datasetVariants);
     let truncated = 0;
     const variantRows = kept.map((v, i) => {
-      if (v.nodeIds.length > L.variantSteps) truncated++;
+      if (v.truncated) truncated++;
       return {
-        id: "v" + (i + 1), nodeIds: v.nodeIds.slice(0, L.variantSteps), cases: v.members.length,
+        id: "v" + (i + 1), nodeIds: v.nodeIds, cases: v.members.length,
         share: share(v.members.length), cycleTime: statsOf(v.members.map(m => m.cycle))
       };
     });
-    if (truncated) warnings.push({ code: "mining.variantSteps", message: truncated + " variant" + (truncated === 1 ? " is" : "s are") + " longer than " + L.variantSteps + " steps; only the first " + L.variantSteps + " steps are listed." });
+    if (truncated) warnings.push({ code: "mining.variantSteps", message: truncated + " variant" + (truncated === 1 ? " is" : "s are") + " longer than " + L.variantSteps + " steps; only the first " + L.variantSteps + " steps are listed, and cases that share those steps are counted as one variant." });
 
     if (outOfOrder) warnings.push({ code: "mining.order", message: outOfOrder + " case" + (outOfOrder === 1 ? " has" : "s have") + " events listed out of time order in the file. They were sorted by time." });
     if (tied) warnings.push({ code: "mining.ties", message: tied + " case" + (tied === 1 ? " has" : "s have") + " events with the same time. Those keep their order in the file, so parallel work may show as a sequence." });
     if (overlaps) warnings.push({ code: "mining.overlap", message: overlaps + " event" + (overlaps === 1 ? " starts" : "s start") + " before the previous event in the case ended (parallel work). Their wait is counted as zero." });
     if (excludedIncomplete) warnings.push({ code: "mining.incomplete", message: excludedIncomplete + " case" + (excludedIncomplete === 1 ? " does" : "s do") + " not end at an end step and " + (excludedIncomplete === 1 ? "is" : "are") + " left out." });
+    if (!endSet.size && included) warnings.push({ code: "mining.noEndSteps", message: "No end steps are set, so no case is counted as complete." });
     if (noMapped) warnings.push({ code: "mining.unmapped", message: noMapped + " case" + (noMapped === 1 ? " has" : "s have") + " no event mapped to a step and " + (noMapped === 1 ? "is" : "are") + " left out." });
 
     const days = Number.isFinite(first) && last >= first ? (last - first) / DAY : 0;
@@ -634,7 +640,7 @@
         rows: src.rows || 0, events: (o.events || []).length, timestampMode: mode,
         caseIds: schema.ENUMS.caseIdHandling.includes(o.caseIds) ? o.caseIds : "hashed",
         resources: counted ? "counted" : "dropped",
-        droppedRows: src.droppedRows || 0, unmatchedEvents: unmatched, excludedIncompleteCases: excludedIncomplete + noMapped
+        droppedRows: src.droppedRows || 0, unmatchedEvents: unmatched, excludedIncompleteCases: excludedIncomplete
       },
       period: {
         start: Number.isFinite(first) ? iso(first) : "", end: Number.isFinite(last) ? iso(last) : "", days: round(days)

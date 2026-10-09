@@ -189,6 +189,49 @@ test("the helper accepts a log-mapping job and passes the activity names to the 
   }
 });
 
+test("activity names that look like credentials are never sent, and the other names still map", async () => {
+  const KEY = "AKIAABCDEFGHIJKLMNOP";
+  const acts = ACTIVITIES.concat([{ name: "Login " + KEY, events: 100 }]);
+  const input = ai.buildTaskInput(internal(), "log-mapping", { modelId: "m-current", activities: acts });
+  assert.deepEqual(input.activities, ["Work done", "Email sent", "Fix the form"]);
+  assert.deepEqual(input.excluded, { activities: 0, secretActivities: 1 });
+  assert.doesNotMatch(JSON.stringify(input), new RegExp(KEY));
+
+  const r = await runTask({ task: "log-mapping", provider: "claude", engagement: internal(), approvalConfirmed: true,
+    taskOptions: { modelId: "m-current", activities: acts } });
+  assert.equal(r.ok, true, JSON.stringify(r.errors));
+  assert.deepEqual(Object.fromEntries(r.review.items.map(it => [it.activity, it.nodeId])), { "Work done": "work", "Email sent": null, "Fix the form": "fix" });
+  const warning = r.result.warnings.find(w => w.code === "input.secret");
+  assert.match(warning.message, /^1 activity name that looks like a credential was not sent/);
+  assert.doesNotMatch(JSON.stringify(r.result), new RegExp(KEY), "the result does not carry the name either");
+  const log = fs.readFileSync(process.env.FAKE_AI_LOG, "utf8");
+  assert.equal(runs().length, 1);
+  assert.doesNotMatch(log, new RegExp(KEY), "the AI tool never received the key");
+
+  const echoed = ai.validateAiResult(envelope([{ activity: "Work done", nodeId: "work", confidence: "high", rationale: "Login " + KEY }]));
+  assert.equal(echoed.ok, false);
+  assert.equal(echoed.errors[0].code, "output.secret");
+  assert.match(echoed.errors[0].message, /Check the activity names and the model steps/);
+  assert.doesNotMatch(echoed.errors[0].message, /sources/);
+});
+
+test("the command line reads a Windows-1252 log with the same names as the browser import", async () => {
+  const file = path.join(root, "tests", "fixtures", "logs", "windows-1252.csv");
+  const bytes = fs.readFileSync(file);
+  assert.ok(bytes.includes(0xfc), "the fixture holds a Windows-1252 u-umlaut byte");
+  assert.throws(() => new TextDecoder("utf-8", { fatal: true }).decode(bytes), "the fixture is not UTF-8");
+  const names = (await readActivities(file)).map(a => a.name);
+  assert.ok(names.includes("Pr\u00fcfung"), JSON.stringify(names));
+  assert.ok(names.includes("Bescheid erstellen"));
+  assert.ok(names.every(n => !n.includes("\ufffd")), "no replacement characters");
+  const csvLib = lib("csv");
+  assert.equal(csvLib.decodeText(bytes), new TextDecoder("windows-1252").decode(bytes));
+  assert.equal(csvLib.decodeText(new Uint8Array([0xef, 0xbb, 0xbf, 0x50, 0xc3, 0xbc])), "P\u00fc", "UTF-8 with a byte order mark");
+  const txt = path.join(scratch, "names.txt");
+  fs.writeFileSync(txt, Buffer.from([0x50, 0x72, 0xfc, 0x66, 0x75, 0x6e, 0x67, 0x0d, 0x0a]));
+  assert.deepEqual(await readActivities(txt), [{ name: "Pr\u00fcfung", events: 1 }]);
+});
+
 test("the command line reads activity names from text, CSV and the log itself, and writes a result to check", async () => {
   const e = validateEngagement(example("underwriting-current-state")).engagement;
   const inFile = path.join(scratch, "uw.engagement.json");
