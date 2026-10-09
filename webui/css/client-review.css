@@ -1,1 +1,23 @@
-/* Styles for the client review feature (review slice). Owned by that slice; see docs/extensions.md. Use the tokens in tokens.css. */
+/* Styles for the client review feature: the pack and import dialogs, the Client review records tab and its side panel section. Uses the tokens in tokens.css. */
+
+.cr-intro { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4); }
+.cr-intro p { max-width: 80ch; margin: 0; }
+.cr-intro .form-actions { margin-top: 0; }
+
+.cr-options { display: grid; gap: var(--space-2); border: 0; padding: 0; margin: 0; }
+.cr-options legend { margin-bottom: var(--space-1); padding: 0; }
+.cr-options .check { align-items: flex-start; }
+.cr-options .check input { margin-top: 2px; flex: none; }
+
+.cr-dialog .stat-row { margin-bottom: 0; }
+.cr-dialog h3 { font-size: var(--fs-h3); margin: 0 0 var(--space-2); }
+.cr-dialog .table-wrap { max-height: 42vh; }
+
+.cr-table td.cr-comment, .cr-comment { white-space: pre-wrap; overflow-wrap: anywhere; }
+.cr-table td.cr-comment { min-width: 18ch; max-width: 48ch; }
+.cr-table .actions .btn { min-height: 30px; }
+
+.cr-answer { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+p.cr-comment { margin: 0; color: var(--ink-body); }
+
+.cr-handoff .table { font-size: var(--fs-small); }
