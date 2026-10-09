@@ -124,7 +124,14 @@
     const option = d => h("option", { value: d.id }, d.name);
     const afterSel = h("select", { class: "select", id: "bv-link-after" }, datasets.map(option));
     const baseSel = h("select", { class: "select", id: "bv-link-baseline" }, datasets.map(option));
-    if (datasets.length > 1) baseSel.selectedIndex = 1;
+    // Suggest the newest log (an "after" log first) against the newest baseline,
+    // so recording the defaults never compares a log with itself or backwards.
+    const newestFirst = datasets.map((d, i) => ({ d, i }))
+      .sort((a, b) => String(b.d.createdAt || "").localeCompare(String(a.d.createdAt || "")) || b.i - a.i).map(x => x.d);
+    const afterPick = newestFirst.find(d => d.role === "after" && !d.comparesToDatasetId) || newestFirst[0];
+    const basePick = newestFirst.find(d => d !== afterPick && d.role === "baseline") || newestFirst.find(d => d !== afterPick);
+    if (afterPick) afterSel.value = afterPick.id;
+    if (basePick) baseSel.value = basePick.id;
     const err = h("p", { class: "error-text", hidden: true });
     const saveBtn = h("button", { class: "btn btn-primary", type: "button" }, "Record this comparison");
     saveBtn.addEventListener("click", () => ctx.dispatch("dataset/update",

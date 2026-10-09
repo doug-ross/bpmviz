@@ -46,6 +46,46 @@
     return d ? { id: d.id, name: d.name, dataStatus: d.dataStatus, modelId: d.modelId } : null;
   }
 
+  /* True when two datasets measure time the same way, so their durations can be compared. */
+  function sameTimeBasis(a, b) {
+    const x = (a && a.timeBasis) || {}, y = (b && b.timeBasis) || {};
+    const cal = t => (t.calendar === "business" ? "business" : "calendar");
+    if (cal(x) !== cal(y)) return false;
+    return cal(x) === "calendar" || ((x.businessMinutesPerDay || 480) === (y.businessMinutesPerDay || 480));
+  }
+
+  /* The weaker of the two datasets' assumption statuses (demonstration data is illustrative). */
+  function pairBasis(a, b) {
+    const order = ["illustrative", "supplied", "observed"];
+    const x = order.indexOf(dq.basisOf(a)), y = order.indexOf(dq.basisOf(b));
+    return order[Math.min(x < 0 ? 1 : x, y < 0 ? 1 : y)];
+  }
+
+  /*
+   * Human minutes a step costs per case in the log, over every case (not
+   * only the cases that visit it): median duration x visits per visiting
+   * case x share of cases that visit it. null without a median duration.
+   */
+  function minutesPerCase(dataset, s) {
+    const d = p50(s && s.duration);
+    if (d === null) return null;
+    const visits = s.cases > 0 ? s.visits / s.cases : 1;
+    const share = util.isFiniteNumber(s.caseShare) ? s.caseShare : 1;
+    return d * visits * share;
+  }
+
+  /*
+   * True when the after log shows a step is no longer visited: the after
+   * model removed it, or the after log's mapping sends activities to it
+   * but no case reached it. Without either, a missing step is unknown.
+   */
+  function goneInAfter(e, after, afterNodeId) {
+    const m = (e.models || []).find(x => x.id === after.modelId);
+    const n = m && m.nodes.find(x => x.id === afterNodeId);
+    if (n && n.removed) return true;
+    return (after.mapping || []).some(x => x.nodeId === afterNodeId);
+  }
+
   /**
    * Compares a baseline dataset against one taken after a change, step by
    * step: { baseline, after, overall, steps, unmatched, caveats }. Steps
@@ -122,6 +162,9 @@
       caveats.push(smallSampleSteps + " step" + (smallSampleSteps === 1 ? "" : "s") + " rest" + (smallSampleSteps === 1 ? "s" : "") +
         " on fewer than " + SMALL_SAMPLE_MIN + " visits in one of the logs; treat the change with caution.");
     }
+    if (!sameTimeBasis(baseline, after)) {
+      caveats.push("The two event logs measure time differently (calendar time in one, business time in the other, or a different working day), so their durations cannot be compared directly. Import one of them again with the other's time basis.");
+    }
     if (baseline.dataStatus === "demonstration" || after.dataStatus === "demonstration") {
       caveats.push("At least one of the two event logs is demonstration data, not from a real engagement.");
     }
@@ -157,6 +200,8 @@
       let realized = null;
       if (!baseline || !after) {
         notes.push("One of the two event logs is no longer in the engagement.");
+      } else if (!sameTimeBasis(baseline, after)) {
+        notes.push("The two event logs measure time differently, so their durations cannot be compared.");
       } else {
         const scope = valueCase.affected(e, r);
         if (!scope.model || scope.model.id !== baseline.modelId) {
@@ -164,31 +209,44 @@
         } else if (!scope.nodeIds.length) {
           notes.push("This opportunity has no linked work steps to measure.");
         } else {
-          let beforeHours = 0, afterHours = 0, matched = 0, small = false;
+          // Minutes per case over every case in each log, so a change in how
+          // many cases reach a step counts as well as a change in its duration.
+          let beforeMinutes = 0, afterMinutes = 0, matched = 0, small = false;
           scope.nodeIds.forEach(id => {
+            const label = nodeLabel(e, baseline.modelId, id);
             const afterNodeId = corr.get(id);
             const bs = dq.step(baseline, id);
             const as = afterNodeId ? dq.step(after, afterNodeId) : null;
-            const bd = p50(bs && bs.duration), ad = p50(as && as.duration);
-            if (bd === null || ad === null) {
-              notes.push(nodeLabel(e, baseline.modelId, id) + ": the two event logs do not both have a measured duration for this step.");
+            const before = minutesPerCase(baseline, bs);
+            let afterValue = minutesPerCase(after, as);
+            if (before === null) {
+              notes.push(label + ": the baseline event log has no measured duration for this step.");
               return;
             }
-            const bv = dq.visitsPerCase(baseline, id), av = dq.visitsPerCase(after, afterNodeId);
-            beforeHours += (bd / 60) * (bv === null ? 1 : bv);
-            afterHours += (ad / 60) * (av === null ? 1 : av);
+            if (afterValue === null && !as && afterNodeId && goneInAfter(e, after, afterNodeId)) {
+              afterValue = 0;
+              notes.push(label + ": no case in the after log reaches this step, so it counts as no time.");
+            }
+            if (afterValue === null) {
+              notes.push(label + ": the after log has no measured duration for this step.");
+              return;
+            }
+            beforeMinutes += before;
+            afterMinutes += afterValue;
             matched++;
-            if (dq.smallSample(bs.duration, SMALL_SAMPLE_MIN) || dq.smallSample(as.duration, SMALL_SAMPLE_MIN)) small = true;
+            if (dq.smallSample(bs.duration, SMALL_SAMPLE_MIN) || (as && dq.smallSample(as.duration, SMALL_SAMPLE_MIN))) small = true;
           });
           if (matched) {
-            const afterNodeIds = scope.nodeIds.map(id => corr.get(id)).filter(Boolean);
-            const share = dq.caseShareForNodes(after, afterNodeIds);
-            const shareValue = share ? share.value : 1;
-            const volume = util.isFiniteNumber(dq.annualVolume(after)) ? dq.annualVolume(after) : dq.annualVolume(baseline);
+            // Scale with the same annual volume the modeled figure uses, so the
+            // two figures differ only by what the logs measured; fall back to
+            // the after log's own annualized volume.
+            const hoursInputs = (hoursOut && hoursOut.inputs) || [];
+            const modeledVolume = hoursInputs.length && util.isFiniteNumber(hoursInputs[0].value) && hoursInputs[0].unit === "casesPerYear" ? hoursInputs[0].value : null;
+            const volume = modeledVolume !== null ? modeledVolume : util.isFiniteNumber(dq.annualVolume(after)) ? dq.annualVolume(after) : dq.annualVolume(baseline);
             if (util.isFiniteNumber(volume)) {
-              realized = { value: (beforeHours - afterHours) * shareValue * volume, unit: "hour", basis: "observed", label: "Measured human hours saved per year" };
+              realized = { value: (beforeMinutes - afterMinutes) / 60 * volume, unit: "hour", basis: pairBasis(baseline, after), label: "Measured human hours saved per year" };
+              if (modeledVolume === null) notes.push("The measured change is scaled to the after log's annualized volume, as the value case has none.");
               if (small) notes.push("At least one measured step rests on fewer than " + SMALL_SAMPLE_MIN + " visits in one of the logs.");
-              if (share && !share.exact) notes.push("The share of cases touching these steps is estimated from the event log, not exact.");
             } else {
               notes.push("Neither event log has an annual volume to scale the measured change to a year.");
             }

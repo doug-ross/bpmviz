@@ -9,7 +9,9 @@
  * a branch at each gateway with the same share of cases the benefits test
  * fixtures (tests/fixtures/datasets/underwriting-{baseline,after}.dataset.json)
  * record for that gateway, and timing each step with that fixture's own
- * median duration (plus random jitter). The after log reflects plausible
+ * median duration (plus random jitter), counted in working hours (Monday
+ * to Friday, 9:00 to 17:00 UTC) to match the example's business time
+ * basis. The after log reflects plausible
  * improvements on the three steps those fixtures measure as faster: scrub
  * the SOV and geocode, the appetite and capacity triage, and technical
  * pricing and rating. Every other step keeps the same typical duration.
@@ -166,19 +168,39 @@ function isoMinute(ms) {
   return new Date(Math.round(ms / MINUTE_MS) * MINUTE_MS).toISOString();
 }
 
-/** Writes one log: caseCount cases arriving evenly across the period, each a seeded walk. */
+/*
+ * The walk keeps its clock in working time: milliseconds of working hours
+ * since the period start. The example engagement measures time in business
+ * minutes (Monday to Friday, 480 minutes from 9:00, the event-log import's
+ * default day start), so every step is placed inside those hours and its
+ * business-time duration is the typical duration above. A step longer than
+ * what is left of a working day carries on the next working morning.
+ */
+const WORK_DAY_MINUTES = 480;
+const DAY_START_MINUTE = 9 * 60;
+const BUSINESS_DAYS = 63; // the working days in the roughly 88 calendar days each log covers
+
+function wallClock(periodStart, workMs) {
+  const minutes = Math.round(workMs / MINUTE_MS);
+  const workday = Math.floor(minutes / WORK_DAY_MINUTES);
+  const minute = minutes - workday * WORK_DAY_MINUTES;
+  const calendarDay = Math.floor(workday / 5) * 7 + (workday % 5); // the period starts on a Monday
+  return periodStart + (calendarDay * 1440 + DAY_START_MINUTE + minute) * MINUTE_MS;
+}
+
+/** Writes one log: caseCount cases arriving evenly across the period's working days, each a seeded walk. */
 function makeLog(fileName, seed, caseCount, periodStartIso, after) {
   const durations = durationsFor(after);
   const rand = mulberry32(seed);
   const periodStart = Date.parse(periodStartIso);
-  const dayMs = 24 * 60 * MINUTE_MS;
+  if (new Date(periodStart).getUTCDay() !== 1 || new Date(periodStart).getUTCHours() !== 0) throw new Error("The period must start on a Monday at midnight UTC.");
   const rows = [["case", "activity", "start", "end", "resource"]];
   for (let i = 0; i < caseCount; i++) {
     const caseId = (after ? "AFT-" : "BASE-") + String(i + 1).padStart(4, "0");
-    const day = Math.floor(i / (caseCount / 88));
-    const arrivalMinute = 9 * 60 + Math.floor(rand() * 7 * 60); // between 9:00 and 16:00
-    const start = periodStart + day * dayMs + arrivalMinute * MINUTE_MS;
-    walkCase(durations, rand, start).forEach(ev => rows.push([caseId, ev.activity, isoMinute(ev.start), isoMinute(ev.end), ev.resource]));
+    const day = Math.floor(i / (caseCount / BUSINESS_DAYS));
+    const arrivalMinute = Math.floor(rand() * 7 * 60); // between 9:00 and 16:00
+    const start = (day * WORK_DAY_MINUTES + arrivalMinute) * MINUTE_MS;
+    walkCase(durations, rand, start).forEach(ev => rows.push([caseId, ev.activity, isoMinute(wallClock(periodStart, ev.start)), isoMinute(wallClock(periodStart, ev.end)), ev.resource]));
   }
   const outPath = path.join(root, "docs", "samples", fileName);
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
@@ -186,8 +208,8 @@ function makeLog(fileName, seed, caseCount, periodStartIso, after) {
   return { fileName, cases: caseCount, events: rows.length - 1 };
 }
 
-const baseline = makeLog("underwriting-baseline.csv", 1, 260, "2026-03-02T09:00:00.000Z", false);
-const afterLog = makeLog("underwriting-after.csv", 2, 271, "2026-08-03T09:00:00.000Z", true);
+const baseline = makeLog("underwriting-baseline.csv", 1, 260, "2026-03-02T00:00:00.000Z", false);
+const afterLog = makeLog("underwriting-after.csv", 2, 271, "2026-08-03T00:00:00.000Z", true);
 
 console.log("Wrote " + baseline.fileName + ": " + baseline.cases + " cases, " + baseline.events + " events.");
 console.log("Wrote " + afterLog.fileName + ": " + afterLog.cases + " cases, " + afterLog.events + " events.");
