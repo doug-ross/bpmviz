@@ -28,8 +28,8 @@ async function open(t, hash) {
   const page = await context.newPage();
   const problems = watch(page);
   await page.goto(fileUrl() + (hash || ""));
-  await page.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && document.getElementById("app"));
-  if (hash) await page.waitForFunction(() => !!window.BPMVIZ.app.store);
+  await page.waitForFunction(() => window.AIxRay && window.AIxRay.app && document.getElementById("app"));
+  if (hash) await page.waitForFunction(() => !!window.AIxRay.app.store);
   t.after(async () => { await context.close(); });
   return { page, problems };
 }
@@ -54,7 +54,7 @@ test("a CSV log is mapped, measured and added in one step, shows everywhere, and
   if (!s) return;
   const p = s.page;
   await p.waitForSelector(".node");
-  const tabsBefore = await p.evaluate(() => window.BPMVIZ.ext.list("recordsTab").map(x => x.id));
+  const tabsBefore = await p.evaluate(() => window.AIxRay.ext.list("recordsTab").map(x => x.id));
   assert.deepEqual(tabsBefore, [], "the Event logs tab appears only with event logs");
   await p.setInputFiles("#file-input", { name: "underwriting.csv", mimeType: "text/csv", buffer: fs.readFileSync(LOG) });
   await p.waitForSelector("dialog[open] #li-preview");
@@ -105,13 +105,13 @@ test("a CSV log is mapped, measured and added in one step, shows everywhere, and
   assert.match(warnings, /no connector path in the model/);
   assert.match(warnings, /does not end at an end step/);
   assert.equal(await p.textContent("#li-next"), "Add the event log");
-  const revision = await p.evaluate(() => window.BPMVIZ.app.store.get().revision);
+  const revision = await p.evaluate(() => window.AIxRay.app.store.get().revision);
   await p.click("#li-next");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
 
   await p.waitForSelector("#rv-tab-event-logs[aria-selected=true]");
   assert.match(await p.textContent("#rv-tab-event-logs"), /Event logs\s*1/);
-  const e = await p.evaluate(() => window.BPMVIZ.app.store.get());
+  const e = await p.evaluate(() => window.AIxRay.app.store.get());
   assert.equal(e.revision, revision + 1, "one change");
   assert.equal(e.datasets.length, 1);
   const d = e.datasets[0];
@@ -151,7 +151,7 @@ test("a CSV log is mapped, measured and added in one step, shows everywhere, and
   assert.equal(await p.isChecked("#ev-volume"), true);
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
-  const vol = await p.evaluate(() => window.BPMVIZ.app.store.get().assumptions.find(a => a.key === "annualVolume"));
+  const vol = await p.evaluate(() => window.AIxRay.app.store.get().assumptions.find(a => a.key === "annualVolume"));
   assert.equal(vol.status, "illustrative");
   assert.match(vol.source, /^Event log underwriting\.csv, 2026-02-\d\d to 2026-\d\d-\d\d, 13 cases$/);
 
@@ -169,8 +169,8 @@ test("a CSV log is mapped, measured and added in one step, shows everywhere, and
   // Undo the value copy, then the import: the log, its scenarios and the tab go.
   await undo(p);
   await undo(p);
-  await p.waitForFunction(() => !(window.BPMVIZ.app.store.get().datasets || []).length);
-  const back = await p.evaluate(() => ({ scenarios: window.BPMVIZ.app.store.get().scenarios.length, tabs: window.BPMVIZ.ext.list("recordsTab").map(x => x.id) }));
+  await p.waitForFunction(() => !(window.AIxRay.app.store.get().datasets || []).length);
+  const back = await p.evaluate(() => ({ scenarios: window.AIxRay.app.store.get().scenarios.length, tabs: window.AIxRay.ext.list("recordsTab").map(x => x.id) }));
   assert.deepEqual(back, { scenarios: 1, tabs: [] });
   clean(s.problems);
 });
@@ -203,7 +203,7 @@ test("an Excel log from the menu takes an AI mapping result, and original case I
   await p.click("#li-next");
   await atStep(p, 3);
 
-  const e = await p.evaluate(() => window.BPMVIZ.app.store.get());
+  const e = await p.evaluate(() => window.AIxRay.app.store.get());
   const result = ai.makeEnvelope({
     task: "log-mapping", engagementId: e.id, engagementRevision: e.revision, baselineModelId: "m-current",
     generated: { provider: "claude", model: "fake", surface: "cli", at: "2026-03-01T00:00:00Z", jobId: "job-1", plan: "commercial" },
@@ -246,12 +246,12 @@ test("an Excel log from the menu takes an AI mapping result, and original case I
   assert.match(await p.textContent("#li-summary"), /except the scenario case names/);
   await p.click("#li-next");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
-  const d = await p.evaluate(() => window.BPMVIZ.app.store.get().datasets[0]);
+  const d = await p.evaluate(() => window.AIxRay.app.store.get().datasets[0]);
   assert.equal(d.source.format, "xlsx");
   assert.equal(d.mapping.find(m => m.activity === "Email the broker").method, "ai");
   assert.equal(d.mapping.find(m => m.activity === "Scrub SOV & Geocode").method, "exact", "an AI proposal does not replace a ticked row");
   assert.equal(d.mapping.find(m => m.activity === "Check clearance and dedupe").method, "ignored", "an AI proposal replaces an unticked suggestion, which still needs a tick");
-  const label = await p.evaluate(id => window.BPMVIZ.app.store.get().scenarios.find(x => x.observedFrom && x.observedFrom.datasetId === id).observedFrom.caseLabel, d.id);
+  const label = await p.evaluate(id => window.AIxRay.app.store.get().scenarios.find(x => x.observedFrom && x.observedFrom.datasetId === id).observedFrom.caseLabel, d.id);
   assert.match(label, /^SUB-\d{4}$/);
 
   // A mapping result opened on its own changes nothing and says where it belongs.
@@ -273,8 +273,8 @@ test("an Excel log from the menu takes an AI mapping result, and original case I
   await p.click("#el-delete-" + d.id);
   assert.equal(await p.isChecked("#el-delete-scenarios"), true);
   await p.click("dialog[open] .dlg-foot .btn-danger");
-  await p.waitForFunction(() => !(window.BPMVIZ.app.store.get().datasets || []).length);
-  assert.equal(await p.evaluate(() => window.BPMVIZ.app.store.get().scenarios.length), 1, "its scenario went with it");
+  await p.waitForFunction(() => !(window.AIxRay.app.store.get().datasets || []).length);
+  assert.equal(await p.evaluate(() => window.AIxRay.app.store.get().scenarios.length), 1, "its scenario went with it");
   clean(s.problems);
 });
 
@@ -288,7 +288,7 @@ test("a log opened with no engagement asks for one first", async t => {
   const accept = await p.evaluate(() => {
     const input = document.getElementById("file-input");
     input.click = () => {};
-    window.BPMVIZ.app.openPicker();
+    window.AIxRay.app.openPicker();
     return input.accept;
   });
   assert.match(accept, /\.csv/);

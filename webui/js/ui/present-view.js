@@ -6,7 +6,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, s, clear, icon, downloadBlob, announce, formatDate } = B.dom;
   const { schema, units, exporting, layout, replay: replayLib } = B;
   const { Diagram, Camera, statusText } = B.diagram;
@@ -27,7 +27,7 @@
       return B.ext.context(app, { includeSensitive, includeUnreviewedAi, scenarioId: app.view.scenarioId || "", rerender: render, mode });
     }
 
-    /* Built-in modes, then modes registered with BPMVIZ.ext.registerPresentMode. */
+    /* Built-in modes, then modes registered with AIxRay.ext.registerPresentMode. */
     function modes() {
       return [{ id: "presenter", label: "Presenter view", builtin: true, printable: false },
         { id: "handoff", label: "Handoff summary", builtin: true, printable: true }].concat(B.ext.list("presentMode"));
@@ -48,7 +48,7 @@
       el.modeTabs.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
     }
 
-    /* Buttons registered with BPMVIZ.ext.registerPresentAction, before Engagement JSON. */
+    /* Buttons registered with AIxRay.ext.registerPresentAction, before Engagement JSON. */
     function renderActions() {
       const list = B.ext.list("presentAction");
       const key = list.map(a => a.id).join("|");
@@ -183,7 +183,7 @@
       const e = eng();
       const hd = exporting.buildHandoff(e, { scenarioId: app.view.scenarioId, includeSensitive, includeUnreviewedAi });
       const c = extCtx();
-      // Sections registered with BPMVIZ.ext.registerHandoffSection, placed after their anchor.
+      // Sections registered with AIxRay.ext.registerHandoffSection, placed after their anchor.
       const ext = anchor => B.ext.list("handoffSection").filter(x => x.after === anchor)
         .map(x => B.ext.guard("handoffSection", x, () => x.render(hd, c), null));
       const sec = (title, kind, cols) => {

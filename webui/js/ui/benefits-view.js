@@ -1,5 +1,5 @@
 /*
- * BPMVIZ benefits-view: the Benefits section in the value workspace and its
+ * AIxRay benefits-view: the Benefits section in the value workspace and its
  * handoff summary. Compares a baseline event log against one taken after a
  * change and checks opportunities' modeled value cases against what the
  * logs actually measured. Read-only except for linking two existing event
@@ -8,7 +8,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, clear } = B.dom;
   const { util, units, schema, benefits } = B;
   const badge = (t, tone) => B.drawer.badge(t, tone);

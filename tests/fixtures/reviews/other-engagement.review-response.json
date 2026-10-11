@@ -1,5 +1,5 @@
 {
-  "schema": "bpmviz.review-response",
+  "schema": "aixray.review-response",
   "schemaVersion": 1,
   "packId": "rp-fixture-2",
   "engagementId": "eng-another-client",

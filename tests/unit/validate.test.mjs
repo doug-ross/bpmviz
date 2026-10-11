@@ -22,7 +22,7 @@ test("malformed JSON is rejected with a readable message", () => {
 test("a file that is not an engagement is rejected", () => {
   const r = validateEngagement({ PROCESS: { before: {} } });
   assert.equal(r.ok, false);
-  assert.match(r.errors[0].message, /not a BPMVIZ engagement/);
+  assert.match(r.errors[0].message, /not an AIxRay engagement/);
 });
 
 test("a file from a newer schema version is rejected", () => {
@@ -30,7 +30,7 @@ test("a file from a newer schema version is rejected", () => {
   e.schemaVersion = 99;
   const r = validateEngagement(e);
   assert.equal(r.ok, false);
-  assert.match(r.errors[0].message, /newer BPMVIZ/);
+  assert.match(r.errors[0].message, /newer AIxRay/);
 });
 
 test("invalid references are rejected with field paths", () => {

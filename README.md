@@ -1,6 +1,6 @@
-# BPMVIZ
+# AIxRay
 
-BPMVIZ is a process workshop workbench. You open a process in the browser, replay how a case moves through it, correct it with the people who run it, and capture pain points, opportunities, questions, decisions and actions against each step. At the end you save a portable engagement file and print a handoff summary for the client.
+AIxRay is a process workshop workbench. You open a process in the browser, replay how a case moves through it, correct it with the people who run it, and capture pain points, opportunities, questions, decisions and actions against each step. At the end you save a portable engagement file and print a handoff summary for the client.
 
 It runs from local files. There is no server, account, install or network connection, and nothing you type leaves your machine unless you save or export it, or start one of the optional AI tasks on your own Claude or ChatGPT subscription.
 
@@ -58,7 +58,7 @@ Present gives you a low-chrome presenter view and a printable handoff summary: s
 
 ### Draft with AI on your Claude or ChatGPT plan
 
-Claude Code (Claude Pro, Max, Team or Enterprise) or Codex (ChatGPT Plus, Pro, Business or Enterprise) can draft four things: a current state extracted from PDF, Word, PowerPoint, diagram images, notes or BPMN; suggested pain points, opportunities and questions; a future state as changes to the current state; and the executive summary for the handoff. BPMVIZ runs the tool you already use, on the account you signed in with, so no API key is involved and BPMVIZ never handles a credential.
+Claude Code (Claude Pro, Max, Team or Enterprise) or Codex (ChatGPT Plus, Pro, Business or Enterprise) can draft four things: a current state extracted from PDF, Word, PowerPoint, diagram images, notes or BPMN; suggested pain points, opportunities and questions; a future state as changes to the current state; and the executive summary for the handoff. AIxRay runs the tool you already use, on the account you signed in with, so no API key is involved and AIxRay never handles a credential.
 
 ```
 npm run ai -- status
@@ -66,11 +66,11 @@ npm run ai -- extract intake-procedure.docx claims-flow.png --process-name "Clai
 npm run ai -- opportunities --in claims.engagement.json --yes
 ```
 
-Each task writes an AI result file. Open it in BPMVIZ with Open, look at each item and tick the ones you want; they go in as one change that Undo reverses. Applied items are marked as AI drafts and stay out of the handoff, presenter view and exports until someone reviews them. A reviewed AI summary prints with a line saying it was drafted with AI assistance.
+Each task writes an AI result file. Open it in AIxRay with Open, look at each item and tick the ones you want; they go in as one change that Undo reverses. Applied items are marked as AI drafts and stay out of the handoff, presenter view and exports until someone reviews them. A reviewed AI summary prints with a line saying it was drafted with AI assistance.
 
 ![Reviewing opportunities that Claude Code drafted for the underwriting example](docs/screenshots/13-ai-review.png)
 
-Client material goes only to commercial plans, with the engagement lead's approval; consumer plans take internal material only, with model training turned off. BPMVIZ checks this before anything is sent. The tool runs in a separate session with no shell, web access, hooks, plugins or MCP servers, and nothing is saved when it ends. The same tasks are available as agent skills in Claude Code and Codex, and as Draft with AI buttons when you start the app with `npm run serve -- --ai`.
+Client material goes only to commercial plans, with the engagement lead's approval; consumer plans take internal material only, with model training turned off. AIxRay checks this before anything is sent. The tool runs in a separate session with no shell, web access, hooks, plugins or MCP servers, and nothing is saved when it ends. The same tasks are available as agent skills in Claude Code and Codex, and as Draft with AI buttons when you start the app with `npm run serve -- --ai`.
 
 ![Starting an AI task from the app, with the data-handling check](docs/screenshots/14-ai-task.png)
 
@@ -78,7 +78,7 @@ Client material goes only to commercial plans, with the engagement lead's approv
 
 ### Measure the process from system data
 
-If the client can export a log from the workflow, ticketing or core system that ran the process, BPMVIZ reads it and shows how the process actually ran: how many cases visited each step, how long each step took, which paths cases followed. This gives you real figures to show alongside what the workshop captured, instead of estimates only.
+If the client can export a log from the workflow, ticketing or core system that ran the process, AIxRay reads it and shows how the process actually ran: how many cases visited each step, how long each step took, which paths cases followed. This gives you real figures to show alongside what the workshop captured, instead of estimates only.
 
 Open the engagement, then choose **More actions, Import an event log**, or just open the log file like any other file. A five-step wizard walks through the file, the columns, matching the log's activity names to the steps of your model, a few options, and a summary of what will be added. Nothing changes in the engagement until the last step. The figures then show on the canvas as two new lenses (observed share of cases, observed time per visit), in the side panel, in the value model and in the handoff.
 
@@ -88,7 +88,7 @@ Only aggregates are kept: counts and times per step, never the individual events
 
 ### Build the business case for an opportunity
 
-Every opportunity in the register can carry a value case: typed or observed inputs for how much effort it saves, how many cases it affects, and what it costs to deliver. As you fill it in, BPMVIZ estimates the opportunity's annual value right away, using the same formula everywhere it shows up.
+Every opportunity in the register can carry a value case: typed or observed inputs for how much effort it saves, how many cases it affects, and what it costs to deliver. As you fill it in, AIxRay estimates the opportunity's annual value right away, using the same formula everywhere it shows up.
 
 The **Matrix** view in Records, Opportunities charts every scored opportunity by value against effort, so you can see quick wins against major projects at a glance. The **Waves** view lays opportunities out by delivery wave (now, next, later) with a running total for each wave. The **Business case** present mode is a printable CFO one-pager: a portfolio page with the wave totals, or a single opportunity's own page with its headline figures and what is still missing.
 
@@ -106,7 +106,7 @@ Start it from the Value workspace once the engagement has two event-log datasets
 
 ### Ask a client stakeholder to check the process
 
-A client review pack lists the steps of a process model and the workshop's findings, and asks the reviewer to Confirm, Dispute or mark Not sure on each one, with a comment. Choose **Client review pack** in Present, pick a format (a web page that opens in any browser, or an Excel workbook), choose what to include, and send the file. The reviewer's answers come back as a file you open in BPMVIZ; applying them updates the validation status of the steps, can add open questions for disputed items, and can record the review as an evidence source.
+A client review pack lists the steps of a process model and the workshop's findings, and asks the reviewer to Confirm, Dispute or mark Not sure on each one, with a comment. Choose **Client review pack** in Present, pick a format (a web page that opens in any browser, or an Excel workbook), choose what to include, and send the file. The reviewer's answers come back as a file you open in AIxRay; applying them updates the validation status of the steps, can add open questions for disputed items, and can record the review as an evidence source.
 
 ![Setting up a client review pack](docs/screenshots/17-client-review-pack.png)
 
@@ -118,7 +118,7 @@ The pack carries only the steps and the findings chosen for it, plus the engagem
 
 ![Choosing what to export for the client's tools](docs/screenshots/18-export-dialog.png)
 
-The deck covers scope, findings, opportunities with their modeled value, the wave plan, the current process diagram and next steps, built the same way every time so it opens cleanly in PowerPoint, Keynote or Google Slides. The BPMN export round-trips back through BPMVIZ's own importer. The backlog turns opportunities into epics or features and actions into tasks or stories, with acceptance criteria drawn from the value case. See `docs/exports.md` for what does and does not carry over.
+The deck covers scope, findings, opportunities with their modeled value, the wave plan, the current process diagram and next steps, built the same way every time so it opens cleanly in PowerPoint, Keynote or Google Slides. The BPMN export round-trips back through AIxRay's own importer. The backlog turns opportunities into epics or features and actions into tasks or stories, with acceptance criteria drawn from the value case. See `docs/exports.md` for what does and does not carry over.
 
 ## Your data
 
@@ -161,7 +161,7 @@ The file format is documented in `webui/schema/engagement.schema.json`, and the 
 - Figures are only as good as their inputs. The app labels them illustrative, supplied or validated and checks their arithmetic; it cannot check whether an assumption is true.
 - One person works on an engagement file at a time. There is no shared editing or approval workflow.
 - The bundled examples are demonstrations. Their timings, volumes and costs are assumptions from the original samples.
-- AI drafts are drafts. BPMVIZ checks their structure, traces their figures and blocks links and credentials, but it cannot tell whether a drafted step or opportunity is true. Review each one with the people who know the process.
+- AI drafts are drafts. AIxRay checks their structure, traces their figures and blocks links and credentials, but it cannot tell whether a drafted step or opportunity is true. Review each one with the people who know the process.
 - Automated tests run in Chrome, both from disk and over HTTP. Edge uses the same engine. Firefox and Safari should work but are not covered by the tests, and browsers differ in how they keep storage for pages opened from disk, which is why the saved file is the durable copy.
 
 ## Development
@@ -191,7 +191,7 @@ The app has no build step. Every file under `webui/js/lib/` works both as a brow
 | `webui/schema/` | JSON Schemas for engagement files and AI result files |
 | `tools/` | Validator, legacy converter, example and schema builders, screenshot tool, checks, prompts |
 | `tools/ai/` | The AI runner, command line and local helper: Claude Code and Codex commands, document text, prompts, checks |
-| `.claude/skills/`, `.agents/skills/` | The BPMVIZ agent skills for Claude Code and Codex |
+| `.claude/skills/`, `.agents/skills/` | The AIxRay agent skills for Claude Code and Codex |
 | `tests/` | Unit tests, browser tests and fixtures |
 | `docs/` | AI guide, event logs, the business case, benefits tracking, client review packs, exports, audit tracker, the September 2026 audit, sample event logs and screenshots |
 | `archive/` | The earlier prototypes and prompts, kept for reference |
@@ -202,4 +202,4 @@ This version implements the September 2026 product and architecture audit. `docs
 
 ## Credits and license
 
-BPMVIZ was created by Doug Ross; the original explorer and race explorer are in `archive/`. Released under the MIT License (see `LICENSE`). The interface follows the Sogeti design system. Ubuntu and Ubuntu Mono are used under the Ubuntu Font Licence 1.0 (`webui/fonts/UFL.txt`).
+AIxRay was created by Doug Ross; the original explorer and race explorer are in `archive/`. Released under the MIT License (see `LICENSE`). The interface follows the Sogeti design system. Ubuntu and Ubuntu Mono are used under the Ubuntu Font Licence 1.0 (`webui/fonts/UFL.txt`).

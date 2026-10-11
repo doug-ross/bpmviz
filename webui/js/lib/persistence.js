@@ -1,5 +1,5 @@
 /*
- * BPMVIZ persistence: recoverable local drafts in browser storage.
+ * AIxRay persistence: recoverable local drafts in browser storage.
  *
  * Drafts are a safety net. The engagement JSON file saved with Save is the
  * durable, portable record. Browser storage can be unavailable (private
@@ -8,11 +8,11 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("./util.js"));
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.persistence = factory(B.util); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.persistence = factory(B.util); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util) {
   "use strict";
 
-  const PREFIX = "bpmviz:";
+  const PREFIX = "aixray:";
   const DRAFT = PREFIX + "draft:";
   const SNAPSHOTS = PREFIX + "snapshots:";
   const INDEX = PREFIX + "index";

@@ -1,12 +1,12 @@
 /*
- * BPMVIZ migrate: upgrades engagement files written by older schema versions.
+ * AIxRay migrate: upgrades engagement files written by older schema versions.
  * Each step takes version N and returns version N + 1. Version 1 is current,
  * so the registry is empty; the mechanism is tested so that the first real
  * schema change has a place to go.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("./util.js"), require("./schema.js"));
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.migrate = factory(B.util, B.schema); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.migrate = factory(B.util, B.schema); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema) {
   "use strict";
 
@@ -20,7 +20,7 @@
       return { error: "The file has no valid schemaVersion." };
     }
     if (version > schema.SCHEMA_VERSION && !steps) {
-      return { error: "This file was saved by a newer BPMVIZ (schema version " + version +
+      return { error: "This file was saved by a newer AIxRay (schema version " + version +
         "). This copy reads version " + schema.SCHEMA_VERSION + "." };
     }
     let current = util.clone(input);

@@ -1,5 +1,5 @@
 /*
- * BPMVIZ economics: formula-backed value outputs and reconciliation of
+ * AIxRay economics: formula-backed value outputs and reconciliation of
  * supplied figures against declared assumptions.
  *
  * Rules, from the source-grounded generator guidance:
@@ -13,7 +13,7 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.economics = factory(B.util, B.schema, B.units);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units) {

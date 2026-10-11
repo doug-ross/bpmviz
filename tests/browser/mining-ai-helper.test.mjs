@@ -14,13 +14,13 @@ import { createBridge } from "../../tools/ai/bridge.mjs";
 let browser = null, server = null, bridge = null, scratch = null;
 const KEY = "AKIAABCDEFGHIJKLMNOP";
 const saved = {};
-const KEYS = ["BPMVIZ_CLAUDE_BIN", "BPMVIZ_CODEX_BIN", "FAKE_AI_MODE", "FAKE_AI_STATE", "FAKE_AI_LOG"];
+const KEYS = ["AIXRAY_CLAUDE_BIN", "AIXRAY_CODEX_BIN", "FAKE_AI_MODE", "FAKE_AI_STATE", "FAKE_AI_LOG"];
 
 before(async () => {
   KEYS.forEach(k => { saved[k] = process.env[k]; delete process.env[k]; });
-  process.env.BPMVIZ_CLAUDE_BIN = path.join(root, "tests", "fixtures", "ai", "fake-claude.mjs");
-  process.env.BPMVIZ_CODEX_BIN = path.join(root, "tests", "fixtures", "ai", "fake-codex.mjs");
-  scratch = fs.mkdtempSync(path.join(os.tmpdir(), "bpmviz-logmap-ui-"));
+  process.env.AIXRAY_CLAUDE_BIN = path.join(root, "tests", "fixtures", "ai", "fake-claude.mjs");
+  process.env.AIXRAY_CODEX_BIN = path.join(root, "tests", "fixtures", "ai", "fake-codex.mjs");
+  scratch = fs.mkdtempSync(path.join(os.tmpdir(), "aixray-logmap-ui-"));
   process.env.FAKE_AI_LOG = path.join(scratch, "log.jsonl");
   browser = await launch();
   if (!browser) return;
@@ -47,7 +47,7 @@ test("Ask AI for the rest maps the unmapped names through the helper, and each s
   t.after(() => context.close());
   const problems = watch(page);
   await page.goto(bridge.launchUrl().replace("#ai=", "#example=underwriting-current-state&ai="));
-  await page.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && window.BPMVIZ.app.store);
+  await page.waitForFunction(() => window.AIxRay && window.AIxRay.app && window.AIxRay.app.store);
   await page.waitForSelector(".node");
   await page.setInputFiles("#file-input", { name: "underwriting.csv", mimeType: "text/csv", buffer: Buffer.concat([fs.readFileSync(path.join(root, "tests", "fixtures", "logs", "underwriting.csv")),
     Buffer.from("SUB-1001,Login " + KEY + ",2026-02-02 10:00,2026-02-02 10:05,Ops A\n")]) });
@@ -85,7 +85,7 @@ test("Ask AI for the rest maps the unmapped names through the helper, and each s
   const sent = fs.readFileSync(process.env.FAKE_AI_LOG, "utf8");
   assert.match(sent, /Email the broker/);
   assert.doesNotMatch(sent, new RegExp(KEY), "the AI tool never received the key");
-  assert.equal(await page.evaluate(() => (window.BPMVIZ.app.store.get().datasets || []).length), 0, "nothing is added until the log is added");
+  assert.equal(await page.evaluate(() => (window.AIxRay.app.store.get().datasets || []).length), 0, "nothing is added until the log is added");
   assert.deepEqual(problems.errors, [], "no page or console errors");
   assert.deepEqual(problems.external, [], "only 127.0.0.1 is contacted");
 });

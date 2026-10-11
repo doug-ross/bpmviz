@@ -1,12 +1,12 @@
 {
-  "schema": "bpmviz.ai-result",
+  "schema": "aixray.ai-result",
   "schemaVersion": 1,
   "task": "opportunities",
   "engagementId": "eng-underwriting-current",
   "engagementRevision": 0,
   "baselineModelId": null,
   "generated": {
-    "tool": "bpmviz-ai",
+    "tool": "aixray-ai",
     "provider": "claude",
     "model": "claude-opus-5[1m]",
     "surface": "cli",

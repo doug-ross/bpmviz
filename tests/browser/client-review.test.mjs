@@ -19,7 +19,7 @@ const reviewPack = libFile("review-pack");
 const xlsx = libFile("xlsx");
 
 let browser = null;
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "bpmviz-review-"));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "aixray-review-"));
 before(async () => { browser = await launch(); });
 after(async () => {
   if (browser) await browser.close();
@@ -40,7 +40,7 @@ async function openApp(t, hash) {
   const page = await ctx.newPage();
   const problems = watch(page);
   await page.goto(fileUrl() + (hash || ""));
-  await page.waitForFunction(h => window.BPMVIZ && window.BPMVIZ.app && document.getElementById("app") && (!h || !!window.BPMVIZ.app.store), hash || "");
+  await page.waitForFunction(h => window.AIxRay && window.AIxRay.app && document.getElementById("app") && (!h || !!window.AIxRay.app.store), hash || "");
   return { ctx, page, problems };
 }
 
@@ -69,7 +69,7 @@ async function makePack(p, format) {
 
 async function addFindings(p) {
   await p.evaluate(() => {
-    const app = window.BPMVIZ.app;
+    const app = window.AIxRay.app;
     app.dispatch("record/add", { record: { kind: "pain", title: "SOV rekeyed by hand", description: "Assistants retype broker spreadsheets.", linkedModelId: "m-current", linkedNodeIds: ["scrub-sov-geocode"] } });
     app.dispatch("record/add", { record: { kind: "pain", title: "Named underwriter is slow", sensitive: true, linkedModelId: "m-current", linkedNodeIds: ["technical-pricing-rating"] } });
   });
@@ -96,7 +96,7 @@ test("an HTML pack opens on its own, keeps answers in a file and imports back", 
   await p.fill("#cr-note", "Please answer by Friday.");
   const pack = await download(p, () => p.click("dialog[open] .dlg-foot .btn-primary"));
   assert.match(pack.name, /-review-dana-reviewer\.html$/);
-  const stored = await p.evaluate(() => window.BPMVIZ.app.store.get().reviewPacks);
+  const stored = await p.evaluate(() => window.AIxRay.app.store.get().reviewPacks);
   assert.equal(stored.length, 1);
   assert.equal(stored[0].items.length, 36);
   const html = pack.bytes.toString("utf8");
@@ -136,7 +136,7 @@ test("an HTML pack opens on its own, keeps answers in a file and imports back", 
   const saved = await download(pp, () => pp.click("#pack-save"));
   assert.match(saved.name, /^review-response-dana-reviewer-rp-[a-z0-9]+\.json$/);
   const response = JSON.parse(saved.bytes.toString("utf8"));
-  assert.equal(response.schema, "bpmviz.review-response");
+  assert.equal(response.schema, "aixray.review-response");
   assert.equal(response.packId, data.packId);
   assert.equal(response.engagementId, "eng-underwriting-current");
   assert.equal(response.format, "html");
@@ -175,7 +175,7 @@ test("an HTML pack opens on its own, keeps answers in a file and imports back", 
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
   const after = await p.evaluate(() => {
-    const e = window.BPMVIZ.app.store.get();
+    const e = window.AIxRay.app.store.get();
     const node = id => e.models[0].nodes.find(n => n.id === id).provenance;
     return { reviews: e.reviews.length, applied: e.reviews[0].applied, confirm: node("check-clearance-dedup"), dispute: node("scrub-sov-geocode").validation,
       questions: e.records.filter(r => r.kind === "question").map(r => r.title), evidence: e.evidence.map(x => x.title) };
@@ -227,7 +227,7 @@ test("an HTML pack opens on its own, keeps answers in a file and imports back", 
 
   // One undo reverses the import.
   const undone = await p.evaluate(() => {
-    const app = window.BPMVIZ.app;
+    const app = window.AIxRay.app;
     app.store.undo();
     const e = app.store.get();
     return { reviews: (e.reviews || []).length, validation: e.models[0].nodes.find(n => n.id === "scrub-sov-geocode").provenance.validation,
@@ -244,10 +244,10 @@ test("an Excel pack comes back filled in and applies to a locked baseline", asyn
   const p = s.page;
   await p.waitForSelector(".node");
   await addFindings(p);
-  await p.evaluate(() => window.BPMVIZ.app.dispatch("model/clone", { sourceModelId: "m-current", name: "Future state draft" }));
+  await p.evaluate(() => window.AIxRay.app.dispatch("model/clone", { sourceModelId: "m-current", name: "Future state draft" }));
   const pack = await makePack(p, "xlsx");
   assert.match(pack.name, /\.xlsx$/);
-  assert.equal(await p.evaluate(bytes => window.BPMVIZ.clientReview.isReviewWorkbook(new Uint8Array(bytes)), [...pack.bytes]), true);
+  assert.equal(await p.evaluate(bytes => window.AIxRay.clientReview.isReviewWorkbook(new Uint8Array(bytes)), [...pack.bytes]), true);
   // The reviewer fills in the workbook; a re-save keeps the sheets but drops the list validation.
   const wb = await xlsx.readWorkbookAsync(pack.bytes, { inflateRaw: b => zlib.inflateRawSync(b) });
   const review = wb.sheets.find(x => x.name === "Review");
@@ -266,7 +266,7 @@ test("an Excel pack comes back filled in and applies to a locked baseline", asyn
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
   const e = await p.evaluate(() => {
-    const x = window.BPMVIZ.app.store.get();
+    const x = window.AIxRay.app.store.get();
     return { locked: x.models[0].locked, source: x.reviews[0].source,
       v: ["check-clearance-dedup", "send-decline-letter"].map(id => x.models[0].nodes.find(n => n.id === id).provenance.validation),
       futureChanged: x.models[1].nodes.filter(n => n.lineage.change !== "unchanged").length };
@@ -274,7 +274,7 @@ test("an Excel pack comes back filled in and applies to a locked baseline", asyn
   assert.deepEqual(e, { locked: true, source: "xlsx", v: ["validated", "disputed"], futureChanged: 0 });
   // A workbook that is not a pack is left for other handlers.
   const plain = await xlsx.workbookBytesAsync({ sheets: [{ name: "Events", rows: [["case", "activity"], ["1", "Start"]] }] }, { deflateRaw: b => zlib.deflateRawSync(b) });
-  assert.equal(await p.evaluate(bytes => window.BPMVIZ.clientReview.isReviewWorkbook(new Uint8Array(bytes)), [...plain]), false);
+  assert.equal(await p.evaluate(bytes => window.AIxRay.clientReview.isReviewWorkbook(new Uint8Array(bytes)), [...plain]), false);
   clean(s.problems);
 });
 
@@ -303,13 +303,13 @@ test("responses for another engagement or over the size limit are refused; an un
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
   const r = await p.evaluate(() => {
-    const e = window.BPMVIZ.app.store.get();
+    const e = window.AIxRay.app.store.get();
     return { packId: e.reviews[0].packId, entries: e.reviews[0].entries.length, evidence: e.evidence.length, questions: e.records.length };
   });
   assert.deepEqual(r, { packId: null, entries: 4, evidence: 1, questions: 2 });
   clean(s.problems);
   // A saved engagement with a review shows the Client review tab when it is opened again.
-  const saved = await p.evaluate(() => window.BPMVIZ.exporting.engagementToJson(window.BPMVIZ.app.store.get()));
+  const saved = await p.evaluate(() => window.AIxRay.exporting.engagementToJson(window.AIxRay.app.store.get()));
   const s2 = await openApp(t, "");
   await s2.page.setInputFiles("#file-input", { name: "reviewed.engagement.json", mimeType: "application/json", buffer: Buffer.from(saved) });
   await s2.page.waitForSelector(".node");
@@ -334,14 +334,14 @@ test("the Client review tab follows the open engagement, and Download again leav
   await makePack(p, "html");
   await p.click("#tab-records");
   assert.equal((await tabIds()).includes("rv-tab-client-review"), true);
-  await p.evaluate(() => window.BPMVIZ.app.store.undo());
+  await p.evaluate(() => window.AIxRay.app.store.undo());
   assert.equal((await tabIds()).includes("rv-tab-client-review"), false, "undo of the only pack removes the tab");
   await makePack(p, "html");
   await p.click("#tab-records");
   assert.equal((await tabIds()).includes("rv-tab-client-review"), true);
   // An engagement with review data opened straight into Records lists the tab; a blank one does not.
-  const saved = await p.evaluate(() => window.BPMVIZ.exporting.engagementToJson(window.BPMVIZ.app.store.get()));
-  await p.evaluate(json => window.BPMVIZ.app.loadEngagement(window.BPMVIZ.validate.validateEngagement(JSON.parse(json)).engagement, { ws: "records" }), saved);
+  const saved = await p.evaluate(() => window.AIxRay.exporting.engagementToJson(window.AIxRay.app.store.get()));
+  await p.evaluate(json => window.AIxRay.app.loadEngagement(window.AIxRay.validate.validateEngagement(JSON.parse(json)).engagement, { ws: "records" }), saved);
   await p.waitForSelector("#rv-tab-client-review");
   const blank = await p.evaluate(json => {
     const e = JSON.parse(json);
@@ -350,16 +350,16 @@ test("the Client review tab follows the open engagement, and Download again leav
     e.reviews = [];
     return JSON.stringify(e);
   }, saved);
-  await p.evaluate(json => window.BPMVIZ.app.loadEngagement(window.BPMVIZ.validate.validateEngagement(JSON.parse(json)).engagement, { ws: "records" }), blank);
+  await p.evaluate(json => window.AIxRay.app.loadEngagement(window.AIxRay.validate.validateEngagement(JSON.parse(json)).engagement, { ws: "records" }), blank);
   await p.waitForFunction(() => !document.getElementById("rv-tab-client-review") && !!document.getElementById("rv-tab-records"));
-  await p.evaluate(json => window.BPMVIZ.app.loadEngagement(window.BPMVIZ.validate.validateEngagement(JSON.parse(json)).engagement, { ws: "process" }), saved);
+  await p.evaluate(json => window.AIxRay.app.loadEngagement(window.AIxRay.validate.validateEngagement(JSON.parse(json)).engagement, { ws: "process" }), saved);
   await p.waitForSelector(".node");
   await p.click("#tab-records");
   await p.click("#rv-tab-client-review");
   // The finding in the pack is marked sensitive after the pack was made.
-  const before = await p.evaluate(() => window.BPMVIZ.app.store.get().reviewPacks[0].items.length);
+  const before = await p.evaluate(() => window.AIxRay.app.store.get().reviewPacks[0].items.length);
   await p.evaluate(() => {
-    const app = window.BPMVIZ.app;
+    const app = window.AIxRay.app;
     const r = app.store.get().records.find(x => x.title === "SOV rekeyed by hand");
     app.dispatch("record/update", { id: r.id, patch: { sensitive: true } });
   });

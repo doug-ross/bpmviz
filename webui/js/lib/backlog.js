@@ -1,5 +1,5 @@
 /*
- * BPMVIZ backlog: turns opportunity and action records into a delivery
+ * AIxRay backlog: turns opportunity and action records into a delivery
  * backlog for Jira or Azure DevOps, or an Excel workbook. Opportunities
  * become Epics (Jira) or Features (Azure DevOps); actions become Tasks
  * (Jira) or User Stories (Azure DevOps). Acceptance criteria combine the
@@ -11,7 +11,7 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./exporting.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.backlog = factory(B.util, B.schema, B.exporting);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, exporting) {

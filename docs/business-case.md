@@ -15,7 +15,7 @@ Open an opportunity and its dialog shows a **Value case** section underneath the
 - **One-time cost** and **annual running cost**: the running cost is optional and only lowers the net annual benefit when it is recorded.
 - **Confidence**: low, medium or high. It discounts the ranking score, not the modeled figures themselves.
 - **Basis**: illustrative, supplied, observed or validated, for the figures you typed by hand. A figure read from an event log or a validated step carries its own basis regardless of this setting; the result always shows the weakest basis among its inputs.
-- **Wave**: now, next or later. The Matrix and Waves views suggest a wave; this is the consultant's decision, not something BPMVIZ sets.
+- **Wave**: now, next or later. The Matrix and Waves views suggest a wave; this is the consultant's decision, not something AIxRay sets.
 
 As you fill in the effort and duration fields, a line under the form estimates the opportunity's annual value right away, using the same formula the opportunity register and the business case use. Leaving a field blank keeps the result blank rather than treating it as zero.
 
@@ -77,4 +77,4 @@ opportunity/setWaves { changes: [{ id, wave }] }
 | `webui/js/ui/opportunity-value.js` | The value case editor, the opportunity columns, the Matrix and Waves views, the Business case present mode and the handoff section |
 | `webui/css/business-case.css` | Styles for the quadrant chart and the wave board |
 
-See `docs/extensions.md` for the registries this feature uses (`BPMVIZ.ext` and `BPMVIZ.store.registerCommands`) and how they fit the rest of the app.
+See `docs/extensions.md` for the registries this feature uses (`AIxRay.ext` and `AIxRay.store.registerCommands`) and how they fit the rest of the app.

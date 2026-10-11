@@ -13,12 +13,12 @@ import { createBridge } from "../../tools/ai/bridge.mjs";
 
 let browser = null, server = null, bridge = null, port = 0;
 const saved = {};
-const KEYS = ["BPMVIZ_CLAUDE_BIN", "BPMVIZ_CODEX_BIN", "FAKE_AI_MODE", "FAKE_AI_STATE", "FAKE_AI_LOG"];
+const KEYS = ["AIXRAY_CLAUDE_BIN", "AIXRAY_CODEX_BIN", "FAKE_AI_MODE", "FAKE_AI_STATE", "FAKE_AI_LOG"];
 
 before(async () => {
   KEYS.forEach(k => { saved[k] = process.env[k]; delete process.env[k]; });
-  process.env.BPMVIZ_CLAUDE_BIN = path.join(root, "tests", "fixtures", "ai", "fake-claude.mjs");
-  process.env.BPMVIZ_CODEX_BIN = path.join(root, "tests", "fixtures", "ai", "fake-codex.mjs");
+  process.env.AIXRAY_CLAUDE_BIN = path.join(root, "tests", "fixtures", "ai", "fake-claude.mjs");
+  process.env.AIXRAY_CODEX_BIN = path.join(root, "tests", "fixtures", "ai", "fake-codex.mjs");
   browser = await launch();
   if (!browser) return;
   server = http.createServer((req, res) => bridge.handler(req, res));
@@ -39,8 +39,8 @@ async function open(t, example) {
   const problems = watch(page);
   const url = bridge.launchUrl().replace("#ai=", (example ? "#example=" + example + "&" : "#") + "ai=");
   await page.goto(url);
-  await page.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && document.getElementById("app"));
-  if (example) await page.waitForFunction(() => !!window.BPMVIZ.app.store);
+  await page.waitForFunction(() => window.AIxRay && window.AIxRay.app && document.getElementById("app"));
+  if (example) await page.waitForFunction(() => !!window.AIxRay.app.store);
   t.after(async () => { await context.close(); });
   return { page, problems };
 }
@@ -92,7 +92,7 @@ test("extract from documents: upload, progress, review, open as a new engagement
   assert.match(text, /treated as data/);
   await s.page.click("dialog[open] .dlg-foot .btn-primary");
   await s.page.waitForSelector(".node");
-  const e = await s.page.evaluate(() => window.BPMVIZ.app.store.get());
+  const e = await s.page.evaluate(() => window.AIxRay.app.store.get());
   assert.equal(e.meta.confidentiality, "client-confidential");
   assert.ok(e.models.every(m => m.generated && m.generated.surface === "app"));
   clean(s.problems);
@@ -102,9 +102,9 @@ test("suggest records, draft a future state and draft the summary from the app",
   const s = await open(t, "underwriting-current-state");
   if (!s) return;
   process.env.FAKE_AI_MODE = "ok";
-  const before = await s.page.evaluate(() => window.BPMVIZ.app.store.get().revision);
+  const before = await s.page.evaluate(() => window.AIxRay.app.store.get().revision);
 
-  await s.page.evaluate(() => window.BPMVIZ.app.goto("records"));
+  await s.page.evaluate(() => window.AIxRay.app.goto("records"));
   await s.page.click("#rv-ai");
   await s.page.waitForSelector("#ai-start");
   assert.match(await s.page.textContent("#ai-sent"), /Current state \(40 steps/);
@@ -114,7 +114,7 @@ test("suggest records, draft a future state and draft the summary from the app",
   await s.page.click("#ai-apply");
   await s.page.waitForSelector("#rv-mark-reviewed");
 
-  await s.page.evaluate(() => window.BPMVIZ.app.goto("process"));
+  await s.page.evaluate(() => window.AIxRay.app.goto("process"));
   await s.page.click("#drawer-ai-future");
   await s.page.waitForSelector("#ai-start");
   await s.page.click("#ai-start");
@@ -123,7 +123,7 @@ test("suggest records, draft a future state and draft the summary from the app",
   await s.page.click("#ai-apply");
   await s.page.waitForSelector(".pane-head .badge:has-text('AI draft')");
 
-  await s.page.evaluate(() => { window.BPMVIZ.app.goto("present"); window.BPMVIZ.app.presentView.setMode("handoff"); });
+  await s.page.evaluate(() => { window.AIxRay.app.goto("present"); window.AIxRay.app.presentView.setMode("handoff"); });
   await s.page.click("#pr-summary-ai");
   await s.page.waitForSelector("#ai-start");
   await s.page.click("#ai-start");
@@ -134,7 +134,7 @@ test("suggest records, draft a future state and draft the summary from the app",
   await s.page.click("#ai-apply");
   await s.page.waitForSelector("#pr-summary-review");
 
-  const e = await s.page.evaluate(() => window.BPMVIZ.app.store.get());
+  const e = await s.page.evaluate(() => window.AIxRay.app.store.get());
   assert.equal(e.revision, before + 3, "three tasks, three applied changes");
   assert.equal(e.records.filter(r => r.generated).length, 1);
   assert.equal(e.models.filter(m => m.generated).length, 1);
@@ -145,8 +145,8 @@ test("suggest records, draft a future state and draft the summary from the app",
 test("client material cannot go to a consumer plan, and a running task can be cancelled", async t => {
   const s = await open(t, "underwriting-current-state");
   if (!s) return;
-  await s.page.evaluate(() => window.BPMVIZ.app.dispatch("meta/update", { patch: { confidentiality: "client-confidential", dataStatus: "supplied" } }));
-  await s.page.evaluate(() => window.BPMVIZ.aiPanel.openTask(window.BPMVIZ.app, "summary"));
+  await s.page.evaluate(() => window.AIxRay.app.dispatch("meta/update", { patch: { confidentiality: "client-confidential", dataStatus: "supplied" } }));
+  await s.page.evaluate(() => window.AIxRay.aiPanel.openTask(window.AIxRay.app, "summary"));
   await s.page.waitForSelector("#ai-start");
   await s.page.selectOption("#ai-provider", "codex");
   await s.page.selectOption("#ai-plan", "consumer");

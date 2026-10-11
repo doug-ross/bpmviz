@@ -24,8 +24,8 @@ async function open(t, hash) {
   const page = await context.newPage();
   const problems = watch(page);
   await page.goto(fileUrl() + (hash || ""));
-  await page.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && document.getElementById("app"));
-  if (hash) await page.waitForFunction(() => !!window.BPMVIZ.app.store);
+  await page.waitForFunction(() => window.AIxRay && window.AIxRay.app && document.getElementById("app"));
+  if (hash) await page.waitForFunction(() => !!window.AIxRay.app.store);
   t.after(async () => { await context.close(); });
   return { page, problems };
 }
@@ -77,12 +77,12 @@ test("the BPMN export re-imports with the same steps, lanes and no warnings", as
   const xmlText = (await downloadBytes(download)).toString("utf8");
   const result = await p.evaluate(text => {
     const doc = new DOMParser().parseFromString(text, "application/xml");
-    const r = window.BPMVIZ.bpmn.importDocument(doc, { fileName: "roundtrip.bpmn" });
+    const r = window.AIxRay.bpmn.importDocument(doc, { fileName: "roundtrip.bpmn" });
     return { nodeCount: r.engagement.models[0].nodes.length, edgeCount: r.engagement.models[0].edges.length,
       laneCount: r.engagement.models[0].lanes.length, warnings: r.warnings };
   }, xmlText);
   const original = await p.evaluate(() => {
-    const m = window.BPMVIZ.app.store.get().models.find(x => x.id === "m-current");
+    const m = window.AIxRay.app.store.get().models.find(x => x.id === "m-current");
     const nodeIds = new Set(m.nodes.filter(n => !n.removed).map(n => n.id));
     return { nodeCount: nodeIds.size, laneCount: m.lanes.length,
       edgeCount: m.edges.filter(e => !e.removed && nodeIds.has(e.from) && nodeIds.has(e.to)).length };
@@ -97,7 +97,7 @@ test("the backlog export leaves out sensitive records and unreviewed AI drafts u
   if (!s) return;
   const p = s.page;
   await p.evaluate(() => {
-    const B = window.BPMVIZ;
+    const B = window.AIxRay;
     B.app.dispatch("record/add", { record: { kind: "opportunity", title: "Ordinary opportunity", linkedModelId: "m-current", linkedNodeIds: ["scrub-sov-geocode"], opportunity: { effort: "M" } } });
     B.app.dispatch("record/add", { record: { kind: "opportunity", title: "Sensitive opportunity", sensitive: true, opportunity: { effort: "M" } } });
     // record/add does not accept a "generated" origin (that is set only by the AI drafting flow), so a

@@ -1,6 +1,6 @@
 /*
  * The job folder an AI tool works in: a fresh temporary folder holding the
- * sources (under names BPMVIZ chooses), the prompt files and an out/ folder
+ * sources (under names AIxRay chooses), the prompt files and an out/ folder
  * for results. It is removed when the job ends unless --keep is given.
  */
 import crypto from "node:crypto";
@@ -15,7 +15,7 @@ export function newJobId() {
 
 export function createJob(id) {
   const jobId = id || newJobId();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "bpmviz-ai-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aixray-ai-"));
   const sourcesDir = path.join(dir, "sources");
   const outDir = path.join(dir, "out");
   fs.mkdirSync(sourcesDir);

@@ -1,5 +1,5 @@
 /*
- * BPMVIZ csv: comma, semicolon, tab and pipe separated text for event logs.
+ * AIxRay csv: comma, semicolon, tab and pipe separated text for event logs.
  * Quoted fields follow RFC 4180 (a doubled quote is a quote; quoted fields
  * may hold separators and line breaks). Text after a closing quote is kept,
  * as spreadsheet programs do. A byte order mark is removed. Blank lines are
@@ -8,7 +8,7 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.csv = factory(); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.csv = factory(); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 

@@ -194,7 +194,7 @@ export async function runTask(o) {
         run.denials.map(d => ({ code: "provider.denied", path: "", message: "The AI tried to use " + d + " and was refused." })));
       const envelope = ai.makeEnvelope({
         task, engagementId: e ? e.id : null, engagementRevision: e ? e.revision : null, baselineModelId,
-        generated: { tool: "bpmviz-ai", provider: o.provider, model: run.model || o.model || "", surface: o.surface || "cli",
+        generated: { tool: "aixray-ai", provider: o.provider, model: run.model || o.model || "", surface: o.surface || "cli",
           at: new Date().toISOString(), jobId: job.id, plan },
         dataHandling, sources, notes: typeof output.notes === "string" ? output.notes : "", warnings: runWarnings, payload
       });

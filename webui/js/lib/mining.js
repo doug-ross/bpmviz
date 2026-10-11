@@ -1,5 +1,5 @@
 /*
- * BPMVIZ mining: turns an event log into a dataset of aggregates.
+ * AIxRay mining: turns an event log into a dataset of aggregates.
  *
  *  1. Rows become events: case, activity, timestamps (one, or a start and an
  *     end) and an optional resource. Timestamps without an offset are wall
@@ -26,7 +26,7 @@
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"), require("./replay.js"),
       require("./validate.js"), require("./store.js"), require("./dataset-query.js"), require("./xlsx.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.mining = factory(B.util, B.schema, B.units, B.replay, B.validate, B.store, B.datasetQuery, B.xlsx);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, replayLib, validate, storeLib, datasetQuery, xlsx) {

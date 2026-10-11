@@ -1,5 +1,5 @@
 /*
- * Trusted adapters for the legacy BPMVIZ configuration formats.
+ * Trusted adapters for the legacy AIxRay configuration formats.
  *
  *   explorer-v1  branding.js + process.js + samples.js (LANES, NODES, FLOWS, SUBMISSIONS)
  *   racer        window.PROCESS with before/after models and scaled cases (v1 and v2)
@@ -151,7 +151,7 @@ function fromExplorerV1(src, options) {
     timeBasis: { unit: "minute", calendar: "calendar", businessMinutesPerDay: 480 },
     summary: opts.summary || "",
     disclosure: "Demonstration data. Sample automation requests with illustrative durations; no live telemetry.",
-    credits: "Sample from the original BPMVIZ explorer by Doug Ross (MIT License)."
+    credits: "Sample from the original AIxRay explorer by Doug Ross (MIT License)."
   });
   e.createdAt = e.updatedAt = opts.timestamp || e.createdAt;
   const evidenceId = "ev-futurestate-bpmn";
@@ -317,7 +317,7 @@ function fromRacer(P, config) {
     timeBasis: cfg.timeBasis || { unit: "minute", calendar: "calendar", businessMinutesPerDay: 480 },
     summary: clean(branding.helpText || ""),
     disclosure: cfg.disclosure || clean(branding.status || ""),
-    credits: "Sample from the original BPMVIZ race explorer by Doug Ross (MIT License)."
+    credits: "Sample from the original AIxRay race explorer by Doug Ross (MIT License)."
   });
   e.createdAt = e.updatedAt = cfg.timestamp || e.createdAt;
   const evId = "ev-source-bpmn";

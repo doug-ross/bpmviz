@@ -1,11 +1,11 @@
 /*
- * BPMVIZ client-exports: the "Export for client tools" dialog. Registers a
- * present-bar action and an export menu item through BPMVIZ.ext; it does not
+ * AIxRay client-exports: the "Export for client tools" dialog. Registers a
+ * present-bar action and an export menu item through AIxRay.ext; it does not
  * change the engagement, so it registers no store commands.
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, icon, announce } = B.dom;
   const { schema, util } = B;
 
@@ -104,7 +104,7 @@
       } else if (formatSelect.value === "azure") {
         B.files.downloadBytes("\ufeff" + B.backlog.toAzureCsv(all), base + "-backlog-azure.csv", "text/csv;charset=utf-8");
       } else {
-        const spec = B.backlog.toWorkbookSpec(all, { title: "Backlog", creator: "BPMVIZ" });
+        const spec = B.backlog.toWorkbookSpec(all, { title: "Backlog", creator: "AIxRay" });
         const bytes = await B.xlsx.workbookBytesAsync(spec, { deflateRaw: B.files.deflateRaw });
         B.files.downloadBytes(bytes, base + "-backlog.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       }

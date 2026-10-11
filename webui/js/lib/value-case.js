@@ -1,5 +1,5 @@
 /*
- * BPMVIZ value-case: the modeled value of one opportunity, a ranking of
+ * AIxRay value-case: the modeled value of one opportunity, a ranking of
  * opportunities, and totals per delivery wave. Inputs come from the
  * opportunity's value case (record.opportunity.valueCase), the engagement
  * assumptions and, when linked, an event-log dataset.
@@ -16,7 +16,7 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"), require("./economics.js"), require("./dataset-query.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.valueCase = factory(B.util, B.schema, B.units, B.economics, B.datasetQuery);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, dq) {

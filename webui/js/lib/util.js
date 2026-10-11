@@ -1,10 +1,10 @@
 /*
- * BPMVIZ util: small shared helpers.
- * Loads as a classic browser script (window.BPMVIZ.util) or a CommonJS module.
+ * AIxRay util: small shared helpers.
+ * Loads as a classic browser script (window.AIxRay.util) or a CommonJS module.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
-  else (root.BPMVIZ = root.BPMVIZ || {}).util = factory();
+  else (root.AIxRay = root.AIxRay || {}).util = factory();
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 

@@ -1,16 +1,16 @@
 /*
- * BPMVIZ schema: identifiers, enumerations and display labels for the
- * portable engagement format (schema "bpmviz.engagement", version 1).
+ * AIxRay schema: identifiers, enumerations and display labels for the
+ * portable engagement format (schema "aixray.engagement", version 1).
  * The JSON Schema in webui/schema/engagement.schema.json documents the same
  * contract; validate.js enforces it.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("./util.js"));
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.schema = factory(B.util); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.schema = factory(B.util); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util) {
   "use strict";
 
-  const SCHEMA_ID = "bpmviz.engagement";
+  const SCHEMA_ID = "aixray.engagement";
   const SCHEMA_VERSION = 1;
 
   /* Each enum lists [value, label]. The first entry is the default. */
@@ -186,8 +186,8 @@
   };
 
   /* Files exchanged with client reviewers (see docs/extensions.md). */
-  const REVIEW_RESPONSE_ID = "bpmviz.review-response";
-  const REVIEW_PACK_ID = "bpmviz.review-pack";
+  const REVIEW_RESPONSE_ID = "aixray.review-response";
+  const REVIEW_PACK_ID = "aixray.review-pack";
 
   function blankEngagement(meta) {
     const now = util.nowIso();

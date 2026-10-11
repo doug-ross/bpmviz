@@ -17,12 +17,12 @@ try {
     const { createBridge } = await import("./ai/bridge.mjs");
     const bridge = createBridge({ port, log: text => console.log(text) });
     await serve(port, bridge.handler);
-    console.log("BPMVIZ with the AI helper is running. Open this link (it works once):");
+    console.log("AIxRay with the AI helper is running. Open this link (it works once):");
     console.log("  " + bridge.launchUrl());
     console.log("AI tasks run on your own Claude Code or Codex sign-in. Press Ctrl+C to stop.");
   } else {
     const { url } = await serve(port);
-    console.log("BPMVIZ is available at " + url + " (Ctrl+C to stop).");
+    console.log("AIxRay is available at " + url + " (Ctrl+C to stop).");
   }
 } catch (err) {
   console.error(err.code === "EADDRINUSE" ? "Port " + port + " is in use. Stop the other server or use --port <number>." : err.message);

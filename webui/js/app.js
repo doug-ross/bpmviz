@@ -1,10 +1,10 @@
 /*
- * BPMVIZ application shell: engagement lifecycle (open, new, save, recover),
+ * AIxRay application shell: engagement lifecycle (open, new, save, recover),
  * workspaces, header state, menus and global shortcuts.
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ;
+  const B = root.AIxRay;
   const { h, s, clear, icon, iconButton, announce, isTypingTarget, downloadBlob, formatTime, formatDate } = B.dom;
   const { schema, units, validate, exporting, persistence, store: storeLib } = B;
   const { openDialog, choose, confirmDialog, messageDialog, issueList } = B.dialogs;
@@ -16,7 +16,7 @@
   function safeStorage() {
     try {
       const ls = root.localStorage;
-      ls.getItem("bpmviz:probe");
+      ls.getItem("aixray:probe");
       return ls;
     } catch (_) {
       return null;
@@ -36,7 +36,7 @@
     storageProblem: null,
     loadInfo: null
   };
-  root.BPMVIZ.app = app;
+  root.AIxRay.app = app;
   const el = {};
 
   /* ---------------- Shell ---------------- */
@@ -49,14 +49,14 @@
     el.dataBadge = h("span", { class: "badge", id: "data-status" });
     el.saveState = h("span", { class: "save-state", id: "save-state", role: "status" });
     el.ctxEyebrow = h("div", { class: "context-eyebrow", id: "ctx-eyebrow" });
-    el.ctxTitle = h("h1", { class: "context-title", id: "ctx-title" }, "BPMVIZ");
+    el.ctxTitle = h("h1", { class: "context-title", id: "ctx-title" }, "AIxRay");
     el.btnNew = iconButton("filePlus", "New", { id: "btn-new" }, { showLabel: true, title: "New engagement" });
     el.btnOpen = iconButton("open", "Open", { id: "btn-open" }, { showLabel: true, title: "Open an engagement, BPMN or AI draft file (Ctrl+O)" });
     el.btnSave = iconButton("save", "Save", { id: "btn-save" }, { showLabel: true, variant: "btn-primary", title: "Save the engagement file (Ctrl+S)" });
     el.btnMenu = iconButton("more", "More actions", { id: "btn-menu", "aria-haspopup": "menu", "aria-expanded": "false", "aria-controls": "app-menu" });
     el.menu = h("div", { class: "menu-list", id: "app-menu", role: "menu", hidden: true });
     el.header = h("header", { class: "appbar" },
-      h("div", { class: "brand" }, sail("brand-mark"), h("span", { class: "brand-name" }, "BPMVIZ")),
+      h("div", { class: "brand" }, sail("brand-mark"), h("span", { class: "brand-name" }, "AIxRay")),
       h("div", { class: "context" }, el.ctxEyebrow, el.ctxTitle),
       h("div", { class: "appbar-status" }, el.dataBadge, el.saveState),
       h("div", { class: "appbar-actions" }, el.btnNew, el.btnOpen, el.btnSave, h("div", { class: "menu" }, el.btnMenu, el.menu)));
@@ -66,7 +66,7 @@
     el.footConf = h("span", { id: "foot-conf" });
     el.footDisc = h("span", { id: "foot-disc" });
     el.foot = h("footer", { class: "appfoot" }, el.footConf, el.footDisc, h("span", { class: "spacer" }),
-      h("span", null, "BPMVIZ " + VERSION + " \u00b7 Press ", h("span", { class: "kbd" }, "?"), " for help"));
+      h("span", null, "AIxRay " + VERSION + " \u00b7 Press ", h("span", { class: "kbd" }, "?"), " for help"));
     el.fileInput = h("input", { type: "file", id: "file-input", accept: BASE_ACCEPT, hidden: true });
 
     app.processView = B.processView.createProcessView(app);
@@ -126,7 +126,7 @@
     el.tabs.appendChild(el.revision);
   }
 
-  /* Menu entries. Registered items (BPMVIZ.ext.registerMenuItem) join their group. */
+  /* Menu entries. Registered items (AIxRay.ext.registerMenuItem) join their group. */
   function menuItems() {
     const group = name => B.ext.list("menuItem").filter(m => m.group === name)
       .map(m => [m.icon || "info", m.label, () => B.ext.guard("menuItem", m, () => m.run(app)), !!m.needsEngagement, null, "menu-" + m.id]);
@@ -201,11 +201,11 @@
     el.dataBadge.hidden = !has;
     if (!has) {
       el.ctxEyebrow.textContent = "Process workshop workbench";
-      el.ctxTitle.textContent = "BPMVIZ";
+      el.ctxTitle.textContent = "AIxRay";
       el.saveState.textContent = "";
       el.footConf.textContent = "";
       el.footDisc.textContent = app.storageProblem ? "Local drafts are off in this browser. Save engagement files to keep your work." : "";
-      document.title = "BPMVIZ";
+      document.title = "AIxRay";
       return;
     }
     const e = app.store.get();
@@ -219,7 +219,7 @@
     el.revision.textContent = "Revision " + e.revision;
     el.footConf.textContent = schema.label("confidentiality", m.confidentiality);
     el.footDisc.textContent = m.disclosure ? " \u00b7 " + (m.disclosure.length > 140 ? m.disclosure.slice(0, 139) + "..." : m.disclosure) : "";
-    document.title = m.processName + " \u00b7 BPMVIZ";
+    document.title = m.processName + " \u00b7 AIxRay";
     const count = document.getElementById("tab-records-count");
     if (count) count.textContent = String(e.records.length);
     updateSaveState();
@@ -422,7 +422,7 @@
   }
 
   /*
-   * Registered file handlers (BPMVIZ.ext.registerFileHandler) see the file
+   * Registered file handlers (AIxRay.ext.registerFileHandler) see the file
    * first, by extension and priority, before the 10 MB text read below.
    * Returns true when a handler took the file.
    */
@@ -439,7 +439,7 @@
     for (const handler of fit) {
       let take = true;
       if (handler.probe) {
-        try { take = !!(await handler.probe(bytes, file.name)); } catch (err) { console.warn("BPMVIZ fileHandler " + handler.id + " probe failed:", err); take = false; }
+        try { take = !!(await handler.probe(bytes, file.name)); } catch (err) { console.warn("AIxRay fileHandler " + handler.id + " probe failed:", err); take = false; }
       }
       if (!take) continue;
       try {
@@ -520,7 +520,7 @@
     if (typeof root.showSaveFilePicker === "function" && !app.forceDownload) {
       try {
         const handle = (!asNew && app.fileHandle) || await root.showSaveFilePicker({
-          suggestedName: suggested, types: [{ description: "BPMVIZ engagement", accept: { "application/json": [".json"] } }]
+          suggestedName: suggested, types: [{ description: "AIxRay engagement", accept: { "application/json": [".json"] } }]
         });
         const writable = await handle.createWritable();
         await writable.write(text);
@@ -651,7 +651,7 @@
   }
 
   function clearLocalData() {
-    confirmDialog("Clear local data?", "Every BPMVIZ draft and recovery snapshot in this browser will be deleted. The open engagement stays open, and saved files are not touched.", "Clear local data", true)
+    confirmDialog("Clear local data?", "Every AIxRay draft and recovery snapshot in this browser will be deleted. The open engagement stays open, and saved files are not touched.", "Clear local data", true)
       .then(ok => {
         if (!ok) return;
         const done = app.drafts.clearAll();
@@ -705,7 +705,7 @@
   function aboutDialog() {
     openDialog({
       title: "About and data handling", body: h("div", null,
-        h("p", null, "BPMVIZ " + VERSION + " is a process workshop workbench. " + (B.aiPanel.enabled ?
+        h("p", null, "AIxRay " + VERSION + " is a process workshop workbench. " + (B.aiPanel.enabled ?
           "It is running with the local AI helper: the AI tasks you start go to your own Claude Code or Codex account, on the plan you signed in with. Nothing else leaves this machine." :
           "It runs from local files in a browser, with no server, account or network connection.")),
         h("h3", null, "Where your data lives"),
@@ -717,7 +717,7 @@
           h("li", null, "AI drafts are marked as such and stay out of the handoff and exports until someone reviews them. See docs/ai.md."),
           h("li", null, "Opened files are treated as data. Text is shown as text, links other than http and https are removed, and files are never run as code.")),
         h("h3", null, "Credits"),
-        h("p", { class: "small" }, "Based on the original BPMVIZ visualizer and race explorer by Doug Ross, released under the MIT License. Fonts: Ubuntu and Ubuntu Mono, Ubuntu Font Licence 1.0.")),
+        h("p", { class: "small" }, "Based on the original AIxRay visualizer and race explorer by Doug Ross, released under the MIT License. Fonts: Ubuntu and Ubuntu Mono, Ubuntu Font Licence 1.0.")),
       actions: [{ label: "Close", variant: "btn-primary", autofocus: true }]
     });
   }

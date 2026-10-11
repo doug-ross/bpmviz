@@ -1,6 +1,6 @@
 /*
- * BPMVIZ client-review: making client review packs and importing the
- * answers. Everything here plugs into the app through BPMVIZ.ext:
+ * AIxRay client-review: making client review packs and importing the
+ * answers. Everything here plugs into the app through AIxRay.ext:
  *  - Present bar action "Client review pack" (pr-action-client-review)
  *  - Records tab "Client review" (rv-tab-client-review): packs, responses and the latest answer per item,
  *    listed while the open engagement has a pack or a response
@@ -11,7 +11,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, icon, announce } = B.dom;
   const { schema, util } = B;
   const R = B.reviews;
@@ -124,7 +124,7 @@
     }
 
     const body = h("div", { class: "form-grid cr-dialog" },
-      h("p", { class: "small" }, "The pack lists steps and findings for a client stakeholder to confirm, dispute or mark as not sure, with a comment. It works on its own: the web page opens in any current browser from the file, and the workbook opens in Excel. The answers come back as a file you open in BPMVIZ."),
+      h("p", { class: "small" }, "The pack lists steps and findings for a client stakeholder to confirm, dispute or mark as not sure, with a comment. It works on its own: the web page opens in any current browser from the file, and the workbook opens in Excel. The answers come back as a file you open in AIxRay."),
       h("div", { class: "field-row" },
         h("div", { class: "field" }, h("label", { for: "cr-name" }, "Reviewer's name"), name),
         h("div", { class: "field" }, h("label", { for: "cr-role" }, "Role"), role),
@@ -266,14 +266,14 @@
     openResponse(app, data, info);
   }
 
-  /* An .xlsx file is a review pack when it has the hidden bpmviz-pack sheet, or About and Review sheets that carry a pack reference. */
+  /* An .xlsx file is a review pack when it has the hidden aixray-pack sheet, or About and Review sheets that carry a pack reference. */
   async function isReviewWorkbook(bytes) {
     if (!bytes || bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) return false;
     try {
       const pkg = await B.zip.openZipAsync(bytes, { inflateRaw: B.files.inflateRaw });
       const wb = await pkg.readText("xl/workbook.xml");
       if (!wb) return false;
-      if (/<(?:\w+:)?sheet\b[^>]*\bname="bpmviz-pack"/i.test(wb)) return true;
+      if (/<(?:\w+:)?sheet\b[^>]*\bname="aixray-pack"/i.test(wb)) return true;
       if (!/<(?:\w+:)?sheet\b[^>]*\bname="About"/i.test(wb) || !/<(?:\w+:)?sheet\b[^>]*\bname="Review"/i.test(wb)) return false;
       R.responseFromWorkbook(await B.xlsx.readWorkbookAsync(bytes, { inflateRaw: B.files.inflateRaw }));
       return true;
@@ -310,7 +310,7 @@
     const disputed = sum.steps.dispute + sum.findings.dispute;
     panel.append(
       h("div", { class: "cr-intro" },
-        h("p", { class: "small" }, "Send steps and findings to a client stakeholder to confirm, dispute or mark as not sure. A pack is a web page or an Excel workbook that works without BPMVIZ. Import the answers here or with Open: confirmed steps become validated, disputed steps are marked disputed, and comments can become open questions."),
+        h("p", { class: "small" }, "Send steps and findings to a client stakeholder to confirm, dispute or mark as not sure. A pack is a web page or an Excel workbook that works without AIxRay. Import the answers here or with Open: confirmed steps become validated, disputed steps are marked disputed, and comments can become open questions."),
         h("div", { class: "form-actions" }, importBtn, makeBtn)),
       h("div", { class: "stat-row" },
         stat(packs.length, "Review packs made", packs.length ? "Latest " + formatDay(packs[packs.length - 1].createdAt) : "None yet"),

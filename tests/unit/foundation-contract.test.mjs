@@ -43,8 +43,8 @@ test("new enumerations list their default first and keep existing values", () =>
   assert.deepEqual(E.assumptionStatus, ["illustrative", "supplied", "observed", "validated"]);
   assert.equal(E.aiTask[E.aiTask.length - 1], "log-mapping");
   assert.equal(schema.label("aiTask", "log-mapping"), "Map event log activities to steps");
-  assert.equal(schema.REVIEW_RESPONSE_ID, "bpmviz.review-response");
-  assert.equal(schema.REVIEW_PACK_ID, "bpmviz.review-pack");
+  assert.equal(schema.REVIEW_RESPONSE_ID, "aixray.review-response");
+  assert.equal(schema.REVIEW_PACK_ID, "aixray.review-pack");
   assert.equal(schema.LIMITS.datasets, 12);
   assert.equal(schema.LIMITS.eventLogBytes, 25 * 1024 * 1024);
   assert.equal(schema.LIMITS.reviewResponseBytes, 2 * 1024 * 1024);
@@ -239,7 +239,7 @@ test("standalone sanitizers report errors and warnings for store commands", () =
 test("review responses are checked against the open engagement", () => {
   const e = validateEngagement(tinyEngagement()).engagement;
   const response = {
-    schema: "bpmviz.review-response", schemaVersion: 1, packId: "pack-1", engagementId: "eng-tiny", engagementRevision: 0, format: "html",
+    schema: "aixray.review-response", schemaVersion: 1, packId: "pack-1", engagementId: "eng-tiny", engagementRevision: 0, format: "html",
     reviewer: { name: "A. Client", role: "Ops lead", organization: "Client" }, submittedAt: "2026-03-04T10:00:00Z", generalComment: "",
     entries: [{ itemRef: "step/m-current/work", verdict: "confirm", comment: "" }, { itemRef: "step/m-current/fix", verdict: "maybe", comment: "Not sure who" },
       { itemRef: "step/m-current/ghost", verdict: "dispute", comment: "" }, { itemRef: "step/m-current/work", verdict: "dispute", comment: "Changed my mind" }]
@@ -252,7 +252,7 @@ test("review responses are checked against the open engagement", () => {
   assert.ok(codes(r).includes("enum.unknown") && codes(r).includes("ref.dangling") && codes(r).includes("review.duplicate"));
   assert.equal(validateReviewResponse(Object.assign({}, response, { engagementId: "eng-other" }), e).ok, false);
   assert.equal(validateReviewResponse(Object.assign({}, response, { schemaVersion: 2 }), e).ok, false);
-  assert.equal(validateReviewResponse({ schema: "bpmviz.engagement" }, e).ok, false);
+  assert.equal(validateReviewResponse({ schema: "aixray.engagement" }, e).ok, false);
   assert.equal(validateReviewResponse(response, null).ok, true, "without an engagement only the file itself is checked");
 });
 
@@ -317,8 +317,8 @@ function strictProblems(node, path, out) {
 
 function mappingResult(mappings, over) {
   return Object.assign({
-    schema: "bpmviz.ai-result", schemaVersion: 1, task: "log-mapping", engagementId: "eng-tiny", engagementRevision: 0,
-    baselineModelId: "m-current", generated: { tool: "bpmviz-ai", provider: "claude", model: "test", surface: "cli", at: "2026-03-01T00:00:00Z", jobId: "j1", plan: "commercial" },
+    schema: "aixray.ai-result", schemaVersion: 1, task: "log-mapping", engagementId: "eng-tiny", engagementRevision: 0,
+    baselineModelId: "m-current", generated: { tool: "aixray-ai", provider: "claude", model: "test", surface: "cli", at: "2026-03-01T00:00:00Z", jobId: "j1", plan: "commercial" },
     dataHandling: { confidentiality: "internal", dataStatus: "demonstration" }, sources: [], notes: "", warnings: [],
     payload: { mappings }
   }, over || {});

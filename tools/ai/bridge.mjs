@@ -36,7 +36,7 @@ const token = () => crypto.randomBytes(24).toString("hex");
 /* The page in helper mode may call its own origin, and says so to the app. */
 export function helperHtml(text) {
   return text.replace("connect-src 'none'", "connect-src 'self'")
-    .replace("<head>", "<head>\n<meta name=\"bpmviz-ai-helper\" content=\"1\">");
+    .replace("<head>", "<head>\n<meta name=\"aixray-ai-helper\" content=\"1\">");
 }
 
 class HttpError extends Error {
@@ -103,7 +103,7 @@ export function createBridge(options) {
   }
 
   function requireSession(req) {
-    const t = req.headers["x-bpmviz-token"];
+    const t = req.headers["x-aixray-token"];
     if (typeof t !== "string" || !sessions.has(t)) throw new HttpError(401, "No session. Open the link printed by npm run serve -- --ai.");
   }
 

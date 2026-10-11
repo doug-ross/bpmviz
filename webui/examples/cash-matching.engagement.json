@@ -1,5 +1,5 @@
 {
-  "schema": "bpmviz.engagement",
+  "schema": "aixray.engagement",
   "schemaVersion": 1,
   "id": "eng-cash-matching",
   "revision": 0,
@@ -19,7 +19,7 @@
     "currency": "USD",
     "disclosure": "Illustrative. Current state from a transaction-matching BPMN; future state and all figures are illustrative.",
     "summary": "Click any node for full detail. Use Before/After toggle to compare states. Drag to pan, scroll or pinch to zoom. \"All\" button fits the whole diagram. Dashed edges = retries, failures, or sampled QA.",
-    "credits": "Sample from the original BPMVIZ race explorer by Doug Ross (MIT License)."
+    "credits": "Sample from the original AIxRay race explorer by Doug Ross (MIT License)."
   },
   "milestones": [
     {

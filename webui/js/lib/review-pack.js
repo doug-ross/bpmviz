@@ -1,5 +1,5 @@
 /*
- * BPMVIZ review-pack: the self-contained HTML review pack.
+ * AIxRay review-pack: the self-contained HTML review pack.
  *
  * buildPackHtml(payload) returns one HTML file that a client stakeholder
  * opens from disk. Its content security policy allows only the pack's own
@@ -8,7 +8,7 @@
  * &, U+2028, U+2029 and every non-ASCII character written as \u escapes, and
  * the page shows it with textContent only. The reviewer answers each item,
  * then "Save response" downloads a review response file
- * (schema bpmviz.review-response); "Load saved response" reads one back so a
+ * (schema aixray.review-response); "Load saved response" reads one back so a
  * review can continue later. The page stores nothing in the browser.
  *
  * PACK_SCRIPT and PACK_STYLE are fixed; their hashes are the constants
@@ -17,7 +17,7 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.reviewPack = factory(); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.reviewPack = factory(); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
@@ -151,7 +151,7 @@
         return;
       }
       const response = {
-        schema: data.responseSchema || "bpmviz.review-response",
+        schema: data.responseSchema || "aixray.review-response",
         schemaVersion: 1,
         packId: data.packId,
         engagementId: data.engagementId,
@@ -175,7 +175,7 @@
     }
 
     function load(response) {
-      if (!response || response.schema !== (data.responseSchema || "bpmviz.review-response")) throw new Error("This file is not a saved review response.");
+      if (!response || response.schema !== (data.responseSchema || "aixray.review-response")) throw new Error("This file is not a saved review response.");
       if (response.packId !== data.packId) throw new Error("This response belongs to a different review pack, so it was not loaded.");
       const r = response.reviewer || {};
       name.input.value = typeof r.name === "string" ? r.name : name.input.value;
@@ -308,7 +308,7 @@
   ].join("\n");
 
   /* SHA-256 of PACK_SCRIPT and PACK_STYLE, base64, as the content security policy needs them. */
-  const PACK_SCRIPT_SHA256 = "XjEvlbdh9hx7oSvljOulSXMRBURi+zM5KcVQShPR05s=";
+  const PACK_SCRIPT_SHA256 = "nH7hkqwzQ5Y1VjAHN6nRuob9fukT3X0wyKexCB7FuCE=";
   const PACK_STYLE_SHA256 = "5dn3qn3UAcR0HU4XWCeOk+9c7kbALAAPPWCgqyff4iA=";
 
   const CSP = "default-src 'none'; script-src 'sha256-" + PACK_SCRIPT_SHA256 + "'; style-src 'sha256-" + PACK_STYLE_SHA256 +

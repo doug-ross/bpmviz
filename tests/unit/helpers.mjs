@@ -22,7 +22,7 @@ export function fixture(name) {
 /** A small valid engagement for tests that need a clean slate. */
 export function tinyEngagement() {
   return {
-    schema: "bpmviz.engagement", schemaVersion: 1, id: "eng-tiny", revision: 0,
+    schema: "aixray.engagement", schemaVersion: 1, id: "eng-tiny", revision: 0,
     createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
     meta: { processName: "Tiny", timeBasis: { unit: "minute", calendar: "calendar", businessMinutesPerDay: 480 } },
     models: [{

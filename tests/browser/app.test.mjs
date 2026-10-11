@@ -30,9 +30,9 @@ async function open(t, hash, opts) {
   const page = await context.newPage();
   const problems = watch(page);
   await page.goto((o.http ? server.url : fileUrl()) + (hash || ""));
-  await page.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && document.getElementById("app"));
+  await page.waitForFunction(() => window.AIxRay && window.AIxRay.app && document.getElementById("app"));
   if (/example=/.test(hash || "")) {
-    await page.waitForFunction(() => !!window.BPMVIZ.app.store);
+    await page.waitForFunction(() => !!window.AIxRay.app.store);
     if (!/ws=(records|value|present)/.test(hash)) await page.waitForSelector(".node");
   }
   t.after(async () => { await context.close(); });
@@ -44,20 +44,20 @@ function clean(problems) {
   assert.deepEqual(problems.external, [], "no requests outside the app's own files");
 }
 
-const engagementOf = page => page.evaluate(() => window.BPMVIZ.app.store.get());
+const engagementOf = page => page.evaluate(() => window.AIxRay.app.store.get());
 
 for (const mode of ["file", "http"]) {
   test("AC-1, AC-11 (" + mode + "): every bundled example loads with no errors and no external requests", async t => {
     const s = await open(t, "", { http: mode === "http" });
     if (!s) return;
-    const ids = await s.page.evaluate(() => window.BPMVIZ.bundledExamples.map(x => x.id));
+    const ids = await s.page.evaluate(() => window.AIxRay.bundledExamples.map(x => x.id));
     assert.deepEqual(ids.sort(), ["cash-matching", "rpa-delivery", "underwriting", "underwriting-current-state"]);
     for (const id of ids) {
       await s.page.click("#open-" + id);
       await s.page.waitForSelector(".node");
       const count = await s.page.$$eval(".pane", els => els.length);
       assert.equal(count, 1, id + " opens on one current-state canvas");
-      await s.page.evaluate(() => { window.BPMVIZ.app.goto("start"); });
+      await s.page.evaluate(() => { window.AIxRay.app.goto("start"); });
     }
     clean(s.problems);
   });
@@ -93,7 +93,7 @@ test("AC-3: excluded outcomes never show complete and untraversed connectors are
   assert.equal(optional.length, 6);
   optional.forEach(c => { assert.match(c, /st-excluded/); assert.doesNotMatch(c, /st-done/); });
   const ids = await s.page.evaluate(() => {
-    const m = window.BPMVIZ.app.store.get().models[0];
+    const m = window.AIxRay.app.store.get().models[0];
     return ["Desk Only", "Negotiate", "No (Treaty Fits)", "Bind Order"].map(l => m.edges.find(e => e.label === l).id);
   });
   const state = id => s.page.getAttribute('.pane path[data-edge="' + id + '"]', "class");
@@ -137,7 +137,7 @@ test("AC-6, AC-10: keyboard selection, capture, filtering and focus return", asy
   await p.fill("#cap-title", "Manual keyword search misses name variants");
   await p.fill("#cap-owner", "UW Ops Manager");
   await p.press("#cap-title", "Enter");
-  await p.waitForFunction(() => window.BPMVIZ.app.store.get().records.length === 1);
+  await p.waitForFunction(() => window.AIxRay.app.store.get().records.length === 1);
   assert.equal(await p.textContent("#drawer-title"), "Check Clearance & Dedup", "the selection is kept after capture");
   assert.equal(await p.textContent("#tab-records-count"), "1");
   assert.equal(await p.getAttribute(node, "aria-label").then(l => /1 linked record/.test(l)), true);
@@ -154,7 +154,7 @@ test("AC-6, AC-10: keyboard selection, capture, filtering and focus return", asy
   const dlg = p.locator("dialog[open]");
   await dlg.locator("select").nth(1).selectOption("in-progress");
   await dlg.getByRole("button", { name: "Save record" }).click();
-  await p.waitForFunction(() => window.BPMVIZ.app.store.get().records[0].status === "in-progress");
+  await p.waitForFunction(() => window.AIxRay.app.store.get().records[0].status === "in-progress");
   assert.match(await p.textContent("#ws-records tbody"), /In progress/);
   clean(s.problems);
 });
@@ -163,7 +163,7 @@ test("AC-7: save and reopen keeps IDs and records; an invalid file leaves the op
   const s = await open(t, "#example=underwriting&scenario=case-3");
   if (!s) return;
   const p = s.page;
-  await p.evaluate(() => window.BPMVIZ.app.dispatch("record/add", { record: {
+  await p.evaluate(() => window.AIxRay.app.dispatch("record/add", { record: {
     kind: "action", title: "Confirm survey lead times", owner: "Risk engineering",
     linkedModelId: "m-current", linkedNodeIds: ["perform-on-site-loss-prevention-survey"], evidenceRefs: ["ev-source-bpmn"] } }));
   const [download] = await Promise.all([p.waitForEvent("download"), p.click("#btn-save")]);
@@ -198,7 +198,7 @@ for (const mode of ["file", "http"]) {
     const s = await open(t, "#example=rpa-delivery", { http: mode === "http" });
     if (!s) return;
     const p = s.page;
-    await p.evaluate(() => window.BPMVIZ.app.dispatch("record/add", { record: { kind: "pain", title: "QA environment is shared", linkedModelId: "m-current", linkedNodeIds: ["qa"] } }));
+    await p.evaluate(() => window.AIxRay.app.dispatch("record/add", { record: { kind: "pain", title: "QA environment is shared", linkedModelId: "m-current", linkedNodeIds: ["qa"] } }));
     await p.waitForFunction(() => /Draft kept in this browser/.test(document.getElementById("save-state").textContent));
     await p.reload();
     await p.waitForSelector("dialog[open]");
@@ -220,7 +220,7 @@ test("AC-8: blocked storage is reported and file save stays available", async t 
   assert.match(await p.textContent("#ws-start"), /recovery drafts are off/);
   await p.click("#open-rpa-delivery");
   await p.waitForSelector(".node");
-  await p.evaluate(() => window.BPMVIZ.app.dispatch("record/add", { record: { kind: "note", title: "Storage test" } }));
+  await p.evaluate(() => window.AIxRay.app.dispatch("record/add", { record: { kind: "note", title: "Storage test" } }));
   await p.waitForTimeout(900);
   assert.match(await p.textContent("#save-state"), /Save to a file/);
   assert.equal(await p.isEnabled("#btn-save"), true);
@@ -240,11 +240,11 @@ for (const [w, hgt] of [[1366, 768], [1920, 1080], [1024, 768]]) {
       const box = await p.locator(sel).boundingBox();
       assert.ok(box && box.x >= 0 && box.y >= 0 && box.x + box.width <= w && box.y + box.height <= hgt, sel + " is on screen");
     }
-    const zoom = await p.evaluate(() => window.BPMVIZ.app.processView.state().zoom);
+    const zoom = await p.evaluate(() => window.AIxRay.app.processView.state().zoom);
     assert.ok(zoom >= 0.7, "default zoom keeps labels legible (" + zoom + ")");
     assert.equal(await p.locator(".overview-note").first().isVisible(), false);
     await p.click("#pv-overview");
-    assert.ok(await p.evaluate(() => window.BPMVIZ.app.processView.state().zoom) < 0.5);
+    assert.ok(await p.evaluate(() => window.AIxRay.app.processView.state().zoom) < 0.5);
     assert.equal(await p.locator(".overview-note").first().isVisible(), true, "overview says labels are too small to read");
     clean(s.problems);
   });
@@ -256,7 +256,7 @@ test("AC-10: playback starts paused, respects reduced motion, and keeps its stat
   const p = s.page;
   assert.equal(await p.getAttribute("#pv-play", "data-playing"), "false");
   await p.waitForTimeout(600);
-  assert.equal(await p.evaluate(() => window.BPMVIZ.app.processView.state().t), 0);
+  assert.equal(await p.evaluate(() => window.AIxRay.app.processView.state().t), 0);
   await p.click("#pv-play");
   assert.equal(await p.getAttribute("#pv-play", "data-playing"), "true");
   await p.selectOption("#pv-scenario", "case-2");
@@ -292,7 +292,7 @@ test("AC-11: untrusted content renders as text and unsafe links are dropped", as
   assert.match(label, /<img src=x/);
   await p.click("#tab-records");
   assert.match(await p.textContent("#ws-records tbody"), /<script>window.__xss=2<\/script>/);
-  assert.equal(await p.evaluate(() => window.BPMVIZ.app.store.get().evidence.find(x => x.id === "ev-bad").link), null);
+  assert.equal(await p.evaluate(() => window.AIxRay.app.store.get().evidence.find(x => x.id === "ev-bad").link), null);
   clean(s.problems);
 });
 
@@ -301,7 +301,7 @@ test("AC-12: the handoff and CSV leave out sensitive records unless included", a
   if (!s) return;
   const p = s.page;
   await p.evaluate(() => {
-    const a = window.BPMVIZ.app;
+    const a = window.AIxRay.app;
     a.dispatch("record/add", { record: { kind: "note", title: "Named staff salary detail", sensitive: true } });
     a.dispatch("record/add", { record: { kind: "action", title: "Book the site survey earlier", owner: "Risk engineering" } });
   });
@@ -330,14 +330,14 @@ test("P1-05: cloning the baseline locks it and tracks changes in the draft", asy
   await p.getByRole("button", { name: "Create draft" }).click();
   await p.waitForFunction(() => document.querySelectorAll(".pane").length === 2);
   assert.match(await p.textContent(".pane-head"), /Locked baseline/);
-  await p.evaluate(() => window.BPMVIZ.app.processView.selectNode("m-current", "scrub-sov-geocode", { tab: "edit" }));
+  await p.evaluate(() => window.AIxRay.app.processView.selectNode("m-current", "scrub-sov-geocode", { tab: "edit" }));
   assert.match(await p.textContent("#pv-side"), /locked baseline/);
-  await p.evaluate(() => window.BPMVIZ.app.processView.selectNode("m-future-draft", "scrub-sov-geocode", { tab: "edit" }));
+  await p.evaluate(() => window.AIxRay.app.processView.selectNode("m-future-draft", "scrub-sov-geocode", { tab: "edit" }));
   await p.getByRole("button", { name: "Insert step after" }).click();
   await p.locator("dialog[open] input").first().fill("Spot-check extracted fields");
   await p.getByRole("button", { name: "Insert step", exact: true }).click();
   await p.waitForSelector(".node.chg-added");
-  const draft = await p.evaluate(() => window.BPMVIZ.app.store.get().models.find(m => m.id === "m-future-draft"));
+  const draft = await p.evaluate(() => window.AIxRay.app.store.get().models.find(m => m.id === "m-future-draft"));
   assert.equal(draft.nodes.length, 41);
   assert.ok(draft.nodes.some(n => n.lineage.change === "added" && n.label === "Spot-check extracted fields"));
   assert.match(await p.textContent(".pane:nth-of-type(3) .pane-head, .pane + .splitter + .pane .pane-head"), /1 added/);

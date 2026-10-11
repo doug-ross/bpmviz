@@ -1,5 +1,5 @@
 /*
- * BPMVIZ pptx: a PowerPoint deck built from an engagement, for people who
+ * AIxRay pptx: a PowerPoint deck built from an engagement, for people who
  * work in client tools rather than the app. deckFromEngagement assembles the
  * slide content from the shared libraries (exporting, value-case); buildDeck
  * turns that content into OOXML parts for lib/zip.js. A missing process
@@ -15,7 +15,7 @@
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"),
       require("./exporting.js"), require("./value-case.js"), require("./zip.js"), require("./ooxml.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.pptx = factory(B.util, B.schema, B.units, B.exporting, B.valueCase, B.zip, B.ooxml);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, exporting, valueCase, zip, ooxml) {
@@ -147,8 +147,8 @@
     "<p:grpSpPr><a:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"0\" cy=\"0\"/><a:chOff x=\"0\" y=\"0\"/><a:chExt cx=\"0\" cy=\"0\"/></a:xfrm></p:grpSpPr>" +
     "</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>";
 
-  const THEME_XML = ooxml.XML_HEAD + "<a:theme xmlns:a=\"" + A_NS + "\" name=\"BPMVIZ\"><a:themeElements>" +
-    "<a:clrScheme name=\"BPMVIZ\">" +
+  const THEME_XML = ooxml.XML_HEAD + "<a:theme xmlns:a=\"" + A_NS + "\" name=\"AIxRay\"><a:themeElements>" +
+    "<a:clrScheme name=\"AIxRay\">" +
     "<a:dk1><a:sysClr val=\"windowText\" lastClr=\"000000\"/></a:dk1><a:lt1><a:sysClr val=\"window\" lastClr=\"FFFFFF\"/></a:lt1>" +
     "<a:dk2><a:srgbClr val=\"2B0A3D\"/></a:dk2><a:lt2><a:srgbClr val=\"EEEEEE\"/></a:lt2>" +
     "<a:accent1><a:srgbClr val=\"5B2A86\"/></a:accent1><a:accent2><a:srgbClr val=\"8456A8\"/></a:accent2>" +
@@ -156,9 +156,9 @@
     "<a:accent5><a:srgbClr val=\"B9A6CC\"/></a:accent5><a:accent6><a:srgbClr val=\"EEEEEE\"/></a:accent6>" +
     "<a:hlink><a:srgbClr val=\"5B2A86\"/></a:hlink><a:folHlink><a:srgbClr val=\"2B0A3D\"/></a:folHlink>" +
     "</a:clrScheme>" +
-    "<a:fontScheme name=\"BPMVIZ\"><a:majorFont><a:latin typeface=\"Ubuntu\"/><a:ea typeface=\"\"/><a:cs typeface=\"\"/></a:majorFont>" +
+    "<a:fontScheme name=\"AIxRay\"><a:majorFont><a:latin typeface=\"Ubuntu\"/><a:ea typeface=\"\"/><a:cs typeface=\"\"/></a:majorFont>" +
     "<a:minorFont><a:latin typeface=\"Ubuntu\"/><a:ea typeface=\"\"/><a:cs typeface=\"\"/></a:minorFont></a:fontScheme>" +
-    "<a:fmtScheme name=\"BPMVIZ\">" +
+    "<a:fmtScheme name=\"AIxRay\">" +
     "<a:fillStyleLst><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill></a:fillStyleLst>" +
     "<a:lnStyleLst><a:ln w=\"6350\"><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill></a:ln><a:ln w=\"12700\"><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill></a:ln><a:ln w=\"19050\"><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill></a:ln></a:lnStyleLst>" +
     "<a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst>" +
@@ -186,8 +186,8 @@
       { id: "rId2", type: ooxml.REL.coreProperties, target: "docProps/core.xml" },
       { id: "rId3", type: ooxml.REL.extendedProperties, target: "docProps/app.xml" }
     ]) });
-    parts.push({ name: "docProps/core.xml", data: ooxml.coreProps({ title: s.title || "Client deck", creator: "BPMVIZ", created: util.nowIso() }) });
-    parts.push({ name: "docProps/app.xml", data: ooxml.appProps({ application: "BPMVIZ" }) });
+    parts.push({ name: "docProps/core.xml", data: ooxml.coreProps({ title: s.title || "Client deck", creator: "AIxRay", created: util.nowIso() }) });
+    parts.push({ name: "docProps/app.xml", data: ooxml.appProps({ application: "AIxRay" }) });
     parts.push({ name: "ppt/presentation.xml", data: presentationXml(slides) });
     parts.push({ name: "ppt/_rels/presentation.xml.rels", data: ooxml.rels(
       [{ id: "rId1", type: ooxml.REL.slideMaster, target: "slideMasters/slideMaster1.xml" }]

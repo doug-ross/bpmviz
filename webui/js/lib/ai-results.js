@@ -1,5 +1,5 @@
 /*
- * BPMVIZ ai-results: the portable AI result file (schema "bpmviz.ai-result").
+ * AIxRay ai-results: the portable AI result file (schema "aixray.ai-result").
  *
  * An AI job (the command line, an agent skill or the local helper) writes one
  * of these files. The app opens it like an engagement, checks it here, lists
@@ -11,13 +11,13 @@
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./validate.js"),
       require("./store.js"), require("./exporting.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.aiResults = factory(B.util, B.schema, B.validate, B.store, B.exporting);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, validate, store, exporting) {
   "use strict";
 
-  const RESULT_SCHEMA = "bpmviz.ai-result";
+  const RESULT_SCHEMA = "aixray.ai-result";
   const RESULT_VERSION = 1;
   const MAX_SUGGESTIONS = 60;
   const MAX_OPERATIONS = 200;
@@ -472,12 +472,12 @@
     const warnings = [];
     const done = result => ({ ok: !errors.length, errors, warnings, result: errors.length ? null : result });
     if (!isAiResult(input)) {
-      errors.push({ path: "schema", message: "This is not a BPMVIZ AI result file (expected schema \"" + RESULT_SCHEMA + "\")." });
+      errors.push({ path: "schema", message: "This is not an AIxRay AI result file (expected schema \"" + RESULT_SCHEMA + "\")." });
       return done(null);
     }
     if (input.schemaVersion !== RESULT_VERSION) {
       errors.push({ path: "schemaVersion", message: Number(input.schemaVersion) > RESULT_VERSION ?
-        "This AI result was made by a newer version of BPMVIZ." : "Unknown AI result version." });
+        "This AI result was made by a newer version of AIxRay." : "Unknown AI result version." });
       return done(null);
     }
     if (!schema.ENUMS.aiTask.includes(input.task)) {
@@ -555,7 +555,7 @@
       engagementId: x.engagementId || null,
       engagementRevision: Number.isInteger(x.engagementRevision) ? x.engagementRevision : null,
       baselineModelId: x.baselineModelId || null,
-      generated: Object.assign({ tool: "bpmviz-ai", provider: "other", model: "", surface: "cli", at: util.nowIso(), jobId: "", plan: "unknown" }, x.generated || {}),
+      generated: Object.assign({ tool: "aixray-ai", provider: "other", model: "", surface: "cli", at: util.nowIso(), jobId: "", plan: "unknown" }, x.generated || {}),
       dataHandling: sanitizeDataHandling(x.dataHandling),
       sources: x.sources || [],
       notes: x.notes || "",

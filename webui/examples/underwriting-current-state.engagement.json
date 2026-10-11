@@ -1,5 +1,5 @@
 {
-  "schema": "bpmviz.engagement",
+  "schema": "aixray.engagement",
   "schemaVersion": 1,
   "id": "eng-underwriting-current",
   "revision": 0,
@@ -19,7 +19,7 @@
     "currency": "USD",
     "disclosure": "Illustrative. The structure comes from the source BPMN; timings, volumes and costs are assumptions.",
     "summary": "Click any activity for business detail. All 5 cases scale the same representative route: clearance passes → in appetite → physical survey required → fac reinsurance required → within authority → broker binds → policy issued. Off-route branches (decline, referral-decline, submission-lost, negotiate loop) are drawn but not scheduled.",
-    "credits": "Sample from the original BPMVIZ race explorer by Doug Ross (MIT License)."
+    "credits": "Sample from the original AIxRay race explorer by Doug Ross (MIT License)."
   },
   "milestones": [
     {

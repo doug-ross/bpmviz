@@ -5,7 +5,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, clear, icon, iconButton, formatDate, announce } = B.dom;
   const { schema, units, replay: replayLib, economics, diagram } = B;
 
@@ -47,7 +47,7 @@
     return units.formatMeasure(m.value, m.unit || "minute", {});
   }
 
-  /* Sections registered with BPMVIZ.ext.registerDrawerSection for one place. */
+  /* Sections registered with AIxRay.ext.registerDrawerSection for one place. */
   function extSections(ctx, where, model, node) {
     if (!B.ext) return [];
     return B.ext.list("drawerSection").filter(s => s.where === where)

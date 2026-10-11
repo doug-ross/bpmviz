@@ -1,12 +1,12 @@
 /*
- * BPMVIZ reviews: client review packs, the answers that come back, and
+ * AIxRay reviews: client review packs, the answers that come back, and
  * applying them to the engagement.
  *
  * A pack lists steps of one model and findings (records) for a client
  * stakeholder to confirm, dispute or mark as not sure. It goes out as a
  * self-contained web page (lib/review-pack.js) or an Excel workbook
  * (workbookSpec here, written by lib/xlsx.js). The answers come back as a
- * review response file (schema bpmviz.review-response) or the filled-in
+ * review response file (schema aixray.review-response) or the filled-in
  * workbook, which responseFromWorkbook turns into the same response shape.
  *
  * prepareApply checks a response against the open engagement and works out
@@ -22,14 +22,14 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./validate.js"), require("./store.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.reviews = factory(B.util, B.schema, B.validate, B.store);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, validate, store) {
   "use strict";
 
   const L = schema.LIMITS;
-  const PACK_SHEET = "bpmviz-pack";
+  const PACK_SHEET = "aixray-pack";
   const REVIEW_SHEET = "Review";
   const ABOUT_SHEET = "About";
   const REVIEW_HEADERS = ["Item ID", "Type", "Lane", "Item", "Details", "Verdict", "Comment"];
@@ -248,7 +248,7 @@
   /**
    * The Excel version of a pack, for xlsx.writeWorkbook: an About sheet with
    * instructions and the reviewer's details, a Review sheet with one row per
-   * item and a Verdict list, and the hidden bpmviz-pack sheet that ties the
+   * item and a Verdict list, and the hidden aixray-pack sheet that ties the
    * workbook to the pack and the engagement.
    */
   function workbookSpec(pack, payload) {
@@ -293,7 +293,7 @@
     ];
     return {
       sheets,
-      props: { title: "Process review: " + text(payload.title), subject: "Client review pack", creator: "BPMVIZ", created: payload.createdAt, modified: payload.createdAt }
+      props: { title: "Process review: " + text(payload.title), subject: "Client review pack", creator: "AIxRay", created: payload.createdAt, modified: payload.createdAt }
     };
   }
 
@@ -360,7 +360,7 @@
    * the Review sheet are matched by their header, so moved columns still
    * read; verdict wording is normalized. The pack reference comes from the
    * hidden sheet, or from the About sheet when a re-save lost the hidden one.
-   * Throws ReviewError when the workbook is not a BPMVIZ review pack.
+   * Throws ReviewError when the workbook is not an AIxRay review pack.
    */
   function responseFromWorkbook(wb) {
     if (!wb || !Array.isArray(wb.sheets)) throw new ReviewError("This file could not be read as a workbook.");
@@ -369,7 +369,7 @@
     const packId = text(hidden.get("packid")).trim() || text(about.get("pack reference")).trim();
     const engagementId = text(hidden.get("engagementid")).trim() || text(about.get("engagement reference")).trim();
     if (!packId || !engagementId) {
-      throw new ReviewError("This workbook is not a BPMVIZ review pack, or its pack reference was removed. Ask the reviewer for the workbook as it was sent, with the About sheet unchanged.");
+      throw new ReviewError("This workbook is not an AIxRay review pack, or its pack reference was removed. Ask the reviewer for the workbook as it was sent, with the About sheet unchanged.");
     }
     let rev = hidden.has("engagementrevision") ? hidden.get("engagementrevision") : about.get("engagement revision");
     if (typeof rev === "string" && /^\d+$/.test(rev.trim())) rev = Number(rev.trim());

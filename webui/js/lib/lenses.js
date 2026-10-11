@@ -1,5 +1,5 @@
 /*
- * BPMVIZ lenses: diagnostic overlays on the process canvas. Every lens states
+ * AIxRay lenses: diagnostic overlays on the process canvas. Every lens states
  * its unit, the population it describes, and how many activities have data.
  * Missing data is reported as missing, never shown as zero.
  */
@@ -7,7 +7,7 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"), require("./replay.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.lenses = factory(B.util, B.schema, B.units, B.replay);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, replayLib) {

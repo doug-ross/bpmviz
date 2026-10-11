@@ -1,5 +1,5 @@
 /*
- * BPMVIZ bpmn-export: writes one model back out as BPMN 2.0 XML, the reverse
+ * AIxRay bpmn-export: writes one model back out as BPMN 2.0 XML, the reverse
  * of lib/bpmn.js. Removed steps and connectors are left out; edge labels
  * become sequence flow names, and no gateway condition is invented. Element
  * IDs reuse the model's source IDs when they are valid XML names, and are
@@ -10,7 +10,7 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./layout.js"), require("./ooxml.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.bpmnExport = factory(B.util, B.schema, B.layout, B.ooxml);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, layout, ooxml) {
@@ -146,7 +146,7 @@
     return ooxml.XML_HEAD +
       "<definitions xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" " +
       "xmlns:omgdc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:omgdi=\"http://www.omg.org/spec/DD/20100524/DI\" " +
-      "id=\"Definitions_1\" targetNamespace=\"http://bpmviz.local/bpmn\">" +
+      "id=\"Definitions_1\" targetNamespace=\"http://aixray.local/bpmn\">" +
       "<collaboration id=\"" + collaborationId + "\"><participant id=\"" + participantId + "\" name=\"" + ooxml.escapeXml(model.name || "") +
       "\" processRef=\"" + processId + "\"/></collaboration>" +
       processXml +

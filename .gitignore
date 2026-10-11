@@ -5,14 +5,14 @@ test-results/
 Thumbs.db
 
 # Personal Claude Code settings and skills stay on your machine.
-# Only the BPMVIZ skills in .claude/skills/bpmviz-*/ are shared.
+# Only the AIxRay skills in .claude/skills/aixray-*/ are shared.
 .claude/*
 !.claude/skills/
 .claude/skills/*
-!.claude/skills/bpmviz-*/
+!.claude/skills/aixray-*/
 
 # AI working files and results hold client material; keep them out of the repository.
 *.ai-result.json
-bpmviz-*.draft.json
+aixray-*.draft.json
 *.with-ai.engagement.json
 !tests/fixtures/ai/*.ai-result.json

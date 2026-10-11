@@ -17,15 +17,15 @@ import { main as cli, readActivities } from "../../tools/ai/cli.mjs";
 const ai = lib("ai-results");
 const { validateEngagement } = lib("validate");
 const fakes = path.join(root, "tests", "fixtures", "ai");
-const ENV_KEYS = ["BPMVIZ_CLAUDE_BIN", "BPMVIZ_CODEX_BIN", "FAKE_AI_MODE", "FAKE_AI_STATE", "FAKE_AI_LOG", "FAKE_CLAUDE_AUTH", "FAKE_CODEX_AUTH"];
+const ENV_KEYS = ["AIXRAY_CLAUDE_BIN", "AIXRAY_CODEX_BIN", "FAKE_AI_MODE", "FAKE_AI_STATE", "FAKE_AI_LOG", "FAKE_CLAUDE_AUTH", "FAKE_CODEX_AUTH"];
 const saved = {};
 let scratch;
 
 beforeEach(() => {
   ENV_KEYS.forEach(k => { saved[k] = process.env[k]; delete process.env[k]; });
-  scratch = fs.mkdtempSync(path.join(os.tmpdir(), "bpmviz-logmap-"));
-  process.env.BPMVIZ_CLAUDE_BIN = path.join(fakes, "fake-claude.mjs");
-  process.env.BPMVIZ_CODEX_BIN = path.join(fakes, "fake-codex.mjs");
+  scratch = fs.mkdtempSync(path.join(os.tmpdir(), "aixray-logmap-"));
+  process.env.AIXRAY_CLAUDE_BIN = path.join(fakes, "fake-claude.mjs");
+  process.env.AIXRAY_CODEX_BIN = path.join(fakes, "fake-codex.mjs");
   process.env.FAKE_AI_STATE = path.join(scratch, "state");
   process.env.FAKE_AI_LOG = path.join(scratch, "log.jsonl");
 });
@@ -151,7 +151,7 @@ test("Codex maps activities too, and client material on a consumer plan is refus
 
 test("the helper accepts a log-mapping job and passes the activity names to the runner", async () => {
   const calls = [];
-  const fakeRun = async o => { calls.push(o); return { ok: true, rounds: 0, errors: [], result: { schema: "bpmviz.ai-result", task: o.task } }; };
+  const fakeRun = async o => { calls.push(o); return { ok: true, rounds: 0, errors: [], result: { schema: "aixray.ai-result", task: o.task } }; };
   const server = http.createServer((req, res) => bridge.handler(req, res));
   await new Promise(r => server.listen(0, "127.0.0.1", r));
   const port = server.address().port;
@@ -160,7 +160,7 @@ test("the helper accepts a log-mapping job and passes the activity names to the 
     const text = body === undefined ? undefined : JSON.stringify(body);
     const headers = { Host: "127.0.0.1:" + port };
     if (text !== undefined) { headers["Content-Type"] = "application/json"; headers["Content-Length"] = Buffer.byteLength(text); }
-    if (token) headers["X-BPMVIZ-Token"] = token;
+    if (token) headers["X-AIxRay-Token"] = token;
     const req = http.request({ host: "127.0.0.1", port, method, path: p, headers }, res => {
       const chunks = [];
       res.on("data", c => chunks.push(c));
@@ -267,7 +267,7 @@ test("the command line reads activity names from text, CSV and the log itself, a
   assert.equal(result.baselineModelId, "m-current");
   assert.ok(result.payload.mappings.some(m => m.activity === "Scrub SOV & Geocode" && m.nodeId === "scrub-sov-geocode"));
 
-  const payload = path.join(scratch, "bpmviz-log-mapping.draft.json");
+  const payload = path.join(scratch, "aixray-log-mapping.draft.json");
   fs.writeFileSync(payload, JSON.stringify({ payload: { mappings: [{ activity: "Email the broker", nodeId: null, confidence: "low", rationale: "No step sends email." }] }, notes: "", warnings: [] }));
   const wrapped = path.join(scratch, "wrapped.json");
   process.stderr.write = () => true;

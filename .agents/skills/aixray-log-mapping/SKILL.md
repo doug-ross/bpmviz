@@ -1,11 +1,11 @@
 ---
-name: bpmviz-log-mapping
-description: Suggest which process step each activity name in an event log belongs to, and save the suggestions as an AI result file to load in the BPMVIZ event-log import. Use only when the user asks for $bpmviz-log-mapping.
+name: aixray-log-mapping
+description: Suggest which process step each activity name in an event log belongs to, and save the suggestions as an AI result file to load in the AIxRay event-log import. Use only when the user asks for $aixray-log-mapping.
 ---
 
-# Map event log activities to BPMVIZ steps
+# Map event log activities to AIxRay steps
 
-Work from the BPMVIZ repository folder. Do not change the engagement file, the activity names file or any file in the repository; write only the working file and the result file named below. The activity names come from a client's event log, so they are client material.
+Work from the AIxRay repository folder. Do not change the engagement file, the activity names file or any file in the repository; write only the working file and the result file named below. The activity names come from a client's event log, so they are client material.
 
 ## 1. Check the data-handling rules before reading anything
 
@@ -23,16 +23,16 @@ Add `--baseline <model id>` when the user names the model to map to, and `--acti
 
 ## 3. Draft
 
-Read `tools/prompts/ai-common.md` and `tools/prompts/ai-log-mapping.md` and follow them. The payload shape is `$defs.logMapping` in `webui/schema/ai-result.schema.json`: every field is required, with `null` when an activity has no step. Write one JSON object to `bpmviz-log-mapping.draft.json`:
+Read `tools/prompts/ai-common.md` and `tools/prompts/ai-log-mapping.md` and follow them. The payload shape is `$defs.logMapping` in `webui/schema/ai-result.schema.json`: every field is required, with `null` when an activity has no step. Write one JSON object to `aixray-log-mapping.draft.json`:
 
     { "payload": { "mappings": [ ... ] }, "notes": "...", "warnings": [ ... ] }
 
 ## 4. Check and save
 
-    npm run ai -- wrap log-mapping --in <engagement file> --activities <activity names file> --payload bpmviz-log-mapping.draft.json --remove-payload --out <name>.log-mapping.ai-result.json --with codex --plan <plan> <the --baseline and confirmation flags used above>
+    npm run ai -- wrap log-mapping --in <engagement file> --activities <activity names file> --payload aixray-log-mapping.draft.json --remove-payload --out <name>.log-mapping.ai-result.json --with codex --plan <plan> <the --baseline and confirmation flags used above>
 
 Fix any problems it lists and run it again, at most three times. Once the result is written, the draft file is deleted.
 
 ## 5. Hand over
 
-Tell the user the result file name, how many mappings it holds, how many activities stay unmapped and the warnings it printed. They open the engagement in BPMVIZ, choose More actions, Import an event log, pick the log, and in the activities step choose Load an AI mapping result. Each suggested mapping still needs its own tick before the log is added.
+Tell the user the result file name, how many mappings it holds, how many activities stay unmapped and the warnings it printed. They open the engagement in AIxRay, choose More actions, Import an event log, pick the log, and in the activities step choose Load an AI mapping result. Each suggested mapping still needs its own tick before the log is added.

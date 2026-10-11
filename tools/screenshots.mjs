@@ -20,8 +20,8 @@ async function page(hash, opts) {
   const p = await context.newPage();
   const problems = watch(p);
   await p.goto(fileUrl() + hash);
-  await p.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app);
-  if (/example=/.test(hash)) await p.waitForFunction(() => !!window.BPMVIZ.app.store);
+  await p.waitForFunction(() => window.AIxRay && window.AIxRay.app);
+  if (/example=/.test(hash)) await p.waitForFunction(() => !!window.AIxRay.app.store);
   await p.waitForTimeout(600);
   return { p, context, problems };
 }
@@ -33,7 +33,7 @@ async function shot(p, name) {
 }
 
 const seedUnderwriting = () => {
-  const a = window.BPMVIZ.app;
+  const a = window.AIxRay.app;
   a.dispatch("evidence/add", { evidence: { title: "Workshop interview: underwriting operations", locator: "Session 1, clearance and SOV intake", extractedFact: "SOV cleanup takes four to eight hours on large schedules; five brokers send most incomplete SOVs.", status: "validated", reviewer: "UW Ops Manager", reviewDate: "2026-09-24" } });
   const ev = a.store.get().evidence.find(e => e.title.startsWith("Workshop interview")).id;
   const add = r => a.dispatch("record/add", { record: Object.assign({ linkedModelId: "m-current" }, r) });
@@ -58,26 +58,26 @@ const seedUnderwriting = () => {
   const { p, context, problems } = await page("#example=underwriting&scenario=case-3");
   await p.evaluate(seedUnderwriting);
   await p.evaluate(() => {
-    const a = window.BPMVIZ.app;
+    const a = window.AIxRay.app;
     a.view.t = 8200;
     a.processView.selectNode("m-current", "obtain-fac-binder-from-market", { center: true, silent: true });
   });
-  await p.evaluate(() => window.BPMVIZ.app.processView.camera.focusOn(window.BPMVIZ.app.processView.panes[0].diagram, "obtain-fac-binder-from-market", 0.8));
+  await p.evaluate(() => window.AIxRay.app.processView.camera.focusOn(window.AIxRay.app.processView.panes[0].diagram, "obtain-fac-binder-from-market", 0.8));
   await p.click("#pv-scrub");
   await p.evaluate(() => { const s = document.getElementById("pv-scrub"); s.value = String(Math.round(8200 / 15360 * 1000)); s.dispatchEvent(new Event("input")); });
   await shot(p, "02-process-step.png");
-  await p.evaluate(() => window.BPMVIZ.app.processView.selectNode("m-current", "scrub-sov-geocode", { tab: "capture", center: true, silent: true }));
+  await p.evaluate(() => window.AIxRay.app.processView.selectNode("m-current", "scrub-sov-geocode", { tab: "capture", center: true, silent: true }));
   await p.check("input[name=cap-kind][value=question]", { force: true });
   await p.fill("#cap-title", "Which brokers send most of the incomplete SOVs?");
   await p.fill("#cap-owner", "UW Ops Manager");
   await p.evaluate(() => { document.getElementById("pv-side").scrollTop = 230; });
   await shot(p, "03-capture.png");
-  await p.evaluate(() => window.BPMVIZ.app.processView.closeDrawer());
+  await p.evaluate(() => window.AIxRay.app.processView.closeDrawer());
   await p.selectOption("#pv-display", "c:m-future");
   await p.selectOption("#pv-lens", "time");
   await p.evaluate(() => { const s = document.getElementById("pv-scrub"); s.value = String(Math.round(6800 / 15360 * 1000)); s.dispatchEvent(new Event("input")); });
   await p.evaluate(() => {
-    const pv = window.BPMVIZ.app.processView;
+    const pv = window.AIxRay.app.processView;
     pv.camera.readable();
     pv.camera.focusOn(pv.panes[0].diagram, "risk-insights-reunited", 0.7);
   });
@@ -97,8 +97,8 @@ const seedUnderwriting = () => {
 {
   const { p, context } = await page("#example=rpa-delivery&scenario=sc-pay004");
   await p.selectOption("#pv-lens", "sla");
-  await p.evaluate(() => window.BPMVIZ.app.processView.selectNode("m-current", "developBot", { center: true, silent: true }));
-  await p.evaluate(() => window.BPMVIZ.app.processView.camera.focusOn(window.BPMVIZ.app.processView.panes[0].diagram, "qa", 0.85));
+  await p.evaluate(() => window.AIxRay.app.processView.selectNode("m-current", "developBot", { center: true, silent: true }));
+  await p.evaluate(() => window.AIxRay.app.processView.camera.focusOn(window.AIxRay.app.processView.panes[0].diagram, "qa", 0.85));
   await shot(p, "04-rework-sla.png");
   await context.close();
 }
@@ -118,7 +118,7 @@ const seedUnderwriting = () => {
 {
   const { p, context } = await page("#example=underwriting-current-state");
   await p.evaluate(() => {
-    const a = window.BPMVIZ.app;
+    const a = window.AIxRay.app;
     const { modelId } = a.store.dispatch("model/clone", { sourceModelId: "m-current", name: "Future state draft" });
     const draft = () => a.store.get().models.find(m => m.id === modelId);
     const edge = draft().edges.find(e => e.from === "scrub-sov-geocode");
@@ -130,7 +130,7 @@ const seedUnderwriting = () => {
   });
   await p.waitForTimeout(400);
   await p.evaluate(() => {
-    const pv = window.BPMVIZ.app.processView;
+    const pv = window.AIxRay.app.processView;
     pv.selectNode("m-future-draft", "scrub-sov-geocode", { center: true, silent: true });
   });
   await shot(p, "11-future-draft.png");
@@ -141,7 +141,7 @@ const seedUnderwriting = () => {
 {
   const { p, context } = await page("#example=rpa-delivery&scenario=sc-stm005");
   await p.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
-  await p.evaluate(() => window.BPMVIZ.app.processView.camera.readable());
+  await p.evaluate(() => window.AIxRay.app.processView.camera.readable());
   await shot(p, "12-dark.png");
   await context.close();
 }
@@ -173,8 +173,8 @@ const seedUnderwriting = () => {
   const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
   const p = await context.newPage();
   await p.goto(bridge.launchUrl().replace("#ai=", "#example=underwriting-current-state&ws=records&ai="));
-  await p.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && window.BPMVIZ.app.store);
-  await p.evaluate(() => window.BPMVIZ.app.dispatch("meta/update", { patch: { confidentiality: "client-confidential", dataStatus: "supplied" } }));
+  await p.waitForFunction(() => window.AIxRay && window.AIxRay.app && window.AIxRay.app.store);
+  await p.evaluate(() => window.AIxRay.app.dispatch("meta/update", { patch: { confidentiality: "client-confidential", dataStatus: "supplied" } }));
   await p.click("#rv-ai");
   await p.waitForSelector("#ai-start");
   await shot(p, "14-ai-task.png");
@@ -187,7 +187,7 @@ const seedUnderwriting = () => {
 // does (mining.aggregate followed by the dataset/import command).
 async function importSampleLog(p, csvText, opts) {
   return p.evaluate(({ csvText, opts }) => {
-    const B = window.BPMVIZ;
+    const B = window.AIxRay;
     const app = B.app;
     const e = app.store.get();
     const model = e.models.find(m => m.id === opts.modelId);
@@ -239,7 +239,7 @@ async function importSampleLog(p, csvText, opts) {
 {
   const { p, context } = await page("#example=underwriting&ws=records");
   await p.evaluate(() => {
-    const d = window.BPMVIZ.app.dispatch;
+    const d = window.AIxRay.app.dispatch;
     d("node/update", { modelId: "m-current", nodeId: "scrub-sov-geocode", patch: { measures: { touchEffort: { value: 30, unit: "minute" } } } });
     d("node/update", { modelId: "m-current", nodeId: "appetite-capacity-triage", patch: { measures: { touchEffort: { value: 1, unit: "hour" } } } });
     d("record/add", { record: { kind: "opportunity", title: "Standard SOV template for the top five brokers", linkedModelId: "m-current",

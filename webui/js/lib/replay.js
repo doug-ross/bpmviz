@@ -1,5 +1,5 @@
 /*
- * BPMVIZ replay: shows a scenario's explicit visits and transitions on a model.
+ * AIxRay replay: shows a scenario's explicit visits and transitions on a model.
  *
  * This is a replay of recorded or supplied timings. It does not execute
  * gateway logic or BPMN semantics.
@@ -15,7 +15,7 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.replay = factory(B.util, B.schema, B.units);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units) {

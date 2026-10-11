@@ -1,15 +1,15 @@
 /*
- * BPMVIZ opportunity-value: the value case editor on the opportunity dialog,
+ * AIxRay opportunity-value: the value case editor on the opportunity dialog,
  * the Matrix and Waves opportunity views, the Annual value and Wave columns,
  * the Business case present mode, and the value summary on the handoff.
  * Owned by the value case and business case feature (value slice); see
- * docs/extensions.md and docs/business-case.md. Registers with BPMVIZ.ext and
- * BPMVIZ.store.registerCommands from this file; the figures themselves come
+ * docs/extensions.md and docs/business-case.md. Registers with AIxRay.ext and
+ * AIxRay.store.registerCommands from this file; the figures themselves come
  * from lib/value-case.js and lib/business-case.js.
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, s } = B.dom;
   const { schema, units, util, valueCase, businessCase, datasetQuery, exporting } = B;
   const { field, textarea } = B.forms;

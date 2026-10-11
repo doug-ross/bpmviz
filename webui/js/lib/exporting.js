@@ -1,12 +1,12 @@
 /*
- * BPMVIZ exporting: engagement JSON, record CSV and the client handoff summary.
+ * AIxRay exporting: engagement JSON, record CSV and the client handoff summary.
  * Records marked sensitive are left out unless the caller asks for them.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"), require("./economics.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.exporting = factory(B.util, B.schema, B.units, B.economics);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics) {
@@ -38,7 +38,7 @@
 
   const PROVIDER_NAMES = { claude: "Claude", codex: "ChatGPT" };
 
-  /* "AI draft (Claude)" or "AI draft" when the assistant is not one BPMVIZ knows. */
+  /* "AI draft (Claude)" or "AI draft" when the assistant is not one AIxRay knows. */
   function aiPhrase(start, generated) {
     const who = PROVIDER_NAMES[generated && generated.provider];
     return start + (who ? " (" + who + ")" : "");
