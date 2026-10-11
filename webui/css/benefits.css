@@ -3,3 +3,5 @@
 .benefits-pair { padding-top: var(--space-4); margin-top: var(--space-4); border-top: 1px solid var(--border); }
 .benefits-pair:first-child { padding-top: 0; margin-top: 0; border-top: 0; }
 .benefits-pair .facts { margin-bottom: var(--space-3); }
+.benefits-pair-title { font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--ink); margin: 0 0 var(--space-1); }
+.benefits-sub { margin-top: var(--space-4); }

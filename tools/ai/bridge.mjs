@@ -52,7 +52,7 @@ function send(res, status, body) {
 function readBody(req, limit) {
   return new Promise((resolve, reject) => {
     const declared = Number(req.headers["content-length"]);
-    if (declared > limit) { reject(new HttpError(413, "Too large.")); req.resume(); return; }
+    if (declared > limit) { reject(new HttpError(413, "This is too large to send to the AI helper.")); req.resume(); return; }
     // Past the limit the rest is read and dropped, so the reply can still be a 413.
     let chunks = [];
     let size = 0;
@@ -61,7 +61,7 @@ function readBody(req, limit) {
       if (size > limit) chunks = null;
       else if (chunks) chunks.push(chunk);
     });
-    req.on("end", () => { if (chunks) resolve(Buffer.concat(chunks)); else reject(new HttpError(413, "Too large.")); });
+    req.on("end", () => { if (chunks) resolve(Buffer.concat(chunks)); else reject(new HttpError(413, "This is too large to send to the AI helper.")); });
     req.on("error", reject);
   });
 }
@@ -104,7 +104,7 @@ export function createBridge(options) {
 
   function requireSession(req) {
     const t = req.headers["x-aixray-token"];
-    if (typeof t !== "string" || !sessions.has(t)) throw new HttpError(401, "No session. Open the link printed by npm run serve -- --ai.");
+    if (typeof t !== "string" || !sessions.has(t)) throw new HttpError(401, "This tab is not connected. Open the link printed by npm run serve -- --ai.");
   }
 
   async function status() {
@@ -133,11 +133,11 @@ export function createBridge(options) {
     let engagement = null;
     if (task !== "extract") {
       const v = validate.validateEngagement(body.engagement);
-      if (!v.ok) return { ok: false, code: "input.engagement", message: "The engagement did not pass validation.", errors: v.errors.slice(0, 10) };
+      if (!v.ok) return { ok: false, code: "input.engagement", message: "The open project did not pass the checks, so nothing was sent.", errors: v.errors.slice(0, 10) };
       engagement = v.engagement;
     }
     const names = Array.isArray(body.sourceNames) ? body.sourceNames.slice(0, SOURCE_LIMITS.files + 1).map(n => String(n).slice(0, 260)) : [];
-    if (names.length > SOURCE_LIMITS.files) return { ok: false, code: "input.source", message: "At most " + SOURCE_LIMITS.files + " sources per task." };
+    if (names.length > SOURCE_LIMITS.files) return { ok: false, code: "input.source", message: "Choose at most " + SOURCE_LIMITS.files + " documents per task." };
     if (task === "extract" && !names.length) return { ok: false, code: "input.missing", message: "Choose at least one document." };
     const taskOptions = cleanTaskOptions(task, body.taskOptions);
     if (task === "log-mapping" && !taskOptions.activities.length) return { ok: false, code: "input.missing", message: "There are no activity names to map." };
@@ -164,7 +164,7 @@ export function createBridge(options) {
   }
 
   async function putSource(req, job, index) {
-    if (job.state !== "pending") throw new HttpError(409, "The task has started.");
+    if (job.state !== "pending") throw new HttpError(409, "The task has already started.");
     if (!/^application\/octet-stream\b/i.test(req.headers["content-type"] || "")) throw new HttpError(415, "Expected application/octet-stream.");
     if (!Number.isInteger(index) || index < 0 || index >= job.names.length) throw new HttpError(404, "No such source.");
     const room = Math.min(SOURCE_LIMITS.fileBytes, SOURCE_LIMITS.totalBytes - job.bytes + (job.sources[index] ? job.sources[index].length : 0));
@@ -177,7 +177,7 @@ export function createBridge(options) {
   function startJob(job) {
     if (job.state !== "pending") return { ok: false, code: "state", message: "The task has already started." };
     if (running) return { ok: false, code: "busy", message: "Another AI task is running." };
-    if (job.sources.some(s => s === null)) return { ok: false, code: "input.source", message: "Some documents were not uploaded." };
+    if (job.sources.some(s => s === null)) return { ok: false, code: "input.source", message: "Some documents did not reach the AI helper. Start the task again." };
     job.state = "running";
     job.controller = new AbortController();
     running = job;
@@ -219,7 +219,7 @@ export function createBridge(options) {
     if (route[0] !== "jobs") throw new HttpError(404, "Not found.");
     if (route.length === 1 && req.method === "POST") return send(res, 200, await createJobRoute(await readJson(req)));
     const job = jobs.get(route[1]);
-    if (!job) throw new HttpError(404, "No such task.");
+    if (!job) throw new HttpError(404, "The AI helper no longer has this task. Start it again.");
     if (route.length === 2 && req.method === "GET") return send(res, 200, jobView(job, url.searchParams.get("since")));
     if (route.length === 2 && req.method === "DELETE") {
       if (job.state === "running") job.controller.abort();

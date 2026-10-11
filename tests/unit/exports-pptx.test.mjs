@@ -67,7 +67,7 @@ test("deckFromEngagement builds a title, scope, opportunities, value, process an
   assert.ok(kinds.some(k => /^table:Value by wave/.test(k)));
   assert.ok(kinds.some(k => /^image:Process/.test(k)));
   assert.equal(spec.slides[spec.slides.length - 1].kind, "bullets");
-  assert.equal(spec.slides[spec.slides.length - 1].title, "Disclosure");
+  assert.equal(spec.slides[spec.slides.length - 1].title, "About this data");
   const opportunities = spec.slides.find(s => s.title === "Opportunities");
   assert.deepEqual(opportunities.headers, ["Rank", "Opportunity", "Value", "Wave"]);
   assert.match(opportunities.rows[0][2], /inputs\)$/, "every modeled figure carries its basis");
@@ -96,8 +96,8 @@ test("sensitive records and unreviewed AI drafts are left out unless asked for",
   const spec = pptx.deckFromEngagement(e, {});
   assert.ok(!spec.slides.some(s => s.kind === "table" && (s.rows || []).some(r => r[0] === "Sensitive pain point")));
   const disclosure = spec.slides[spec.slides.length - 1];
-  assert.ok(disclosure.lines.some(l => /1 sensitive record is not included/.test(l)));
-  assert.ok(disclosure.lines.some(l => /1 AI-drafted record is not yet reviewed/.test(l)));
+  assert.ok(disclosure.lines.some(l => /1 sensitive finding is left out of this deck/.test(l)));
+  assert.ok(disclosure.lines.some(l => /1 AI draft is not yet reviewed and left out of this deck/.test(l)));
   const spec2 = pptx.deckFromEngagement(e, { includeSensitive: true, includeUnreviewedAi: true });
   assert.ok(spec2.slides.some(s => s.kind === "table" && (s.rows || []).some(r => r[0] === "Sensitive pain point")));
 });
@@ -107,9 +107,9 @@ test("tables paginate at 10 rows, and notes attach to the last page", () => {
   for (let i = 0; i < 23; i++) records.push({ id: "pain-" + i, kind: "pain", title: "Pain " + i, linkedModelId: "m-current", linkedNodeIds: ["work"] });
   const e = engagement(records);
   const spec = pptx.deckFromEngagement(e, {});
-  const findings = spec.slides.filter(s => /^Findings/.test(s.title));
+  const findings = spec.slides.filter(s => /^Pain points/.test(s.title));
   assert.equal(findings.length, 3);
-  assert.equal(findings[0].title, "Findings (1 of 3)");
+  assert.equal(findings[0].title, "Pain points (1 of 3)");
   assert.equal(findings[0].rows.length, 10);
   assert.equal(findings[1].rows.length, 10);
   assert.equal(findings[2].rows.length, 3);

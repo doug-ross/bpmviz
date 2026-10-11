@@ -2889,12 +2889,12 @@
     "warnings": [
       {
         "code": "semantic.gateway",
-        "message": "Current state: gateway \"Authority Sign-off?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Current state: gateway \"Authority Sign-off?\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "authority-sign-off"
       },
       {
         "code": "semantic.gateway",
-        "message": "Current state: gateway \"Broker Response\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Current state: gateway \"Broker Response\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "broker-response"
       },
       {

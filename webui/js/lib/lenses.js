@@ -18,10 +18,10 @@
     { id: "time", label: "Elapsed time" },
     { id: "effort", label: "Human effort" },
     { id: "waits", label: "Waits" },
-    { id: "handoffs", label: "Handoffs" },
+    { id: "handoffs", label: "Handovers between lanes" },
     { id: "sla", label: "SLA status" },
-    { id: "bottlenecks", label: "Tagged bottlenecks" },
-    { id: "evidence", label: "Evidence coverage" }
+    { id: "bottlenecks", label: "Suspected bottlenecks" },
+    { id: "evidence", label: "Sources" }
   ];
 
   const REGISTERED = new Map();
@@ -101,17 +101,17 @@
         result.nodes[v.n.id] = { level: levelFor(v.total, max), text: units.formatDuration(v.total, tb) };
       });
       const have = values.filter(v => v.has).length;
-      result.description = "Elapsed time spent in each activity, summed over repeat visits.";
+      result.description = "How long the case spends in each step, with repeat visits added together.";
       result.unit = units.describeTimeBasis(tb);
       result.population = "One case: " + scenarioName + ".";
-      result.coverage = { have, total: inScope.length, text: coverageText(have, inScope.length, "activities in the scenario have timing") };
+      result.coverage = { have, total: inScope.length, text: coverageText(have, inScope.length, "steps in the scenario have timings") };
       result.legend = scaleLegend(units.formatDuration(max, tb));
       if (rp) {
         const span = replayLib.spanSummary(rp);
         if (span.sumOfVisits > span.span + 1e-6) {
-          result.notes.push("Cycle span is " + units.formatDuration(span.span, tb) +
-            ". Activity durations add up to " + units.formatDuration(span.sumOfVisits, tb) +
-            " because parallel work overlaps; the span is the elapsed figure.");
+          result.notes.push("The case takes " + units.formatDuration(span.span, tb) +
+            " from start to finish. The step times add up to " + units.formatDuration(span.sumOfVisits, tb) +
+            " because parallel work overlaps, so " + units.formatDuration(span.span, tb) + " is the elapsed time.");
         }
       }
       return result;
@@ -125,13 +125,13 @@
         result.nodes[v.n.id] = { level: levelFor(v.minutes, max), text: units.formatDuration(v.minutes, null, { precise: true }) };
       });
       const freeText = tasks.filter(n => effortMinutes(n) === null && n.details && n.details.effort).length;
-      result.description = "Typed human touch effort per case (person time, which can exceed elapsed time).";
+      result.description = "Hands-on time people spend on each step per case. It can be more than the elapsed time.";
       result.unit = "Person hours and minutes.";
-      result.population = "Per case, as recorded on each activity.";
-      result.coverage = { have: typed.length, total: tasks.length, text: coverageText(typed.length, tasks.length, "activities have a typed effort measure") };
+      result.population = "Per case, as entered on each step.";
+      result.coverage = { have: typed.length, total: tasks.length, text: coverageText(typed.length, tasks.length, "steps have an effort figure") };
       result.legend = typed.length ? scaleLegend(units.formatDuration(max, null, { precise: true })) : [];
-      if (!typed.length) result.notes.push("No typed effort measures yet. Add them in the activity editor.");
-      if (freeText) result.notes.push(freeText + " activities have free-text effort notes that are not typed measures.");
+      if (!typed.length) result.notes.push("No effort figures yet. Select a step and add one on its Edit step tab.");
+      if (freeText) result.notes.push(freeText + (freeText === 1 ? " step has" : " steps have") + " free-text effort notes, which the lens cannot use as figures.");
       return result;
     }
 
@@ -145,15 +145,15 @@
           result.nodes[n.id] = { category: w, text: schema.label("waitType", w) + (total ? ", " + units.formatDuration(total, tb) : "") };
         }
       });
-      result.description = "Activities tagged as waiting: queue, external party, or other delay.";
-      result.unit = "Category, with elapsed time in the selected scenario.";
-      result.population = "Tags recorded on each activity.";
-      result.coverage = { have: declared, total: tasks.length, text: coverageText(declared, tasks.length, "activities have a wait type recorded") };
+      result.description = "Steps marked as waiting: in a queue, on an external party, or for another reason.";
+      result.unit = "Type of wait, with the elapsed time in the selected scenario.";
+      result.population = "Wait types entered on each step.";
+      result.coverage = { have: declared, total: tasks.length, text: coverageText(declared, tasks.length, "steps have a wait type") };
       result.legend = [
-        { category: "queue", label: "Queue wait" }, { category: "external", label: "External party wait" },
+        { category: "queue", label: "Waiting in a queue" }, { category: "external", label: "Waiting on an external party" },
         { category: "other", label: "Other delay" }
       ];
-      if (!declared) result.notes.push("No wait types recorded yet. Set them in the activity editor.");
+      if (!declared) result.notes.push("No wait types yet. Select a step and set one on its Edit step tab.");
       return result;
     }
 
@@ -167,14 +167,14 @@
         if (!traversed) return;
         count += traversed;
         result.edges[e.id] = { level: 4 };
-        result.nodes[e.to] = { category: "handoff", text: "Receives a handoff" };
+        result.nodes[e.to] = { category: "handoff", text: "Receives work from another lane" };
       });
-      result.description = "Connectors that move work to a different swimlane.";
-      result.unit = "Count of handoffs.";
-      result.population = useRun ? "Traversed in " + scenarioName + "." : "Every connector in the model (no scenario timing).";
-      result.coverage = { have: count, total: null, text: count + (useRun ? " handoffs traversed" : " cross-lane connectors") };
-      result.legend = [{ category: "handoff", label: "Receives a handoff" }];
-      result.notes.push("Boundary: a connector whose source and target are in different swimlanes.");
+      result.description = "Connectors where work passes to a different lane.";
+      result.unit = "Number of handovers.";
+      result.population = useRun ? "Handovers the case makes in " + scenarioName + "." : "Every connector in the process (no timing recorded).";
+      result.coverage = { have: count, total: null, text: count + (useRun ? (count === 1 ? " handover in the scenario" : " handovers in the scenario") : (count === 1 ? " connector crosses lanes" : " connectors cross lanes")) };
+      result.legend = [{ category: "handoff", label: "Receives work from another lane" }];
+      result.notes.push("A handover is any connector between steps in different lanes.");
       return result;
     }
 
@@ -188,18 +188,18 @@
         const category = sla ? sla.state : "none";
         result.nodes[n.id] = {
           category,
-          text: sla ? Math.round(sla.pct * 100) + "% of SLA target" : "SLA target set, not started"
+          text: sla ? Math.round(sla.pct * 100) + "% of SLA target" : "Has an SLA target, not started"
         };
       });
-      result.description = "Elapsed time in the current visit against each activity's SLA target.";
-      result.unit = "Percent of the SLA target at the playhead.";
-      result.population = "One case: " + scenarioName + ", at the current playhead.";
-      result.coverage = { have: withSla, total: tasks.length, text: coverageText(withSla, tasks.length, "activities have an SLA target") };
+      result.description = "Time spent so far in each step, against its SLA target.";
+      result.unit = "Percent of the SLA target at the current playback position.";
+      result.population = "One case: " + scenarioName + ", at the current playback position.";
+      result.coverage = { have: withSla, total: tasks.length, text: coverageText(withSla, tasks.length, "steps have an SLA target") };
       result.legend = [
         { category: "ok", label: "Under 90% of target" }, { category: "warn", label: "90 to 100% of target" },
         { category: "breach", label: "Over target" }, { category: "none", label: "Not started" }
       ];
-      if (!withSla) result.notes.push("No SLA targets recorded. Add them in the activity editor.");
+      if (!withSla) result.notes.push("No SLA targets yet. Select a step and add one on its Edit step tab.");
       return result;
     }
 
@@ -208,14 +208,14 @@
       model.nodes.forEach(n => {
         if (n.tags && n.tags.bottleneck) {
           tagged++;
-          result.nodes[n.id] = { category: "tagged", text: "Tagged as a bottleneck" };
+          result.nodes[n.id] = { category: "tagged", text: "Suspected bottleneck" };
         }
       });
-      result.description = "Activities tagged as bottlenecks in the source configuration.";
-      result.unit = "Tag.";
-      result.population = "Configured tags. They mark suspected constraints and are not measured.";
-      result.coverage = { have: tagged, total: model.nodes.length, text: tagged + " activities tagged" };
-      result.legend = [{ category: "tagged", label: "Tagged bottleneck (not measured)" }];
+      result.description = "Steps marked as a suspected bottleneck.";
+      result.unit = "Marked or not.";
+      result.population = "Marks entered by hand. They are not measured.";
+      result.coverage = { have: tagged, total: model.nodes.length, text: tagged + (tagged === 1 ? " step marked" : " steps marked") };
+      result.legend = [{ category: "tagged", label: "Suspected bottleneck" }];
       return result;
     }
 
@@ -230,17 +230,17 @@
         else if (p.source && p.source !== "unknown") category = "estimated";
         if (category !== "none") referenced++;
         result.nodes[n.id] = { category, text: {
-          validated: "Validated", referenced: "Source reference recorded",
-          estimated: "Provenance recorded, no source reference", none: "No provenance"
+          validated: "Confirmed", referenced: "Linked to a source",
+          estimated: "Basis noted, no source linked", none: "Nothing recorded"
         }[category] };
       });
-      result.description = "What each activity is based on.";
+      result.description = "What each step is based on.";
       result.unit = "Category.";
-      result.population = "Every step in the model.";
-      result.coverage = { have: referenced, total: model.nodes.length, text: coverageText(referenced, model.nodes.length, "steps have provenance") };
+      result.population = "Every step in the process.";
+      result.coverage = { have: referenced, total: model.nodes.length, text: coverageText(referenced, model.nodes.length, "steps have a recorded basis") };
       result.legend = [
-        { category: "validated", label: "Validated" }, { category: "referenced", label: "Source reference" },
-        { category: "estimated", label: "Provenance, no reference" }, { category: "none", label: "No provenance" }
+        { category: "validated", label: "Confirmed" }, { category: "referenced", label: "Linked to a source" },
+        { category: "estimated", label: "Basis noted, no source" }, { category: "none", label: "Nothing recorded" }
       ];
       return result;
     }

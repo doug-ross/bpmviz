@@ -123,7 +123,7 @@ test("the annual volume falls back to the event log when no assumption is set", 
   const r = vc.compute(e, e.records[0]);
   const volume = out(r, "annualHoursSaved").inputs[0];
   assert.equal(volume.value, e.datasets[0].cases.annualizedVolume);
-  assert.ok(r.notes.some(n => /annualized from the event log/.test(n)));
+  assert.ok(r.notes.some(n => /scaled up to a year from the period the event log covers/.test(n)));
 });
 
 test("ranking scores value by confidence and effort, and suggests waves", () => {

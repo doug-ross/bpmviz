@@ -50,14 +50,15 @@
     el.saveState = h("span", { class: "save-state", id: "save-state", role: "status" });
     el.ctxEyebrow = h("div", { class: "context-eyebrow", id: "ctx-eyebrow" });
     el.ctxTitle = h("h1", { class: "context-title", id: "ctx-title" }, "AIxRay");
-    el.btnNew = iconButton("filePlus", "New", { id: "btn-new" }, { showLabel: true, title: "New engagement" });
-    el.btnOpen = iconButton("open", "Open", { id: "btn-open" }, { showLabel: true, title: "Open an engagement, BPMN or AI draft file (Ctrl+O)" });
-    el.btnSave = iconButton("save", "Save", { id: "btn-save" }, { showLabel: true, variant: "btn-primary", title: "Save the engagement file (Ctrl+S)" });
+    el.btnNew = iconButton("filePlus", "New", { id: "btn-new" }, { showLabel: true, title: "Start a new project" });
+    el.btnOpen = iconButton("open", "Open", { id: "btn-open" }, { showLabel: true, title: "Open a file (Ctrl+O)" });
+    el.btnSave = iconButton("save", "Save", { id: "btn-save" }, { showLabel: true, variant: "btn-primary", title: "Save to a file (Ctrl+S)" });
     el.btnMenu = iconButton("more", "More actions", { id: "btn-menu", "aria-haspopup": "menu", "aria-expanded": "false", "aria-controls": "app-menu" });
     el.menu = h("div", { class: "menu-list", id: "app-menu", role: "menu", hidden: true });
+    el.context = h("div", { class: "context" }, el.ctxEyebrow, el.ctxTitle);
     el.header = h("header", { class: "appbar" },
       h("div", { class: "brand" }, sail("brand-mark"), h("span", { class: "brand-name" }, "AIxRay")),
-      h("div", { class: "context" }, el.ctxEyebrow, el.ctxTitle),
+      el.context,
       h("div", { class: "appbar-status" }, el.dataBadge, el.saveState),
       h("div", { class: "appbar-actions" }, el.btnNew, el.btnOpen, el.btnSave, h("div", { class: "menu" }, el.btnMenu, el.menu)));
     el.tabs = h("nav", { class: "tabs", role: "tablist", "aria-label": "Workspaces" });
@@ -82,7 +83,7 @@
     };
     Object.values(el.panels).forEach(p => el.main.appendChild(p));
     const shell = h("div", { class: "app", id: "app" }, el.header, el.tabs, el.main, el.foot);
-    document.body.prepend(h("a", { class: "skip-link", href: "#main" }, "Skip to the workspace"), shell);
+    document.body.prepend(h("a", { class: "skip-link", href: "#main" }, "Skip to the main content"), shell);
     document.body.appendChild(el.fileInput);
     buildTabs();
     buildMenu();
@@ -100,7 +101,7 @@
     window.addEventListener("hashchange", () => { if (app.suppressHash) return; });
   }
 
-  const TABS = [["process", "Process"], ["records", "Records"], ["value", "Value"], ["present", "Present"]];
+  const TABS = [["process", "Process"], ["records", "Findings"], ["value", "Value"], ["present", "Present"]];
   const BASE_ACCEPT = ".json,.bpmn,.xml,application/json,text/xml";
 
   /* Opens the file picker, accepting the file types that registered features read as well. */
@@ -130,22 +131,24 @@
   function menuItems() {
     const group = name => B.ext.list("menuItem").filter(m => m.group === name)
       .map(m => [m.icon || "info", m.label, () => B.ext.guard("menuItem", m, () => m.run(app)), !!m.needsEngagement, null, "menu-" + m.id]);
+    const dark = document.documentElement.dataset.theme === "dark";
     return [
-      ["settings", "Engagement settings", () => B.forms.settingsDialog(app), true],
+      ["settings", "Project settings", () => B.forms.settingsDialog(app), true],
       ["undo", "Undo last change", () => undo(), true, "Ctrl+Z"],
-      ["save", "Save as a new file", () => save(true), true],
+      ["save", "Save a copy", () => save(true), true],
       ...group("export"),
       "-",
       ["upload", "Import a BPMN file", () => openPicker(), false],
       ...group("import"),
-      ["list", "Local drafts and recovery", () => draftsDialog(), false],
       B.aiPanel.enabled ? ["agent", "Draft with AI", () => B.aiPanel.chooseTask(app), false] : null,
       ...group("ai"),
-      ["trash", "Clear local data", () => clearLocalData(), false],
       "-",
-      ["moon", "Switch light or dark theme", () => toggleTheme(), false],
+      ["list", "Drafts in this browser", () => draftsDialog(), false],
+      ["trash", "Clear drafts from this browser", () => clearLocalData(), false],
+      "-",
+      ["moon", dark ? "Use the light theme" : "Use the dark theme", () => toggleTheme(), false],
       ["help", "Help and keyboard shortcuts", () => helpDialog(), false, "?"],
-      ["info", "About and data handling", () => aboutDialog(), false]
+      ["info", "About AIxRay", () => aboutDialog(), false]
     ].filter(Boolean);
   }
 
@@ -199,23 +202,24 @@
     el.tabs.hidden = !has;
     el.btnSave.disabled = !has;
     el.dataBadge.hidden = !has;
+    el.context.hidden = !has;
     if (!has) {
-      el.ctxEyebrow.textContent = "Process workshop workbench";
-      el.ctxTitle.textContent = "AIxRay";
+      el.ctxEyebrow.textContent = "";
+      el.ctxTitle.textContent = "";
       el.saveState.textContent = "";
       el.footConf.textContent = "";
-      el.footDisc.textContent = app.storageProblem ? "Local drafts are off in this browser. Save engagement files to keep your work." : "";
+      el.footDisc.textContent = app.storageProblem ? "This browser can't keep drafts, so save your work to a file." : "";
       document.title = "AIxRay";
       return;
     }
     const e = app.store.get();
     const m = e.meta;
-    el.ctxEyebrow.textContent = [m.clientDisplayName, m.engagementName].filter(Boolean).join(" \u00b7 ") || "Engagement";
+    el.ctxEyebrow.textContent = [m.clientDisplayName, m.engagementName].filter(Boolean).join(" \u00b7 ") || (app.exampleId ? "Example" : "Project");
     el.ctxTitle.textContent = m.processName;
     el.dataBadge.textContent = schema.label("dataStatus", m.dataStatus);
     el.dataBadge.className = "badge " + (DATA_TONE[m.dataStatus] || "");
-    el.dataBadge.title = m.dataStatus === "demonstration" ? "Sample content for demonstration. Not client data and not live." :
-      m.dataStatus === "observed" ? "Figures observed from the client's process." : "Scenario content supplied for the engagement; figures are not independently validated.";
+    el.dataBadge.title = m.dataStatus === "demonstration" ? "Sample data for trying AIxRay. It is not real and not live." :
+      m.dataStatus === "observed" ? "Figures measured from the real process." : "Figures provided for this project. They have not been checked independently.";
     el.revision.textContent = "Revision " + e.revision;
     el.footConf.textContent = schema.label("confidentiality", m.confidentiality);
     el.footDisc.textContent = m.disclosure ? " \u00b7 " + (m.disclosure.length > 140 ? m.disclosure.slice(0, 139) + "..." : m.disclosure) : "";
@@ -230,13 +234,13 @@
     const dirty = isDirty();
     let text, cls = "save-state";
     if (!dirty) {
-      text = app.exampleId && !app.fileName ? "Bundled example, not modified" : "Saved to file" + (app.fileName ? ": " + app.fileName : "");
+      text = app.exampleId && !app.fileName ? "Example, no changes" : "Saved" + (app.fileName ? ": " + app.fileName : "");
     } else {
       text = "Unsaved changes.";
       cls += " dirty";
-      if (app.lastDraft && app.lastDraft.ok) text += " Draft kept in this browser at " + formatTime(app.lastDraft.savedAt) + ".";
+      if (app.lastDraft && app.lastDraft.ok) text += " Draft kept at " + formatTime(app.lastDraft.savedAt) + ".";
       else if (app.storageProblem || (app.lastDraft && !app.lastDraft.ok)) {
-        text += " " + ((app.lastDraft && app.lastDraft.message) || "Browser storage is not available.") + " Save to a file.";
+        text += " " + ((app.lastDraft && app.lastDraft.message) || "This browser can't keep drafts.") + " Save to a file.";
         cls += " problem";
       }
     }
@@ -344,7 +348,7 @@
       if (message) announce(message);
       return true;
     } catch (err) {
-      const text = err instanceof storeLib.StoreError ? err.message : "That change could not be made: " + (err && err.message ? err.message : err);
+      const text = err instanceof storeLib.StoreError ? err.message : "That change didn't work: " + (err && err.message ? err.message : err);
       if (errEl) { errEl.hidden = false; errEl.textContent = text; }
       else messageDialog("Change not made", text);
       if (!(err instanceof storeLib.StoreError)) console.error(err);
@@ -362,14 +366,14 @@
   /** Resolves true when it is fine to replace the open engagement. */
   function guardUnsaved(what) {
     if (!isDirty()) return Promise.resolve(true);
-    const draftNote = app.lastDraft && app.lastDraft.ok ? "A draft is kept in this browser, but a saved file is the portable copy." :
-      "Browser storage did not keep a draft, so these changes exist only on this page.";
+    const draftNote = app.lastDraft && app.lastDraft.ok ? "This browser keeps a draft, but only a saved file goes with you." :
+      "This browser didn't keep a draft, so the changes exist only on this page.";
     return choose({
       title: "Save your changes first?",
-      body: h("div", null, h("p", null, "The open engagement has changes that are not saved to a file. " + draftNote), h("p", { class: "small muted" }, "Continuing will " + what + ".")),
+      body: h("div", null, h("p", null, "You have changes that aren't saved to a file. " + draftNote), h("p", { class: "small muted" }, "If you continue, AIxRay will " + what + ".")),
       actions: [
         { label: "Cancel", value: "cancel" },
-        { label: "Discard and continue", value: "discard", variant: "btn-danger" },
+        { label: "Discard changes", value: "discard", variant: "btn-danger" },
         { label: "Save first", value: "save", variant: "btn-primary", autofocus: true }
       ]
     }).then(v => {
@@ -381,20 +385,20 @@
 
   function openExample(example, params) {
     const result = validate.validateEngagement(example.engagement);
-    if (!result.ok) { messageDialog("Example could not be opened", issueList(result.errors)); return; }
+    if (!result.ok) { messageDialog("This example didn't open", issueList(result.errors)); return; }
     loadEngagement(result.engagement, Object.assign({ exampleId: example.id, warnings: result.warnings, source: "example" }, params || {}));
   }
 
   function openExampleGuarded(example, params) {
     const draft = app.drafts.loadDraft(example.engagement.id);
-    const proceed = () => guardUnsaved("close the open engagement").then(ok => { if (ok) openExample(example, params); });
+    const proceed = () => guardUnsaved("close the open project").then(ok => { if (ok) openExample(example, params); });
     if (draft && draft.revision !== example.engagement.revision) {
       choose({
-        title: "Restore your draft?",
-        body: h("p", null, "This browser has a draft of \"" + example.title + "\" with changes from " + formatDate(draft.savedAt) + " (revision " + draft.revision + ")."),
-        actions: [{ label: "Cancel", value: "" }, { label: "Open the original example", value: "original" }, { label: "Restore the draft", value: "draft", variant: "btn-primary", autofocus: true }]
+        title: "Continue your draft?",
+        body: h("p", null, "You changed \"" + example.title + "\" on " + formatDate(draft.savedAt) + ". This browser kept those changes."),
+        actions: [{ label: "Cancel", value: "" }, { label: "Open the original", value: "original" }, { label: "Continue the draft", value: "draft", variant: "btn-primary", autofocus: true }]
       }).then(v => {
-        if (v === "draft") guardUnsaved("close the open engagement").then(ok => { if (ok) restoreDraft(example.engagement.id, { exampleId: example.id }); });
+        if (v === "draft") guardUnsaved("close the open project").then(ok => { if (ok) restoreDraft(example.engagement.id, { exampleId: example.id }); });
         else if (v === "original") proceed();
       });
       return;
@@ -404,19 +408,19 @@
 
   function restoreDraft(id, extra, snapshotIndex) {
     const d = snapshotIndex == null ? app.drafts.loadDraft(id) : app.drafts.loadSnapshot(id, snapshotIndex);
-    if (!d) { messageDialog("Draft not found", "The draft is no longer in this browser."); return; }
+    if (!d) { messageDialog("Draft not found", "This browser no longer has that draft."); return; }
     const result = validate.validateEngagement(d.engagement);
-    if (!result.ok) { messageDialog("The draft could not be restored", issueList(result.errors)); return; }
+    if (!result.ok) { messageDialog("The draft didn't open", issueList(result.errors)); return; }
     loadEngagement(result.engagement, Object.assign({ savedRevision: -1, warnings: result.warnings, source: "draft" }, extra || {}));
-    announce("Draft restored. Save it to a file to keep a portable copy.");
+    announce("Draft opened. Save it to a file to keep it.");
   }
 
   function readFileText(file) {
     return new Promise((resolve, reject) => {
-      if (file.size > schema.LIMITS.fileBytes) { reject(new Error("The file is larger than the 10 MB limit.")); return; }
+      if (file.size > schema.LIMITS.fileBytes) { reject(new Error("This file is larger than 10 MB, the most AIxRay can open.")); return; }
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result || ""));
-      reader.onerror = () => reject(reader.error || new Error("The file could not be read."));
+      reader.onerror = () => reject(reader.error || new Error("This file couldn't be read."));
       reader.readAsText(file);
     });
   }
@@ -431,7 +435,7 @@
     if (!handlers.length) return false;
     const fit = handlers.filter(x => file.size <= x.maxBytes);
     if (!fit.length) {
-      messageDialog("File not opened", "The file is larger than the " + Math.round(Math.max(...handlers.map(x => x.maxBytes)) / 1048576) + " MB limit for this kind of file.");
+      messageDialog("File not opened", "This file is larger than " + Math.round(Math.max(...handlers.map(x => x.maxBytes)) / 1048576) + " MB, the most AIxRay can open for this kind of file.");
       return true;
     }
     let bytes;
@@ -445,7 +449,7 @@
       try {
         await handler.open(app, file, bytes);
       } catch (err) {
-        messageDialog("File not opened", h("div", null, h("p", null, (err && err.message) || String(err)), h("p", { class: "small muted" }, "The engagement that was open is unchanged.")));
+        messageDialog("File not opened", h("div", null, h("p", null, (err && err.message) || String(err)), h("p", { class: "small muted" }, "Your open project hasn't changed.")));
       }
       return true;
     }
@@ -465,7 +469,7 @@
         result = validate.validateEngagement(imported.engagement);
         if (result.ok) result.warnings = imported.warnings.map(w => Object.assign({ level: "warning" }, w)).concat(result.warnings);
       } catch (err) {
-        messageDialog("BPMN file not imported", h("div", null, h("p", null, err.message), h("p", { class: "small muted" }, "The engagement that was open is unchanged.")));
+        messageDialog("This BPMN file didn't import", h("div", null, h("p", null, err.message), h("p", { class: "small muted" }, "Your open project hasn't changed.")));
         return;
       }
     } else {
@@ -476,7 +480,7 @@
         try {
           await jsonHandler.open(app, data, { fileName: file.name });
         } catch (err) {
-          messageDialog("File not opened", h("div", null, h("p", null, (err && err.message) || String(err)), h("p", { class: "small muted" }, "The engagement that was open is unchanged.")));
+          messageDialog("File not opened", h("div", null, h("p", null, (err && err.message) || String(err)), h("p", { class: "small muted" }, "Your open project hasn't changed.")));
         }
         return;
       }
@@ -487,12 +491,12 @@
       result = validate.parseEngagementText(text);
     }
     if (!result.ok) {
-      messageDialog("This file could not be opened", h("div", null,
-        h("p", null, file.name + " has " + result.errors.length + " problem" + (result.errors.length === 1 ? "" : "s") + ". The engagement that was open is unchanged."),
+      messageDialog("This file didn't open", h("div", null,
+        h("p", null, file.name + " has " + result.errors.length + " problem" + (result.errors.length === 1 ? "" : "s") + ". Your open project hasn't changed."),
         issueList(result.errors)));
       return;
     }
-    const ok = await guardUnsaved("replace the open engagement with " + file.name);
+    const ok = await guardUnsaved("replace the open project with " + file.name);
     if (!ok) return;
     loadEngagement(result.engagement, {
       savedRevision: isXml ? -1 : result.engagement.revision, fileName: isXml ? null : file.name,
@@ -503,10 +507,10 @@
     const changed = /^(link.|ref.|text.|enum.|membership.conflict|semantic.|unit.|bpmn.|time.basis)/;
     const review = result.warnings.filter(w => w.level !== "info" && changed.test(w.code || ""));
     if (review.length) {
-      choose({ title: "Opened with items to review", body: h("div", null,
-        h("p", null, file.name + " opened. While reading it, " + review.length + " thing" + (review.length === 1 ? " was" : "s were") + " adjusted or left out. Check them before you rely on the file."),
+      choose({ title: "Opened, with a few things to check", body: h("div", null,
+        h("p", null, "AIxRay adjusted or left out " + review.length + " thing" + (review.length === 1 ? "" : "s") + " while opening " + file.name + ". Check " + (review.length === 1 ? "it" : "them") + " before you rely on the file."),
         issueList(review, 8)),
-        actions: [{ label: "Continue", value: "" }, { label: "Review now", value: "review", variant: "btn-primary", autofocus: true }] })
+        actions: [{ label: "Later", value: "" }, { label: "Check now", value: "review", variant: "btn-primary", autofocus: true }] })
         .then(v => { if (v === "review") { goto("records"); app.recordsView.setTab("review"); } });
     }
   }
@@ -520,7 +524,7 @@
     if (typeof root.showSaveFilePicker === "function" && !app.forceDownload) {
       try {
         const handle = (!asNew && app.fileHandle) || await root.showSaveFilePicker({
-          suggestedName: suggested, types: [{ description: "AIxRay engagement", accept: { "application/json": [".json"] } }]
+          suggestedName: suggested, types: [{ description: "AIxRay project", accept: { "application/json": [".json"] } }]
         });
         const writable = await handle.createWritable();
         await writable.write(text);
@@ -545,19 +549,19 @@
   app.saveAs = () => save(true);
 
   function cloneBaseline(modelId) {
-    const name = h("input", { class: "input", id: "clone-name", value: "Future state draft", maxlength: 200 });
+    const name = h("input", { class: "input", id: "clone-name", value: "Future state", maxlength: 200 });
     const err = h("p", { class: "error-text", role: "alert", hidden: true });
     openDialog({
-      title: "Start a future-state draft", body: h("div", { class: "form-grid" },
-        h("p", { class: "small" }, "The draft starts as a copy of the current state. The current state becomes a locked baseline, and each step in the draft remembers which baseline step it came from, so changes stay traceable when steps are renamed or reordered."),
-        h("div", { class: "field" }, h("label", { for: "clone-name" }, "Draft name"), name), err),
-      actions: [{ label: "Cancel" }, { label: "Create draft", variant: "btn-primary", keepOpen: true, onClick: api => {
+      title: "Plan a future state", body: h("div", { class: "form-grid" },
+        h("p", { class: "small" }, "You start from a copy of the current process and change it. The current process stays as it is, so you can always compare the two and see what changed."),
+        h("div", { class: "field" }, h("label", { for: "clone-name" }, "Name"), name), err),
+      actions: [{ label: "Cancel" }, { label: "Create", variant: "btn-primary", keepOpen: true, onClick: api => {
         try {
           const { modelId: id } = app.store.dispatch("model/clone", { sourceModelId: modelId, name: name.value });
           app.view.display = "c:" + id;
           api.close();
           app.processView.onEngagementChange({ type: "model/view" });
-          announce("Future-state draft created. The baseline is now locked.");
+          announce("Future state created. The current process is kept as the baseline.");
         } catch (e2) { err.hidden = false; err.textContent = e2.message; }
         return false;
       } }]
@@ -578,10 +582,10 @@
     const e = app.store.get();
     if (app.reviewCache && app.reviewCache.revision === e.revision) return app.reviewCache.items;
     const r = validate.validateEngagement(e);
-    const items = r.warnings.filter(w => w.code !== "fields.ignored").map(w => ({ level: w.level, message: w.message, path: w.path, source: "Validation" }));
+    const items = r.warnings.filter(w => w.code !== "fields.ignored").map(w => ({ level: w.level, message: w.message, path: w.path, source: "Checks when the file opened" }));
     ((e.migration && e.migration.warnings) || []).forEach(w => items.push({
       level: /^(membership\.documented|timing\.scaled|layout\.collision|text\.encoding|field\.role|bpmn\.laneTypes|bpmn\.layout)$/.test(w.code) ? "info" : "warning",
-      message: w.message, path: w.path, source: "Conversion from " + (e.migration.sourceFormat || "source")
+      message: w.message, path: w.path, source: "Converted from " + (e.migration.sourceFormat || "the original file")
     }));
     app.reviewCache = { revision: e.revision, items };
     return items;
@@ -598,23 +602,23 @@
     const sync = () => { const x = examples.find(e => e.id === template.value); if (x) proc.placeholder = x.engagement.meta.processName; };
     template.addEventListener("change", sync); sync();
     openDialog({
-      title: "New engagement", body: h("div", { class: "form-grid" },
-        h("p", { class: "small" }, "Start from a reviewed template, or import a BPMN file for the current state. Records from the template are not copied."),
+      title: "New project", body: h("div", { class: "form-grid" },
+        h("p", { class: "small" }, "Start from a template, or import a BPMN file of the current process. Findings in the template are not copied."),
         h("div", { class: "field" }, h("label", { for: "new-template" }, "Template"), template),
         h("div", { class: "field-row" },
-          h("div", { class: "field" }, h("label", { for: "new-client" }, "Client display name"), client),
-          h("div", { class: "field" }, h("label", { for: "new-eng" }, "Engagement name"), engName)),
+          h("div", { class: "field" }, h("label", { for: "new-client" }, "Client name"), client),
+          h("div", { class: "field" }, h("label", { for: "new-eng" }, "Project name"), engName)),
         h("div", { class: "field" }, h("label", { for: "new-proc" }, "Process name"), proc),
         h("div", { class: "field-row" },
           h("div", { class: "field" }, h("label", { for: "new-data" }, "Data status"), data),
           h("div", { class: "field" }, h("label", { for: "new-conf" }, "Confidentiality"), conf))),
       actions: [
-        { label: "Import BPMN instead", onClick: () => { openPicker(); } },
+        { label: "Import a BPMN file instead", onClick: () => { openPicker(); } },
         { label: "Cancel" },
-        { label: "Create engagement", variant: "btn-primary", onClick: () => {
+        { label: "Create project", variant: "btn-primary", onClick: () => {
           const x = examples.find(e => e.id === template.value);
           if (!x) return;
-          guardUnsaved("close the open engagement").then(ok => {
+          guardUnsaved("close the open project").then(ok => {
             if (!ok) return;
             const e = B.util.clone(x.engagement);
             const now = B.util.nowIso();
@@ -624,7 +628,7 @@
             if (proc.value.trim()) e.meta.processName = proc.value.trim();
             e.meta.dataStatus = data.value; e.meta.confidentiality = conf.value;
             const r = validate.validateEngagement(e);
-            if (!r.ok) { messageDialog("Engagement not created", issueList(r.errors)); return; }
+            if (!r.ok) { messageDialog("The project wasn't created", issueList(r.errors)); return; }
             loadEngagement(r.engagement, { savedRevision: -1, warnings: r.warnings, source: "template" });
           });
         } }
@@ -635,29 +639,29 @@
   function draftsDialog() {
     const list = app.drafts.listDrafts();
     const body = h("div", null);
-    if (!app.drafts.available()) body.appendChild(h("p", null, "Browser storage is not available here, so no drafts are kept. Save engagement files to keep your work."));
-    else if (!list.length) body.appendChild(h("p", null, "No drafts are stored in this browser."));
+    if (!app.drafts.available()) body.appendChild(h("p", null, "This browser can't keep drafts, so save your work to a file."));
+    else if (!list.length) body.appendChild(h("p", null, "There are no drafts in this browser."));
     list.forEach(d => {
       const snaps = app.drafts.listSnapshots(d.id);
       body.appendChild(h("div", { class: "card" },
-        h("h3", null, d.processName || d.id), h("p", { class: "small muted" }, (d.clientDisplayName ? d.clientDisplayName + " \u00b7 " : "") + "Revision " + d.revision + ", saved " + formatDate(d.savedAt)),
+        h("h3", null, d.processName || d.id), h("p", { class: "small muted" }, (d.clientDisplayName ? d.clientDisplayName + " \u00b7 " : "") + "Saved " + formatDate(d.savedAt)),
         h("div", { class: "form-actions", style: { justifyContent: "flex-start" } },
-          h("button", { type: "button", class: "btn btn-primary", on: { click: () => { api.close(); guardUnsaved("replace the open engagement").then(ok => { if (ok) restoreDraft(d.id); }); } } }, "Restore"),
-          snaps.map(sn => h("button", { type: "button", class: "btn", on: { click: () => { api.close(); guardUnsaved("replace the open engagement").then(ok => { if (ok) restoreDraft(d.id, null, sn.index); }); } } }, "Earlier: revision " + sn.revision + ", " + formatTime(sn.savedAt))),
+          h("button", { type: "button", class: "btn btn-primary", on: { click: () => { api.close(); guardUnsaved("replace the open project").then(ok => { if (ok) restoreDraft(d.id); }); } } }, "Open"),
+          snaps.map(sn => h("button", { type: "button", class: "btn", on: { click: () => { api.close(); guardUnsaved("replace the open project").then(ok => { if (ok) restoreDraft(d.id, null, sn.index); }); } } }, "Earlier version, " + formatTime(sn.savedAt))),
           h("button", { type: "button", class: "btn btn-danger", on: { click: () => { app.drafts.removeDraft(d.id); api.close(); draftsDialog(); } } }, "Delete"))));
     });
-    body.appendChild(h("p", { class: "note" }, "Drafts are a safety net in this browser profile only. They are not encrypted. Save engagement files for anything you need to keep or share."));
-    const api = openDialog({ title: "Local drafts and recovery", body, actions: [{ label: "Close", variant: "btn-primary" }] });
+    body.appendChild(h("p", { class: "note" }, "Drafts are a backup in this browser only, and they are not encrypted. Save a file for anything you want to keep or share."));
+    const api = openDialog({ title: "Drafts in this browser", body, actions: [{ label: "Close", variant: "btn-primary" }] });
   }
 
   function clearLocalData() {
-    confirmDialog("Clear local data?", "Every AIxRay draft and recovery snapshot in this browser will be deleted. The open engagement stays open, and saved files are not touched.", "Clear local data", true)
+    confirmDialog("Clear drafts from this browser?", "All AIxRay drafts in this browser will be deleted. Your open project stays open, and saved files are not affected.", "Clear drafts", true)
       .then(ok => {
         if (!ok) return;
         const done = app.drafts.clearAll();
         app.lastDraft = null;
         updateSaveState();
-        announce(done ? "Local data cleared." : "Local data could not be cleared.");
+        announce(done ? "Drafts cleared." : "The drafts couldn't be cleared.");
         if (app.workspace === "start") renderStart();
       });
   }
@@ -670,7 +674,7 @@
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     applyTheme(next);
     app.drafts.setPref("theme", next);
-    announce(next === "dark" ? "Dark theme." : "Light theme.");
+    announce(next === "dark" ? "Dark theme on." : "Light theme on.");
   }
 
   function helpDialog() {
@@ -678,44 +682,44 @@
     openDialog({
       title: "Help and keyboard shortcuts", wide: true, body: h("div", null,
         h("div", { class: "help-grid" },
-          h("section", null, h("h3", null, "Workspaces"),
+          h("section", null, h("h3", null, "Where things are"),
             h("dl", null,
-              h("dt", null, "Process"), h("dd", null, "The process canvas, scenario replay, lenses and the step panel for inspection, capture and edits."),
-              h("dt", null, "Records"), h("dd", null, "Every captured record, the opportunity register, evidence sources and review items."),
-              h("dt", null, "Value"), h("dd", null, "Assumptions, formula-backed results and checks of supplied figures."),
-              h("dt", null, "Present"), h("dd", null, "Presenter view, the printable handoff and exports."))),
+              h("dt", null, "Process"), h("dd", null, "The process diagram. Play a case through it, look at each step, add findings and correct the details."),
+              h("dt", null, "Findings"), h("dd", null, "Everything you found: problems, improvements, questions, decisions and actions, with their sources."),
+              h("dt", null, "Value"), h("dd", null, "What the changes are worth, with every formula and the figures behind it."),
+              h("dt", null, "Present"), h("dd", null, "Show the process to others, print a summary report, and export your work."))),
           h("section", null, h("h3", null, "Keyboard"),
             h("dl", null,
-              kb(["Tab"], "Move through steps on the canvas; the canvas follows focus."),
-              kb(["Enter"], "Open the focused step's panel."),
-              kb(["Esc"], "Close the step panel and return to the step."),
-              kb(["Space"], "Play or pause the scenario replay."),
+              kb(["Tab"], "Move from step to step. The diagram follows."),
+              kb(["Enter"], "Open the selected step's details."),
+              kb(["Esc"], "Close the details and go back to the step."),
+              kb(["Space"], "Play or pause."),
               kb(["+", "-"], "Zoom in or out."),
-              kb(["0"], "Readable view."), kb(["W"], "Fit the width."), kb(["F"], "Overview of every lane."),
-              kb(["Arrows"], "Pan the canvas."), kb(["/"], "Find a step."),
-              kb(["Ctrl", "S"], "Save the engagement file."), kb(["Ctrl", "O"], "Open a file."), kb(["Ctrl", "Z"], "Undo."),
+              kb(["0"], "Readable size."), kb(["W"], "Fit width."), kb(["F"], "Overview."),
+              kb(["Arrows"], "Move around the diagram."), kb(["/"], "Search steps."),
+              kb(["Ctrl", "S"], "Save."), kb(["Ctrl", "O"], "Open a file."), kb(["Ctrl", "Z"], "Undo."),
               kb(["?"], "This help.")))),
-        h("h3", { style: { marginTop: "var(--space-4)" } }, "What the replay shows"),
-        h("p", { class: "small" }, "The canvas replays the visits and transitions recorded in a scenario. It does not execute gateway logic or BPMN semantics. Steps outside a scenario's route are shown as not in scenario, and steps whose route membership is unclear are shown as not confirmed until someone reviews them."),
-        h("p", { class: "small" }, "Overview fits every lane on screen for orientation. Labels at that scale are too small to read; use Readable, Find, or the step list to work with individual steps.")),
+        h("h3", { style: { marginTop: "var(--space-4)" } }, "What playback shows"),
+        h("p", { class: "small" }, "Playback shows one case moving through the process, using the timings recorded for the scenario. It does not work out which way a decision goes. Steps the case never reaches are marked not in scenario, and steps nobody has confirmed yet are marked route not confirmed."),
+        h("p", { class: "small" }, "Overview fits every lane on screen so you can see the whole process. The labels are too small to read at that size; zoom in, search, or use the step list to work on a step.")),
       actions: [{ label: "Close", variant: "btn-primary", autofocus: true }]
     });
   }
 
   function aboutDialog() {
     openDialog({
-      title: "About and data handling", body: h("div", null,
-        h("p", null, "AIxRay " + VERSION + " is a process workshop workbench. " + (B.aiPanel.enabled ?
-          "It is running with the local AI helper: the AI tasks you start go to your own Claude Code or Codex account, on the plan you signed in with. Nothing else leaves this machine." :
-          "It runs from local files in a browser, with no server, account or network connection.")),
-        h("h3", null, "Where your data lives"),
+      title: "About AIxRay", body: h("div", null,
+        h("p", null, "AIxRay " + VERSION + " helps you understand how a process works and agree on what to change. " + (B.aiPanel.enabled ?
+          "AI tasks you start go to your own Claude Code or Codex account. Nothing else leaves this computer." :
+          "It runs in your browser from local files, with no server, account or internet connection.")),
+        h("h3", null, "Where your work is kept"),
         h("ul", { class: "plain-list small" },
-          h("li", null, "The engagement file you save is the durable record. Keep and share it like any client document."),
-          h("li", null, "While you work, a recovery draft is kept in this browser's storage for this browser profile. It is not encrypted; clear it on shared machines from the menu."),
-          h("li", null, B.aiPanel.enabled ? "The app loads no fonts, scripts or images from the internet. It talks only to the helper on this machine, and only when you start an AI task." :
-            "Nothing is uploaded, and the app loads no fonts, scripts or images from the internet."),
-          h("li", null, "AI drafts are marked as such and stay out of the handoff and exports until someone reviews them. See docs/ai.md."),
-          h("li", null, "Opened files are treated as data. Text is shown as text, links other than http and https are removed, and files are never run as code.")),
+          h("li", null, "The file you save is your copy of the project. Keep and share it like any other document."),
+          h("li", null, "While you work, this browser keeps a draft as a backup. It is not encrypted, so clear it on a shared computer (More actions, Clear drafts from this browser)."),
+          h("li", null, B.aiPanel.enabled ? "AIxRay loads nothing from the internet. It talks only to the AI helper on this computer, and only when you start an AI task." :
+            "Nothing is uploaded, and AIxRay loads nothing from the internet."),
+          h("li", null, "Anything drafted by AI is marked as an AI draft, and stays out of reports and exports until someone checks it."),
+          h("li", null, "Files you open are only read. Text is shown as text, unsafe links are removed, and nothing in a file is run.")),
         h("h3", null, "Credits"),
         h("p", { class: "small" }, "Based on the original AIxRay visualizer and race explorer by Doug Ross, released under the MIT License. Fonts: Ubuntu and Ubuntu Mono, Ubuntu Font Licence 1.0.")),
       actions: [{ label: "Close", variant: "btn-primary", autofocus: true }]
@@ -724,57 +728,79 @@
 
   /* ---------------- Start screen ---------------- */
 
+  /* Small sketches that suggest each example's shape at a glance. They are pictures, not the real models. */
+  const SKETCH_OF = { underwriting: "compare", "underwriting-current-state": "line", "cash-matching": "branch", "rpa-delivery": "list" };
+
+  function exampleSketch(kind) {
+    const box = (x, y, w, cls) => s("rect", { x, y, width: w || 30, height: 14, rx: 3, class: cls || "sk-box" });
+    const line = d => s("path", { d, class: "sk-line" });
+    const parts = [];
+    if (kind === "compare") {
+      parts.push(box(22, 14, 30, "sk-box sk-alt"), line("M52 21 H70 V45 H86"), box(86, 38, 30), line("M116 45 H150"),
+        box(150, 38, 30), line("M120 21 H176"), box(176, 14, 30, "sk-box sk-alt"));
+    } else if (kind === "line") {
+      parts.push(box(14, 33, 30), line("M44 40 H66"), box(66, 33, 30), line("M96 40 H112"),
+        s("path", { d: "M120 30 L130 40 L120 50 L110 40 Z", class: "sk-gate" }), line("M130 40 H146"), box(146, 33, 30, "sk-box sk-alt"), line("M176 40 H196"), box(196, 33, 30));
+    } else if (kind === "branch") {
+      parts.push(box(12, 33, 30), line("M42 40 H66"), s("path", { d: "M76 30 L86 40 L76 50 L66 40 Z", class: "sk-gate" }),
+        line("M86 40 H100 V18 H116"), line("M86 40 H100 V62 H116"), line("M86 40 H116"), box(116, 11, 30), box(116, 33, 30), box(116, 55, 30),
+        line("M146 18 H162 V40 H186"), line("M146 62 H162 V40"), line("M146 40 H186"), box(186, 33, 30));
+    } else {
+      [12, 30, 48, 66].forEach(y => parts.push(s("rect", { x: 20, y: y - 3, width: 12, height: 6, rx: 2, class: "sk-box sk-alt" }),
+        s("path", { d: "M40 " + y + " H118", class: "sk-line sk-thick" }), line("M128 " + y + " H160"), box(166, y - 6, 34)));
+    }
+    return s("svg", { class: "example-sketch", viewBox: "0 0 240 76", "aria-hidden": "true", focusable: "false" }, parts);
+  }
+
   function renderStart() {
     const panel = el.panels.start;
     clear(panel);
     const examples = B.bundledExamples || [];
     const drafts = app.drafts.listDrafts();
-    const openBtn = h("button", { type: "button", class: "btn btn-primary btn-lg", id: "start-open" }, icon("open"), "Open an engagement file");
-    openBtn.addEventListener("click", () => openPicker());
-    const bpmnBtn = h("button", { type: "button", class: "btn btn-lg", id: "start-bpmn" }, icon("upload"), "Import a BPMN file");
-    bpmnBtn.addEventListener("click", () => openPicker());
-    const newBtn = h("button", { type: "button", class: "btn btn-lg", id: "start-new" }, icon("filePlus"), "New from a template");
-    newBtn.addEventListener("click", newEngagementDialog);
-    const extraBtns = B.ext.list("startAction").map(a => {
-      const b = h("button", { type: "button", class: "btn btn-lg", id: "start-" + a.id }, icon(a.icon || "info"), a.label);
-      b.addEventListener("click", () => B.ext.guard("startAction", a, () => a.run(app)));
+    const flagship = examples.find(x => x.id === "underwriting") || examples[0];
+    const startBtn = (id, iconName, label, onClick, primary) => {
+      const b = h("button", { type: "button", class: "btn btn-lg" + (primary ? " btn-primary" : ""), id }, icon(iconName), label);
+      b.addEventListener("click", onClick);
       return b;
-    });
-    const aiBtn = B.aiPanel.enabled ? h("button", { type: "button", class: "btn btn-lg", id: "start-ai" }, icon("agent"), "Extract from documents with AI") : null;
-    if (aiBtn) aiBtn.addEventListener("click", () => B.aiPanel.openTask(app, "extract"));
+    };
+    const actions = [
+      flagship ? startBtn("start-try", "play", "Try an example", () => openExampleGuarded(flagship), true) : null,
+      startBtn("start-open", "open", "Open a file", () => openPicker()),
+      startBtn("start-new", "filePlus", "Start from a template", newEngagementDialog),
+      startBtn("start-bpmn", "upload", "Import a BPMN file", () => openPicker()),
+      B.aiPanel.enabled ? startBtn("start-ai", "agent", "Create from documents with AI", () => B.aiPanel.openTask(app, "extract")) : null
+    ].concat(B.ext.list("startAction").map(a =>
+      startBtn("start-" + a.id, a.icon || "info", a.label, () => B.ext.guard("startAction", a, () => a.run(app)))));
+    const note = app.storageProblem || !app.drafts.available() ?
+      "This browser can't keep drafts, so save your work to a file." :
+      "Your work stays in your browser and the files you save." + (B.aiPanel.enabled ? " AI tasks use your own Claude Code or Codex account." : "");
     panel.appendChild(h("div", { class: "ws-scroll" }, h("div", { class: "start" },
       h("div", { class: "start-hero" },
         h("div", null,
-          h("span", { class: "eyebrow" }, "Process workshop workbench"),
-          h("h2", null, "Walk the process with the client, and leave with a record of what you found."),
-          h("p", null, "Replay a current-state process, correct it with the people who run it, capture pain points, opportunities and decisions against each step, then hand off a portable engagement file and a printable summary."),
-          h("div", { class: "start-actions" }, openBtn, bpmnBtn, newBtn, extraBtns, aiBtn),
-          h("p", { class: "note" }, app.storageProblem || !app.drafts.available() ?
-            "Browser storage is not available here, so recovery drafts are off. Save engagement files to keep your work." :
-            B.aiPanel.enabled ? "Everything stays in this browser and in the files you save, except the AI tasks you start, which go to your own Claude Code or Codex account." :
-            "Everything stays in this browser and in the files you save. Nothing is uploaded.")),
+          h("h2", null, h("span", null, "Understand the process."), " ", h("span", null, "Agree on what needs to change.")),
+          h("p", { class: "start-lede" }, "Review each step with your team, find the problems, and decide what to improve."),
+          h("div", { class: "start-actions" }, actions),
+          h("p", { class: "note" }, note)),
         h("div", { class: "start-sail", "aria-hidden": "true" }, s("svg", { viewBox: "0 0 240 120" },
           ...[0, 1, 2].map(i => s("rect", { x: 10, y: 14 + i * 36, width: 220, height: 28, rx: 4, fill: i === 1 ? "#FFFFFF" : "#D8F0F9" })),
           ...[[40, 28], [110, 64], [180, 100]].map(([x, y]) => s("rect", { x: x - 22, y: y - 9, width: 44, height: 18, rx: 4, fill: "#2B0A3D" })),
           s("path", { d: "M62 28 H88 V64 M132 64 H158 V100", fill: "none", stroke: "#2B0A3D", "stroke-width": 2 })))),
-      drafts.length ? h("section", { "aria-labelledby": "start-drafts" },
-        h("h3", { id: "start-drafts" }, "Recover a local draft"),
+      drafts.length ? h("section", { class: "start-section", "aria-labelledby": "start-drafts" },
+        h("h3", { id: "start-drafts" }, "Continue where you left off"),
         h("div", { class: "draft-list" }, drafts.slice(0, 5).map(d => h("div", { class: "draft-row" },
           icon("save", { width: 20, height: 20 }),
           h("div", { class: "grow" }, h("strong", null, d.processName || d.id), h("div", { class: "small muted" },
-            (d.clientDisplayName ? d.clientDisplayName + " \u00b7 " : "") + "Revision " + d.revision + ", saved " + formatDate(d.savedAt))),
-          h("button", { type: "button", class: "btn", on: { click: () => restoreDraft(d.id) } }, "Restore"),
+            (d.clientDisplayName ? d.clientDisplayName + " \u00b7 " : "") + "Saved " + formatDate(d.savedAt))),
+          h("button", { type: "button", class: "btn", on: { click: () => restoreDraft(d.id) } }, "Continue"),
           h("button", { type: "button", class: "btn btn-ghost", on: { click: () => { app.drafts.removeDraft(d.id); renderStart(); } } }, "Discard"))))) : null,
-      h("section", { "aria-labelledby": "start-examples" },
-        h("h3", { id: "start-examples" }, "Bundled examples"),
+      h("section", { class: "start-section", "aria-labelledby": "start-examples" },
+        h("h3", { id: "start-examples" }, "Try an example"),
         h("div", { class: "example-grid" }, examples.map(x => {
-          const e = x.engagement;
-          const steps = e.models.map(m => m.nodes.length).join(" + ");
           const b = h("button", { type: "button", class: "btn", id: "open-" + x.id }, "Open example");
           b.addEventListener("click", () => openExampleGuarded(x));
           return h("article", { class: "example-card" },
             h("h4", null, x.title), h("p", null, x.description),
-            h("div", { class: "meta" }, schema.label("dataStatus", e.meta.dataStatus) + " \u00b7 " + e.models.length + (e.models.length === 1 ? " model, " : " models, ") + steps + " steps \u00b7 " + e.scenarios.length + " scenarios"),
+            h("div", { class: "example-art" }, exampleSketch(SKETCH_OF[x.id] || "line")),
             h("div", null, b));
         }))))));
   }

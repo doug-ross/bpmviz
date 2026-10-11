@@ -1,12 +1,12 @@
 /*
- * AIxRay client-review: making client review packs and importing the
- * answers. Everything here plugs into the app through AIxRay.ext:
- *  - Present bar action "Client review pack" (pr-action-client-review)
- *  - Records tab "Client review" (rv-tab-client-review): packs, responses and the latest answer per item,
+ * AIxRay client-review: making review packs (shown as "review forms") and
+ * importing the answers. Everything here plugs into the app through AIxRay.ext:
+ *  - Present bar action "Send for review" (pr-action-client-review)
+ *  - Findings tab "Reviews" (rv-tab-client-review): packs, responses and the latest answer per item,
  *    listed while the open engagement has a pack or a response
  *  - Open handles review response files (JSON handler) and filled-in Excel packs (.xlsx handler)
  *  - Process side panel: the latest client answer on a step
- *  - Handoff summary: a Client review section after Evidence
+ *  - Handoff summary (Report): a Review answers section after Evidence
  * The store commands come from lib/reviews.js. See docs/client-review.md.
  */
 (function (root) {
@@ -21,7 +21,7 @@
   const OFFERED_KINDS = ["pain", "opportunity", "decision", "assumption", "question"];
 
   const badge = (text, tone) => h("span", { class: "badge" + (tone ? " " + tone : "") }, text);
-  const verdictBadge = v => v ? badge(schema.label("reviewVerdict", v), VERDICT_TONE[v]) : badge("No verdict", "");
+  const verdictBadge = v => v ? badge(schema.label("reviewVerdict", v), VERDICT_TONE[v]) : badge("No answer", "");
   const plural = (n, one, many) => n + " " + (n === 1 ? one : many || one + "s");
 
   function formatDay(iso) {
@@ -70,10 +70,10 @@
     const role = h("input", { class: "input", id: "cr-role", maxlength: 200, autocomplete: "off" });
     const org = h("input", { class: "input", id: "cr-org", maxlength: 200, value: e.meta.clientDisplayName || "", autocomplete: "off" });
     const model = h("select", { class: "select", id: "cr-model" }, e.models.map(m => h("option", { value: m.id, selected: m.id === defaultModel(e) },
-      m.name + " (" + schema.label("modelRole", m.role).toLowerCase() + ")")));
+      m.name.toLowerCase() === schema.label("modelRole", m.role).toLowerCase() ? m.name : m.name + " (" + schema.label("modelRole", m.role).toLowerCase() + ")")));
     const formats = schema.ENUMS.reviewFormat.map((f, i) => h("label", null,
       h("input", { type: "radio", name: "cr-format", id: "cr-format-" + f, value: f, checked: i === 0 }),
-      h("span", null, f === "html" ? "Web page (opens in a browser)" : "Excel workbook")));
+      h("span", null, f === "html" ? "Web page (opens in any browser)" : "Excel workbook")));
     const steps = h("input", { type: "checkbox", id: "cr-inc-steps", checked: true });
     const stepsText = h("span");
     const kinds = OFFERED_KINDS.map(k => ({ kind: k, input: h("input", { type: "checkbox", id: "cr-inc-" + k, checked: R.DEFAULT_KINDS.includes(k) }), text: h("span") }));
@@ -90,14 +90,14 @@
       kinds.forEach(k => { k.text.textContent = KIND_TITLES[k.kind] + " (" + counts.records[k.kind] + ")"; });
       const items = R.buildPackItems(e, options());
       const nSteps = items.filter(i => i.kind === "step").length;
-      summary.textContent = items.length ? "The pack will list " + plural(items.length, "item") + ": " + plural(nSteps, "step") + " and " + plural(items.length - nSteps, "finding") + "." :
-        "Nothing is selected yet. Choose at least one kind of item that has entries.";
+      summary.textContent = items.length ? "The form will list " + plural(items.length, "item") + ": " + plural(nSteps, "step") + " and " + plural(items.length - nSteps, "finding") + "." :
+        "Nothing to review yet. Tick at least one kind of item that has entries.";
     }
     [model, steps].concat(kinds.map(k => k.input)).forEach(x => x.addEventListener("change", update));
     update();
 
-    const privacy = "The pack holds the chosen steps and findings with their descriptions, and the engagement's title, client, data status, confidentiality and disclosure. Nothing else from the engagement goes in. " +
-      (scope.includeSensitive ? "Sensitive records are included because Include sensitive records is ticked in the Present bar. " : "Sensitive records are left out. ") +
+    const privacy = "The form holds only the items above with their descriptions, plus the project's title, client name, data status, confidentiality and disclosure. " +
+      (scope.includeSensitive ? "Sensitive findings are included, as set in Present. " : "Sensitive findings are left out. ") +
       (scope.includeUnreviewedAi ? "AI drafts not yet reviewed are included." : "AI drafts not yet reviewed are left out.");
 
     let busy = false;
@@ -108,44 +108,44 @@
     }
     async function makeOnce(api) {
       err.hidden = true;
-      if (!name.value.trim()) { err.hidden = false; err.textContent = "Enter the name of the person who will review the pack."; name.focus(); return; }
+      if (!name.value.trim()) { err.hidden = false; err.textContent = "Enter the name of the person who will review the form."; name.focus(); return; }
       const items = R.buildPackItems(e, options());
-      if (!items.length) { err.hidden = false; err.textContent = "Choose at least one kind of item that has entries."; return; }
+      if (!items.length) { err.hidden = false; err.textContent = "Tick at least one kind of item that has entries."; return; }
       const format = (formats.map(l => l.querySelector("input")).find(i => i.checked) || {}).value || "html";
       const pack = R.newPack(e, { format, stakeholder: { name: name.value, role: role.value, organization: org.value }, modelId: model.value, note: note.value }, items);
       const payload = R.packPayload(e, pack, items);
       let file;
-      try { file = await packFile(e, pack, payload); } catch (x) { err.hidden = false; err.textContent = "The pack could not be made: " + (x && x.message ? x.message : x); return; }
+      try { file = await packFile(e, pack, payload); } catch (x) { err.hidden = false; err.textContent = "The form couldn't be created: " + (x && x.message ? x.message : x); return; }
       const fileName = packFileName(e, pack) + file.ext;
       if (!app.dispatch("review/recordPack", { pack }, null, err)) return;
       B.files.downloadBytes(file.bytes, fileName, file.type);
       api.close("made");
-      announce("Review pack for " + pack.stakeholder.name + " saved as " + fileName + ".");
+      announce("Review form for " + pack.stakeholder.name + " saved as " + fileName + ". Send it to them.");
     }
 
     const body = h("div", { class: "form-grid cr-dialog" },
-      h("p", { class: "small" }, "The pack lists steps and findings for a client stakeholder to confirm, dispute or mark as not sure, with a comment. It works on its own: the web page opens in any current browser from the file, and the workbook opens in Excel. The answers come back as a file you open in AIxRay."),
+      h("p", { class: "small" }, "Create a form for someone to check the process. They confirm or dispute each step and finding and add comments, without needing AIxRay. When their answers come back, open the file to import them."),
       h("div", { class: "field-row" },
         h("div", { class: "field" }, h("label", { for: "cr-name" }, "Reviewer's name"), name),
         h("div", { class: "field" }, h("label", { for: "cr-role" }, "Role"), role),
         h("div", { class: "field" }, h("label", { for: "cr-org" }, "Organization"), org)),
-      h("div", { class: "field" }, h("label", { for: "cr-model" }, "Process model"), model),
-      h("fieldset", { class: "segmented" }, h("legend", null, "Format"), formats),
-      h("fieldset", { class: "cr-options" }, h("legend", { class: "field-label" }, "Include"),
+      h("div", { class: "field" }, h("label", { for: "cr-model" }, "Process"), model),
+      h("fieldset", { class: "cr-options" }, h("legend", { class: "field-label" }, "What to include"),
         h("label", { class: "check" }, steps, stepsText),
         kinds.map(k => h("label", { class: "check" }, k.input, k.text)),
-        h("p", { class: "field-hint" }, "Findings are the records marked for the handoff that are linked to this model or to no model.")),
+        h("p", { class: "field-hint" }, "Only findings that are included in the report and linked to this process (or to no process) go in.")),
+      h("fieldset", { class: "segmented" }, h("legend", null, "Format"), formats),
       h("div", { class: "field" }, h("label", { for: "cr-note" }, "Note to the reviewer (optional)"), note),
       summary,
       h("p", { class: "note" }, privacy),
       err);
     B.dialogs.openDialog({
-      title: "Make a client review pack", eyebrow: "Client review", wide: true, body, initialFocus: "#cr-name",
-      actions: [{ label: "Cancel" }, { label: "Make the pack", variant: "btn-primary", keepOpen: true, onClick: api => { make(api); return false; } }]
+      title: "Send for review", wide: true, body, initialFocus: "#cr-name",
+      actions: [{ label: "Cancel" }, { label: "Download review form", variant: "btn-primary", keepOpen: true, onClick: api => { make(api); return false; } }]
     });
   }
 
-  const LEFT_OUT_WHY = "they were deleted, or they are now sensitive, AI drafts not yet reviewed, dropped or not marked for the handoff.";
+  const LEFT_OUT_WHY = "they were deleted, or they are now sensitive, AI drafts not yet reviewed, dropped, or not included in the report.";
 
   /*
    * Downloads a recorded pack again, rebuilt from the current engagement with
@@ -158,29 +158,29 @@
     const scope = { includeSensitive: !!(ctx && ctx.includeSensitive), includeUnreviewedAi: !!(ctx && ctx.includeUnreviewedAi) };
     const items = R.buildPackItems(e, Object.assign({ modelId: pack.modelId, itemRefs: pack.items.map(i => i.itemRef) }, scope));
     const leftOut = pack.items.length - items.length;
-    if (!items.length) { B.dialogs.messageDialog("Pack not downloaded", "None of the " + plural(pack.items.length, "item") + " in this pack can go out any more: " + LEFT_OUT_WHY); return; }
+    if (!items.length) { B.dialogs.messageDialog("Form not downloaded", "None of the " + plural(pack.items.length, "item") + " in this form can be sent any more: " + LEFT_OUT_WHY); return; }
     try {
       const file = await packFile(e, pack, R.packPayload(e, pack, items));
       const fileName = packFileName(e, pack) + file.ext;
       B.files.downloadBytes(file.bytes, fileName, file.type);
-      announce("Review pack saved again as " + fileName + (leftOut > 0 ? ", with " + plural(leftOut, "item") + " left out." : "."));
+      announce("Review form saved again as " + fileName + (leftOut > 0 ? ", with " + plural(leftOut, "item") + " left out." : "."));
       if (leftOut > 0) {
-        B.dialogs.messageDialog("Some items were left out", plural(leftOut, "item") + " of the " + pack.items.length + " in the pack " + (leftOut === 1 ? "was" : "were") +
-          " left out of " + fileName + ": " + LEFT_OUT_WHY + " The pack lists " + plural(items.length, "item") + ".");
+        B.dialogs.messageDialog("Some items were left out", plural(leftOut, "item") + " of the " + pack.items.length + " in the form " + (leftOut === 1 ? "was" : "were") +
+          " left out of " + fileName + ": " + LEFT_OUT_WHY + " The form lists " + plural(items.length, "item") + ".");
       }
     } catch (x) {
-      B.dialogs.messageDialog("Pack not downloaded", "The pack could not be made: " + (x && x.message ? x.message : x));
+      B.dialogs.messageDialog("Form not downloaded", "The form couldn't be created: " + (x && x.message ? x.message : x));
     }
   }
 
   /* ---------- Importing a response ---------- */
 
   function effectOf(it) {
-    if (it.kind !== "step") return "Recorded with the review";
+    if (it.kind !== "step") return "Saved with the review";
     if (it.superseded) return "No change: a later review answered this step";
-    if (!it.targetValidation) return "Validation stays " + schema.label("validation", it.currentValidation).toLowerCase();
+    if (!it.targetValidation) return "No change (" + schema.label("validation", it.currentValidation).toLowerCase() + ")";
     if (it.targetValidation === it.currentValidation) return "Already " + schema.label("validation", it.currentValidation).toLowerCase();
-    return "Validation: " + schema.label("validation", it.currentValidation) + " to " + schema.label("validation", it.targetValidation);
+    return "Changes from " + schema.label("validation", it.currentValidation) + " to " + schema.label("validation", it.targetValidation);
   }
 
   function warningList(list) {
@@ -191,13 +191,13 @@
   function openResponse(app, data, info) {
     const fileName = (info && info.fileName) || "";
     if (!app.store) {
-      B.dialogs.messageDialog("Open the engagement first", "This is a client review response. Open the engagement it belongs to, then open the response again.");
+      B.dialogs.messageDialog("Open the project first", "This file holds answers from a review. Open the project it belongs to, then open this file again.");
       return;
     }
     const prepared = R.prepareApply(app.store.get(), data);
     if (!prepared.ok) {
-      B.dialogs.messageDialog("Review response not imported", h("div", null,
-        h("p", null, (fileName ? fileName + " " : "This response ") + "could not be imported. The engagement that was open is unchanged."),
+      B.dialogs.messageDialog("Review answers not imported", h("div", null,
+        h("p", null, (fileName ? fileName + " " : "This file ") + "couldn't be imported. Your open project hasn't changed."),
         B.dialogs.issueList(prepared.errors)));
       return;
     }
@@ -217,40 +217,39 @@
       const input = h("input", { type: "checkbox", id, checked });
       return { input, el: h("label", { class: "check" }, input, h("span", null, text)) };
     };
-    const optValidation = opt("cr-apply-validation", "Update step validation: confirmed steps become validated and disputed steps disputed (" + plural(changes, "change") + "). Not sure leaves a step as it is.", true);
-    const optQuestions = opt("cr-apply-questions", "Add an open question for each disputed or unconfirmed item with a comment (" + askable + ")", askable > 0);
-    const optEvidence = opt("cr-apply-evidence", confirmedSteps ? "Record the review as an evidence source, linked to the " + plural(confirmedSteps, "confirmed step") :
-      "Record the review as an evidence source (no step was confirmed, so it is not linked to steps)", true);
+    const optValidation = opt("cr-apply-validation", "Update the steps: mark confirmed steps as confirmed and disputed steps as disputed (" + plural(changes, "change") + "). Not sure leaves a step as it is.", true);
+    const optQuestions = opt("cr-apply-questions", "Add an open question for each item that has a comment and was not confirmed (" + askable + ")", askable > 0);
+    const optEvidence = opt("cr-apply-evidence", confirmedSteps ? "Add the review as a source, linked to the " + plural(confirmedSteps, "confirmed step") :
+      "Add the review as a source (no step was confirmed, so it isn't linked to any step)", true);
     const pack = prepared.pack;
     const rows = items.map(it => h("tr", null,
-      h("td", null, h("div", { class: "title-cell" }, it.label), it.renamed ? h("div", { class: "desc" }, "Called \"" + it.packLabel + "\" in the pack") : null),
+      h("td", null, h("div", { class: "title-cell" }, it.label), it.renamed ? h("div", { class: "desc" }, "Called \"" + it.packLabel + "\" in the form") : null),
       h("td", null, it.type),
       h("td", null, verdictBadge(it.verdict)),
       h("td", { class: "cr-comment" }, it.comment || h("span", { class: "muted" }, "None")),
       h("td", null, effectOf(it))));
     const body = h("div", { class: "form-grid cr-dialog" },
-      h("p", null, "From " + R.who(r.reviewer) + (r.submittedAt ? ", submitted " + formatDay(r.submittedAt) : "") + ". " +
-        (pack ? "Answers to the " + schema.label("reviewFormat", pack.format).toLowerCase() + " pack made for " + (pack.stakeholder.name || "the client") + " on " + formatDay(pack.createdAt) + "." :
-          "This engagement has no record of the pack, so the answers are matched by item IDs.")),
+      h("p", null, "From " + R.who(r.reviewer) + (r.submittedAt ? ", sent " + formatDay(r.submittedAt) : "") + "." +
+        (pack ? " Answers to the review form (" + schema.label("reviewFormat", pack.format) + ") you created for " + (pack.stakeholder.name || "the reviewer") + " on " + formatDay(pack.createdAt) + "." : "")),
       h("div", { class: "stat-row" },
-        stat(n.confirm, "Confirmed", "Answers in this response"),
-        stat(n.dispute, "Disputed", "Answers in this response"),
-        stat(n.unsure, "Not sure", "Answers in this response"),
-        stat(n.unanswered, "Not answered", pack ? "Of " + plural(n.total, "item") + " in the pack" : "Items with no verdict or comment")),
+        stat(n.confirm, "Confirmed"),
+        stat(n.dispute, "Disputed"),
+        stat(n.unsure, "Not sure"),
+        stat(n.unanswered, "Not answered", pack ? "Of " + plural(n.total, "item") + " in the form" : "No answer or comment")),
       prepared.warnings.length ? h("section", null, h("h3", null, "Check before applying (" + prepared.warnings.length + ")"), warningList(prepared.warnings)) : null,
       r.generalComment ? h("section", null, h("h3", null, "General comment"), h("p", { class: "cr-comment" }, r.generalComment)) : null,
-      items.length ? table("Answers in this response", [["Item"], ["Type"], ["Verdict"], ["Comment"], ["Effect"]], rows) : h("p", { class: "empty" }, "This response has no answers."),
-      h("fieldset", { class: "cr-options" }, h("legend", { class: "field-label" }, "When applying"), optValidation.el, optQuestions.el, optEvidence.el),
-      locked ? h("p", { class: "note" }, "The baseline is locked because a future state is based on it. Applying the review changes only the validation and evidence links of its steps; the steps are not edited or marked as modified.") : null,
-      h("p", { class: "note" }, "Applying is one change that Undo reverses."),
-      err);
+      h("fieldset", { class: "cr-options" }, h("legend", { class: "field-label" }, "When you apply the answers"), optValidation.el, optQuestions.el, optEvidence.el,
+        locked ? h("p", { class: "note" }, "The baseline is locked because a future state is based on it. Applying the answers changes only whether its steps are confirmed and which sources they link to. The steps themselves are not edited.") : null,
+        h("p", { class: "note" }, "You can undo this in one step.")),
+      err,
+      items.length ? table("Answers in this file", [["Item"], ["Type"], ["Answer"], ["Comment"], ["What changes"]], rows) : h("p", { class: "empty" }, "This file has no answers."));
     B.dialogs.openDialog({
-      title: "Import a client review", eyebrow: fileName || "Client review", wide: true, body,
-      actions: [{ label: "Cancel" }, { label: "Apply the review", variant: "btn-primary", keepOpen: true, onClick: api => {
+      title: "Apply review answers", eyebrow: fileName || null, wide: true, body,
+      actions: [{ label: "Cancel" }, { label: "Apply answers", variant: "btn-primary", keepOpen: true, onClick: api => {
         const e = app.store.get();
         const payload = R.buildApplyPayload(e, prepared, { validations: optValidation.input.checked, questions: optQuestions.input.checked, evidence: optEvidence.input.checked });
         const nv = payload.validations.length, nq = payload.questions.length;
-        const ok = app.dispatch("review/apply", payload, "Client review from " + (r.reviewer.name || "the reviewer") + " applied: " + plural(nv, "step") + " updated, " + plural(nq, "open question") + " added.", err);
+        const ok = app.dispatch("review/apply", payload, "Answers from " + (r.reviewer.name || "the reviewer") + " applied: " + plural(nv, "step") + " updated, " + plural(nq, "open question") + " added.", err);
         if (ok) api.close("applied");
         return false;
       } }]
@@ -261,7 +260,7 @@
     let size = 0;
     try { size = JSON.stringify(data).length; } catch (_) { size = Infinity; }
     if (size > schema.LIMITS.reviewResponseBytes) {
-      throw new Error("This review response is larger than the " + Math.round(schema.LIMITS.reviewResponseBytes / 1048576) + " MB limit for responses.");
+      throw new Error("This file of review answers is larger than " + Math.round(schema.LIMITS.reviewResponseBytes / 1048576) + " MB, the most AIxRay can open for review answers.");
     }
     openResponse(app, data, info);
   }
@@ -302,24 +301,26 @@
     const packs = e.reviewPacks || [];
     const list = e.reviews || [];
     const sum = R.summarize(e, { includeSensitive: true, includeUnreviewedAi: true });
-    const importBtn = h("button", { type: "button", class: "btn", id: "cr-import" }, icon("upload"), "Import a response");
+    /* Once forms are out and nothing has come back, importing the answers is the next step. */
+    const waiting = packs.length > 0 && list.length === 0;
+    const importBtn = h("button", { type: "button", class: waiting ? "btn btn-primary" : "btn", id: "cr-import" }, icon("upload"), "Import answers");
     importBtn.addEventListener("click", () => B.files.pickFile(".json,.xlsx").then(f => { if (f) app.openFile(f); }));
-    const makeBtn = h("button", { type: "button", class: "btn btn-primary", id: "cr-make" }, icon("plus"), "Make a review pack");
+    const makeBtn = h("button", { type: "button", class: waiting ? "btn" : "btn btn-primary", id: "cr-make" }, icon("plus"), "Send for review");
     makeBtn.addEventListener("click", () => packDialog(app, ctx));
     const responsesTo = id => list.filter(r => r.packId === id).length;
     const disputed = sum.steps.dispute + sum.findings.dispute;
     panel.append(
       h("div", { class: "cr-intro" },
-        h("p", { class: "small" }, "Send steps and findings to a client stakeholder to confirm, dispute or mark as not sure. A pack is a web page or an Excel workbook that works without AIxRay. Import the answers here or with Open: confirmed steps become validated, disputed steps are marked disputed, and comments can become open questions."),
+        h("p", { class: "small" }, "Ask people outside your team to confirm or dispute steps and findings. Import their answers here or with Open. Confirmed and disputed steps are marked, and comments can become open questions."),
         h("div", { class: "form-actions" }, importBtn, makeBtn)),
       h("div", { class: "stat-row" },
-        stat(packs.length, "Review packs made", packs.length ? "Latest " + formatDay(packs[packs.length - 1].createdAt) : "None yet"),
-        stat(list.length, "Responses received", sum.reviewers.length ? plural(sum.reviewers.length, "reviewer") : "None yet"),
+        stat(packs.length, "Review forms created", packs.length ? "Latest " + formatDay(packs[packs.length - 1].createdAt) : "None yet"),
+        stat(list.length, "Reviews received", sum.reviewers.length ? plural(sum.reviewers.length, "reviewer") : "None yet"),
         stat(sum.steps.confirm, "Steps confirmed", "Latest answer per step"),
         stat(disputed, "Items disputed", "Latest answer per step or finding")));
     // Packs
-    panel.appendChild(h("section", { class: "card", "aria-labelledby": "cr-packs-h" }, h("h3", { id: "cr-packs-h" }, "Review packs (" + packs.length + ")"),
-      packs.length ? table("Review packs", [["Prepared for"], ["Format"], ["Made"], ["Items", "num"], ["Responses", "num"], [h("span", { class: "sr-only" }, "Actions")]],
+    panel.appendChild(h("section", { class: "card", "aria-labelledby": "cr-packs-h" }, h("h3", { id: "cr-packs-h" }, "Review forms (" + packs.length + ")"),
+      packs.length ? table("Review forms", [["Sent to"], ["Format"], ["Created"], ["Items", "num"], ["Answers", "num"], [h("span", { class: "sr-only" }, "Actions")]],
         packs.slice().reverse().map(p => h("tr", null,
           h("td", null, h("div", { class: "title-cell" }, R.who(p.stakeholder)), p.note ? h("div", { class: "desc" }, p.note) : null),
           h("td", null, schema.label("reviewFormat", p.format)),
@@ -327,35 +328,35 @@
           h("td", { class: "num" }, String(p.items.length)),
           h("td", { class: "num" }, String(responsesTo(p.id))),
           h("td", { class: "actions" },
-            h("button", { type: "button", class: "btn btn-ghost", on: { click: () => downloadAgain(app, p, ctx) } }, icon("download"), h("span", null, "Download again"), h("span", { class: "sr-only" }, " for " + (p.stakeholder.name || "the client"))),
+            h("button", { type: "button", class: "btn btn-ghost", on: { click: () => downloadAgain(app, p, ctx) } }, icon("download"), h("span", null, "Download again"), h("span", { class: "sr-only" }, " for " + (p.stakeholder.name || "the reviewer"))),
             h("button", { type: "button", class: "btn btn-ghost btn-danger", on: { click: () => {
-              B.dialogs.confirmDialog("Delete this review pack?", "The record of the pack is removed. Responses already imported stay, and a response to this pack that arrives later can still be imported; it is then matched by item IDs.", "Delete pack", true)
-                .then(ok => { if (ok) ctx.dispatch("review/deletePack", { id: p.id }, "Review pack deleted."); });
-            } } }, icon("trash"), h("span", { class: "sr-only" }, "Delete the pack for " + (p.stakeholder.name || "the client"))))))) :
-        h("p", { class: "small muted" }, "No packs yet. Make one from here or from the Present bar.")));
+              B.dialogs.confirmDialog("Delete this review form?", "AIxRay forgets this form. Answers you already imported stay, and answers to it that arrive later can still be imported.", "Delete form", true)
+                .then(ok => { if (ok) ctx.dispatch("review/deletePack", { id: p.id }, "Review form deleted."); });
+            } } }, icon("trash"), h("span", { class: "sr-only" }, "Delete the form for " + (p.stakeholder.name || "the reviewer"))))))) :
+        h("p", { class: "small muted" }, "No review forms yet. Choose Send for review to create one.")));
     // Responses
-    panel.appendChild(h("section", { class: "card", "aria-labelledby": "cr-reviews-h" }, h("h3", { id: "cr-reviews-h" }, "Responses received (" + list.length + ")"),
-      list.length ? table("Responses received", [["Reviewer"], ["Submitted"], ["Answers"], ["Applied"], [h("span", { class: "sr-only" }, "Actions")]],
+    panel.appendChild(h("section", { class: "card", "aria-labelledby": "cr-reviews-h" }, h("h3", { id: "cr-reviews-h" }, "Reviews received (" + list.length + ")"),
+      list.length ? table("Reviews received", [["Reviewer"], ["Sent"], ["Answers"], ["Changes made"], [h("span", { class: "sr-only" }, "Actions")]],
         list.slice().reverse().map(r => {
           const c = { confirm: 0, dispute: 0, unsure: 0 };
           r.entries.forEach(en => { c[en.verdict] = (c[en.verdict] || 0) + 1; });
-          const applied = [plural(r.applied.validations, "validation change"), plural(r.applied.questions, "open question")]
-            .concat(r.applied.evidenceId ? ["evidence source"] : []).join(", ");
+          const applied = [plural(r.applied.validations, "step") + " updated", plural(r.applied.questions, "open question")]
+            .concat(r.applied.evidenceId ? ["a source"] : []).join(", ");
           return h("tr", null,
             h("td", null, h("div", { class: "title-cell" }, R.who(r.reviewer)), r.generalComment ? h("div", { class: "desc cr-comment" }, r.generalComment) : null),
             h("td", null, formatDay(r.submittedAt || r.receivedAt), h("div", { class: "desc" }, schema.label("reviewFormat", r.source) + ", imported " + formatDay(r.receivedAt))),
             h("td", null, c.confirm + " confirmed, " + c.dispute + " disputed, " + c.unsure + " not sure"),
             h("td", null, applied),
             h("td", { class: "actions" }, h("button", { type: "button", class: "btn btn-ghost btn-danger", on: { click: () => {
-              B.dialogs.confirmDialog("Delete this response?", "The answers are removed from the engagement. Validation already set on steps, open questions and the evidence source stay as they are; use Undo right after an import to reverse all of it.", "Delete response", true)
-                .then(ok => { if (ok) ctx.dispatch("review/delete", { id: r.id }, "Response deleted."); });
-            } } }, icon("trash"), h("span", { class: "sr-only" }, "Delete the response from " + (r.reviewer.name || "the reviewer")))));
+              B.dialogs.confirmDialog("Delete these answers?", "The answers are removed from this project. Step changes, open questions and the source they added stay. To reverse everything, use Undo straight after importing.", "Delete answers", true)
+                .then(ok => { if (ok) ctx.dispatch("review/delete", { id: r.id }, "Answers deleted."); });
+            } } }, icon("trash"), h("span", { class: "sr-only" }, "Delete the answers from " + (r.reviewer.name || "the reviewer")))));
         })) :
-        h("p", { class: "small muted" }, "No responses yet. Open a response file, or a filled-in Excel pack, to import it.")));
+        h("p", { class: "small muted" }, "No answers yet. When a reviewer sends their file back, choose Import answers.")));
     // Latest answer per item
     panel.appendChild(h("section", { class: "card", "aria-labelledby": "cr-items-h" }, h("h3", { id: "cr-items-h" }, "Latest answer per item (" + sum.items.length + ")"),
       sum.items.length ? [
-        h("p", { class: "small" }, "When reviewers disagree, the answer submitted last is current; earlier answers are listed with it."),
+        h("p", { class: "small" }, "When reviewers disagree, the most recent answer counts. Earlier answers are listed beside it."),
         table("Latest answer per item", [["Item"], ["Type"], ["Latest answer"], ["Comment"], ["Earlier answers"]],
           sum.items.map(it => {
             const a = it.answer;
@@ -368,7 +369,7 @@
               h("td", null, earlier.length ? h("ul", { class: "plain-list small" }, earlier.map(x => h("li", null,
                 (x.reviewer.name || "Reviewer not named") + ": " + schema.label("reviewVerdict", x.verdict) + (x.at ? ", " + formatDay(x.at) : "")))) : h("span", { class: "muted" }, "None")));
           }))] :
-        h("p", { class: "small muted" }, "Answers appear here once a response is imported.")));
+        h("p", { class: "small muted" }, "Answers appear here once you import them.")));
   }
 
   /* ---------- Process side panel and handoff ---------- */
@@ -379,12 +380,12 @@
     const earlier = latest.history.slice(0, -1);
     const validation = (node.provenance && node.provenance.validation) || "unvalidated";
     return h("section", { class: "side-section", id: "cr-drawer", "aria-labelledby": "cr-drawer-h" },
-      h("h3", { id: "cr-drawer-h" }, "Client review"),
+      h("h3", { id: "cr-drawer-h" }, "Review"),
       h("div", { class: "cr-answer" }, verdictBadge(latest.verdict), h("span", { class: "small" }, R.who(latest.reviewer) + (latest.at ? ", " + formatDay(latest.at) : ""))),
       latest.comment ? h("p", { class: "small cr-comment" }, latest.comment) : null,
       earlier.length ? h("ul", { class: "plain-list small", "aria-label": "Earlier answers" }, earlier.map(x => h("li", null,
         "Earlier: " + (x.reviewer.name || "Reviewer not named") + ", " + schema.label("reviewVerdict", x.verdict).toLowerCase() + (x.at ? " on " + formatDay(x.at) : "") + (x.comment ? ". " + x.comment : "")))) : null,
-      h("p", { class: "note" }, "Latest of " + plural(latest.history.length, "answer") + ". Validation of this step: " + schema.label("validation", validation).toLowerCase() + "."));
+      h("p", { class: "note" }, "Latest of " + plural(latest.history.length, "answer") + ". This step is " + schema.label("validation", validation).toLowerCase() + "."));
   }
 
   function handoffSection(hd, ctx) {
@@ -394,8 +395,8 @@
     const open = sum.items.filter(it => it.answer.verdict !== "confirm");
     const count = b => b.confirm + " confirmed, " + b.dispute + " disputed and " + b.unsure + " not sure";
     return h("section", { class: "cr-handoff", id: "hd-client-review", "aria-labelledby": "hd-cr-h" },
-      h("h2", { id: "hd-cr-h" }, "Client review"),
-      h("p", null, plural(sum.reviews, "response") + " received from " + sum.reviewers.join("; ") + "."),
+      h("h2", { id: "hd-cr-h" }, "Review answers"),
+      h("p", null, plural(sum.reviews, "review") + " received, from " + sum.reviewers.join("; ") + "."),
       h("p", null, "Latest answer per item: steps " + count(sum.steps) + "; findings " + count(sum.findings) + "."),
       open.length ? [h("h3", null, "Disputed or not sure (" + open.length + ")"),
         h("div", { class: "table-wrap" }, h("table", { class: "table" },
@@ -404,7 +405,7 @@
             h("td", null, it.label), h("td", null, it.type), h("td", null, schema.label("reviewVerdict", it.answer.verdict)),
             h("td", null, (it.answer.reviewer.name || "Not named") + (it.answer.at ? ", " + formatDay(it.answer.at) : "")),
             h("td", { class: "cr-comment" }, it.answer.comment || "")))))) ] :
-        h("p", null, sum.items.length ? "Every reviewed item in this summary was confirmed." : "The answers concern findings that are left out of this summary."));
+        h("p", null, sum.items.length ? "Every reviewed item in this report was confirmed." : "The answers are about findings that are left out of this report."));
   }
 
   /* ---------- Registration ---------- */
@@ -412,7 +413,7 @@
   const X = B.ext;
 
   /*
-   * The Client review records tab is listed while the open engagement has a
+   * The Reviews records tab is listed while the open engagement has a
    * review pack or a response, and not otherwise. Making a pack starts from
    * the Present bar and importing from Open, so nothing is out of reach
    * without the tab. The records tab registry has no visibility option, so
@@ -420,7 +421,7 @@
    * before every render of the Records view: the Records view the app
    * creates is wrapped once, here, before app.js creates it.
    */
-  const TAB = { id: "client-review", order: 10, label: "Client review", count: e => (e.reviews || []).length, render: renderTab };
+  const TAB = { id: "client-review", order: 10, label: "Reviews", count: e => (e.reviews || []).length, render: renderTab };
   function hasReviewData(e) {
     return !!(e && ((e.reviewPacks || []).length || (e.reviews || []).length));
   }
@@ -444,7 +445,7 @@
     B.recordsView.createRecordsView = wrapped;
   }
 
-  X.registerPresentAction({ id: "client-review", order: -10, icon: "person", label: "Client review pack", run: (app, ctx) => packDialog(app, ctx) });
+  X.registerPresentAction({ id: "client-review", order: -10, icon: "person", label: "Send for review", run: (app, ctx) => packDialog(app, ctx) });
   X.registerJsonHandler({ id: "client-review", schema: schema.REVIEW_RESPONSE_ID, open: jsonOpen });
   X.registerFileHandler({ id: "client-review", extensions: [".xlsx"], priority: 10, maxBytes: schema.LIMITS.fileBytes, probe: isReviewWorkbook, open: workbookOpen });
   X.registerDrawerSection({ id: "client-review", where: "step", render: drawerSection });

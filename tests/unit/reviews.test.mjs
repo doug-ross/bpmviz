@@ -175,7 +175,7 @@ test("Excel answers are matched by header and verdict wording is normalized", ()
   assert.equal(checked.response.entries[3].verdict, "", "an unrecognized verdict is no answer, never confirm");
   ["Confirmed", "OK", "correct", "No", "Incorrect", "Not sure", "don't know", "", null, true].forEach(v => assert.ok(["confirm", "dispute", "unsure", ""].includes(reviews.normalizeVerdict(v)), String(v)));
   assert.equal(reviews.normalizeVerdict("don't know"), "unsure");
-  assert.throws(() => reviews.responseFromWorkbook({ sheets: [{ name: "Events", rows: [["case", "activity"]] }] }), /not an AIxRay review pack/);
+  assert.throws(() => reviews.responseFromWorkbook({ sheets: [{ name: "Events", rows: [["case", "activity"]] }] }), /not an AIxRay review form/);
   assert.throws(() => reviews.responseFromWorkbook({ sheets: [{ name: "About", rows: [["Pack reference", "rp-1"], ["Engagement reference", "eng-tiny"]] }] }), /Review sheet/);
 });
 
@@ -183,7 +183,7 @@ test("a response for another engagement is refused", () => {
   const e = engagement();
   const p = reviews.prepareApply(e, response(e, "rp-x", [{ itemRef: "step/m-current/work", verdict: "confirm" }], { engagementId: "eng-other" }));
   assert.equal(p.ok, false);
-  assert.match(p.errors[0].message, /different engagement/);
+  assert.match(p.errors[0].message, /different project/);
   const fixture = reviews.prepareApply(validate.validateEngagement(example("underwriting-current-state")).engagement, responseFixture("other-engagement.review-response.json"));
   assert.equal(fixture.ok, false);
   assert.equal(reviews.prepareApply(e, { schema: "aixray.engagement" }).ok, false);
@@ -297,7 +297,7 @@ test("the latest answer wins and earlier answers stay visible", () => {
   apply([{ itemRef: "step/m-current/work", verdict: "confirm" }], { submittedAt: "2026-03-10T09:00:00Z", reviewer: { name: "Later" } });
   const p = apply([{ itemRef: "step/m-current/work", verdict: "dispute", comment: "Not how it works" }], { submittedAt: "2026-03-01T09:00:00Z", reviewer: { name: "Earlier" } });
   const conflict = p.warnings.find(w => w.code === "review.conflict");
-  assert.match(conflict.message, /Later answered confirm on 2026-03-10/);
+  assert.match(conflict.message, /Later answered "Confirm" on 2026-03-10/);
   assert.match(conflict.message, /older/);
   assert.equal(p.items[0].superseded, true);
   assert.equal(p.items[0].targetValidation, null, "an older answer does not overwrite a newer one");
@@ -424,7 +424,7 @@ test("an Excel response without a date that follows a dated response is the curr
   const it = p.items.find(x => x.itemRef === "step/m-current/work");
   assert.equal(it.superseded, false);
   assert.equal(it.targetValidation, "validated");
-  assert.match(p.warnings.find(w => w.code === "review.conflict").message, /The latest answer becomes current/);
+  assert.match(p.warnings.find(w => w.code === "review.conflict").message, /This file is newer, so its answer counts/);
   store.dispatch("review/apply", reviews.buildApplyPayload(e, p, { questions: false, evidence: false }));
   e = store.get();
   assert.equal(e.models[0].nodes.find(n => n.id === "work").provenance.validation, "validated");

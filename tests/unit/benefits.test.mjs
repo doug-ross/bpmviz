@@ -31,7 +31,7 @@ test("compareDatasets reports the two event logs missing from the engagement", (
   assert.deepEqual(cmp.unmatched, []);
   assert.equal(cmp.baseline.id, "ds-tiny-baseline");
   assert.equal(cmp.after, null);
-  assert.ok(cmp.caveats.some(c => /no longer in the engagement/.test(c)));
+  assert.ok(cmp.caveats.some(c => /no longer in the project/.test(c)));
 });
 
 test("compareDatasets compares matched steps and rolls up the dataset totals", () => {
@@ -222,7 +222,7 @@ test("expectedVsRealized reports not-measurable when a log is missing or the opp
   assert.equal(rows[0].recordId, "e");
   assert.equal(rows[0].realized, null);
   assert.equal(rows[0].status, "not-measurable");
-  assert.ok(rows[0].notes.some(n => /no longer in the engagement/.test(n)));
+  assert.ok(rows[0].notes.some(n => /no longer in the project/.test(n)));
 });
 
 test("expectedVsRealized skips an opportunity whose steps are outside the baseline's model", () => {

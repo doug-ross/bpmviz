@@ -116,7 +116,7 @@ test("AC-5: unreconciled supplied costs are flagged, with the implied incrementa
   const s = await open(t, "#example=underwriting&scenario=case-1&ws=value");
   if (!s) return;
   const text = await s.page.textContent("#ws-value");
-  assert.match(text, /Does not reconcile/);
+  assert.match(text, /Does not add up/);
   assert.match(text, /Implies \$200 incremental cost per case/);
   assert.match(text, /\$1,900/, "the calculated figure comes from the declared assumptions");
   assert.match(text, /must not be added together/);
@@ -140,7 +140,7 @@ test("AC-6, AC-10: keyboard selection, capture, filtering and focus return", asy
   await p.waitForFunction(() => window.AIxRay.app.store.get().records.length === 1);
   assert.equal(await p.textContent("#drawer-title"), "Check Clearance & Dedup", "the selection is kept after capture");
   assert.equal(await p.textContent("#tab-records-count"), "1");
-  assert.equal(await p.getAttribute(node, "aria-label").then(l => /1 linked record/.test(l)), true);
+  assert.equal(await p.getAttribute(node, "aria-label").then(l => /1 finding/.test(l)), true);
   await p.keyboard.press("Escape");
   assert.equal(await p.evaluate(() => document.activeElement.dataset.node), "check-clearance-dedup", "focus returns to the step");
 
@@ -153,7 +153,7 @@ test("AC-6, AC-10: keyboard selection, capture, filtering and focus return", asy
   await p.click("#ws-records tbody tr .actions button");
   const dlg = p.locator("dialog[open]");
   await dlg.locator("select").nth(1).selectOption("in-progress");
-  await dlg.getByRole("button", { name: "Save record" }).click();
+  await dlg.getByRole("button", { name: "Save finding" }).click();
   await p.waitForFunction(() => window.AIxRay.app.store.get().records[0].status === "in-progress");
   assert.match(await p.textContent("#ws-records tbody"), /In progress/);
   clean(s.problems);
@@ -168,7 +168,7 @@ test("AC-7: save and reopen keeps IDs and records; an invalid file leaves the op
     linkedModelId: "m-current", linkedNodeIds: ["perform-on-site-loss-prevention-survey"], evidenceRefs: ["ev-source-bpmn"] } }));
   const [download] = await Promise.all([p.waitForEvent("download"), p.click("#btn-save")]);
   const saved = JSON.parse(fs.readFileSync(await download.path(), "utf8"));
-  assert.match(await p.textContent("#save-state"), /Saved to file/);
+  assert.match(await p.textContent("#save-state"), /^Saved: /);
   assert.equal(saved.records.length, 1);
 
   const s2 = await open(t, "");
@@ -180,13 +180,13 @@ test("AC-7: save and reopen keeps IDs and records; an invalid file leaves the op
   assert.deepEqual(reopened.models.map(m => m.nodes.map(n => n.id)), saved.models.map(m => m.nodes.map(n => n.id)));
   assert.deepEqual(reopened.assumptions, saved.assumptions);
   assert.deepEqual(reopened.evidence, saved.evidence);
-  assert.match(await s2.page.textContent("#save-state"), /Saved to file: roundtrip.engagement.json/);
+  assert.match(await s2.page.textContent("#save-state"), /Saved: roundtrip.engagement.json/);
 
   const before = await engagementOf(s2.page);
   await s2.page.setInputFiles("#file-input", { name: "broken.json", mimeType: "application/json", buffer: Buffer.from("{ \"schema\": ") });
   await s2.page.waitForSelector("dialog[open]");
-  assert.match(await s2.page.textContent("dialog[open]"), /could not be opened/);
-  assert.match(await s2.page.textContent("dialog[open]"), /unchanged/);
+  assert.match(await s2.page.textContent("dialog[open]"), /didn't open/);
+  assert.match(await s2.page.textContent("dialog[open]"), /Your open project hasn't changed/);
   await s2.page.keyboard.press("Escape");
   assert.deepEqual(await engagementOf(s2.page), before);
   clean(s.problems);
@@ -199,11 +199,11 @@ for (const mode of ["file", "http"]) {
     if (!s) return;
     const p = s.page;
     await p.evaluate(() => window.AIxRay.app.dispatch("record/add", { record: { kind: "pain", title: "QA environment is shared", linkedModelId: "m-current", linkedNodeIds: ["qa"] } }));
-    await p.waitForFunction(() => /Draft kept in this browser/.test(document.getElementById("save-state").textContent));
+    await p.waitForFunction(() => /Draft kept at/.test(document.getElementById("save-state").textContent));
     await p.reload();
     await p.waitForSelector("dialog[open]");
-    assert.match(await p.textContent("dialog[open]"), /Restore your draft/);
-    await p.getByRole("button", { name: "Restore the draft" }).click();
+    assert.match(await p.textContent("dialog[open]"), /Continue your draft/);
+    await p.getByRole("button", { name: "Continue the draft" }).click();
     await p.waitForSelector(".node");
     const e = await engagementOf(p);
     assert.equal(e.records.length, 1);
@@ -217,7 +217,7 @@ test("AC-8: blocked storage is reported and file save stays available", async t 
   const s = await open(t, "", { blockStorage: true });
   if (!s) return;
   const p = s.page;
-  assert.match(await p.textContent("#ws-start"), /recovery drafts are off/);
+  assert.match(await p.textContent("#ws-start"), /can't keep drafts/);
   await p.click("#open-rpa-delivery");
   await p.waitForSelector(".node");
   await p.evaluate(() => window.AIxRay.app.dispatch("record/add", { record: { kind: "note", title: "Storage test" } }));
@@ -284,7 +284,7 @@ test("AC-11: untrusted content renders as text and unsafe links are dropped", as
   e.evidence.push({ id: "ev-bad", title: "Bad link", link: "javascript:window.__xss=3" });
   await p.setInputFiles("#file-input", { name: "untrusted.engagement.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(e)) });
   await p.waitForSelector("dialog[open]");
-  await p.getByRole("button", { name: "Continue" }).click();
+  await p.getByRole("button", { name: "Later" }).click();
   await p.waitForSelector(".node");
   assert.equal(await p.evaluate(() => document.querySelectorAll("img").length), 0);
   assert.equal(await p.evaluate(() => window.__xss), undefined);
@@ -312,7 +312,7 @@ test("AC-12: the handoff and CSV leave out sensitive records unless included", a
   assert.match(text, /Risk engineering/);
   assert.match(text, /Demonstration data/);
   assert.doesNotMatch(text, /Named staff salary detail/);
-  assert.match(text, /1 sensitive records are not included/);
+  assert.match(text, /1 sensitive finding is left out of this report/);
   const [csv] = await Promise.all([p.waitForEvent("download"), p.click("#pr-csv")]);
   assert.doesNotMatch(fs.readFileSync(await csv.path(), "utf8"), /Named staff salary detail/);
   await p.check("#pr-sensitive");
@@ -326,8 +326,8 @@ test("P1-05: cloning the baseline locks it and tracks changes in the draft", asy
   if (!s) return;
   const p = s.page;
   assert.equal(await p.$$eval("#pv-display option", o => o.length), 1, "no comparison without a future state");
-  await p.getByRole("button", { name: "Start a future-state draft" }).click();
-  await p.getByRole("button", { name: "Create draft" }).click();
+  await p.getByRole("button", { name: "Plan a future state" }).click();
+  await p.getByRole("button", { name: "Create", exact: true }).click();
   await p.waitForFunction(() => document.querySelectorAll(".pane").length === 2);
   assert.match(await p.textContent(".pane-head"), /Locked baseline/);
   await p.evaluate(() => window.AIxRay.app.processView.selectNode("m-current", "scrub-sov-geocode", { tab: "edit" }));
@@ -353,7 +353,7 @@ test("P2-01: BPMN import keeps source IDs and reports unsupported elements", asy
   const review = await p.textContent("dialog[open]");
   assert.match(review, /boundaryEvent/);
   assert.match(review, /message flows/);
-  await p.getByRole("button", { name: "Continue" }).click();
+  await p.getByRole("button", { name: "Later" }).click();
   await p.waitForSelector(".node");
   assert.equal(await p.$$eval(".pane .node", n => n.length), 12);
   const e = await engagementOf(p);

@@ -46,7 +46,7 @@
 
   /* Who wrote a record: the workshop, or an AI assistant (reviewed or not). */
   function originLabel(item) {
-    if (!item || !item.generated) return "Workshop";
+    if (!item || !item.generated) return "Person";
     return aiPhrase("AI draft", item.generated) + (item.generated.reviewed ? ", reviewed" : ", not reviewed");
   }
 
@@ -64,9 +64,9 @@
     const models = new Map(engagement.models.map(m => [m.id, m.name]));
     const evidence = new Map(engagement.evidence.map(e => [e.id, e.title]));
     const rows = [[
-      "ID", "Kind", "Title", "Description", "Owner", "Status", "Priority", "Model", "Linked steps",
-      "Evidence", "Intervention", "Simpler alternative considered", "Expected benefit", "Effort", "Risk",
-      "Dependencies", "Validation action", "Sensitive", "Origin", "Created", "Updated"
+      "ID", "Type", "Title", "Details", "Owner", "Status", "Priority", "Diagram", "Linked steps",
+      "Sources", "Type of change", "Why not a simpler change?", "Expected benefit", "Effort", "Risk",
+      "Dependencies", "How to confirm", "Sensitive", "Written by", "Created", "Updated"
     ]];
     selectRecords(engagement, options).forEach(r => {
       const o = r.opportunity || {};
@@ -101,7 +101,7 @@
           lead + ", reviewed " + String(narrative.generated.reviewedAt || "").slice(0, 10) + "." :
           lead + ". Not yet reviewed.";
       } else if (narrative.status !== "reviewed") {
-        disclosure = "Draft.";
+        disclosure = "Draft, not reviewed yet.";
       }
       executiveSummary = { title: narrative.title, text: narrative.text, status: narrative.status, disclosure };
     }

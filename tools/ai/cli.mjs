@@ -36,15 +36,15 @@ const HELP = `AIxRay AI tasks, run on your own Claude Code or Codex sign-in.
 Usage: npm run ai -- <command> [options]
 
 Commands
-  status                          Is Claude Code or Codex installed and signed in, and on which plan
-  extract <files...>              Draft a current-state engagement from PDF, DOCX, PPTX, images, notes or BPMN
-  opportunities --in <file>       Suggest pain points, opportunities and open questions
+  status                          Show whether Claude Code or Codex is installed and signed in, and on which plan
+  extract <files...>              Create a draft process, as a new project, from PDF, DOCX, PPTX, images, notes or BPMN
+  opportunities --in <file>       Suggest findings: pain points, opportunities and open questions
   future-state --in <file>        Draft a future state as changes to the current state
-  summary --in <file>             Draft the executive summary for the handoff
+  summary --in <file>             Draft the executive summary for the report
   log-mapping --in <file> --activities <file>
-                                  Suggest which step each event log activity belongs to
-  check <result> [--in <file>]    Check an AI result file, and what it would change in the engagement
-  gate [--in <file>]              Say whether this engagement may go to this AI account, and what to confirm
+                                  Match each event log activity to a step
+  check <result> [--in <file>]    Check an AI result file, and what it would change in the project
+  gate [--in <file>]              Say whether this project may go to this AI account, and what you must confirm
   text <file>                     Print the text AIxRay reads from a document
   input <task> --in <file>        Print what a task sends to the AI tool (log-mapping also needs --activities)
   wrap <task> --payload <file>    Turn an agent skill's output into a checked result file
@@ -53,10 +53,10 @@ Options
   --with claude|codex             AI tool to use (default: claude)
   --out <file>                    Result file (default: <name>.<task>.ai-result.json in this folder)
   --plan commercial|consumer      Your plan, when the tool does not report it (Codex always needs this)
-  --yes                           Confirm the engagement lead approved sending this material to this account
+  --yes                           Confirm the project lead approved sending this material to this account
   --training-off                  Confirm model training is off for this account (needed on consumer plans)
   --written-approval "<text>"     Written client approval for restricted material: who approved, and when
-  --include-sensitive             Also send records marked sensitive
+  --include-sensitive             Also send findings marked sensitive
   --baseline <model id>           Current-state model a future state starts from, or the model log-mapping maps to
                                   (default: the first current-state model)
   --activities <file>             log-mapping: the activity names, as a .txt file with one name per line, or a
@@ -65,10 +65,10 @@ Options
   --confidentiality <level>       extract: internal, client-confidential (default), restricted or public
   --data-status <status>          extract: supplied (default) or demonstration
   --process-name <text>           extract: process name
-  --client <text>                 extract: client display name
-  --engagement-name <text>        extract: engagement name
+  --client <text>                 extract: client name
+  --engagement-name <text>        extract: project name
   --model <name>                  Model to ask the tool for
-  --apply                         Also write a copy of the engagement with every item applied, marked as unreviewed AI drafts
+  --apply                         Also write a copy of the project with every item applied, marked as unreviewed AI drafts
   --keep                          Keep the job folder for inspection
   --use-api-key                   Allow an API key sign-in instead of a subscription (billed to the key)
   --surface cli|skill|app         How the task was started (wrap sets skill)
@@ -146,7 +146,7 @@ export async function readActivities(file, column) {
   let index = column ? header.indexOf(String(column).trim().toLowerCase()) : -1;
   if (column && index < 0) throw new UsageError("No column named \"" + column + "\". Columns: " + table.header.join(", ") + ".");
   if (index < 0) index = header.length === 1 ? 0 : mining.guessColumns(table.header).activity;
-  if (index < 0) throw new UsageError("Name the column with the activity names with --activity-column. Columns: " + table.header.join(", ") + ".");
+  if (index < 0) throw new UsageError("Say which column has the activity names with --activity-column. Columns: " + table.header.join(", ") + ".");
   return countNames(table.rows.map(r => cellName(r[index])));
 }
 
@@ -155,14 +155,14 @@ async function logMappingOptions(opts, engagement) {
   const activities = await readActivities(opts.activities, opts["activity-column"]);
   if (!activities.length) throw new UsageError(opts.activities + " has no activity names.");
   const modelId = opts.baseline || ((engagement.models.find(m => m.role === "current") || engagement.models[0] || {}).id);
-  if (!engagement.models.some(m => m.id === modelId)) throw new UsageError("The model " + modelId + " is not in the engagement.");
+  if (!engagement.models.some(m => m.id === modelId)) throw new UsageError("The model " + modelId + " is not in the project.");
   return { modelId, activities };
 }
 
 function readEngagement(file) {
-  if (!file) throw new UsageError("Give the engagement file with --in.");
+  if (!file) throw new UsageError("Give the project file with --in.");
   const v = validate.parseEngagementText(fs.readFileSync(file, "utf8"));
-  if (!v.ok) throw new UsageError(file + " is not a valid engagement:\n" + v.errors.slice(0, 10).map(x => "  " + (x.path ? x.path + ": " : "") + x.message).join("\n"));
+  if (!v.ok) throw new UsageError(file + " is not a valid AIxRay project file:\n" + v.errors.slice(0, 10).map(x => "  " + (x.path ? x.path + ": " : "") + x.message).join("\n"));
   return v.engagement;
 }
 
@@ -183,8 +183,8 @@ function describeReview(review, result) {
   const lines = [];
   if (result.task === "extract") {
     const e = result.payload.engagement;
-    lines.push("  " + e.models.map(m => m.name + ": " + m.nodes.length + " steps in " + m.lanes.length + " swimlanes").join("; "));
-    lines.push("  " + e.records.length + " records, " + e.evidence.length + " sources, " + e.scenarios.length + " scenarios");
+    lines.push("  " + e.models.map(m => m.name + ": " + m.nodes.length + " steps in " + m.lanes.length + " lanes").join("; "));
+    lines.push("  " + e.records.length + " findings, " + e.evidence.length + " sources, " + e.scenarios.length + " scenarios");
     return lines;
   }
   const items = review ? review.items : [];
@@ -225,7 +225,7 @@ async function cmdStatus(opts) {
     rows.push(st);
     if (!st.installed) { say(opts, p.name + ": not installed."); continue; }
     say(opts, p.name + " " + st.version + ": " + (st.loggedIn ? "signed in" + (st.org ? " to " + st.org : "") + ", " + st.planLabel + "." : "not signed in.") +
-      (st.apiKey ? " Uses an API key; AIxRay needs --use-api-key for that." : "") +
+      (st.apiKey ? " It uses an API key, so AIxRay needs --use-api-key." : "") +
       (st.loggedIn && !st.planDetected ? " Give your plan with --plan commercial or --plan consumer." : ""));
   }
   emitJson(opts, { type: "status", providers: rows });
@@ -284,7 +284,7 @@ function checkAndReport(opts, result, validation, engagement, context) {
     describeReview(review, validation.result).forEach(l => say(opts, l));
   }
   printWarnings(opts, validation.warnings.concat(validation.result.warnings, review ? review.warnings : []));
-  say(opts, "The result is valid." + (engagement || result.task === "extract" ? "" : " Add --in <engagement> to check it against the engagement."));
+  say(opts, "The result is valid." + (engagement || result.task === "extract" ? "" : " Add --in <file> to check it against the project."));
   emitJson(opts, { type: "check", ok: true, warnings: validation.warnings, review });
   return 0;
 }
@@ -384,15 +384,15 @@ async function cmdTask(opts) {
   printWarnings(opts, r.warnings.concat(r.result.warnings));
   if (r.jobDir) say(opts, "The job folder was kept at " + r.jobDir);
   let applied = null;
-  if (opts.apply && task === "log-mapping") say(opts, "--apply does not apply to log-mapping: the mappings are reviewed in the event-log import.");
+  if (opts.apply && task === "log-mapping") say(opts, "--apply is not used by log-mapping. You review the mappings in the event log import.");
   else if (opts.apply && task !== "extract" && r.review) {
     applied = applyAll(r.result, r.review, engagement, opts.in);
     if (applied) say(opts, "Wrote " + applied + " with every item applied as an unreviewed AI draft.");
   }
   say(opts, task === "extract" ?
-    "Open the result in AIxRay with Open, check it, then open it as a new engagement and save it." : task === "log-mapping" ?
-    "In AIxRay, open the engagement, choose More actions, Import an event log, pick the log, and in the activities step choose Load an AI mapping result." :
-    "Open the result in AIxRay with Open (with the engagement open), tick the items you want and apply them.");
+    "Open the result in AIxRay with Open, check it, choose Open as a new project, then save it." : task === "log-mapping" ?
+    "In AIxRay, open the project, choose More actions, Import an event log, pick the log, and in the Activities step choose Load an AI mapping result." :
+    "Open the project in AIxRay, then open the result with Open, tick the items you want and apply them.");
   emitJson(opts, { type: "written", file: out, applied, result: opts.json ? r.result : undefined });
   return 0;
 }

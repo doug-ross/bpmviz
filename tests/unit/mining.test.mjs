@@ -182,7 +182,7 @@ test("cases with no mapped event are not reported as incomplete, and without end
   const free = mining.aggregate({ model, events, mapping, mode: "start-end", requireEnd: false, topVariants: 0, dataStatus: "observed" });
   assert.equal(free.dataset.source.excludedIncompleteCases, 0, "no end-step rule applied");
   assert.deepEqual([free.counts.noMapped, free.dataset.cases.count, free.dataset.cases.complete], [5, 2, 0]);
-  assert.ok(free.warnings.some(w => w.code === "mining.unmapped" && /^5 cases have no event mapped/.test(w.message)));
+  assert.ok(free.warnings.some(w => w.code === "mining.unmapped" && /^5 cases have no event matched/.test(w.message)));
   assert.ok(free.warnings.some(w => w.code === "mining.noEndSteps"));
   const ruled = mining.aggregate({ model, events, mapping, mode: "start-end", endNodeIds: ["end"], topVariants: 0, dataStatus: "observed" });
   assert.equal(ruled.dataset.source.excludedIncompleteCases, 1, "only the case ending at Fix is incomplete");
@@ -307,7 +307,7 @@ test("figures go into the value model with the dataset's basis and source", () =
   const ds = Object.assign({}, out.dataset, { dataStatus: "observed" });
   const st2 = storeLib.createStore(observed);
   const id2 = st2.dispatch("dataset/import", { dataset: ds, scenarios: [] }).datasetId;
-  assert.throws(() => st2.dispatch("dataset/applyToValueModel", { datasetId: id2, cycleTime: true, scenarioId: "base" }), /calendar time and the engagement in business time/);
+  assert.throws(() => st2.dispatch("dataset/applyToValueModel", { datasetId: id2, cycleTime: true, scenarioId: "base" }), /calendar time and the project in business time/);
   st2.dispatch("dataset/applyToValueModel", { datasetId: id2, annualVolume: true });
   assert.equal(st2.get().assumptions.find(x => x.key === "annualVolume").status, "observed");
 });
@@ -320,7 +320,7 @@ test("dataset/import checks the payload, the limits and the references", () => {
   assert.throws(() => store.dispatch("dataset/import", { dataset: Object.assign({}, out.dataset, { comparesToDatasetId: "ds-gone" }) }), /compare with/);
   assert.throws(() => store.dispatch("dataset/import", { dataset: out.dataset, scenarios: new Array(11).fill(out.scenarios[0]) }), /At most 10 scenarios/);
   for (let k = 0; k < 12; k++) store.dispatch("dataset/import", { dataset: out.dataset });
-  assert.throws(() => store.dispatch("dataset/import", { dataset: out.dataset }), /at most 12 event logs/);
+  assert.throws(() => store.dispatch("dataset/import", { dataset: out.dataset }), /up to 12 event logs/);
   assert.equal(mining.registerStoreCommands(), true, "registering twice is harmless");
 });
 

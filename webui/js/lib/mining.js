@@ -597,8 +597,8 @@
     });
     if (pairs.size > L.datasetTransitions) warnings.push({ code: "mining.transitions", message: "Only the " + L.datasetTransitions + " most frequent of " + pairs.size + " step pairs are kept." });
     if (notInModel) {
-      warnings.push({ code: "mining.notInModel", message: notInModel + " step pair" + (notInModel === 1 ? "" : "s") + " (" + notInModelCount +
-        " handover" + (notInModelCount === 1 ? "" : "s") + " between steps) " + (notInModel === 1 ? "has" : "have") + " no connector path in the model. They are kept and marked as not in the model." });
+      warnings.push({ code: "mining.notInModel", message: notInModel + " step pair" + (notInModel === 1 ? "" : "s") + " (seen " + notInModelCount +
+        " time" + (notInModelCount === 1 ? "" : "s") + ") " + (notInModel === 1 ? "has" : "have") + " no connector path in the model. " + (notInModel === 1 ? "It is" : "They are") + " kept and marked as not in the model." });
     }
 
     const ranked = [...variants.values()].sort((a, b) => b.members.length - a.members.length || a.order - b.order);
@@ -619,12 +619,12 @@
     if (overlaps) warnings.push({ code: "mining.overlap", message: overlaps + " event" + (overlaps === 1 ? " starts" : "s start") + " before the previous event in the case ended (parallel work). Their wait is counted as zero." });
     if (excludedIncomplete) warnings.push({ code: "mining.incomplete", message: excludedIncomplete + " case" + (excludedIncomplete === 1 ? " does" : "s do") + " not end at an end step and " + (excludedIncomplete === 1 ? "is" : "are") + " left out." });
     if (!endSet.size && included) warnings.push({ code: "mining.noEndSteps", message: "No end steps are set, so no case is counted as complete." });
-    if (noMapped) warnings.push({ code: "mining.unmapped", message: noMapped + " case" + (noMapped === 1 ? " has" : "s have") + " no event mapped to a step and " + (noMapped === 1 ? "is" : "are") + " left out." });
+    if (noMapped) warnings.push({ code: "mining.unmapped", message: noMapped + " case" + (noMapped === 1 ? " has" : "s have") + " no event matched to a step and " + (noMapped === 1 ? "is" : "are") + " left out." });
 
     const days = Number.isFinite(first) && last >= first ? (last - first) / DAY : 0;
     const arrivals = caseCount ? caseCount / Math.max(days, 1) : 0;
     const acts = [...activityEvents.entries()].sort((a, b) => b[1] - a[1]);
-    if (acts.length > L.datasetMapping) warnings.push({ code: "mining.mapping", message: "Only the " + L.datasetMapping + " most frequent of " + acts.length + " activities are listed in the mapping." });
+    if (acts.length > L.datasetMapping) warnings.push({ code: "mining.mapping", message: "Only the " + L.datasetMapping + " most frequent of " + acts.length + " activities are kept in the list of activity matches." });
     const src = o.source || {};
     const dataset = {
       id: "ds-new",
@@ -746,11 +746,11 @@
       note: "Cycle time of " + label + " in " + source + "." }];
     if (mode === "start-end") {
       measures.push({ key: "humanTouch", label: "Human touch effort", unit: "hour", values: { [model.id]: round(human / 60, 3) }, suppliedText: {}, status,
-        note: "Start to end time of the steps in people swimlanes for " + label + ". Elapsed time per step, so it can include interruptions." });
+        note: "Start-to-end time of the steps in people lanes for " + label + ". Elapsed time per step, so it can include interruptions." });
     }
     return {
       id: "sc-new-" + (index + 1),
-      name: "Observed variant " + (index + 1) + ": " + util.formatNumber(pct, 1) + "% of cases",
+      name: "Measured variant " + (index + 1) + ": " + util.formatNumber(pct, 1) + "% of cases",
       statusLabel: "", statusTone: "",
       provenance: provenanceOf(dataset.dataStatus),
       summary: "One case from " + source + ": the case whose cycle time is closest to the median of variant " + (index + 1) +
@@ -763,7 +763,7 @@
       ],
       timing: {
         method: "explicit-visits",
-        note: "Times are from the event log: minutes from the first event of the case, in the engagement's time basis. " +
+        note: "Times are from the event log: minutes from the first event of the case, in the project's time basis. " +
           (mode === "start-end" ? "Each visit runs from the start to the end of its event." : "The log has one time per event, so each visit runs from the previous event to its own.") +
           " Gateways and events on the way have zero length."
       },
@@ -828,8 +828,8 @@
       ["Duration, start to end", statText(s.duration, tb, "visits")],
       ["Wait before the step", statText(s.wait, tb, "visits")],
       ["Time since the previous event", statText(s.sojourn, tb, "visits")],
-      ["People involved", s.resources === null ? null : util.formatNumber(s.resources, 0) + (s.resources === 1 ? " distinct resource" : " distinct resources")],
-      ["Handoffs into the step", s.handoffRate === null ? null : pctText(s.handoffRate) + " of visits change resource"]
+      ["People involved", s.resources === null ? null : util.formatNumber(s.resources, 0) + (s.resources === 1 ? " person" : " people")],
+      ["Changes hands", s.handoffRate === null ? null : pctText(s.handoffRate) + " of visits come from a different person"]
     ].filter(p => p[1] !== null && p[1] !== undefined);
   }
 
@@ -850,9 +850,9 @@
   function noDataset(tasks, what) {
     return {
       description: what, unit: "", population: "No event log is linked to this model.",
-      coverage: { have: 0, total: tasks.length, text: "0 of " + tasks.length + " activities have observed data" },
+      coverage: { have: 0, total: tasks.length, text: "0 of " + tasks.length + " activities have measured data" },
       nodes: {}, edges: {}, legend: [],
-      notes: ["Import an event log from More actions, Import an event log."]
+      notes: ["To add one, choose More actions, Import an event log."]
     };
   }
 
@@ -876,7 +876,7 @@
     out.coverage = { have, total: tasks.length, text: have + " of " + tasks.length + " activities appear in the log" };
     out.legend = [{ level: 1, label: "Up to 25% of cases" }, { level: 2, label: "" }, { level: 3, label: "" }, { level: 4, label: "Over 75% of cases" }];
     const um = d.source.unmatchedEvents;
-    if (um) out.notes.push(util.formatNumber(um, 0) + (um === 1 ? " event in the log is" : " events in the log are") + " not mapped to a step and not counted.");
+    if (um) out.notes.push(util.formatNumber(um, 0) + (um === 1 ? " event in the log is" : " events in the log are") + " not matched to a step and not counted.");
     if (Object.keys(out.edges).length) out.notes.push("Highlighted connectors are the ones the cases in the log take.");
     return out;
   }
@@ -905,7 +905,7 @@
       out.nodes[v.n.id] = { level: lensLevel(v.st.p50, max), text: units.formatDuration(v.st.p50, d.timeBasis, { precise: true }) + " median" + (datasetQuery.smallSample(v.st) ? " (n=" + v.st.n + ")" : "") };
     });
     out.population = "Visits in " + d.name + ", " + periodText(d) + ", " + util.formatNumber(d.cases.count, 0) + " cases. " + basisWords(d);
-    out.coverage = { have: values.length, total: tasks.length, text: values.length + " of " + tasks.length + " activities have observed times" };
+    out.coverage = { have: values.length, total: tasks.length, text: values.length + " of " + tasks.length + " activities have measured times" };
     out.legend = [{ level: 1, label: "Lowest quarter" }, { level: 2, label: "" }, { level: 3, label: "" }, { level: 4, label: "Highest quarter (max " + units.formatDuration(max, d.timeBasis) + ")" }];
     if (small) out.notes.push(small + " activit" + (small === 1 ? "y has" : "ies have") + " fewer than 5 visits; treat their medians with care.");
     return out;
@@ -941,16 +941,16 @@
     "dataset/import"(e, p) {
       if (!p || !util.isPlainObject(p.dataset)) throw new StoreError("invalid", "No event log to add.");
       e.datasets = Array.isArray(e.datasets) ? e.datasets : [];
-      if (e.datasets.length >= L.datasets) throw new StoreError("limit", "An engagement holds at most " + L.datasets + " event logs. Delete one first.");
+      if (e.datasets.length >= L.datasets) throw new StoreError("limit", "A project can hold up to " + L.datasets + " event logs. Delete one first.");
       const list = Array.isArray(p.scenarios) ? p.scenarios : [];
       if (list.length > L.scenariosPerDataset) throw new StoreError("limit", "At most " + L.scenariosPerDataset + " scenarios can come from one event log.");
-      if (e.scenarios.length + list.length > L.scenarios) throw new StoreError("limit", "The engagement already has the maximum of " + L.scenarios + " scenarios.");
+      if (e.scenarios.length + list.length > L.scenarios) throw new StoreError("limit", "The project already has the maximum of " + L.scenarios + " scenarios. Choose fewer scenarios in Options, or delete one first.");
       const raw = util.clone(p.dataset);
       const id = util.uniqueId("ds-" + util.slug(raw.name || "event-log", 40), new Set(e.datasets.map(d => d.id)));
       raw.id = id;
       raw.scenarioIds = [];
       if (raw.comparesToDatasetId && !e.datasets.some(d => d.id === raw.comparesToDatasetId)) throw new StoreError("not-found", "The event log to compare with was not found.");
-      if (!raw.modelId || !e.models.some(m => m.id === raw.modelId)) throw new StoreError("not-found", "The model for this event log was not found.");
+      if (!raw.modelId || !e.models.some(m => m.id === raw.modelId)) throw new StoreError("not-found", "The process model for this event log was not found. It may have been deleted.");
       const v = validate.sanitizeDataset(raw, e);
       if (v.errors.length) throw new StoreError("invalid", "The event log could not be added: " + v.errors[0].message);
       e.datasets.push(v.value);
@@ -993,8 +993,8 @@
       }
       if (p.cycleTime || p.humanTouch) {
         const s = e.scenarios.find(x => x.id === p.scenarioId);
-        if (!s) throw new StoreError("not-found", "Choose the scenario that receives the figures.");
-        if (!d.modelId || !e.models.some(m => m.id === d.modelId)) throw new StoreError("invalid", "The event log is not linked to a model.");
+        if (!s) throw new StoreError("not-found", "Choose the scenario to receive the figures.");
+        if (!d.modelId || !e.models.some(m => m.id === d.modelId)) throw new StoreError("invalid", "The event log is not linked to a process model.");
         const status = basis === "illustrative" ? "supplied" : basis;
         const demo = basis === "illustrative" ? " Demonstration data." : "";
         if (p.cycleTime) {
@@ -1002,7 +1002,7 @@
           if (!st || !util.isFiniteNumber(st.p50)) throw new StoreError("invalid", "This event log has no cycle times.");
           if (!sameBasis(d.timeBasis, e.meta.timeBasis)) {
             throw new StoreError("invalid", "The event log is measured in " + (d.timeBasis.calendar === "business" ? "business" : "calendar") +
-              " time and the engagement in " + (e.meta.timeBasis.calendar === "business" ? "business" : "calendar") + " time, so its cycle time cannot be used as it is. Import the log again with the engagement's time basis.");
+              " time and the project in " + (e.meta.timeBasis.calendar === "business" ? "business" : "calendar") + " time, so its cycle time cannot be used. Import the log again with the project's time basis.");
           }
           setMeasure(s, d.modelId, "cycleTime", "Cycle time", "minute", st.p50, status, "Median cycle time. " + src + "." + demo);
           applied.push("cycleTime");
@@ -1010,9 +1010,9 @@
         if (p.humanTouch) {
           if (d.source.timestampMode !== "start-end") throw new StoreError("invalid", "Human touch effort needs a log with start and end times.");
           const hours = humanTouchHours(e, d);
-          if (hours === null) throw new StoreError("invalid", "No step in a people swimlane has durations in this event log.");
+          if (hours === null) throw new StoreError("invalid", "No step in a people lane has durations in this event log.");
           setMeasure(s, d.modelId, "humanTouch", "Human touch effort", "hour", hours, status,
-            "Average start to end time per case of the steps in people swimlanes. " + src + ". Elapsed time per step, so it can include interruptions." + demo);
+            "Average start-to-end time per case of the steps in people lanes. " + src + ". Elapsed time per step, so it can include interruptions." + demo);
           applied.push("humanTouch");
         }
       }

@@ -261,14 +261,14 @@
     slides.push({
       kind: "title", title: hd.title,
       subtitle: [hd.client, hd.engagementName].filter(Boolean).join(" \u00b7 "),
-      lines: [hd.dataStatus, hd.confidentiality, "Engagement revision " + hd.revision].filter(Boolean)
+      lines: [hd.dataStatus, hd.confidentiality, "Version " + hd.revision].filter(Boolean)
     });
 
-    slides.push(...tableSlides("Scope", ["Model", "Role", "Version", "Status", "Steps"],
+    slides.push(...tableSlides("Scope", ["Process", "Role", "Version", "Status", "Steps"],
       hd.models.map(m => [m.name, m.role, String(m.version), m.status, String(m.steps)])));
 
     if (hd.sections.pain.length) {
-      slides.push(...tableSlides("Findings", ["Finding", "Steps", "Owner", "Status"],
+      slides.push(...tableSlides("Pain points", ["Pain point", "Steps", "Owner", "Status"],
         hd.sections.pain.map(r => [r.title, r.steps.join(", ") || "Not linked", r.owner || "Unassigned", r.status])));
     }
 
@@ -276,24 +276,24 @@
     if (ranked.length) {
       slides.push(...tableSlides("Opportunities", ["Rank", "Opportunity", "Value", "Wave"],
         ranked.map(r => [String(r.rank), r.title,
-          r.value === null ? "Not modeled" : units.formatMeasure(r.value, r.unit, fmtCtx) + " (" + schema.label("assumptionStatus", r.basis) + " inputs)",
+          r.value === null ? "No estimate yet" : units.formatMeasure(r.value, r.unit, fmtCtx) + " a year (" + schema.label("assumptionStatus", r.basis).toLowerCase() + " inputs)",
           schema.label("wave", r.wave || "")])));
     }
 
     const folio = valueCase.portfolio(e, ctx);
     const waveRows = folio.waves.filter(w => w.wave).map(w => [w.label, String(w.recordIds.length),
-      w.netAnnualBenefit === null ? "Not modeled" : units.formatMeasure(w.netAnnualBenefit, "currency", fmtCtx),
-      w.annualHoursSaved === null ? "Not modeled" : units.formatMeasure(w.annualHoursSaved, "hour", fmtCtx)]);
+      w.netAnnualBenefit === null ? "No estimate yet" : units.formatMeasure(w.netAnnualBenefit, "currency", fmtCtx),
+      w.annualHoursSaved === null ? "No estimate yet" : units.formatMeasure(w.annualHoursSaved, "hour", fmtCtx)]);
     if (waveRows.length) {
-      waveRows.push(["Total (now, next, later)", String(folio.total.recordIds.length),
-        folio.total.netAnnualBenefit === null ? "Not modeled" : units.formatMeasure(folio.total.netAnnualBenefit, "currency", fmtCtx),
-        folio.total.annualHoursSaved === null ? "Not modeled" : units.formatMeasure(folio.total.annualHoursSaved, "hour", fmtCtx)]);
+      waveRows.push(["Total, all planned waves", String(folio.total.recordIds.length),
+        folio.total.netAnnualBenefit === null ? "No estimate yet" : units.formatMeasure(folio.total.netAnnualBenefit, "currency", fmtCtx),
+        folio.total.annualHoursSaved === null ? "No estimate yet" : units.formatMeasure(folio.total.annualHoursSaved, "hour", fmtCtx)]);
       slides.push(...tableSlides("Value by wave", ["Wave", "Opportunities", "Net annual benefit", "Hours saved per year"], waveRows, folio.notes));
     }
 
     slides.push({
       kind: "image", title: "Process", image: o.image || null,
-      note: "No process diagram is available. Open the Process workspace, then export again.",
+      note: "No process diagram is available. Open the Process tab, then export again.",
       caption: hd.scenario ? "Scenario: " + hd.scenario.name + " (" + hd.scenario.provenance.toLowerCase() + ")" : ""
     });
 
@@ -304,11 +304,11 @@
     });
 
     slides.push({
-      kind: "bullets", title: "Disclosure",
+      kind: "bullets", title: "About this data",
       lines: [
-        hd.disclosure || "No disclosure statement is recorded for this engagement.",
-        hd.excludedSensitive ? hd.excludedSensitive + " sensitive record" + (hd.excludedSensitive === 1 ? " is" : "s are") + " not included in this deck." : "",
-        hd.excludedUnreviewedAi ? hd.excludedUnreviewedAi + " AI-drafted record" + (hd.excludedUnreviewedAi === 1 ? " is" : "s are") + " not yet reviewed and not included." : ""
+        hd.disclosure || "No disclosure statement is recorded for this project.",
+        hd.excludedSensitive ? hd.excludedSensitive + " sensitive finding" + (hd.excludedSensitive === 1 ? " is" : "s are") + " left out of this deck." : "",
+        hd.excludedUnreviewedAi ? hd.excludedUnreviewedAi + " AI draft" + (hd.excludedUnreviewedAi === 1 ? " is" : "s are") + " not yet reviewed and left out of this deck." : ""
       ].filter(Boolean)
     });
 

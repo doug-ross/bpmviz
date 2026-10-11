@@ -53,14 +53,14 @@ export function failureMessage(provider, code, detail) {
     case "auth.signedOut": return provider === "claude" ?
       "Claude Code is not signed in. Run claude, type /login and sign in with your Claude account." + d :
       "Codex is not signed in. Run codex login and choose Sign in with ChatGPT." + d;
-    case "auth.apiKey": return name + " is signed in with an API key, not a subscription. Sign in with your Claude or ChatGPT account, or pass --use-api-key to use the key and its billing.";
+    case "auth.apiKey": return name + " is signed in with an API key, which is billed separately from your subscription. Sign in with your Claude or ChatGPT account instead, or pass --use-api-key to use the key.";
     case "provider.usageLimit": return "Your " + (provider === "claude" ? "Claude" : "ChatGPT") + " usage limit is reached. Try again after it resets." + d;
     case "provider.overloaded": return name + " is busy right now. Try again in a few minutes." + d;
     case "provider.unexpectedTools": return name + " started with tools AIxRay did not ask for, so the run was stopped" + d + ".";
-    case "provider.timeout": return name + " did not finish within the time limit.";
-    case "provider.config": return "This " + name + " version does not accept one of the settings AIxRay uses to turn off its shell, web and app tools, so it was stopped before anything was sent" + d + ". Update AIxRay, or check docs/ai.md for the " + name + " versions it has been tested with.";
+    case "provider.timeout": return name + " did not finish within the time limit. Try again.";
+    case "provider.config": return "This " + name + " version does not accept one of the settings AIxRay uses to turn off its shell, web and app tools, so AIxRay stopped it before anything was sent" + d + ". Update AIxRay, or use a " + name + " version listed in docs/ai.md.";
     case "provider.cancelled": return "The run was cancelled.";
-    default: return name + " stopped with an error" + d + ".";
+    default: return name + " stopped with an error" + d + ". Try again.";
   }
 }
 

@@ -173,7 +173,7 @@ function fromExplorerV1(src, options) {
   src.NODES.forEach(n => {
     const semanticType = EXPLORER_TYPES[n.type] || "unsupported";
     if (semanticType === "unsupported") {
-      warnings.push({ code: "semantic.unsupported", message: "Step \"" + clean(n.label) + "\" has type \"" + n.type + "\", which has no equivalent. It is shown as a generic step.", path: n.id });
+      warnings.push({ code: "semantic.unsupported", message: "Step \"" + clean(n.label) + "\" has type \"" + n.type + "\", which AIxRay doesn't support. It is shown as a plain step.", path: n.id });
     }
     const measures = { typicalDuration: null, slaTarget: null, touchEffort: null, waitType: "" };
     if (Number.isFinite(n.avg)) measures.typicalDuration = { value: n.avg, unit: "minute" };
@@ -354,7 +354,7 @@ function fromRacer(P, config) {
       if (n.type === "gw") {
         semanticType = gatewayType(n.sub);
         if (semanticType === "gateway") {
-          warnings.push({ code: "semantic.gateway", message: model.name + ": gateway \"" + clean(n.label) + "\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.", path: nodeIds[i] });
+          warnings.push({ code: "semantic.gateway", message: model.name + ": gateway \"" + clean(n.label) + "\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).", path: nodeIds[i] });
         }
       }
       if (!semanticType) semanticType = "unsupported";
@@ -394,7 +394,7 @@ function fromRacer(P, config) {
       });
     });
     if (raw.nodes.some(n => n.role)) {
-      warnings.push({ code: "field.role", message: model.name + ": step badges such as \"AI\" and \"HITL\" are now derived from the step tags.", path: "" });
+      warnings.push({ code: "field.role", message: model.name + ": step badges such as \"AI\" and \"HITL\" now come from the step tags.", path: "" });
     }
     built[which] = { raw, model, nodeIds };
     e.models.push(model);
@@ -417,7 +417,7 @@ function fromRacer(P, config) {
     if (excluded.length) {
       warnings.push({ code: "membership.documented", message: model.name + ": " + excluded.length + " off-route steps are marked Not in scenario, as the source documents (" + excluded.join(", ") + ").", path: "" });
     }
-    unknown.forEach(name => warnings.push({ code: "membership.unconfirmed", message: model.name + ": \"" + name + "\" is an end event outside the scheduled route and is not marked optional. Its membership is Not confirmed until someone reviews it.", path: "" }));
+    unknown.forEach(name => warnings.push({ code: "membership.unconfirmed", message: model.name + ": \"" + name + "\" is an end event off the scheduled route and is not marked optional. It shows as route not confirmed until someone checks it.", path: "" }));
     if (cfg.gatewayConsumption === "per-edge") {
       model.nodes.filter(n => schema.typeInfo(n.semanticType).shape === "gateway").forEach(g => {
         const outs = model.edges.filter(ed => ed.from === g.id && membership[ed.to] === "included");
@@ -451,7 +451,7 @@ function fromRacer(P, config) {
       unit: def ? def.unit : "count", status: a.status || "illustrative", source: a.source || "", note: a.note || "" });
   });
   if (!e.assumptions.length && hasAfter) {
-    warnings.push({ code: "economics.drivers", message: "The source declares no economic assumptions, so supplied cost and capacity figures cannot be reconciled.", path: "" });
+    warnings.push({ code: "economics.drivers", message: "The source has no cost assumptions, so AIxRay can't check whether its cost and capacity figures add up.", path: "" });
   }
 
   // Scenarios.

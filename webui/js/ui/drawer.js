@@ -1,7 +1,8 @@
 /*
  * Side panel for the process workspace:
- *  - overview: scenario, scorecard and a keyboard-friendly activity list
- *  - activity drawer: summary, quick capture of linked records, and editing
+ *  - overview: scenario, scorecard and a keyboard-friendly step list
+ *  - step panel: Details, Add finding (records linked to the step) and Edit step
+ *    (tab ids stay summary, capture and edit)
  */
 (function (root) {
   "use strict";
@@ -79,18 +80,18 @@
     let reconLine = null;
     if (recon && recon.checks.length) {
       const bad = recon.checks.filter(c => c.status === "unreconciled").length;
-      const text = !e.assumptions.length ? "Supplied cost and capacity figures have no declared assumptions, so they are not reconciled." :
-        bad ? bad + " of " + recon.checks.length + " supplied cost and capacity figures do not reconcile with the declared assumptions." :
-          "Supplied cost and capacity figures reconcile with the declared assumptions.";
+      const text = !e.assumptions.length ? "There are no assumptions yet, so the provided cost and capacity figures can't be checked." :
+        bad ? bad + " of " + recon.checks.length + " provided cost and capacity figures don't add up with the assumptions." :
+          "The provided cost and capacity figures add up with the assumptions.";
       reconLine = h("div", { class: "warn-line" }, icon(bad || !e.assumptions.length ? "alert" : "check"),
-        h("span", null, text, " ", h("button", { type: "button", class: "link-btn", on: { click: () => ctx.goto("value") } }, "Open the value model")));
+        h("span", null, text, " ", h("button", { type: "button", class: "link-btn", on: { click: () => ctx.goto("value") } }, "Open Value")));
     }
     return h("section", { class: "side-section", "aria-labelledby": "sc-h" },
       h("h3", { id: "sc-h" }, "Scorecard"),
       table,
-      h("p", { class: "note" }, "Figures are " + schema.label("scenarioProvenance", s.provenance).toLowerCase() +
-        " and shown in their declared units. " + units.describeTimeBasis(e.meta.timeBasis)),
-      reconLine);
+      reconLine,
+      h("p", { class: "note" }, "These figures are " + schema.label("scenarioProvenance", s.provenance).toLowerCase() + ". " +
+        units.describeTimeBasis(e.meta.timeBasis)));
   }
 
   function activityList(ctx) {
@@ -109,12 +110,13 @@
           type: "button", "aria-current": ctx.selected && ctx.selected.nodeId === n.id ? "true" : null,
           on: { click: () => ctx.select(model.id, n.id, { center: true, focusDrawer: true }) }
         }, stateIcon(st ? st.state : ""), h("span", null, n.label + (n.removed ? " (removed)" : "")),
-        h("span", { class: "st" }, (st ? diagram.statusText(st, ctx.engagement.meta.timeBasis) : "") + (count ? " \u00b7 " + count + " rec." : "")))));
+        h("span", { class: "st" }, (st ? diagram.statusText(st, ctx.engagement.meta.timeBasis) : "") +
+          (count ? " \u00b7 " + count + (count === 1 ? " finding" : " findings") : "")))));
       });
     });
     return h("section", { class: "side-section", "aria-labelledby": "al-h" },
       h("h3", { id: "al-h" }, "Steps (" + model.nodes.length + ")"),
-      h("p", { class: "note" }, "The same steps as the canvas, in lane and flow order."),
+      h("p", { class: "note" }, "Every step in the diagram, lane by lane."),
       list);
   }
 
@@ -136,7 +138,7 @@
     } else {
       inner.appendChild(h("section", { class: "side-section" },
         h("h2", null, e.meta.processName),
-        h("p", { class: "small" }, "No scenario timing is recorded for this engagement, so playback is off. You can still inspect, correct and capture findings on every step.")));
+        h("p", { class: "small" }, "No timing is recorded, so there is nothing to play. Select a step to see its details, add findings or correct it.")));
     }
     const card = scorecard(ctx);
     if (card) inner.appendChild(card);
@@ -144,17 +146,17 @@
     const current = e.models.find(m => m.role === "current");
     if (current && !e.models.some(m => m.basedOn && m.basedOn.modelId === current.id)) {
       inner.appendChild(h("section", { class: "side-section" },
-        h("h3", null, "Redesign"),
-        h("p", { class: "small" }, "Start a future-state draft from the current state. The current state then stays fixed as the baseline, and every change in the draft is tracked against it."),
-        h("div", null, h("button", { type: "button", class: "btn", on: { click: () => ctx.cloneBaseline(current.id) } }, icon("clone"), "Start a future-state draft"))));
+        h("h3", null, "Future state"),
+        h("div", null, h("button", { type: "button", class: "btn", on: { click: () => ctx.cloneBaseline(current.id) } }, icon("clone"), "Plan a future state")),
+        h("p", { class: "note" }, "You change a copy. The current state stays as the baseline, so you can compare the two.")));
     }
     if (current && ctx.aiTask) {
       inner.appendChild(h("section", { class: "side-section" },
         h("h3", null, "Draft with AI"),
-        h("p", { class: "small" }, "Ask Claude Code or Codex, on your own sign-in, for a future-state draft or suggested records. You review each item before anything changes."),
         h("div", { class: "btn-stack" },
           h("button", { type: "button", class: "btn", id: "drawer-ai-future", on: { click: () => ctx.aiTask("future-state") } }, icon("agent"), "Draft a future state with AI"),
-          h("button", { type: "button", class: "btn", id: "drawer-ai-suggest", on: { click: () => ctx.aiTask("opportunities") } }, icon("agent"), "Suggest records with AI"))));
+          h("button", { type: "button", class: "btn", id: "drawer-ai-suggest", on: { click: () => ctx.aiTask("opportunities") } }, icon("agent"), "Suggest findings with AI")),
+        h("p", { class: "note" }, "Claude Code or Codex does the drafting on your own account. You check each item before anything changes.")));
     }
     inner.appendChild(activityList(ctx));
     container.appendChild(inner);
@@ -164,7 +166,7 @@
 
   function statusParts(st, timeBasis) {
     const parts = [stateIcon(st ? st.state : ""),
-      h("span", { class: "status-text" }, st ? diagram.statusText(st, timeBasis) : "No scenario timing")];
+      h("span", { class: "status-text" }, st ? diagram.statusText(st, timeBasis) : "No timing recorded")];
     if (st && st.sla && st.state === "active") {
       parts.push(badge(Math.round(st.sla.pct * 100) + "% of SLA", st.sla.state === "breach" ? "error" : st.sla.state === "warn" ? "warning" : ""));
     }
@@ -185,21 +187,31 @@
     const m = node.measures || {};
     const box = h("div", { class: "side-inner" });
     box.appendChild(h("section", { class: "side-section" },
-      d.desc ? h("p", { class: "small" }, String(d.desc)) : h("p", { class: "small muted" }, "No description recorded."),
+      d.desc ? h("p", { class: "small" }, String(d.desc)) : h("p", { class: "small muted" }, "No description yet."),
       facts([
         ["Accountable", d.owner ? String(d.owner) : null],
         ["Responsible", d.who ? String(d.who) : null],
-        ["Swimlane", lane ? lane.name : ""],
+        ["Lane", lane ? lane.name : ""],
         ["Authority", textList(d.authority)],
         ["Systems", textList(d.systems)],
         ["Typical time", measureText(m.typicalDuration)],
         ["SLA target", measureText(m.slaTarget)],
         ["Touch effort", measureText(m.touchEffort)],
         ["Wait type", m.waitType ? schema.label("waitType", m.waitType) : null],
-        ["Effort (notes)", textList(d.effort)],
+        ["Effort notes", textList(d.effort)],
         ["Pain points", textList(d.pain)],
         ["Controls", textList(d.controls)]
-      ])));
+      ]),
+      h("div", null, h("button", { type: "button", class: "btn", on: { click: () => ctx.fullDetails(model.id, node.id) } }, icon("list"), "Show all details"))));
+    if (node.lineage) {
+      box.appendChild(h("section", { class: "side-section" },
+        h("h3", null, "What changed"),
+        facts([
+          ["Change", schema.label("change", node.lineage.change)],
+          ["Baseline step", node.lineage.baselineNodeId ? ctx.baselineLabel(model, node.lineage.baselineNodeId) : "New in this draft"],
+          ["Reason", node.lineage.rationale || null]
+        ])));
+    }
     if (visits.length) {
       box.appendChild(h("section", { class: "side-section" },
         h("h3", null, "Visits in this scenario"),
@@ -209,23 +221,17 @@
     }
     const p = node.provenance || {};
     box.appendChild(h("section", { class: "side-section" },
-      h("h3", null, "Provenance"),
+      h("h3", null, "Where this came from"),
       facts([
-        ["Source", schema.label("provenanceSource", p.source)],
-        ["Validation", schema.label("validation", p.validation)],
-        ["Evidence", (p.evidenceRefs || []).length ? h("ul", { class: "plain-list" }, p.evidenceRefs.map(id => {
+        ["Came from", schema.label("provenanceSource", p.source)],
+        ["Status", schema.label("validation", p.validation)],
+        ["Sources", (p.evidenceRefs || []).length ? h("ul", { class: "plain-list" }, p.evidenceRefs.map(id => {
           const x = ev.get(id);
           return h("li", null, x ? x.title + " (" + schema.label("evidenceStatus", x.status) + ")" : id);
         })) : "None linked"],
-        ["Source IDs", (node.sourceIds || []).length ? node.sourceIds.join(", ") : null],
+        ["Source file IDs", (node.sourceIds || []).length ? node.sourceIds.join(", ") : null],
         ["Note", p.note || null]
-      ]),
-      node.lineage ? facts([
-        ["Change", schema.label("change", node.lineage.change)],
-        ["Baseline step", node.lineage.baselineNodeId ? ctx.baselineLabel(model, node.lineage.baselineNodeId) : "New in this draft"],
-        ["Rationale", node.lineage.rationale || null]
-      ]) : null,
-      h("div", null, h("button", { type: "button", class: "btn", on: { click: () => ctx.fullDetails(model.id, node.id) } }, icon("list"), "All recorded fields"))));
+      ])));
     extSections(ctx, "step", model, node).forEach(x => box.appendChild(x));
     return box;
   }
@@ -249,25 +255,25 @@
     const e = ctx.engagement;
     const box = h("div", { class: "side-inner" });
     const kinds = ["pain", "opportunity", "question", "decision", "action", "assumption", "note"];
-    const kindSet = h("fieldset", { class: "segmented" }, h("legend", null, "Record type"),
+    const kindSet = h("fieldset", { class: "segmented" }, h("legend", null, "Type"),
       kinds.map((k, i) => h("label", null, h("input", { type: "radio", name: "cap-kind", value: k, checked: i === 0 }), h("span", null, schema.label("recordKind", k)))));
     const title = h("input", { class: "input", id: "cap-title", maxlength: 300, autocomplete: "off" });
     const desc = h("textarea", { class: "textarea", id: "cap-desc", rows: 3 });
     const owner = h("input", { class: "input", id: "cap-owner", maxlength: 200, list: "owner-list", autocomplete: "off" });
     const sensitive = h("input", { type: "checkbox", id: "cap-sensitive" });
     const err = h("p", { class: "error-text", role: "alert", hidden: true });
-    const form = h("form", { class: "form-grid", "aria-label": "Capture a record for " + node.label },
+    const form = h("form", { class: "form-grid", "aria-label": "Add a finding to " + node.label },
       kindSet,
       h("div", { class: "field" }, h("label", { for: "cap-title" }, "Title"), title),
       h("div", { class: "field" }, h("label", { for: "cap-desc" }, "Details"), desc),
       h("div", { class: "field" }, h("label", { for: "cap-owner" }, "Owner"), owner),
-      h("label", { class: "check" }, sensitive, "Sensitive (left out of exports unless selected)"),
+      h("label", { class: "check" }, sensitive, "Sensitive (kept out of reports and exports unless you include it)"),
       err,
-      h("div", { class: "form-actions" }, h("button", { type: "submit", class: "btn btn-primary" }, icon("plus"), "Add record")));
+      h("div", { class: "form-actions" }, h("button", { type: "submit", class: "btn btn-primary" }, icon("plus"), "Add finding")));
     form.addEventListener("submit", ev => {
       ev.preventDefault();
       const kind = (form.querySelector("input[name=cap-kind]:checked") || {}).value || "note";
-      if (!title.value.trim()) { err.hidden = false; err.textContent = "Give the record a title."; title.focus(); return; }
+      if (!title.value.trim()) { err.hidden = false; err.textContent = "Give the finding a title."; title.focus(); return; }
       err.hidden = true;
       const ok = ctx.dispatch("record/add", { record: {
         kind, title: title.value, description: desc.value, owner: owner.value, sensitive: sensitive.checked,
@@ -279,8 +285,8 @@
     box.appendChild(h("section", { class: "side-section" }, form, h("datalist", { id: "owner-list" }, owners.map(o => h("option", { value: o })))));
     const recs = linkedRecords(e, model.id, node.id);
     box.appendChild(h("section", { class: "side-section", "aria-labelledby": "lr-h" },
-      h("h3", { id: "lr-h" }, "Linked records (" + recs.length + ")"),
-      recs.length ? h("div", null, recs.map(r => recordRow(ctx, r))) : h("p", { class: "small muted" }, "Nothing captured for this step yet.")));
+      h("h3", { id: "lr-h" }, "Findings for this step (" + recs.length + ")"),
+      recs.length ? h("div", null, recs.map(r => recordRow(ctx, r))) : h("p", { class: "small muted" }, "No findings for this step yet.")));
     return box;
   }
 
@@ -293,7 +299,7 @@
     if (model.locked) {
       const draft = ctx.engagement.models.find(m => m.basedOn && m.basedOn.modelId === model.id);
       box.appendChild(h("div", { class: "locked-note" },
-        h("p", null, h("strong", null, model.name + " is the locked baseline. "), "A future-state draft is based on it, so its steps stay fixed and every change is made in the draft."),
+        h("p", null, h("strong", null, model.name + " is the locked baseline. "), "Its steps stay as they are so you can compare against them. Make your changes in the future state."),
         draft ? h("div", null, h("button", { type: "button", class: "btn", on: { click: () => ctx.showModel(draft.id, node.id) } }, "Edit this step in " + draft.name)) : null));
       return box;
     }
@@ -332,17 +338,17 @@
       h("div", { class: "field-row" },
         h("div", { class: "field" }, h("label", { for: "ed-owner" }, "Accountable owner"), f.owner),
         h("div", { class: "field" }, h("label", { for: "ed-who" }, "Responsible"), f.who)),
-      h("div", { class: "field" }, h("label", { for: "ed-systems" }, "Systems"), f.systems, h("span", { class: "field-hint" }, "Separate with commas.")),
+      h("div", { class: "field" }, h("label", { for: "ed-systems" }, "Systems"), f.systems, h("span", { class: "field-hint" }, "Separate them with commas.")),
       pair("SLA target", "ed-sla", f.slaV, f.slaU),
       pair("Typical duration", "ed-typ", f.typV, f.typU),
       pair("Human touch effort per case", "ed-eff", f.effV, f.effU),
       h("div", { class: "field" }, h("label", { for: "ed-wait" }, "Wait type"), f.wait),
       h("fieldset", { class: "segmented" }, h("legend", null, "Tags"), h("div", { class: "form-grid" }, tags)),
       h("div", { class: "field-row" },
-        h("div", { class: "field" }, h("label", { for: "ed-source" }, "Provenance"), f.source),
-        h("div", { class: "field" }, h("label", { for: "ed-validation" }, "Validation"), f.validation)),
-      ctx.engagement.evidence.length ? h("div", { class: "field" }, h("label", { for: "ed-evidence" }, "Evidence"), f.evidence,
-        h("span", { class: "field-hint" }, "Ctrl or Cmd to select several.")) : null,
+        h("div", { class: "field" }, h("label", { for: "ed-source" }, "Where this came from"), f.source),
+        h("div", { class: "field" }, h("label", { for: "ed-validation" }, "Confirmation"), f.validation)),
+      ctx.engagement.evidence.length ? h("div", { class: "field" }, h("label", { for: "ed-evidence" }, "Sources"), f.evidence,
+        h("span", { class: "field-hint" }, "Hold Ctrl or Cmd to select more than one.")) : null,
       f.rationale ? h("div", { class: "field" }, h("label", { for: "ed-rationale" }, "Reason for the change"), f.rationale) : null,
       err,
       h("div", { class: "form-actions" },
@@ -369,7 +375,7 @@
     if (model.role === "future" && !model.locked) {
       box.appendChild(h("section", { class: "side-section" },
         h("h3", null, "Change the flow"),
-        h("p", { class: "small" }, "Insert a new step after this one, or remove it. Removing a step reconnects its neighbours and keeps the step in the draft as removed, so the comparison shows it."),
+        h("p", { class: "small" }, "Removing a step joins up the steps on either side. The step stays visible, marked as removed, so the comparison still shows it."),
         h("div", { class: "form-actions", style: { justifyContent: "flex-start" } },
           h("button", { type: "button", class: "btn", on: { click: () => ctx.insertAfter(model.id, node.id) } }, icon("plus"), "Insert step after"),
           node.removed ? null : h("button", { type: "button", class: "btn btn-danger", on: { click: () => ctx.removeStep(model.id, node.id) } }, icon("trash"), "Remove step"))));
@@ -387,12 +393,15 @@
     const rp = ctx.replays.get(model.id);
     const st = rp ? replayLib.nodeStateAt(rp, node.id, ctx.t) : null;
     const records = linkedRecords(ctx.engagement, model.id, node.id);
-    const tabs = [["summary", "Summary"], ["capture", "Capture (" + records.length + ")"], ["edit", "Edit"]];
-    const tabBar = h("div", { class: "drawer-tabs", role: "tablist", "aria-label": "Step panels" });
+    const tabs = [["summary", "Details"],
+      ["capture", ["Findings", h("span", { class: "count" }, String(records.length))],
+        "Findings, " + records.length + " on this step"],
+      ["edit", "Edit step"]];
+    const tabBar = h("div", { class: "drawer-tabs", role: "tablist", "aria-label": "Step sections" });
     const panel = h("div", { role: "tabpanel", id: "drawer-panel", tabindex: -1 });
-    tabs.forEach(([id, label]) => {
+    tabs.forEach(([id, label, spoken]) => {
       const t = h("button", { type: "button", class: "tab", role: "tab", id: "dt-" + id, "aria-selected": String(ctx.tab === id),
-        "aria-controls": "drawer-panel", tabindex: ctx.tab === id ? 0 : -1 }, label);
+        "aria-controls": "drawer-panel", "aria-label": spoken || null, tabindex: ctx.tab === id ? 0 : -1 }, label);
       t.addEventListener("click", () => ctx.setTab(id));
       t.addEventListener("keydown", ev => {
         const i = tabs.findIndex(x => x[0] === id);
@@ -407,12 +416,12 @@
       h("div", { class: "drawer-top" },
         h("span", { class: "eyebrow" }, schema.typeInfo(node.semanticType).label + (node.sourceType ? " (" + node.sourceType + ")" : "")),
         h("span", { class: "spacer" }),
-        iconButton("focus", "Center on canvas", { on: { click: () => ctx.focusNode(model.id, node.id) } }, { variant: "btn-ghost" }),
-        iconButton("close", "Close step panel (Esc)", { id: "drawer-close", on: { click: () => ctx.close() } }, { variant: "btn-ghost" })),
+        iconButton("focus", "Center in the diagram", { on: { click: () => ctx.focusNode(model.id, node.id) } }, { variant: "btn-ghost" }),
+        iconButton("close", "Close details (Esc)", { id: "drawer-close", on: { click: () => ctx.close() } }, { variant: "btn-ghost" })),
       h("h2", { id: "drawer-title", tabindex: -1 }, node.label),
       h("div", { class: "small muted" }, (lane ? lane.name : "") + " \u00b7 " + model.name + (node.removed ? " \u00b7 removed in this draft" : "")),
       statusLine);
-    const wrapper = h("div", { class: "side-inner" }, head, tabBar);
+    const wrapper = h("div", { class: "side-inner drawer-sticky" }, head, tabBar);
     const body = ctx.tab === "capture" ? captureTab(ctx, model, node) : ctx.tab === "edit" ? editTab(ctx, model, node) : summaryTab(ctx, model, node, st);
     panel.appendChild(body);
     container.append(wrapper, panel);
@@ -426,7 +435,7 @@
     const model = ctx.engagement.models.find(m => m.id === ctx.selected.modelId);
     const rp = model && ctx.replays.get(model.id);
     const st = rp ? replayLib.nodeStateAt(rp, ctx.selected.nodeId, ctx.t) : null;
-    const text = st ? diagram.statusText(st, ctx.engagement.meta.timeBasis) : "No scenario timing";
+    const text = st ? diagram.statusText(st, ctx.engagement.meta.timeBasis) : "No timing recorded";
     const span = line.querySelector(".status-text");
     if (!span || span.textContent !== text) {
       clear(line);
@@ -458,16 +467,16 @@
       h("p", { class: "small muted" }, schema.typeInfo(node.semanticType).label + " \u00b7 " + (lane ? lane.name : "") + " \u00b7 " + model.name +
         (st ? " \u00b7 " + diagram.statusText(st, tb) + " at " + units.formatDuration(t, tb) : "")),
       h("div", { class: "detail-grid" },
-        section("Ownership and accountability", [["Responsible", d.who], ["Accountable owner", d.owner], ["Swimlane", lane ? lane.name + (lane.role ? ", " + lane.role : "") : ""], ["Decision or approval authority", d.authority]]),
-        section("Timing and expectations", [["Service level (as written)", d.sla], ["Volume or frequency", d.volume], ["Human effort (as written)", d.effort],
-          ["SLA target (typed)", measureText((node.measures || {}).slaTarget)], ["Typical duration (typed)", measureText((node.measures || {}).typicalDuration)]]),
-        section("Work performed", [["Activities", d.activities], ["Systems and tools", d.systems], ["Inputs", d.inputs], ["Outputs", d.outputs]]),
+        section("Who does it", [["Responsible", d.who], ["Accountable owner", d.owner], ["Lane", lane ? lane.name + (lane.role ? ", " + lane.role : "") : ""], ["Decision or approval authority", d.authority]]),
+        section("Timing", [["Service level (as written)", d.sla], ["Volume or frequency", d.volume], ["Human effort (as written)", d.effort],
+          ["SLA target (as a figure)", measureText((node.measures || {}).slaTarget)], ["Typical duration (as a figure)", measureText((node.measures || {}).typicalDuration)]]),
+        section("The work", [["Activities", d.activities], ["Systems and tools", d.systems], ["Inputs", d.inputs], ["Outputs", d.outputs]]),
         section("Controls, risks and exceptions", [["Controls", d.controls], ["Risks", d.risks], ["Exceptions", d.exceptions], ["Escalation", d.escalation], ["Decision rules", d.decisionRules], ["Audit requirements", d.audit]]),
         section("Business impact", [["Pain points", d.pain], ["KPIs", d.kpis], ["Step cost", d.cost], ["Step benefit", d.roi], ["Data quality", d.dataQuality]]),
-        section("Handoffs and context", [["Handoff", d.handoff], ["Incoming", incoming.length ? incoming : "None"], ["Outgoing", outgoing.length ? outgoing : "None"], ["Dependencies", d.dependencies]]),
-        section("Evidence and assumptions", [["Source notes", d.note], ["Evidence references", d.evidence], ["Assumptions", d.assumptions], ["Confidence", d.confidence], ["Source IDs", (node.sourceIds || []).join(", ")]]),
-        extra.length ? section("Other recorded fields", extra.map(k => [niceName(k), d[k]])) : null),
-      h("p", { class: "note" }, "Descriptions and service levels are shown as supplied and may use different assumptions from the scenario timing. Gaps are shown as not recorded; nothing is inferred."));
+        section("Before and after this step", [["Passing the work on", d.handoff], ["Comes from", incoming.length ? incoming : "None"], ["Goes to", outgoing.length ? outgoing : "None"], ["Dependencies", d.dependencies]]),
+        section("Sources and assumptions", [["Source notes", d.note], ["Source references", d.evidence], ["Assumptions", d.assumptions], ["Confidence", d.confidence], ["Source file IDs", (node.sourceIds || []).join(", ")]]),
+        extra.length ? section("Other fields", extra.map(k => [niceName(k), d[k]])) : null),
+      h("p", { class: "note" }, "Descriptions and service levels are shown as provided, and may not match the scenario timing. Empty fields say not recorded; nothing is filled in for you."));
   }
 
   B.drawer = { renderOverview, renderActivity, refreshStatus, fullDetailsBody, linkedRecords, badge, TONE, PROV_TONE };

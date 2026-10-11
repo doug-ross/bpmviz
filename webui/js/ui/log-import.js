@@ -4,14 +4,14 @@
  *
  *  - a file handler for .csv, .tsv and .xlsx and the menu item "Import an
  *    event log", which open the wizard;
- *  - the Records tab "Event logs" (rename, role, comparison, data status,
- *    figures for the value model, delete), shown while the engagement holds
- *    event logs;
- *  - the "Observed in the event log" section on a step and the event-log
+ *  - the Records tab "Event logs" (shown as Findings; rename, role,
+ *    comparison, data status, figures for the value model, delete), shown
+ *    while the engagement holds event logs;
+ *  - the "Measured in the event log" section on a step and the event-log
  *    card in the process overview;
- *  - the "Observed inputs" card in the Value workspace and the "Event logs"
- *    section of the handoff after the scope;
- *  - the observed-share and observed-time lenses.
+ *  - the "Measured inputs" card in the Value workspace and the "Event logs"
+ *    section of the handoff (the report) after the scope;
+ *  - the observed-share and observed-time lenses (labelled "Measured ...").
  *
  * The wizard reads the file in chunks, yielding between them, because the
  * app opened from disk cannot start workers. Nothing leaves the browser: the
@@ -28,7 +28,7 @@
   const TAB_ID = "event-logs";
   const PREVIEW_ROWS = 20;
   const CHUNK = 5000;
-  const STEPS = ["File", "Columns", "Activities", "Options", "Check and add"];
+  const STEPS = ["Choose file", "Match columns", "Match activities", "Options", "Review"];
   const BASIS_TONE = { observed: "success", supplied: "info", illustrative: "warning" };
   const METHOD_TEXT = { exact: "Same name", fuzzy: "Similar name", ai: "Suggested by AI", manual: "Chosen by hand", ignored: "Left out" };
   const badge = (t, tone) => B.drawer.badge(t, tone);
@@ -200,12 +200,12 @@
 
   function openWizard(app, preset) {
     if (!app.store) {
-      messageDialog("Open an engagement first", "An event log is measured against a process model. Open or create the engagement first, then import the log.");
+      messageDialog("Open a project first", "An event log is measured against a process. Open or start a project, then import the log.");
       return null;
     }
     const e = app.store.get();
     if ((e.datasets || []).length >= L.datasets) {
-      messageDialog("No room for another event log", "An engagement holds at most " + L.datasets + " event logs. Delete one in Records, Event logs, first.");
+      messageDialog("No room for another event log", "A project can hold up to " + L.datasets + " event logs. Delete one in Findings, Event logs, then try again.");
       return null;
     }
     const displayed = /^[mc]:(.+)$/.exec(app.view.display || "");
@@ -254,7 +254,7 @@
 
     function render() {
       clear(panel);
-      const head = h("h3", { class: "li-step-title" }, "Step " + st.step + " of " + STEPS.length + ": " + STEPS[st.step - 1]);
+      const head = h("h3", { class: "li-step-title sr-only" }, "Step " + st.step + " of " + STEPS.length + ": " + STEPS[st.step - 1]);
       panel.appendChild(head);
       const views = [null, renderFile, renderColumns, renderActivities, renderOptions, renderCheck];
       panel.appendChild(views[st.step]());
@@ -271,15 +271,15 @@
     /* Step 1: the file, the sheet or separator, and a preview. */
     function renderFile() {
       const box = h("div", { class: "form-grid" });
-      const pick = h("button", { type: "button", class: "btn", id: "li-choose" }, icon("upload"), st.file ? "Choose another file" : "Choose an event log");
+      const pick = h("button", { type: "button", class: st.file ? "btn" : "btn btn-primary", id: "li-choose" }, icon("upload"), st.file ? "Choose another file" : "Choose an event log");
       pick.addEventListener("click", async () => {
         const file = await B.files.pickFile(".csv,.tsv,.txt,.xlsx");
         if (!file) return;
         await load(file, null);
       });
-      box.appendChild(h("p", { class: "small" }, "An event log has one row per event: the case it belongs to, the activity, and when it happened (one time, or a start and an end). Comma or tab separated text and Excel workbooks up to " +
-        Math.round(L.eventLogBytes / 1048576) + " MB and " + count(L.eventLogEvents) + " events can be read."));
       box.appendChild(h("div", null, pick));
+      box.appendChild(h("p", { class: "small" }, "Use a CSV, tab-separated or Excel file with one row per event: the case, the activity, and when it happened (one time, or a start and an end). Up to " +
+        Math.round(L.eventLogBytes / 1048576) + " MB and " + count(L.eventLogEvents) + " events."));
       if (!st.file || !st.table) return box;
       box.appendChild(h("dl", { class: "facts" },
         h("dt", null, "File"), h("dd", null, st.file.name + " (" + util.formatNumber(st.file.size / 1024, 0) + " KB, " + schema.label("logFormat", st.file.format).toLowerCase() + ")"),
@@ -292,10 +292,10 @@
         const delim = select("li-delimiter", csv.CANDIDATES.map(d => [d, csv.delimiterName(d)[0].toUpperCase() + csv.delimiterName(d).slice(1)]), st.delimiter);
         delim.addEventListener("change", () => busy(async () => { st.delimiter = delim.value; await parseText(st, progress); useTable(st); render(); }));
         box.appendChild(field("Separator", delim, "Detected from the first lines of the file."));
-        if (st.unterminated) box.appendChild(h("p", { class: "small" }, icon("alert"), " A quoted value is not closed, so the rest of the file was read into one value. Check the separator, or fix the file."));
+        if (st.unterminated) box.appendChild(h("p", { class: "small" }, icon("alert"), " A quotation mark is not closed, so the rest of the file was read as one value. Check the separator, or fix the file."));
       }
       if (!st.table.header.length) {
-        box.appendChild(h("p", { class: "error-text" }, "No header row was found. The first row of the log should name the columns."));
+        box.appendChild(h("p", { class: "error-text" }, "No header row was found. The first row of the file should name the columns."));
         return box;
       }
       box.appendChild(h("p", { class: "section-title" }, "The first " + Math.min(PREVIEW_ROWS, st.table.rows.length) + " rows"));
@@ -330,7 +330,7 @@
       const timeSel = select("li-col-time", colOptions(), st.cols.timestamp);
       const startSel = select("li-col-start", colOptions(), st.cols.start);
       const endSel = select("li-col-end", colOptions(), st.cols.end);
-      const resSel = select("li-col-resource", colOptions("No resource column"), st.cols.resource);
+      const resSel = select("li-col-resource", colOptions("None"), st.cols.resource);
       const fmtSel = select("li-format", mining.FORMATS, st.format);
       const fmtNote = h("div", { class: "small", id: "li-format-note", "aria-live": "polite" });
       const single = h("div", { class: "field-row" }, field("Time of the event", timeSel));
@@ -346,7 +346,7 @@
         const d = st.detected;
         if (d.total) {
           const fmtLabel = (mining.FORMATS.find(f => f[0] === d.format) || ["", ""])[1].split(",")[0];
-          fmtNote.appendChild(h("p", null, "Detected: " + fmtLabel.toLowerCase() + ". " + count(d.matched) + " of " + count(d.total) + " sampled values can be read that way."));
+          fmtNote.appendChild(h("p", null, "Detected: " + fmtLabel.toLowerCase() + ". " + count(d.matched) + " of " + count(d.total) + " sample values can be read this way."));
           if (d.ambiguous && st.format === d.format) fmtNote.appendChild(h("p", null, icon("alert"), " No value has a day above 12, so day first and month first cannot be told apart. Check the samples below and change the format if needed."));
         }
         const values = timeValues(st).filter(v => v !== null && v !== undefined && String(typeof v === "object" ? v.date : v).trim() !== "").slice(0, 3);
@@ -354,19 +354,19 @@
           fmtNote.appendChild(h("ul", { class: "plain-list" }, values.map(v => {
             const ms = mining.parseTimestamp(v, st.format, st.date1904);
             const shown = typeof v === "object" ? "Excel date " + v.date : String(v);
-            return h("li", null, shown + " is read as " + (ms === null ? "nothing (not readable in this format)" : new Date(ms).toISOString().slice(0, 16).replace("T", " ")));
+            return h("li", null, shown + " is read as " + (ms === null ? "nothing (it cannot be read in this format)" : new Date(ms).toISOString().slice(0, 16).replace("T", " ")));
           })));
         }
       }
       [mode, caseSel, actSel, timeSel, startSel, endSel, resSel].forEach(c => c.addEventListener("change", () => refresh(c !== resSel && c !== caseSel && c !== actSel)));
       fmtSel.addEventListener("change", () => refresh(false));
       const box = h("div", { class: "form-grid" },
-        field("Measure against", model, "The process model the activities are mapped to."),
+        field("Measure against", model, "The process version the activities are matched to."),
         h("div", { class: "field-row" }, field("Case ID", caseSel), field("Activity", actSel)),
         field("Times in the log", mode), single, pair,
-        field("Timestamp format", fmtSel), fmtNote,
-        h("p", { class: "note" }, "Times without a time zone are read as wall-clock times, so a change to or from daylight saving time cannot shift a duration."),
-        field("Resource (optional)", resSel, "Who did the work. By default it is not used; on the options step you can count people per step. Names are never stored."));
+        field("Date and time format", fmtSel), fmtNote,
+        field("Who did the work (optional)", resSel, "Used only to count people per step, if you choose that in Options. Names are never saved."),
+        h("p", { class: "note" }, "Times without a time zone are read as local clock times, so a change to or from daylight saving time does not shift durations."));
       refresh(false);
       return box;
     }
@@ -379,7 +379,7 @@
       if (st.mode === "start-end" && (c.start < 0 || c.end < 0)) throw new Error("Choose the start and the end time columns.");
       if (st.mode === "start-end" && c.start === c.end) throw new Error("The start and the end must be different columns. Choose one time per event instead.");
       const model = modelOf(app, st);
-      if (!model) throw new Error("Choose the model to measure against.");
+      if (!model) throw new Error("Choose the process to measure against.");
       const key = JSON.stringify([st.sheetIndex, st.delimiter, c, st.mode, st.format, st.modelId]);
       if (st.builtKey !== key) {
         const b = mining.createEventBuilder(c, { mode: st.mode, format: st.format, date1904: st.date1904, resources: c.resource >= 0 ? "counted" : "dropped" });
@@ -392,7 +392,7 @@
         const built = b.result();
         if (built.tooManyEvents) throw new Error("The log has more than " + count(L.eventLogEvents) + " events. Filter it to a shorter period or one process first.");
         if (built.tooManyCases) throw new Error("The log has more than " + count(L.eventLogCases) + " cases. Filter it to a shorter period first.");
-        if (!built.events.length) throw new Error("No row has a case, an activity and a time that can be read. Check the columns and the timestamp format.");
+        if (!built.events.length) throw new Error("No row has a case, an activity and a time that can be read. Check the columns and the date and time format.");
         st.built = built;
         st.activities = mining.activitiesOf(built.events);
         makeRows(st, model);
@@ -413,7 +413,7 @@
         const used = st.rows.filter(r => r.nodeId && r.confirmed);
         const waiting = st.rows.filter(r => r.nodeId && !r.confirmed).length;
         const covered = used.reduce((n, r) => n + r.events, 0);
-        summary.textContent = used.length + " of " + plural(st.rows.length, "activity", "activities") + " mapped, covering " +
+        summary.textContent = used.length + " of " + plural(st.rows.length, "activity", "activities") + " matched, covering " +
           util.formatNumber(total ? covered / total * 100 : 0, 1) + "% of " + plural(total, "event") + "." +
           (waiting ? " " + plural(waiting, "suggestion is", "suggestions are") + " waiting for a tick." : "");
       }
@@ -422,7 +422,7 @@
           h("option", { value: "" }, "Leave out"),
           groups.map(g => h("optgroup", { label: g.lane }, g.steps.map(n => h("option", { value: n.id, selected: n.id === r.nodeId }, n.label)))));
         if (!r.nodeId) sel.value = "";
-        const ok = h("input", { type: "checkbox", id: "li-ok-" + i, checked: !!(r.nodeId && r.confirmed), disabled: !r.nodeId, "aria-label": "Accept the mapping of " + r.activity });
+        const ok = h("input", { type: "checkbox", id: "li-ok-" + i, checked: !!(r.nodeId && r.confirmed), disabled: !r.nodeId, "aria-label": "Use the match for " + r.activity });
         const how = h("span", { class: "small" });
         const why = h("div", { class: "small muted" });
         const showHow = () => {
@@ -454,7 +454,7 @@
         const ask = h("button", { type: "button", class: "btn", id: "li-ask-ai" }, icon("agent"), "Ask AI for the rest");
         ask.addEventListener("click", () => {
           const rest = unmapped();
-          if (!rest.length) { messageDialog("Nothing left to map", "Every activity already has a step or a suggestion."); return; }
+          if (!rest.length) { messageDialog("Nothing left to match", "Every activity already has a step or a suggestion."); return; }
           B.aiPanel.openTask(app, "log-mapping", { taskOptions: { modelId: st.modelId, activities: rest }, onProposals: takeProposals });
         });
         tools.appendChild(ask);
@@ -473,7 +473,7 @@
         try { text = new TextDecoder().decode(await B.files.readBytes(file, L.fileBytes)); } catch (ex) { messageDialog("File not opened", ex.message); return; }
         const v = B.aiResults.parseAiResultText(text);
         if (v.ok && v.result.task !== "log-mapping") {
-          messageDialog("This is not a log mapping", file.name + " is an AI result for \"" + schema.label("aiTask", v.result.task) + "\". Choose a file made with npm run ai -- log-mapping or the aixray-log-mapping skill.");
+          messageDialog("This is not an activity mapping", file.name + " is an AI result for \"" + schema.label("aiTask", v.result.task) + "\". Choose a file made with npm run ai -- log-mapping or the aixray-log-mapping skill.");
           return;
         }
         B.aiPanel.openResult(app, v, { fileName: file.name, context: { activities: st.activities }, onProposals: takeProposals });
@@ -481,7 +481,7 @@
       tools.append(save, loadAi);
       function takeProposals(payload) {
         if (payload.modelId !== st.modelId) {
-          messageDialog("Mapped to another model", "These mappings are for " + modelName(app.store.get(), payload.modelId) + ", and this import measures against " + modelName(app.store.get(), st.modelId) + ". Change the model on the columns step, or run the mapping again.");
+          messageDialog("Matched to another process version", "These matches are for " + modelName(app.store.get(), payload.modelId) + ", and this import measures against " + modelName(app.store.get(), st.modelId) + ". Change the process in Match columns, or run the AI mapping again.");
           return;
         }
         let used = 0;
@@ -496,14 +496,14 @@
       }
       updateSummary();
       return h("div", { class: "form-grid" },
-        h("p", { class: "small" }, "Each activity in the log maps to one step at most; several activities may map to the same step. Same names are ticked already. Similar names and AI suggestions need their own tick. Activities left out are counted as unmapped events."),
+        h("p", { class: "small" }, "Match each activity in the log to a step. Several activities can share a step. Same names are ticked already; tick each similar name or AI suggestion you accept. Activities you leave out are not counted."),
         tools, summary,
         h("div", { class: "table-wrap li-map" }, h("table", { class: "table", id: "li-map" },
-          h("caption", { class: "sr-only" }, "Activities in the log and the steps they map to"),
+          h("caption", { class: "sr-only" }, "Activities in the log and the steps they match"),
           h("thead", null, h("tr", null, h("th", { scope: "col" }, "Activity in the log"), h("th", { scope: "col", class: "num" }, "Events"),
-            h("th", { scope: "col" }, "Step"), h("th", { scope: "col" }, "Accept"), h("th", { scope: "col" }, "How it was matched"))),
+            h("th", { scope: "col" }, "Step"), h("th", { scope: "col" }, "Use"), h("th", { scope: "col" }, "How it was matched"))),
           tbody)),
-        h("p", { class: "note" }, "Only the activity names are ever sent to an AI assistant or saved for the command line, never times, case IDs or people. Activity names are client material, so the data-handling rules apply."));
+        h("p", { class: "note" }, "Only activity names are sent to an AI assistant or saved for the command line. Times, case IDs and people never are. Activity names can be confidential, so follow your data-handling rules."));
     }
 
     /* Step 4: privacy and options. */
@@ -524,9 +524,9 @@
       const keep = h("input", { type: "checkbox", id: "li-keep-ids", checked: o.keepIds });
       keep.addEventListener("change", () => { o.keepIds = keep.checked; });
       const keepRow = h("div", { class: "li-keep", hidden: o.caseIds !== "original" },
-        h("p", { class: "small" }, icon("alert"), " Original case IDs can identify customers, staff or contracts. They are stored as the case names of the scenarios made from the log and travel with the engagement file."),
-        h("label", { class: "check" }, keep, "Keep the original case IDs in the engagement file"));
-      const resources = select("li-resources", [["dropped", "Leave the resource column out"], ["counted", "Count the people per step (names are not stored)"]], o.resources, { disabled: st.cols.resource < 0 });
+        h("p", { class: "small" }, icon("alert"), " Original case IDs can identify customers, staff or contracts. They are saved as the names of the scenarios made from the log and go wherever the project file goes."),
+        h("label", { class: "check" }, keep, "Keep the original case IDs in the project file"));
+      const resources = select("li-resources", [["dropped", "Do not use"], ["counted", "Count people per step (names are not saved)"]], o.resources, { disabled: st.cols.resource < 0 });
       resources.addEventListener("change", () => { o.resources = resources.value; });
       const requireEnd = h("input", { type: "checkbox", id: "li-require-end", checked: o.requireEnd });
       requireEnd.addEventListener("change", () => { o.requireEnd = requireEnd.checked; });
@@ -547,8 +547,8 @@
         o.calendar = calendar.value;
         businessRow.hidden = o.calendar !== "business";
         const etb = e.meta.timeBasis || {};
-        tbNote.textContent = mining.sameBasis({ calendar: o.calendar, businessMinutesPerDay: Number(perDay.value) }, etb) ? "Same time basis as the engagement." :
-          "The engagement uses " + basisText(etb) + ". Scenarios from the log use the engagement's time basis; the log's figures use this one, and its cycle time cannot go into the value model.";
+        tbNote.textContent = mining.sameBasis({ calendar: o.calendar, businessMinutesPerDay: Number(perDay.value) }, etb) ? "Same time basis as the project." :
+          "The project uses " + basisText(etb) + ". Scenarios from the log follow the project; the log's own figures use this basis, so its cycle time cannot be copied into the value model.";
       };
       calendar.addEventListener("change", syncBasis);
       perDay.addEventListener("change", () => { o.businessMinutesPerDay = Number(perDay.value); syncBasis(); });
@@ -572,18 +572,18 @@
       return h("div", { class: "form-grid" },
         field("Name", name),
         h("fieldset", { class: "li-fieldset" }, h("legend", null, "Case IDs"),
-          h("p", { class: "small muted" }, "The engagement never stores the events. Case IDs appear only as the names of the cases replayed as scenarios."),
-          radio("hashed", "Hashed (recommended).", "A code of 8 characters from a salted SHA-256 hash. The salt is thrown away, so the code cannot be traced back."),
-          radio("sequence", "Numbered.", "Case 1, Case 2 and so on, in the order of the file."),
+          h("p", { class: "small muted" }, "The project never saves the events. Case IDs are used only to name the cases that become scenarios."),
+          radio("hashed", "Hashed (recommended).", "Each ID becomes an 8-character code that cannot be traced back (salted SHA-256; the salt is discarded)."),
+          radio("sequence", "Numbered.", "Case 1, Case 2 and so on, in file order."),
           radio("original", "Original IDs.", "As they are in the log."),
           keepRow),
-        field("Resources", resources, st.cols.resource < 0 ? "No resource column was chosen." : "Counting gives the number of people per step and how often work changes hands."),
+        field("People", resources, st.cols.resource < 0 ? "To count people, choose the column for who did the work in Match columns." : "Counting gives the number of people per step and how often work changes hands."),
         h("fieldset", { class: "li-fieldset" }, h("legend", null, "Complete cases"),
-          h("label", { class: "check" }, requireEnd, "Leave out cases whose last mapped event is not one of these end steps"),
-          mapped.length ? ends : h("p", { class: "small muted" }, "No mapped steps.")),
+          h("label", { class: "check" }, requireEnd, "Leave out cases whose last matched step is not one of these end steps"),
+          mapped.length ? ends : h("p", { class: "small muted" }, "No matched steps.")),
         h("div", { class: "field-row" }, field("Time basis", calendar), field("Data status", status)), businessRow, tbNote,
         h("div", { class: "field-row" }, field("Role", role), field("Compare with", compare)),
-        field("Scenarios from the most common variants", scen, "Each scenario replays the case whose cycle time is closest to the median of its variant."));
+        field("Scenarios from the most common variants", scen, "Each scenario plays back the case closest to the median cycle time of its variant."));
     }
 
     function nextFromOptions() {
@@ -594,7 +594,7 @@
         if (!(o.businessMinutesPerDay >= 1 && o.businessMinutesPerDay <= 1440)) throw new Error("Working minutes per day must be between 1 and 1,440.");
         if (o.dayStartMinute + o.businessMinutesPerDay > 1440) throw new Error("The working day must end before midnight.");
       }
-      if (o.requireEnd && !st.endNodeIds.length) throw new Error("Tick at least one end step, or include every case.");
+      if (o.requireEnd && !st.endNodeIds.length) throw new Error("Tick at least one end step, or untick the box under Complete cases to include every case.");
       return true;
     }
 
@@ -615,7 +615,7 @@
         name: o.name.trim(), role: o.role, comparesToDatasetId: o.role === "after" ? o.comparesToDatasetId || null : null, dataStatus: o.dataStatus,
         source: { fileName: st.file.name, format: st.file.format, sha256: st.file.sha256, rows: st.built.rows, droppedRows: st.built.droppedRows }
       });
-      if (!st.result.dataset.cases.count) throw new Error("No case is left to measure. Check the end steps on the options step, or map more activities.");
+      if (!st.result.dataset.cases.count) throw new Error("No case is left to measure. Check the end steps in Options, or match more activities.");
       return true;
     }
 
@@ -632,10 +632,10 @@
           (built.examples.length ? " For example data row" + (built.examples.length === 1 ? " " : "s ") + built.examples.slice(0, 5).map(x => x.row).join(", ") + "." : ""));
       }
       const unticked = st.rows.filter(x => x.nodeId && !x.confirmed).length;
-      if (unticked) warnings.push(plural(unticked, "suggested mapping was", "suggested mappings were") + " not ticked, so " + (unticked === 1 ? "that activity is" : "those activities are") + " left out.");
+      if (unticked) warnings.push(plural(unticked, "suggested match was", "suggested matches were") + " not ticked, so " + (unticked === 1 ? "that activity is" : "those activities are") + " left out.");
       if (st.detected && st.detected.ambiguous && st.format === st.detected.format) warnings.push("Day first and month first could not be told apart from the values. The log was read day first.");
       r.warnings.forEach(w => warnings.push(w.message));
-      if (st.unterminated) warnings.push("A quoted value in the file is not closed.");
+      if (st.unterminated) warnings.push("A quotation mark in the file is not closed.");
       const top = d.variants[0];
       const facts = h("dl", { class: "facts", id: "li-summary" },
         h("dt", null, "Event log"), h("dd", null, d.name + " (" + schema.label("dataStatus", d.dataStatus).toLowerCase() + ")"),
@@ -643,21 +643,21 @@
         h("dt", null, "Rows read"), h("dd", null, count(built.rows) + ", giving " + plural(d.source.events, "event")),
         h("dt", null, "Cases measured"), h("dd", null, count(d.cases.count) +
           (d.source.excludedIncompleteCases ? ", " + count(d.source.excludedIncompleteCases) + " left out as incomplete" : "") +
-          (r.counts.noMapped ? ", " + count(r.counts.noMapped) + " left out with no mapped event" : "")),
+          (r.counts.noMapped ? ", " + count(r.counts.noMapped) + " left out with no matched event" : "")),
         h("dt", null, "Period"), h("dd", null, mining.periodText(d) + " (" + util.formatNumber(d.period.days, 1) + " days)"),
         h("dt", null, "Annualized volume"), h("dd", null, count(d.cases.annualizedVolume) + " cases per year (cases per day in the period times 365)"),
         h("dt", null, "Median cycle time"), h("dd", null, d.cases.cycleTime ? durationText(d.cases.cycleTime.p50, tb) : "n/a"),
-        h("dt", null, "Events not mapped"), h("dd", null, count(d.source.unmatchedEvents)),
+        h("dt", null, "Events not matched"), h("dd", null, count(d.source.unmatchedEvents)),
         h("dt", null, "Variants"), h("dd", null, count(d.variants.length + d.otherVariants.variants) + (top ? "; the most common covers " + util.formatNumber(top.share * 100, 1) + "% of cases" : "") +
           (d.otherVariants.variants ? "; " + count(d.otherVariants.variants) + " rare variants are only counted" : "")),
         h("dt", null, "Scenarios"), h("dd", null, r.scenarios.length ? r.scenarios.map(s => s.name).join("; ") : "None"),
-        h("dt", null, "Stored"), h("dd", null, "Counts and times per step and variant. No events, no case IDs" + (d.source.caseIds === "original" ? " except the scenario case names" : "") + " and no names of people."));
+        h("dt", null, "Saved in the project"), h("dd", null, "Counts and times per step and variant. No events, no case IDs" + (d.source.caseIds === "original" ? " except the scenario case names" : "") + " and no names of people."));
       return h("div", { class: "form-grid" },
-        facts,
         warnings.length ? h("section", { class: "li-warnings", "aria-labelledby": "li-warn-head", id: "li-warnings" },
           h("h4", { id: "li-warn-head" }, "Check before you add (" + warnings.length + ")"),
           h("ul", { class: "issue-list" }, warnings.map(w => h("li", null, w)))) : h("p", { class: "small", id: "li-warnings" }, icon("check"), " Nothing to check."),
-        h("p", { class: "note" }, "Adding is one change: Undo removes the event log and its scenarios again."));
+        facts,
+        h("p", { class: "note" }, "Undo removes the event log and its scenarios in one step."));
     }
 
     function add() {
@@ -683,7 +683,7 @@
       if (st.step === 1) { if (st.table && st.table.header.length) goStep(2); return; }
       if (st.step === 2) { if (await busy(nextFromColumns)) goStep(3); return; }
       if (st.step === 3) {
-        if (!st.rows.some(r => r.nodeId && r.confirmed)) { showError("Map and tick at least one activity."); return; }
+        if (!st.rows.some(r => r.nodeId && r.confirmed)) { showError("Match and tick at least one activity."); return; }
         goStep(4);
         return;
       }
@@ -726,7 +726,7 @@
     openDialog({
       title: "Edit " + d.name, eyebrow: "Event log",
       body: h("div", { class: "form-grid" }, field("Name", name), h("div", { class: "field-row" }, field("Role", role), field("Compare with", compare)),
-        field("Data status", status, "Observed data is a real log; demonstration data marks every figure from it as illustrative."), field("Notes", notes), err),
+        field("Data status", status, "Measured data comes from a real log. Demonstration data marks every figure from it as illustrative."), field("Notes", notes), err),
       actions: [{ label: "Cancel" }, { label: "Save", variant: "btn-primary", keepOpen: true, onClick: api => {
         const ok = app.dispatch("dataset/update", { id: d.id, patch: { name: name.value, role: role.value, comparesToDatasetId: compare.value || null, dataStatus: status.value, notes: notes.value } }, "Event log updated.", err);
         if (ok) api.close();
@@ -740,7 +740,7 @@
     const also = h("input", { type: "checkbox", id: "el-delete-scenarios", checked: made.length > 0 });
     openDialog({
       title: "Delete " + d.name + "?", eyebrow: "Event log",
-      body: h("div", { class: "form-grid" }, h("p", null, "The figures from this log are removed from the engagement. Figures already copied into the value model stay, with their source."),
+      body: h("div", { class: "form-grid" }, h("p", null, "The figures from this log are removed from the project. Figures already copied into the value model stay, with their source."),
         made.length ? h("label", { class: "check" }, also, "Also delete the " + plural(made.length, "scenario") + " made from it") : null),
       actions: [{ label: "Cancel" }, { label: "Delete", variant: "btn-danger", onClick: () => {
         app.dispatch("dataset/delete", { id: d.id, removeScenarios: made.length > 0 && also.checked }, "Event log deleted. Undo restores it.");
@@ -768,13 +768,13 @@
     openDialog({
       title: "Use " + d.name + " in the value model", eyebrow: "Event log",
       body: h("div", { class: "form-grid" },
-        h("p", { class: "small" }, "Each figure is copied with the basis " + basis + " and names the log as its source: " + mining.sourceText(d) + "."),
+        h("p", { class: "small" }, "Tick the figures to copy. Each one is marked " + basis + " and names this log as its source: " + mining.sourceText(d) + "."),
         h("label", { class: "check" }, boxVol, "Annual eligible volume: " + (vol === null ? "not available" : count(vol) + " cases per year, annualized from " + plural(d.cases.count, "case") + " over " + util.formatNumber(d.period.days, 1) + " days")),
-        field("Scenario that receives the cycle time and effort", scen),
-        h("label", { class: "check" }, boxCycle, "Cycle time: " + (cycle === null ? "not available" : "median " + durationText(cycle, tb)) + (sameTb ? "" : ". Not available: the log is in " + basisText(tb) + " and the engagement in " + basisText(e.meta.timeBasis))),
-        h("label", { class: "check" }, boxTouch, "Human touch effort: " + (touch === null ? "not available (it needs start and end times on steps in people swimlanes)" : util.formatNumber(touch, 2) + " hours per case, the average start to end time of the steps in people swimlanes")),
+        field("Scenario to receive the cycle time and effort", scen),
+        h("label", { class: "check" }, boxCycle, "Cycle time: " + (cycle === null ? "not available" : "median " + durationText(cycle, tb)) + (sameTb ? "" : ". Not available: the log is in " + basisText(tb) + " and the project in " + basisText(e.meta.timeBasis))),
+        h("label", { class: "check" }, boxTouch, "Human touch effort: " + (touch === null ? "not available (it needs start and end times on steps in people lanes)" : util.formatNumber(touch, 2) + " hours per case, the average start-to-end time of the steps in people lanes")),
         err),
-      actions: [{ label: "Cancel" }, { label: "Use the ticked figures", variant: "btn-primary", keepOpen: true, onClick: api => {
+      actions: [{ label: "Cancel" }, { label: "Copy the ticked figures", variant: "btn-primary", keepOpen: true, onClick: api => {
         const ok = app.dispatch("dataset/applyToValueModel", { datasetId: d.id, annualVolume: boxVol.checked, scenarioId: scen.value, cycleTime: boxCycle.checked, humanTouch: boxTouch.checked },
           "Figures from the event log copied to the value model.", err);
         if (ok) api.close();
@@ -800,19 +800,19 @@
         btn("el-value-" + d.id, "list", "Use in the value model", () => valueDialog(app, d)),
         btn("el-delete-" + d.id, "trash", "Delete", () => deleteDialog(app, d))),
       h("dl", { class: "facts" },
-        h("dt", null, "Model"), h("dd", null, modelName(e, d.modelId)),
+        h("dt", null, "Measured against"), h("dd", null, modelName(e, d.modelId)),
         h("dt", null, "Role"), h("dd", null, schema.label("datasetRole", d.role) + (compare ? ", compared with " + compare.name : "")),
         h("dt", null, "Source"), h("dd", null, (d.source.fileName || "File name not recorded") + ", " + schema.label("logFormat", d.source.format).toLowerCase() + ", " + plural(d.source.rows, "row") + " (" + count(d.source.droppedRows) + " not read)"),
         h("dt", null, "Period"), h("dd", null, mining.periodText(d) + " (" + util.formatNumber(d.period.days, 1) + " days)"),
         h("dt", null, "Cases"), h("dd", null, count(d.cases.count) + " measured" + (d.source.excludedIncompleteCases ? ", " + count(d.source.excludedIncompleteCases) + " left out as incomplete" : "") +
           "; " + count(d.cases.annualizedVolume) + " per year when annualized"),
         h("dt", null, "Median cycle time"), h("dd", null, d.cases.cycleTime ? durationText(d.cases.cycleTime.p50, tb) + ", 90th percentile " + units.formatDuration(d.cases.cycleTime.p90, tb, { precise: true }) : "n/a"),
-        h("dt", null, "Mapping"), h("dd", null, mapped.length + " of " + plural(d.mapping.length, "activity", "activities") + " mapped; " + plural(d.source.unmatchedEvents, "event") + " not mapped"),
-        h("dt", null, "Case IDs"), h("dd", null, schema.label("caseIdHandling", d.source.caseIds) + "; resources " + (d.source.resources === "counted" ? "counted, names not stored" : "left out")),
+        h("dt", null, "Matching"), h("dd", null, mapped.length + " of " + plural(d.mapping.length, "activity", "activities") + " matched; " + plural(d.source.unmatchedEvents, "event") + " not matched"),
+        h("dt", null, "Case IDs"), h("dd", null, schema.label("caseIdHandling", d.source.caseIds) + "; " + (d.source.resources === "counted" ? "people counted, names not saved" : "people not counted")),
         h("dt", null, "Scenarios"), h("dd", null, made.length ? made.map(s => s.name).join("; ") : "None")),
-      h("details", { class: "small li-details" }, h("summary", null, "Activity mapping (" + d.mapping.length + ")"),
+      h("details", { class: "small li-details" }, h("summary", null, "Activity matches (" + d.mapping.length + ")"),
         h("div", { class: "table-wrap" }, h("table", { class: "table" },
-          h("thead", null, h("tr", null, h("th", { scope: "col" }, "Activity"), h("th", { scope: "col", class: "num" }, "Events"), h("th", { scope: "col" }, "Step"), h("th", { scope: "col" }, "How"))),
+          h("thead", null, h("tr", null, h("th", { scope: "col" }, "Activity"), h("th", { scope: "col", class: "num" }, "Events"), h("th", { scope: "col" }, "Step"), h("th", { scope: "col" }, "How it was matched"))),
           h("tbody", null, d.mapping.map(m => h("tr", null, h("td", null, m.activity), h("td", { class: "num" }, count(m.events)),
             h("td", null, m.nodeId ? nodeLabel(m.nodeId) : "Left out"), h("td", null, METHOD_TEXT[m.method] || m.method))))))),
       d.notes ? h("p", { class: "small" }, d.notes) : null);
@@ -824,9 +824,9 @@
     const imp = h("button", { type: "button", class: "btn btn-primary", id: "el-import" }, icon("upload"), "Import an event log");
     imp.addEventListener("click", () => openWizard(app, {}));
     panel.appendChild(h("div", { class: "li-tab-head" },
-      h("p", { class: "small" }, "Event logs measured against the process models. Each one holds counts and times per step and variant, never the events, case IDs or names of people."),
+      h("p", { class: "small" }, "Each event log keeps counts and times per step and variant. Events, case IDs and names of people are never saved."),
       imp));
-    if (!list.length) { panel.appendChild(h("p", { class: "empty" }, "No event logs yet.")); return; }
+    if (!list.length) { panel.appendChild(h("p", { class: "empty" }, "No event logs yet. Import one to measure the process.")); return; }
     list.forEach(d => panel.appendChild(datasetCard(app, d)));
   }
 
@@ -864,9 +864,9 @@
     if (!d) return null;
     const facts = mining.stepFacts(d, node.id);
     return h("section", { class: "side-section", id: "drawer-observed", "aria-labelledby": "drawer-observed-h" },
-      h("h3", { id: "drawer-observed-h" }, "Observed in the event log"),
+      h("h3", { id: "drawer-observed-h" }, "Measured in the event log"),
       facts ? h("dl", { class: "facts" }, facts.map(([k, v]) => [h("dt", null, k), h("dd", null, v)])) :
-        h("p", { class: "small muted" }, "No event in " + d.name + " maps to this step."),
+        h("p", { class: "small muted" }, "No event in " + d.name + " is matched to this step."),
       h("p", { class: "note" }, "From " + d.name + ", " + mining.periodText(d) + ", " + plural(d.cases.count, "case") + ". " + schema.label("dataStatus", d.dataStatus) + ". Times are in " + basisText(d.timeBasis) + "."));
   }
 
@@ -881,7 +881,7 @@
       if (!sel) return;
       sel.value = "observed-share";
       sel.dispatchEvent(new Event("change"));
-      announce("Lens: observed share of cases.");
+      announce("Lens: measured share of cases.");
     });
     const open = h("button", { type: "button", class: "link-btn", id: "drawer-observed-open" }, "Open the event logs");
     open.addEventListener("click", () => { ctx.app.goto("records"); ctx.app.recordsView.setTab(TAB_ID); });
@@ -916,14 +916,14 @@
         h("td", null, use));
     });
     return h("section", { class: "card", id: "vv-observed", "aria-labelledby": "vv-observed-h" },
-      h("h3", { id: "vv-observed-h" }, "Observed inputs"),
+      h("h3", { id: "vv-observed-h" }, "Measured inputs"),
       h("div", { class: "table-wrap" }, h("table", { class: "table" },
         h("caption", { class: "sr-only" }, "Figures from event logs"),
         h("thead", null, h("tr", null, h("th", { scope: "col" }, "Event log"), h("th", { scope: "col", class: "num" }, "Annual volume"),
           h("th", { scope: "col", class: "num" }, "Median cycle time"), h("th", { scope: "col", class: "num" }, "Human touch per case"),
           h("th", { scope: "col" }, "Basis"), h("th", { scope: "col" }, h("span", { class: "sr-only" }, "Action")))),
         h("tbody", null, rows))),
-      h("p", { class: "note" }, "Annual volume is the cases per day in the log period times 365. Human touch is the average start to end time per case of the steps in people swimlanes, so it can include interruptions. Use copies a figure into the assumptions or a scenario with its basis and source; nothing changes until you do."));
+      h("p", { class: "note" }, "Annual volume is cases per day in the log period times 365. Human touch is the average start-to-end time per case of the steps in people lanes, so it can include interruptions. Use copies a figure, with its basis and source, into the assumptions or a scenario."));
   }
 
   function handoffSection(hd, ctx) {
@@ -932,13 +932,13 @@
     if (!list.length) return null;
     return [h("h2", null, "Event logs (" + list.length + ")"),
       h("div", { class: "table-wrap" }, h("table", { class: "table", id: "handoff-event-logs" },
-        h("thead", null, h("tr", null, ["Event log", "Model", "Role", "Period", "Cases", "Median cycle time", "Basis"].map(c => h("th", { scope: "col" }, c)))),
+        h("thead", null, h("tr", null, ["Event log", "Measured against", "Role", "Period", "Cases", "Median cycle time", "Basis"].map(c => h("th", { scope: "col" }, c)))),
         h("tbody", null, list.map(d => h("tr", null,
           h("td", null, d.name), h("td", null, modelName(e, d.modelId)), h("td", null, schema.label("datasetRole", d.role)),
           h("td", null, mining.periodText(d)), h("td", { class: "num" }, count(d.cases.count)),
           h("td", { class: "num" }, d.cases.cycleTime ? durationText(d.cases.cycleTime.p50, d.timeBasis) : "n/a"),
           h("td", null, schema.label("assumptionStatus", datasetQuery.basisOf(d)))))))),
-      h("p", { class: "note" }, "Figures from event logs are counts and times per step. The engagement file holds no events, case IDs or names of people from the logs.")];
+      h("p", { class: "note" }, "Figures from event logs are counts and times per step. The project file holds no events, case IDs or names of people from the logs.")];
   }
 
   /* ---------- Registration ---------- */
@@ -950,8 +950,8 @@
   B.ext.registerDrawerSection({ id: "observed-overview", where: "overview", render: overviewSection });
   B.ext.registerValueSection({ id: "observed-inputs", render: valueSection });
   B.ext.registerHandoffSection({ id: "event-logs", after: "scope", render: handoffSection });
-  B.lenses.registerLens({ id: "observed-share", label: "Observed share of cases", compute: mining.shareLens });
-  B.lenses.registerLens({ id: "observed-time", label: "Observed time per visit", compute: mining.timeLens });
+  B.lenses.registerLens({ id: "observed-share", label: "Measured share of cases", compute: mining.shareLens });
+  B.lenses.registerLens({ id: "observed-time", label: "Measured time per visit", compute: mining.timeLens });
 
   B.logImport = { openWizard, syncTab, TAB_ID };
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -3613,42 +3613,42 @@
     "warnings": [
       {
         "code": "semantic.gateway",
-        "message": "Current state: gateway \"Setup path?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Current state: gateway \"Setup path?\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "setup-path"
       },
       {
         "code": "semantic.gateway",
-        "message": "Current state: gateway \"Deal approved?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Current state: gateway \"Deal approved?\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "deal-approved"
       },
       {
         "code": "semantic.gateway",
-        "message": "Current state: gateway \"Auto-matched?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Current state: gateway \"Auto-matched?\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "auto-matched"
       },
       {
         "code": "semantic.gateway",
-        "message": "Proposed future state: gateway \"Exception deal?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Proposed future state: gateway \"Exception deal?\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "exception-deal"
       },
       {
         "code": "semantic.gateway",
-        "message": "Proposed future state: gateway \"Match found?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Proposed future state: gateway \"Match found?\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "match-found"
       },
       {
         "code": "semantic.gateway",
-        "message": "Proposed future state: gateway \"Approval needed?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Proposed future state: gateway \"Approval needed?\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "approval-needed"
       },
       {
         "code": "field.role",
-        "message": "Proposed future state: step badges such as \"AI\" and \"HITL\" are now derived from the step tags.",
+        "message": "Proposed future state: step badges such as \"AI\" and \"HITL\" now come from the step tags.",
         "path": ""
       },
       {
         "code": "membership.unconfirmed",
-        "message": "Current state: \"Denied\" is an end event outside the scheduled route and is not marked optional. Its membership is Not confirmed until someone reviews it.",
+        "message": "Current state: \"Denied\" is an end event off the scheduled route and is not marked optional. It shows as route not confirmed until someone checks it.",
         "path": ""
       },
       {
@@ -3678,7 +3678,7 @@
       },
       {
         "code": "economics.drivers",
-        "message": "The source declares no economic assumptions, so supplied cost and capacity figures cannot be reconciled.",
+        "message": "The source has no cost assumptions, so AIxRay can't check whether its cost and capacity figures add up.",
         "path": ""
       },
       {
