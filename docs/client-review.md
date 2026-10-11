@@ -1,8 +1,8 @@
 # Client review packs
 
-A client review pack asks a client stakeholder to check the process as the team captured it. The pack lists the steps of one process model and the findings from the workshop. For each item the reviewer chooses Confirm, Dispute or Not sure and can add a comment. The answers come back as a file that you open in BPMVIZ, and applying them updates the validation status of the steps.
+A client review pack asks a client stakeholder to check the process as the team captured it. The pack lists the steps of one process model and the findings from the workshop. For each item the reviewer chooses Confirm, Dispute or Not sure and can add a comment. The answers come back as a file that you open in AIxRay, and applying them updates the validation status of the steps.
 
-The pack works without BPMVIZ. It is either a web page that opens from the file in any current browser, or an Excel workbook.
+The pack works without AIxRay. It is either a web page that opens from the file in any current browser, or an Excel workbook.
 
 ## Making a pack
 
@@ -19,7 +19,7 @@ What goes into a pack:
 - Sensitive records are left out unless **Include sensitive records** is ticked in the Present bar. AI drafts not yet reviewed are left out unless **Include AI drafts not yet reviewed** is ticked. The pack dialog says which applies.
 - The engagement title, client and engagement names, data status, confidentiality and disclosure. Nothing else from the engagement is in the file: no figures, no other records, no evidence and no notes.
 
-A recorded pack can be downloaded again from the Records tab. It is rebuilt from the current engagement with the same pack reference, so answers to either copy match. The findings are checked again: a finding that has since been marked sensitive, dropped or taken out of the handoff, or an AI draft not yet reviewed, is left out, and BPMVIZ says how many items were left out. To send a sensitive finding, make a new pack from the Present bar with **Include sensitive records** ticked.
+A recorded pack can be downloaded again from the Records tab. It is rebuilt from the current engagement with the same pack reference, so answers to either copy match. The findings are checked again: a finding that has since been marked sensitive, dropped or taken out of the handoff, or an AI draft not yet reviewed, is left out, and AIxRay says how many items were left out. To send a sensitive finding, make a new pack from the Present bar with **Include sensitive records** ticked.
 
 ## The web page pack
 
@@ -39,15 +39,15 @@ The workbook has three sheets:
 
 - **About**: the engagement, who the pack is for, how to answer, and cells for **Your name**, **Your role**, **Your organization** and **General comment**. It also shows the pack reference, the engagement reference and the engagement revision.
 - **Review**: one row per item with the columns Item ID, Type, Lane, Item, Details, Verdict and Comment. The Verdict column offers a list of Confirm, Dispute and Not sure.
-- **bpmviz-pack** (hidden): the pack reference, engagement reference and revision.
+- **aixray-pack** (hidden): the pack reference, engagement reference and revision.
 
-Every cell is written as text or a number, so no cell is a formula. Text that starts with =, +, - or @ (or a tab) gets a leading apostrophe, as in the CSV exports, so it stays text when the reviewer edits the cell or saves the sheet as CSV. BPMVIZ removes the apostrophe again when it reads the workbook back.
+Every cell is written as text or a number, so no cell is a formula. Text that starts with =, +, - or @ (or a tab) gets a leading apostrophe, as in the CSV exports, so it stays text when the reviewer edits the cell or saves the sheet as CSV. AIxRay removes the apostrophe again when it reads the workbook back.
 
-When the workbook comes back, open it with **Open**. BPMVIZ recognizes it by the hidden sheet, or by the About and Review sheets when a re-save lost the hidden sheet. Columns on the Review sheet are found by their headers, so moved columns still read. Verdicts are read generously: Yes, Correct and OK count as Confirm; No, Wrong and Disagree count as Dispute; Maybe and Don't know count as Not sure. Anything else is treated as no answer and listed as a warning; it is never read as Confirm. If the workbook has no submission date, the file's last-modified time is used.
+When the workbook comes back, open it with **Open**. AIxRay recognizes it by the hidden sheet, or by the About and Review sheets when a re-save lost the hidden sheet. Columns on the Review sheet are found by their headers, so moved columns still read. Verdicts are read generously: Yes, Correct and OK count as Confirm; No, Wrong and Disagree count as Dispute; Maybe and Don't know count as Not sure. Anything else is treated as no answer and listed as a warning; it is never read as Confirm. If the workbook has no submission date, the file's last-modified time is used.
 
 ## Importing the answers
 
-Open the response file or the filled-in workbook with **Open**, or choose **Import a response** in the Client review tab. BPMVIZ checks it first:
+Open the response file or the filled-in workbook with **Open**, or choose **Import a response** in the Client review tab. AIxRay checks it first:
 
 - A response made for a different engagement is refused. Open that engagement and import it again.
 - A response file larger than 2 MB is refused.
@@ -80,11 +80,11 @@ Deleting a response removes its answers from the engagement. Validation already 
 
 ## Data contract
 
-Packs are stored in `engagement.reviewPacks[]` and received reviews in `engagement.reviews[]`, as described in `webui/schema/engagement.schema.json`. Items are referred to as `step/<modelId>/<nodeId>` or `record/<recordId>`. A response file follows `webui/schema/review-response.schema.json` (`schema: "bpmviz.review-response"`); an entry's verdict may be empty when the reviewer gave none. A stored review entry without a verdict reads as Not sure, never as Confirm.
+Packs are stored in `engagement.reviewPacks[]` and received reviews in `engagement.reviews[]`, as described in `webui/schema/engagement.schema.json`. Items are referred to as `step/<modelId>/<nodeId>` or `record/<recordId>`. A response file follows `webui/schema/review-response.schema.json` (`schema: "aixray.review-response"`); an entry's verdict may be empty when the reviewer gave none. A stored review entry without a verdict reads as Not sure, never as Confirm.
 
 ## For developers
 
 - `webui/js/lib/reviews.js`: `buildPackItems(e, opts)`, `packCounts`, `newPack`, `packPayload`, `workbookSpec(pack, payload)`, `responseFromWorkbook(workbook)`, `normalizeVerdict`, `prepareApply(e, response)` giving `{ ok, errors, warnings, response, pack, items, counts }`, `buildApplyPayload(e, prepared, choices)`, `latestVerdicts(e)` and `summarize(e, opts)`. It registers the store commands `review/recordPack { pack }`, `review/apply { review, validations, questions, evidence }`, `review/delete { id }` and `review/deletePack { id }`.
 - `webui/js/lib/review-pack.js`: `buildPackHtml(payload)`, `readPackHtml(html)`, and `PACK_SCRIPT`, `PACK_STYLE` with their hashes `PACK_SCRIPT_SHA256` and `PACK_STYLE_SHA256`. After changing the pack script or style, update the two hash constants; `tests/unit/review-pack.test.mjs` fails with the expected values until they match.
-- `webui/js/ui/client-review.js`: the Present action, the Client review records tab, the JSON and Excel file handlers, the side panel section and the handoff section, all registered through `BPMVIZ.ext`.
+- `webui/js/ui/client-review.js`: the Present action, the Client review records tab, the JSON and Excel file handlers, the side panel section and the handoff section, all registered through `AIxRay.ext`.
 - Tests: `tests/unit/reviews.test.mjs`, `tests/unit/review-pack.test.mjs` and `tests/browser/client-review.test.mjs`, with response fixtures in `tests/fixtures/reviews/`.

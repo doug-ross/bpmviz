@@ -4,7 +4,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, clear, icon } = B.dom;
   const { schema, units, economics, util } = B;
   const badge = (t, tone) => B.drawer.badge(t, tone);
@@ -181,7 +181,7 @@
         notes.map(n => h("div", { class: "warn-line" }, icon("info"), h("span", null, n.message))));
     }
 
-    /* Sections registered with BPMVIZ.ext.registerValueSection, after the reconciliation card. */
+    /* Sections registered with AIxRay.ext.registerValueSection, after the reconciliation card. */
     function extSections(s) {
       const c = B.ext.context(app, { scenario: s || null, scenarioId: s ? s.id : "", rerender: render });
       return B.ext.list("valueSection").map(def => B.ext.guard("valueSection", def, () => def.render(c), null)).filter(x => x instanceof Node);

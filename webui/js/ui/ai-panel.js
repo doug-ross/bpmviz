@@ -14,7 +14,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, icon, announce, formatDate } = B.dom;
   const { schema, aiResults, util } = B;
   const { openDialog, messageDialog, issueList } = B.dialogs;
@@ -293,8 +293,8 @@
 
   /* ---------- The local AI helper (npm run serve -- --ai) ---------- */
 
-  const HELPER = !!document.querySelector("meta[name='bpmviz-ai-helper']");
-  const TOKEN_KEY = "bpmviz:ai-token";
+  const HELPER = !!document.querySelector("meta[name='aixray-ai-helper']");
+  const TOKEN_KEY = "aixray:ai-token";
   const TASK_NAMES = {
     extract: "Extract a current state", opportunities: "Suggest records",
     "future-state": "Draft a future state", summary: "Draft the handoff summary",
@@ -332,7 +332,7 @@
 
   async function call(method, url, body) {
     const headers = {};
-    if (helper.token) headers["X-BPMVIZ-Token"] = helper.token;
+    if (helper.token) headers["X-AIxRay-Token"] = helper.token;
     let payload;
     if (body instanceof Blob) { headers["Content-Type"] = "application/octet-stream"; payload = body; }
     else if (body !== undefined) { headers["Content-Type"] = "application/json"; payload = JSON.stringify(body); }
@@ -400,7 +400,7 @@
             (input.excluded.secretActivities === 1 ? " that looks" : "s that look") + " like a credential left out; map " +
             (input.excluded.secretActivities === 1 ? "it" : "them") + " by hand") : null,
           h("li", null, "The " + input.steps.length + " steps of " + (model ? model.name : "the model") + " (gateways left out): ID, name, swimlane and description")),
-        h("p", { class: "small muted" }, "No events, case IDs, times, counts or people from the log, plus the BPMVIZ task instructions."),
+        h("p", { class: "small muted" }, "No events, case IDs, times, counts or people from the log, plus the AIxRay task instructions."),
         h("details", { class: "small" }, h("summary", null, "Show exactly what is sent"),
           h("pre", { class: "ai-preview" }, preview.length > 40000 ? preview.slice(0, 40000) + "\n..." : preview)));
     }
@@ -411,7 +411,7 @@
     const text = JSON.stringify(input, null, 1);
     return h("div", { id: "ai-sent" },
       h("ul", { class: "plain-list small" }, lines.map(l => h("li", null, l))),
-      h("p", { class: "small muted" }, "No visit lists, links or engagement history, plus the BPMVIZ task instructions."),
+      h("p", { class: "small muted" }, "No visit lists, links or engagement history, plus the AIxRay task instructions."),
       h("details", { class: "small" }, h("summary", null, "Show exactly what is sent"),
         h("pre", { class: "ai-preview" }, text.length > 40000 ? text.slice(0, 40000) + "\n..." : text)));
   }
@@ -435,7 +435,7 @@
     const usable = helper.providers.filter(p => p.installed && p.loggedIn && !p.apiKey);
     if (!usable.length) {
       messageDialog("No AI tool is ready", h("div", null,
-        h("p", null, "BPMVIZ did not find Claude Code or Codex signed in to a subscription on this machine."),
+        h("p", null, "AIxRay did not find Claude Code or Codex signed in to a subscription on this machine."),
         h("ul", { class: "plain-list small" }, helper.providers.map(p => h("li", null, providerLine(p)))),
         h("p", { class: "small" }, "docs/ai.md explains how to install and sign in. Then try again.")));
       return null;
@@ -449,7 +449,7 @@
       h("option", { value: "" }, "Choose the plan this account is on"),
       h("option", { value: "commercial" }, "ChatGPT Business or Enterprise (commercial)"),
       h("option", { value: "consumer" }, "ChatGPT Plus or Pro (consumer)"));
-    const planField = field("Plan", plan, "Codex does not report the plan. BPMVIZ remembers your answer in this browser.");
+    const planField = field("Plan", plan, "Codex does not report the plan. AIxRay remembers your answer in this browser.");
     const planNote = h("p", { class: "small", id: "ai-plan-detected" });
 
     const files = h("input", { type: "file", id: "ai-files", multiple: true, accept: ACCEPT, class: "input" });

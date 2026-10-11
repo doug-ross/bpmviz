@@ -4,7 +4,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const SVG_NS = "http://www.w3.org/2000/svg";
 
   function append(el, child) {

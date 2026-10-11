@@ -1,5 +1,5 @@
 /*
- * BPMVIZ fuzzy: matches activity names from an event log to process steps.
+ * AIxRay fuzzy: matches activity names from an event log to process steps.
  * Names are normalized (case, accents, punctuation and "&" ignored). Equal
  * normalized names are an exact match. Otherwise the similarity is the
  * higher of the token Jaccard index (shared words) and the normalized
@@ -10,7 +10,7 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.fuzzy = factory(); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.fuzzy = factory(); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 

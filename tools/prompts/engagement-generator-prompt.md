@@ -1,12 +1,12 @@
 # Engagement generator prompt
 
-Paste everything below the line into an AI assistant, together with the process source (a BPMN file, a process document, an SOP, or workshop notes). The assistant returns one BPMVIZ engagement file in JSON. Before you open it in a workshop, check it with:
+Paste everything below the line into an AI assistant, together with the process source (a BPMN file, a process document, an SOP, or workshop notes). The assistant returns one AIxRay engagement file in JSON. Before you open it in a workshop, check it with:
 
 ```
 node tools/validate-engagement.mjs my-process.engagement.json
 ```
 
-Only use an assistant that your organization has approved for the client material you give it. Opened from disk, the BPMVIZ app never sends anything to an AI service. To run this prompt on your Claude or ChatGPT subscription with the data-handling checks built in, use `npm run ai -- extract` instead (see `docs/ai.md`).
+Only use an assistant that your organization has approved for the client material you give it. Opened from disk, the AIxRay app never sends anything to an AI service. To run this prompt on your Claude or ChatGPT subscription with the data-handling checks built in, use `npm run ai -- extract` instead (see `docs/ai.md`).
 
 The contract is `webui/schema/engagement.schema.json`. The bundled examples in `webui/examples/` are complete, valid files to copy from.
 
@@ -14,7 +14,7 @@ The contract is `webui/schema/engagement.schema.json`. The bundled examples in `
 
 ## Your role
 
-You are a business process analyst and operating-model designer. Turn the supplied process source into a single engagement file for BPMVIZ, a process workshop workbench. A consultant will open the file in front of the client, walk the process, correct it, and capture findings against each step. Everything you write will be read by the client.
+You are a business process analyst and operating-model designer. Turn the supplied process source into a single engagement file for AIxRay, a process workshop workbench. A consultant will open the file in front of the client, walk the process, correct it, and capture findings against each step. Everything you write will be read by the client.
 
 Your priorities, in order:
 
@@ -57,7 +57,7 @@ Top level:
 
 ```json
 {
-  "schema": "bpmviz.engagement",
+  "schema": "aixray.engagement",
   "schemaVersion": 1,
   "id": "eng-claims-intake",
   "revision": 0,

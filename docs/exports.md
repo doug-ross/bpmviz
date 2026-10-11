@@ -1,6 +1,6 @@
 # Exporting for client tools
 
-BPMVIZ keeps the engagement in its own file, but the people who act on it work in PowerPoint, a BPMN modeling tool, Jira, Azure DevOps or Excel. **Export for client tools** builds those files from the current engagement. It never changes the engagement, so there is nothing to undo.
+AIxRay keeps the engagement in its own file, but the people who act on it work in PowerPoint, a BPMN modeling tool, Jira, Azure DevOps or Excel. **Export for client tools** builds those files from the current engagement. It never changes the engagement, so there is nothing to undo.
 
 Open it from the present bar (the download icon, next to Engagement JSON) or from the menu under Save as a new file. Both open the same dialog with three sections: a PowerPoint deck, a BPMN 2.0 diagram and a backlog.
 
@@ -26,9 +26,9 @@ A table longer than ten rows continues on further slides, each headed "(2 of 3)"
 
 ## BPMN 2.0 diagram
 
-This writes the chosen model back out as a standard BPMN 2.0 XML file: a collaboration with one participant, its lanes, every step and connector, and the diagram positions, in the layout the Process workspace already computed. It is the reverse of importing a BPMN file into BPMVIZ, and round-trips cleanly back through that importer.
+This writes the chosen model back out as a standard BPMN 2.0 XML file: a collaboration with one participant, its lanes, every step and connector, and the diagram positions, in the layout the Process workspace already computed. It is the reverse of importing a BPMN file into AIxRay, and round-trips cleanly back through that importer.
 
-A few things do not carry over, because BPMVIZ does not record them:
+A few things do not carry over, because AIxRay does not record them:
 
 - Removed steps and the connectors attached to them are left out.
 - A connector's label becomes the sequence flow's name. No condition logic is invented for a gateway's branches; add that in the modeling tool if the target tool needs it.
@@ -38,7 +38,7 @@ A few things do not carry over, because BPMVIZ does not record them:
 
 The backlog turns opportunity and action records into items a delivery team can import:
 
-| BPMVIZ record | Jira | Azure DevOps |
+| AIxRay record | Jira | Azure DevOps |
 |---|---|---|
 | Opportunity | Epic | Feature |
 | Action | Task | User Story |
@@ -50,5 +50,5 @@ A pain point, decision, question or note is not itself a backlog item; capture i
 ## Things to know
 
 - **PowerPoint may offer to repair the file.** This is common for decks assembled outside PowerPoint and is harmless; PowerPoint rebuilds its internal part list and opens normally. Fonts fall back to whatever the opening machine has for Ubuntu; install Ubuntu for an exact match.
-- **Jira and Azure DevOps importers vary** by project configuration. Check the column mapping on import, especially for Priority and Status, which BPMVIZ labels in plain text rather than the exact values your project's workflow uses.
+- **Jira and Azure DevOps importers vary** by project configuration. Check the column mapping on import, especially for Priority and Status, which AIxRay labels in plain text rather than the exact values your project's workflow uses.
 - **The deck's figures are modeled, not realized.** Each one carries the basis of its weakest input, the same rule the Value workspace and the handoff summary follow.

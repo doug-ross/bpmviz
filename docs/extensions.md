@@ -1,6 +1,6 @@
-# Extending BPMVIZ
+# Extending AIxRay
 
-This page is for people adding a feature to BPMVIZ. Features plug into the app through a small registry, `BPMVIZ.ext`, and through store commands they register themselves, so a feature lives in its own files and does not edit the shared views. The registry, the shared libraries and an empty module for every planned feature are already loaded by `webui/index.htm`.
+This page is for people adding a feature to AIxRay. Features plug into the app through a small registry, `AIxRay.ext`, and through store commands they register themselves, so a feature lives in its own files and does not edit the shared views. The registry, the shared libraries and an empty module for every planned feature are already loaded by `webui/index.htm`.
 
 ## Who owns which files
 
@@ -9,7 +9,7 @@ The client-value build adds five features in parallel. Each feature owns its fil
 | Feature | Owns |
 | --- | --- |
 | Shared (frozen) | `lib/schema.js`, `lib/validate.js`, `lib/store.js`, `lib/economics.js`, `lib/lenses.js`, `lib/zip.js`, `lib/ooxml.js`, `lib/xlsx.js`, `lib/dataset-query.js`, `ui/ext.js`, `ui/files.js`, `ui/diagram.js`, `ui/drawer.js`, `ui/forms.js`, `ui/process-view.js`, `ui/records-view.js`, `ui/value-view.js`, `ui/present-view.js`, `app.js`, `index.htm`, `tools/build-schema.mjs`, `webui/schema/*.json`, `tests/unit/helpers.mjs`, `tests/fixtures/datasets/*`, the foundation tests, this page, `package.json`, `tools/escape-ascii.mjs` |
-| Event-log import (mining) | `lib/csv.js`, `lib/fuzzy.js`, `lib/mining.js`, `ui/log-import.js`, `css/mining.css`, `lib/ai-results.js` (fixes only), `ui/ai-panel.js`, `tools/ai/*.mjs`, `tools/prompts/ai-log-mapping.md`, the `bpmviz-log-mapping` skills, `tests/fixtures/logs/*`, `tests/fixtures/ai/*`, `docs/event-logs.md`, `docs/ai.md` |
+| Event-log import (mining) | `lib/csv.js`, `lib/fuzzy.js`, `lib/mining.js`, `ui/log-import.js`, `css/mining.css`, `lib/ai-results.js` (fixes only), `ui/ai-panel.js`, `tools/ai/*.mjs`, `tools/prompts/ai-log-mapping.md`, the `aixray-log-mapping` skills, `tests/fixtures/logs/*`, `tests/fixtures/ai/*`, `docs/event-logs.md`, `docs/ai.md` |
 | Value case and business case (value) | `lib/value-case.js` (function signatures frozen), `lib/business-case.js`, `ui/opportunity-value.js`, `css/business-case.css`, `docs/business-case.md` |
 | Client review (review) | `lib/reviews.js`, `lib/review-pack.js`, `ui/client-review.js`, `css/client-review.css`, `tests/fixtures/reviews/*`, `docs/client-review.md` |
 | Exports for client tools (exports) | `lib/pptx.js`, `lib/bpmn-export.js`, `lib/backlog.js`, `ui/client-exports.js`, `css/client-exports.css`, `docs/exports.md` |
@@ -21,7 +21,7 @@ When a feature needs a change to a frozen file, record it as a contract change r
 
 ## Rules that apply to every feature
 
-- Files under `webui/js/lib/` load as browser scripts and as Node modules (the same wrapper as the existing files). They have no DOM or network access. Compression is passed in: the browser passes `BPMVIZ.files.inflateRaw` and `deflateRaw`; Node tests pass `node:zlib`.
+- Files under `webui/js/lib/` load as browser scripts and as Node modules (the same wrapper as the existing files). They have no DOM or network access. Compression is passed in: the browser passes `AIxRay.files.inflateRaw` and `deflateRaw`; Node tests pass `node:zlib`.
 - JavaScript sources are ASCII only. After editing, run `npm run fix:ascii`, which rewrites any other character as a `\u` escape in `.js`, `.mjs` and `.cjs` files under `webui/js`, `tools` and `tests`.
 - Engagement data is shown with `textContent` (the `h()` helper does this). Never assign it to `innerHTML`.
 - The app opened from disk makes no network requests.
@@ -34,9 +34,9 @@ When a feature needs a change to a frozen file, record it as a contract change r
 
 A feature's interface file runs before `app.js` starts the app, so it registers at load time. The views read the registry each time they render, so registering later also works.
 
-## The registry: BPMVIZ.ext
+## The registry: AIxRay.ext
 
-Every registration is an object with an `id` (letters, digits, `-` and `_`) and an optional `order` (lower first; ties keep the order of registration). A duplicate `id` within one kind throws, and so does an `id` the app uses itself. `BPMVIZ.ext.list(kind)` returns the registrations of a kind in order.
+Every registration is an object with an `id` (letters, digits, `-` and `_`) and an optional `order` (lower first; ties keep the order of registration). A duplicate `id` within one kind throws, and so does an `id` the app uses itself. `AIxRay.ext.list(kind)` returns the registrations of a kind in order.
 
 Callbacks run inside a guard: if one throws, the error is logged to the console and the rest of the view still renders. Browser tests fail on console errors, so a broken callback shows up in tests.
 
@@ -66,15 +66,15 @@ Most callbacks receive the common context:
 
 Other hooks:
 
-- `BPMVIZ.lenses.registerLens({ id, label, compute(ctx) })` adds a lens. `compute` gets `{ model, replay, t, engagement, scenarioName }` and returns the lens result shape (`description`, `unit`, `population`, `coverage`, `nodes`, `edges`, `legend`, `notes`). A node entry with a `category` gets the class `lens-<category>`.
+- `AIxRay.lenses.registerLens({ id, label, compute(ctx) })` adds a lens. `compute` gets `{ model, replay, t, engagement, scenarioName }` and returns the lens result shape (`description`, `unit`, `population`, `coverage`, `nodes`, `edges`, `legend`, `notes`). A node entry with a `category` gets the class `lens-<category>`.
 - `app.presentView.renderPng({ scale })` resolves `{ blob, width, height }` for the process panes in the Process workspace, and rejects when the canvas has not been drawn yet.
 - `app.openFile(file)`, `app.openPicker()`, `app.dispatch(...)`, `app.goto(workspace)` and `app.recordsView.setOpportunityView(id)` are available to features.
 
 ## Store commands
 
-`BPMVIZ.store.registerCommands({ "area/verb"(draft, payload) { ... } })` adds commands. Each command changes the draft it is given and returns a small result; the store clones, increments the revision and keeps one undo step per dispatch. A name that already exists throws. Throw `StoreError` for problems the person can fix; its message is shown as is.
+`AIxRay.store.registerCommands({ "area/verb"(draft, payload) { ... } })` adds commands. Each command changes the draft it is given and returns a small result; the store clones, increments the revision and keeps one undo step per dispatch. A name that already exists throws. Throw `StoreError` for problems the person can fix; its message is shown as is.
 
-`BPMVIZ.store.helpers` has `findModel`, `findNode`, `editableModel`, `applyNodePatch`, `newRecord`, `cleanText`, `enumValue` and `StoreError`. Use the validator's sanitizers (below) to check incoming data inside a command.
+`AIxRay.store.helpers` has `findModel`, `findNode`, `editableModel`, `applyNodePatch`, `newRecord`, `cleanText`, `enumValue` and `StoreError`. Use the validator's sanitizers (below) to check incoming data inside a command.
 
 Commands provided by the foundation:
 
@@ -124,7 +124,7 @@ An opportunity record may have `opportunity.wave` and `opportunity.valueCase`:
   shareSource, effortSource ("node" or "dataset"), datasetId, oneTimeCost, annualRunningCost, confidence, basis, note }
 ```
 
-Reviews refer to items as `step/<modelId>/<nodeId>` or `record/<recordId>`. `engagement.reviewPacks[]` and `engagement.reviews[]` follow `webui/schema/engagement.schema.json`; a client's answers come back as a review response file (`schema: "bpmviz.review-response"`, `webui/schema/review-response.schema.json`).
+Reviews refer to items as `step/<modelId>/<nodeId>` or `record/<recordId>`. `engagement.reviewPacks[]` and `engagement.reviews[]` follow `webui/schema/engagement.schema.json`; a client's answers come back as a review response file (`schema: "aixray.review-response"`, `webui/schema/review-response.schema.json`).
 
 The validator copies known fields only. A reference that does not resolve (a step, connector, dataset, scenario, pack, evidence item or reviewed item) is removed with a `ref.dangling` warning, and a missing model becomes null. These functions in `lib/validate.js` check one object against an engagement and return `{ value, errors, warnings }`: `sanitizeDataset(raw, e)`, `sanitizeValueCase(raw, e, record)`, `sanitizeScenarioFor(raw, e)`, `sanitizeReviewPack(raw, e)`, `sanitizeReview(raw, e)`. `validateReviewResponse(data, e)` returns `{ ok, errors, warnings, response }` and refuses a response made for another engagement. `parseItemRef(ref)` splits an item reference.
 

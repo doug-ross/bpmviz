@@ -1,5 +1,5 @@
 /*
- * BPMVIZ store: the open engagement and the commands that change it.
+ * AIxRay store: the open engagement and the commands that change it.
  *
  * Every command is a business change: it increments the revision, stamps
  * updatedAt and can be undone. View state such as pan, zoom, selection and
@@ -9,7 +9,7 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./validate.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.store = factory(B.util, B.schema, B.validate);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, validate) {

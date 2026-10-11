@@ -25,8 +25,8 @@ async function open(t, hash, opts) {
   const page = await context.newPage();
   const problems = watch(page);
   await page.goto((o.http ? server.url : fileUrl()) + (hash || ""));
-  await page.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && document.getElementById("app"));
-  if (/example=/.test(hash || "")) await page.waitForFunction(() => !!window.BPMVIZ.app.store);
+  await page.waitForFunction(() => window.AIxRay && window.AIxRay.app && document.getElementById("app"));
+  if (/example=/.test(hash || "")) await page.waitForFunction(() => !!window.AIxRay.app.store);
   t.after(async () => { await context.close(); });
   return { page, problems };
 }
@@ -42,7 +42,7 @@ test("every planned feature file loads as an empty module", async t => {
   const s = await open(t, "");
   if (!s) return;
   const names = await s.page.evaluate(() => {
-    const B = window.BPMVIZ;
+    const B = window.AIxRay;
     return ["zip", "ooxml", "xlsx", "datasetQuery", "valueCase", "csv", "fuzzy", "mining", "businessCase", "reviews", "reviewPack",
       "pptx", "bpmnExport", "backlog", "benefits", "ext", "files", "logImport", "opportunityValue", "clientReview", "clientExports", "benefitsView"]
       .filter(k => !B[k] || typeof B[k] !== "object");
@@ -58,8 +58,8 @@ test("registered tabs, views, columns, sections, modes and actions render", asyn
   if (!s) return;
   const p = s.page;
   await p.evaluate(() => {
-    const X = window.BPMVIZ.ext;
-    const { h } = window.BPMVIZ.dom;
+    const X = window.AIxRay.ext;
+    const { h } = window.AIxRay.dom;
     window.__calls = [];
     X.registerRecordsTab({ id: "demo", label: "Demo tab", count: e => e.records.length, render: (panel, ctx) => panel.appendChild(h("p", { id: "demo-tab-body" }, "Demo tab for " + ctx.engagement.meta.processName)) });
     X.registerOpportunityView({ id: "matrix-demo", label: "Demo view", render: (host, ctx) => host.appendChild(h("p", { id: "demo-view-body" }, ctx.records.length + " opportunities")) });
@@ -70,8 +70,8 @@ test("registered tabs, views, columns, sections, modes and actions render", asyn
     X.registerHandoffSection({ id: "demo-scope", after: "scope", render: hd => h("section", { id: "demo-after-scope" }, "After scope of " + hd.title) });
     X.registerHandoffSection({ id: "demo-end", after: "end", render: () => h("p", { id: "demo-at-end" }, "At the end") });
     X.registerHandoffSection({ id: "demo-broken", after: "value", render: () => { throw new Error("deliberate"); } });
-    window.BPMVIZ.app.dispatch("record/add", { record: { kind: "opportunity", title: "Pre-fill the SOV", linkedModelId: "m-current", linkedNodeIds: ["scrub-sov-geocode"], opportunity: { effort: "M" } } });
-    window.BPMVIZ.app.recordsView.render();
+    window.AIxRay.app.dispatch("record/add", { record: { kind: "opportunity", title: "Pre-fill the SOV", linkedModelId: "m-current", linkedNodeIds: ["scrub-sov-geocode"], opportunity: { effort: "M" } } });
+    window.AIxRay.app.recordsView.render();
   });
   // Records tab, placed before Review, with the add and export buttons hidden.
   const tabs = await p.$$eval(".subtabs [role=tab]", els => els.map(e => e.id));
@@ -125,8 +125,8 @@ test("record dialog sections add fields to the opportunity and can block saving"
   if (!s) return;
   const p = s.page;
   await p.evaluate(() => {
-    const { h } = window.BPMVIZ.dom;
-    window.BPMVIZ.ext.registerRecordDialogSection({ id: "demo-wave", render: record => {
+    const { h } = window.AIxRay.dom;
+    window.AIxRay.ext.registerRecordDialogSection({ id: "demo-wave", render: record => {
       const sel = h("select", { class: "select", id: "demo-wave-select" }, ["", "now", "next", "later"].map(v => h("option", { value: v, selected: v === ((record.opportunity || {}).wave || "") }, v || "Not set")));
       return { el: h("div", { class: "field", id: "demo-wave-field" }, h("label", { for: "demo-wave-select" }, "Wave"), sel),
         collect: () => ({ wave: sel.value }), check: () => (sel.value ? null : "Choose a wave.") };
@@ -142,7 +142,7 @@ test("record dialog sections add fields to the opportunity and can block saving"
   await p.selectOption("#demo-wave-select", "next");
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
-  const wave = await p.evaluate(() => window.BPMVIZ.app.store.get().records.find(r => r.title === "Route files automatically").opportunity.wave);
+  const wave = await p.evaluate(() => window.AIxRay.app.store.get().records.find(r => r.title === "Route files automatically").opportunity.wave);
   assert.equal(wave, "next");
   await p.click("#rv-add");
   await p.waitForSelector("dialog[open] #demo-wave-field");
@@ -158,7 +158,7 @@ test("drawer sections, a registered lens and the PNG renderer work on the proces
   const p = s.page;
   await p.waitForSelector(".node");
   await p.evaluate(() => {
-    const B = window.BPMVIZ;
+    const B = window.AIxRay;
     const { h } = B.dom;
     B.ext.registerDrawerSection({ id: "demo-overview", where: "overview", render: (ctx, model) => h("section", { class: "side-section", id: "demo-overview" }, "Overview of " + model.name) });
     B.ext.registerDrawerSection({ id: "demo-step", where: "step", render: (ctx, model, node) => h("section", { class: "side-section", id: "demo-step" }, "Step " + node.label) });
@@ -183,7 +183,7 @@ test("drawer sections, a registered lens and the PNG renderer work on the proces
   await p.waitForSelector("#demo-step");
   assert.match(await p.textContent("#demo-step"), /Step Scrub SOV/);
   const png = await p.evaluate(async () => {
-    const r = await window.BPMVIZ.app.presentView.renderPng({ scale: 1 });
+    const r = await window.AIxRay.app.presentView.renderPng({ scale: 1 });
     return { type: r.blob.type, width: r.width, height: r.height, size: r.blob.size };
   });
   assert.equal(png.type, "image/png");
@@ -196,15 +196,15 @@ test("menu items, start actions, file handlers and JSON handlers see files first
   if (!s) return;
   const p = s.page;
   await p.evaluate(() => {
-    const X = window.BPMVIZ.ext;
+    const X = window.AIxRay.ext;
     window.__opened = [];
     X.registerMenuItem({ id: "demo-import", label: "Import a demo file", icon: "upload", group: "import", run: () => window.__opened.push("menu") });
     X.registerMenuItem({ id: "demo-export", label: "Export a demo file", icon: "download", group: "export", needsEngagement: true, run: () => window.__opened.push("export") });
     X.registerStartAction({ id: "demo", label: "Start a demo", icon: "list", run: () => window.__opened.push("start") });
     X.registerFileHandler({ id: "demo-picky", extensions: [".demo"], priority: 10, probe: async bytes => bytes[0] === 0x50, open: async (app, file, bytes) => window.__opened.push("picky " + file.name + " " + bytes.length) });
     X.registerFileHandler({ id: "demo-any", extensions: ["demo", ".big"], maxBytes: 64, open: async (app, file, bytes) => window.__opened.push("any " + file.name + " " + bytes.length) });
-    X.registerJsonHandler({ id: "demo-json", schema: "bpmviz.demo", open: (app, data, info) => window.__opened.push("json " + data.value + " " + info.fileName) });
-    window.BPMVIZ.app.goto("start");
+    X.registerJsonHandler({ id: "demo-json", schema: "aixray.demo", open: (app, data, info) => window.__opened.push("json " + data.value + " " + info.fileName) });
+    window.AIxRay.app.goto("start");
   });
   await p.click("#start-demo");
   const startOrder = await p.$$eval(".start-actions button", els => els.map(e => e.id));
@@ -219,13 +219,13 @@ test("menu items, start actions, file handlers and JSON handlers see files first
   await p.waitForFunction(() => window.__opened.length >= 3);
   await p.setInputFiles("#file-input", { name: "second.DEMO", mimeType: "application/octet-stream", buffer: Buffer.from("not picky") });
   await p.waitForFunction(() => window.__opened.length >= 4);
-  await p.setInputFiles("#file-input", { name: "hello.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ schema: "bpmviz.demo", value: 7 })) });
+  await p.setInputFiles("#file-input", { name: "hello.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ schema: "aixray.demo", value: 7 })) });
   await p.waitForFunction(() => window.__opened.length >= 5);
   assert.deepEqual(await p.evaluate(() => window.__opened), ["start", "menu", "picky first.demo 8", "any second.DEMO 9", "json 7 hello.json"]);
   const accept = await p.evaluate(() => {
     const input = document.getElementById("file-input");
     input.click = () => {};
-    window.BPMVIZ.app.openPicker();
+    window.AIxRay.app.openPicker();
     return input.accept;
   });
   assert.match(accept, /\.demo/);
@@ -242,7 +242,7 @@ test("event-log datasets in the store survive structural and refresh events", as
   const p = s.page;
   await p.waitForSelector(".node");
   const result = await p.evaluate(datasets => {
-    const B = window.BPMVIZ;
+    const B = window.AIxRay;
     const e = B.util.clone(B.app.store.get());
     e.datasets = datasets;
     const v = B.validate.validateEngagement(e);
@@ -265,9 +265,9 @@ for (const mode of ["file", "http"]) {
     const s = await open(t, "", { http: mode === "http" });
     if (!s) return;
     const r = await s.page.evaluate(async () => {
-      const B = window.BPMVIZ;
+      const B = window.AIxRay;
       const F = B.files;
-      const text = "BPMVIZ ".repeat(200);
+      const text = "AIxRay ".repeat(200);
       const raw = new TextEncoder().encode(text);
       const packed = await F.deflateRaw(raw);
       const back = new TextDecoder().decode(await F.inflateRaw(packed, raw.length + 10));
@@ -278,7 +278,7 @@ for (const mode of ["file", "http"]) {
       const cp1252 = F.textOf(new Uint8Array([0x63, 0x61, 0x66, 0xe9]));
       const bom = F.textOf(new Uint8Array([0xef, 0xbb, 0xbf, 0x68, 0x69]));
       const bytes = await B.xlsx.workbookBytesAsync({ sheets: [{ name: "Review", rows: [["Item", "Verdict"], ["step/m/a", "Confirm"]], validations: [{ range: "B2:B9", list: ["Confirm", "Dispute"] }] },
-        { name: "bpmviz-pack", hidden: true, rows: [["packId", "p1"]] }] }, { deflateRaw: F.deflateRaw });
+        { name: "aixray-pack", hidden: true, rows: [["packId", "p1"]] }] }, { deflateRaw: F.deflateRaw });
       const wb = await B.xlsx.readWorkbookAsync(bytes, { inflateRaw: F.inflateRaw });
       return { same: back === text, smaller: packed.length < raw.length, capped, hash, js, cp1252, bom,
         sheets: wb.sheets.map(x => x.name + ":" + x.hidden + ":" + JSON.stringify(x.rows)) };
@@ -290,7 +290,7 @@ for (const mode of ["file", "http"]) {
     assert.equal(r.js, r.hash);
     assert.equal(r.cp1252, "caf\u00e9");
     assert.equal(r.bom, "hi");
-    assert.deepEqual(r.sheets, ["Review:false:[[\"Item\",\"Verdict\"],[\"step/m/a\",\"Confirm\"]]", "bpmviz-pack:true:[[\"packId\",\"p1\"]]"]);
+    assert.deepEqual(r.sheets, ["Review:false:[[\"Item\",\"Verdict\"],[\"step/m/a\",\"Confirm\"]]", "aixray-pack:true:[[\"packId\",\"p1\"]]"]);
     clean(s.problems);
   });
 }

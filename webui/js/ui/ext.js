@@ -1,5 +1,5 @@
 /*
- * BPMVIZ ext: the registry that feature modules use to add menu items,
+ * AIxRay ext: the registry that feature modules use to add menu items,
  * tabs, sections, modes and file handlers to the app without editing the
  * shared views. docs/extensions.md lists every seam and who owns what.
  *
@@ -12,7 +12,7 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.ext = factory(); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.ext = factory(); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
@@ -149,7 +149,7 @@
     try {
       return fn();
     } catch (err) {
-      if (typeof console !== "undefined") console.error("BPMVIZ " + kind + " " + (def && def.id) + " failed:", err);
+      if (typeof console !== "undefined") console.error("AIxRay " + kind + " " + (def && def.id) + " failed:", err);
       return fallback === undefined ? null : fallback;
     }
   }

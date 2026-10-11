@@ -22,8 +22,8 @@ async function open(t, hash) {
   const page = await context.newPage();
   const problems = watch(page);
   await page.goto(fileUrl() + (hash || ""));
-  await page.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && document.getElementById("app"));
-  if (/example=/.test(hash || "")) await page.waitForFunction(() => !!window.BPMVIZ.app.store);
+  await page.waitForFunction(() => window.AIxRay && window.AIxRay.app && document.getElementById("app"));
+  if (/example=/.test(hash || "")) await page.waitForFunction(() => !!window.AIxRay.app.store);
   t.after(async () => { await context.close(); });
   return { page, problems };
 }
@@ -38,7 +38,7 @@ const dataset = name => JSON.parse(fs.readFileSync(path.join(root, "tests", "fix
 /** Replaces the open engagement's datasets with the given ones, through the validator. */
 async function loadDatasets(page, datasets) {
   return page.evaluate(sets => {
-    const B = window.BPMVIZ;
+    const B = window.AIxRay;
     const e = B.util.clone(B.app.store.get());
     e.datasets = sets;
     const v = B.validate.validateEngagement(e);
@@ -69,7 +69,7 @@ test("expected versus measured change shows a figure and a status for a linked o
   await loadDatasets(p, [dataset("underwriting-baseline"), dataset("underwriting-after")]);
   await p.waitForSelector("#bv-h");
   await p.evaluate(() => {
-    window.BPMVIZ.app.dispatch("record/add", { record: {
+    window.AIxRay.app.dispatch("record/add", { record: {
       kind: "opportunity", title: "Automate SOV scrub and triage",
       linkedModelId: "m-current", linkedNodeIds: ["scrub-sov-geocode", "appetite-capacity-triage", "technical-pricing-rating"],
       opportunity: { effort: "M", valueCase: {

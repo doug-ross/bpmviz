@@ -1,7 +1,7 @@
 /*
- * The two AI command-line tools BPMVIZ can drive: Claude Code (claude) and
+ * The two AI command-line tools AIxRay can drive: Claude Code (claude) and
  * Codex (codex). Each runs on the person's own sign-in, so a Claude or
- * ChatGPT subscription is used instead of an API key. BPMVIZ never sees or
+ * ChatGPT subscription is used instead of an API key. AIxRay never sees or
  * stores a credential; it starts the installed tool with the least access
  * the task needs and reads what it prints.
  */
@@ -56,9 +56,9 @@ export function failureMessage(provider, code, detail) {
     case "auth.apiKey": return name + " is signed in with an API key, not a subscription. Sign in with your Claude or ChatGPT account, or pass --use-api-key to use the key and its billing.";
     case "provider.usageLimit": return "Your " + (provider === "claude" ? "Claude" : "ChatGPT") + " usage limit is reached. Try again after it resets." + d;
     case "provider.overloaded": return name + " is busy right now. Try again in a few minutes." + d;
-    case "provider.unexpectedTools": return name + " started with tools BPMVIZ did not ask for, so the run was stopped" + d + ".";
+    case "provider.unexpectedTools": return name + " started with tools AIxRay did not ask for, so the run was stopped" + d + ".";
     case "provider.timeout": return name + " did not finish within the time limit.";
-    case "provider.config": return "This " + name + " version does not accept one of the settings BPMVIZ uses to turn off its shell, web and app tools, so it was stopped before anything was sent" + d + ". Update BPMVIZ, or check docs/ai.md for the " + name + " versions it has been tested with.";
+    case "provider.config": return "This " + name + " version does not accept one of the settings AIxRay uses to turn off its shell, web and app tools, so it was stopped before anything was sent" + d + ". Update AIxRay, or check docs/ai.md for the " + name + " versions it has been tested with.";
     case "provider.cancelled": return "The run was cancelled.";
     default: return name + " stopped with an error" + d + ".";
   }
@@ -78,7 +78,7 @@ function claudePlan(status) {
 const claude = {
   id: "claude",
   name: "Claude Code",
-  bin: () => resolveBin("claude", process.env.BPMVIZ_CLAUDE_BIN),
+  bin: () => resolveBin("claude", process.env.AIXRAY_CLAUDE_BIN),
 
   async status(options) {
     const bin = this.bin();
@@ -205,7 +205,7 @@ export const CODEX_DISABLED_FEATURES = ["shell_tool", "unified_exec", "apps", "b
 const codex = {
   id: "codex",
   name: "Codex",
-  bin: () => resolveBin("codex", process.env.BPMVIZ_CODEX_BIN),
+  bin: () => resolveBin("codex", process.env.AIXRAY_CODEX_BIN),
 
   async status(options) {
     const bin = this.bin();

@@ -119,7 +119,7 @@ check(c.events.hooks.length === 0, "no hooks ran");
 check(c.events.dirs.every(d => !fs.existsSync(d)), "the job folder was removed");
 
 if (provider === "claude") {
-  const added = [...listProjects()].filter(n => !before.has(n) && /bpmviz-ai/i.test(n));
+  const added = [...listProjects()].filter(n => !before.has(n) && /aixray-ai/i.test(n));
   check(added.length === 0, "no Claude Code session was saved for the job folders");
 } else {
   check(countFiles(codexSessions) === codexBefore, "no Codex session file was saved");

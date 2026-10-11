@@ -1,5 +1,5 @@
 // Builds small DOCX and PPTX files for tests: a ZIP with stored or deflated
-// entries holding just the parts BPMVIZ reads.
+// entries holding just the parts AIxRay reads.
 import zlib from "node:zlib";
 
 export function zip(files, deflate) {

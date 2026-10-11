@@ -1,4 +1,4 @@
-# BPMVIZ Audit Evidence
+# AIxRay Audit Evidence
 
 All code paths are relative to the uploaded archive root. Numbered source excerpts use actual uploaded-file line numbers. Unicode in source is retained to expose existing encoding issues. Test harnesses assemble assets in memory because direct-file and localhost navigation were blocked by the browser environment. Repository files were not modified.
 
@@ -9,7 +9,7 @@ All code paths are relative to the uploaded archive root. Numbered source excerp
 ### `README.md:1-37`
 
 ```text
-   1: # bpmviz
+   1: # aixray
    2: 
    3: ## A simple visualizer for BPMN diagrams 
    4: 
@@ -26,7 +26,7 @@ All code paths are relative to the uploaded archive root. Numbered source excerp
   15: 
   16: <img width="1920" height="990" alt="image" src="https://github.com/user-attachments/assets/ec21bbf4-20ba-47e8-9b0f-b4d4d7960895" />
   17: 
-  18: ## About BPMVIZ
+  18: ## About AIxRay
   19: 
   20: * Self-contained HTML, CSS and JS solution
   21: * Can run anywhere, even from a desktop (no web server needed, but it helps :-)
@@ -39,7 +39,7 @@ All code paths are relative to the uploaded archive root. Numbered source excerp
   28: 
   29: * Clone this repo
   30: * Take any business process diagram (BPMN file, process diagram in a PDF, etc.) and feed it as input into...
-  31: * The *tools/bpmviz_creator_prompt.txt* - it will leverage any of the above and create all three JS files for you. [1]
+  31: * The *tools/aixray_creator_prompt.txt* - it will leverage any of the above and create all three JS files for you. [1]
   32:   * branding.js - governs appearance
   33:   * process.js - describes the business process
   34:   * samples.js - provides sample runs of the business process
@@ -1344,7 +1344,7 @@ Cost per submission	$8,250	$3,700	−$4,550
 
 **Runtime / supporting evidence:** `Source excerpts; no runtime execution of generator prompts`
 
-### `tools/bpmviz_creator_prompt.txt:1-9`
+### `tools/aixray_creator_prompt.txt:1-9`
 
 ```text
    1: # Task: Generate BPMN Explorer Config Files from a Process Diagram
@@ -1358,7 +1358,7 @@ Cost per submission	$8,250	$3,700	−$4,550
    9: Before writing any code, extract and list the following from the diagram. Show your work in a short analysis block at the top of your response.
 ```
 
-### `tools/bpmviz_creator_prompt.txt:24-58`
+### `tools/aixray_creator_prompt.txt:24-58`
 
 ```text
   24: If the diagram has no explicit lanes, **infer 4–8 lanes** by grouping tasks by likely actor/system (e.g., "Customer", "Intake System", "Underwriter", "Risk Committee", "Core Banking"). Document your inference.
@@ -1398,7 +1398,7 @@ Cost per submission	$8,250	$3,700	−$4,550
   58: For each sample, pick a different gateway-branch combination.
 ```
 
-### `tools/bpmviz_creator_prompt.txt:276-321`
+### `tools/aixray_creator_prompt.txt:276-321`
 
 ```text
  276: ### Hard rules for `samples.js`

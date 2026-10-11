@@ -111,9 +111,9 @@ function logMappingFor(input, bad) {
 
 /* A small engagement as an extraction would produce it, with things the draft rules must undo. */
 export function extractedEngagement(mode) {
-  if (mode === "invalid") return { schema: "bpmviz.engagement", schemaVersion: 1, id: "eng-x", models: [] };
+  if (mode === "invalid") return { schema: "aixray.engagement", schemaVersion: 1, id: "eng-x", models: [] };
   return {
-    schema: "bpmviz.engagement", schemaVersion: 1, id: "eng-extracted", revision: 0,
+    schema: "aixray.engagement", schemaVersion: 1, id: "eng-extracted", revision: 0,
     meta: { processName: "Extracted process", confidentiality: "public", dataStatus: "observed",
       timeBasis: { unit: "minute", calendar: "calendar", businessMinutesPerDay: 480 } },
     models: [{

@@ -1,11 +1,11 @@
 /*
- * BPMVIZ ooxml: shared parts of Office Open XML packages (XLSX, PPTX):
+ * AIxRay ooxml: shared parts of Office Open XML packages (XLSX, PPTX):
  * escaping, [Content_Types].xml, relationships and document properties.
  * Every function returns XML text; lib/zip.js packs the parts.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.ooxml = factory(); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.ooxml = factory(); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
@@ -123,7 +123,7 @@
   function appProps(p) {
     const x = p || {};
     return XML_HEAD + "<Properties xmlns=\"" + NS.extended + "\" xmlns:vt=\"" + NS.docProps + "\">" +
-      "<Application>" + escapeXml(x.application || "BPMVIZ") + "</Application>" +
+      "<Application>" + escapeXml(x.application || "AIxRay") + "</Application>" +
       (x.company ? "<Company>" + escapeXml(x.company) + "</Company>" : "") +
       "</Properties>";
   }

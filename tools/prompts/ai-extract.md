@@ -2,7 +2,7 @@
 
 You are running unattended. Nobody can answer questions while this task runs.
 
-Build one BPMVIZ engagement file for the **current state only** of the process the sources describe, following the engagement rules below. Do not draft a future state; the consultant does that later with the client.
+Build one AIxRay engagement file for the **current state only** of the process the sources describe, following the engagement rules below. Do not draft a future state; the consultant does that later with the client.
 
 - Wherever you would ask a question, add an open question record instead (`kind: "question"`, `includeInHandoff: true`) and carry on.
 - Set `meta` from the job details in the message: confidentiality, data status and any names given. Use `dataStatus` exactly as given.

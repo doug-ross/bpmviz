@@ -1,12 +1,12 @@
 /*
- * BPMVIZ dataset-query: read-only questions about the event-log datasets in
+ * AIxRay dataset-query: read-only questions about the event-log datasets in
  * an engagement (engagement.datasets, see docs/extensions.md). Every
  * function tolerates an engagement without datasets. Shares are fractions
  * between 0 and 1; durations are minutes in the dataset's time basis.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("./util.js"));
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.datasetQuery = factory(B.util); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.datasetQuery = factory(B.util); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util) {
   "use strict";
 

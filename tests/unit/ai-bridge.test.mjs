@@ -21,13 +21,13 @@ async function fakeRun(o) {
   if (o.task === "summary") {
     await new Promise((resolve, reject) => o.signal.addEventListener("abort", () => reject(new AiFailure("provider.cancelled", "The run was cancelled."))));
   }
-  return { ok: true, rounds: 0, errors: [], result: { schema: "bpmviz.ai-result", task: o.task, sources: o.sources.map(s => s.name) } };
+  return { ok: true, rounds: 0, errors: [], result: { schema: "aixray.ai-result", task: o.task, sources: o.sources.map(s => s.name) } };
 }
 
 before(async () => {
-  ["BPMVIZ_CLAUDE_BIN", "BPMVIZ_CODEX_BIN", "FAKE_CLAUDE_AUTH"].forEach(k => { saved[k] = process.env[k]; });
-  process.env.BPMVIZ_CLAUDE_BIN = path.join(root, "tests", "fixtures", "ai", "fake-claude.mjs");
-  process.env.BPMVIZ_CODEX_BIN = path.join(root, "tests", "fixtures", "ai", "fake-codex.mjs");
+  ["AIXRAY_CLAUDE_BIN", "AIXRAY_CODEX_BIN", "FAKE_CLAUDE_AUTH"].forEach(k => { saved[k] = process.env[k]; });
+  process.env.AIXRAY_CLAUDE_BIN = path.join(root, "tests", "fixtures", "ai", "fake-claude.mjs");
+  process.env.AIXRAY_CODEX_BIN = path.join(root, "tests", "fixtures", "ai", "fake-codex.mjs");
   server = http.createServer((req, res) => bridge.handler(req, res));
   await new Promise(r => server.listen(0, "127.0.0.1", r));
   port = server.address().port;
@@ -77,7 +77,7 @@ test("every route checks the Host header, and the page is served with the helper
   const page = await request("GET", "/index.htm");
   assert.equal(page.status, 200);
   assert.match(page.text, /connect-src 'self'/);
-  assert.match(page.text, /<meta name="bpmviz-ai-helper" content="1">/);
+  assert.match(page.text, /<meta name="aixray-ai-helper" content="1">/);
   assert.equal(page.headers["x-frame-options"], "DENY");
   assert.match(page.headers["content-security-policy"], /frame-ancestors 'none'/);
   assert.doesNotMatch(helperHtml("<head><meta content=\"connect-src 'none'\">"), /'none'/);
@@ -85,7 +85,7 @@ test("every route checks the Host header, and the page is served with the helper
   try {
     const text = await (await fetch(plain.url)).text();
     assert.match(text, /connect-src 'none'/, "without --ai the page keeps its no-network policy");
-    assert.doesNotMatch(text, /bpmviz-ai-helper/);
+    assert.doesNotMatch(text, /aixray-ai-helper/);
   } finally {
     await plain.close();
   }
@@ -102,21 +102,21 @@ test("the one-time code is traded once for a token, and API calls need the token
   assert.equal(again.status, 200);
   assert.equal(again.data.ok, false, "a code works once");
   assert.notEqual(bridge.launchUrl(), url, "a fresh link is printed for the next tab");
-  const status = await request("GET", "/api/ai/status", { headers: { "X-BPMVIZ-Token": first.data.token } });
+  const status = await request("GET", "/api/ai/status", { headers: { "X-AIxRay-Token": first.data.token } });
   assert.equal(status.status, 200);
   assert.equal(status.data.providers.find(p => p.provider === "claude").planLabel, "Claude Team");
-  assert.equal((await request("GET", "/api/ai/status", { headers: { "X-BPMVIZ-Token": "not-a-token" } })).status, 401);
+  assert.equal((await request("GET", "/api/ai/status", { headers: { "X-AIxRay-Token": "not-a-token" } })).status, 401);
 });
 
 test("cross-site requests are refused and no CORS headers are ever sent", async () => {
   const token = await session();
-  const cross = await request("GET", "/api/ai/status", { headers: { "X-BPMVIZ-Token": token, Origin: "https://evil.example" } });
+  const cross = await request("GET", "/api/ai/status", { headers: { "X-AIxRay-Token": token, Origin: "https://evil.example" } });
   assert.equal(cross.status, 403);
-  const site = await request("GET", "/api/ai/status", { headers: { "X-BPMVIZ-Token": token, "Sec-Fetch-Site": "cross-site" } });
+  const site = await request("GET", "/api/ai/status", { headers: { "X-AIxRay-Token": token, "Sec-Fetch-Site": "cross-site" } });
   assert.equal(site.status, 403);
-  const same = await request("GET", "/api/ai/status", { headers: { "X-BPMVIZ-Token": token, Origin: "http://127.0.0.1:" + port, "Sec-Fetch-Site": "same-origin" } });
+  const same = await request("GET", "/api/ai/status", { headers: { "X-AIxRay-Token": token, Origin: "http://127.0.0.1:" + port, "Sec-Fetch-Site": "same-origin" } });
   assert.equal(same.status, 200);
-  const pre = await request("OPTIONS", "/api/ai/jobs", { headers: { Origin: "https://evil.example", "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "x-bpmviz-token" } });
+  const pre = await request("OPTIONS", "/api/ai/jobs", { headers: { Origin: "https://evil.example", "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "x-aixray-token" } });
   assert.ok(pre.status >= 400, "a preflight is never approved");
   for (const r of [cross, site, same, pre]) {
     assert.deepEqual(Object.keys(r.headers).filter(h => h.startsWith("access-control-")), []);
@@ -128,7 +128,7 @@ test("malformed and traversal URLs are answered and the helper keeps running", a
   assert.equal((await request("GET", "/..%2f..%2fpackage.json")).status, 404);
   assert.equal((await request("GET", "/..%5cpackage.json")).status, 404);
   const token = await session();
-  assert.equal((await request("GET", "/api/ai/jobs/%zz", { headers: { "X-BPMVIZ-Token": token } })).status, 404);
+  assert.equal((await request("GET", "/api/ai/jobs/%zz", { headers: { "X-AIxRay-Token": token } })).status, 404);
   assert.equal((await request("GET", "/index.htm")).status, 200, "still serving");
 });
 
@@ -137,19 +137,19 @@ test("the server applies the data-handling rules even if the page does not", asy
   const e = validateEngagement(tinyEngagement()).engagement;
   e.meta.confidentiality = "client-confidential";
   e.meta.dataStatus = "supplied";
-  const noApproval = await request("POST", "/api/ai/jobs", { headers: { "X-BPMVIZ-Token": token }, json: { task: "summary", provider: "claude", engagement: e } });
+  const noApproval = await request("POST", "/api/ai/jobs", { headers: { "X-AIxRay-Token": token }, json: { task: "summary", provider: "claude", engagement: e } });
   assert.equal(noApproval.status, 200);
   assert.equal(noApproval.data.ok, false);
   assert.equal(noApproval.data.code, "gate.missing");
-  const consumer = await request("POST", "/api/ai/jobs", { headers: { "X-BPMVIZ-Token": token }, json: { task: "summary", provider: "codex", plan: "consumer", engagement: e, approvalConfirmed: true, trainingOptOutConfirmed: true } });
+  const consumer = await request("POST", "/api/ai/jobs", { headers: { "X-AIxRay-Token": token }, json: { task: "summary", provider: "codex", plan: "consumer", engagement: e, approvalConfirmed: true, trainingOptOutConfirmed: true } });
   assert.equal(consumer.data.code, "gate.blocked");
-  const wrongType = await request("POST", "/api/ai/jobs", { headers: { "X-BPMVIZ-Token": token, "Content-Type": "text/plain" }, body: "{}" });
+  const wrongType = await request("POST", "/api/ai/jobs", { headers: { "X-AIxRay-Token": token, "Content-Type": "text/plain" }, body: "{}" });
   assert.equal(wrongType.status, 415);
 });
 
 test("a job takes its sources, runs once, reports progress and returns the result", async () => {
   const token = await session();
-  const auth = { "X-BPMVIZ-Token": token };
+  const auth = { "X-AIxRay-Token": token };
   calls = [];
   const created = await request("POST", "/api/ai/jobs", { headers: auth, json: { task: "extract", provider: "claude", confidentiality: "public", dataStatus: "demonstration", sourceNames: ["notes.txt", "flow.png"] } });
   assert.equal(created.data.ok, true, JSON.stringify(created.data));
@@ -186,7 +186,7 @@ test("a job takes its sources, runs once, reports progress and returns the resul
 
 test("one task runs at a time, and cancel stops it", async () => {
   const token = await session();
-  const auth = { "X-BPMVIZ-Token": token };
+  const auth = { "X-AIxRay-Token": token };
   const a = await request("POST", "/api/ai/jobs", { headers: auth, json: { task: "summary", provider: "claude", engagement: internal(), approvalConfirmed: true } });
   assert.equal(a.data.ok, true, JSON.stringify(a.data));
   assert.equal((await request("POST", "/api/ai/jobs/" + a.data.id + "/start", { headers: auth, json: {} })).data.ok, true);

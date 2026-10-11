@@ -1,6 +1,6 @@
 /*
- * BPMVIZ log-import: the event-log import wizard and everything that shows
- * an imported log. Registered through BPMVIZ.ext (see docs/extensions.md):
+ * AIxRay log-import: the event-log import wizard and everything that shows
+ * an imported log. Registered through AIxRay.ext (see docs/extensions.md):
  *
  *  - a file handler for .csv, .tsv and .xlsx and the menu item "Import an
  *    event log", which open the wizard;
@@ -20,7 +20,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, clear, icon, announce } = B.dom;
   const { schema, util, units, mining, csv, fuzzy, datasetQuery } = B;
   const { openDialog, messageDialog } = B.dialogs;
@@ -473,7 +473,7 @@
         try { text = new TextDecoder().decode(await B.files.readBytes(file, L.fileBytes)); } catch (ex) { messageDialog("File not opened", ex.message); return; }
         const v = B.aiResults.parseAiResultText(text);
         if (v.ok && v.result.task !== "log-mapping") {
-          messageDialog("This is not a log mapping", file.name + " is an AI result for \"" + schema.label("aiTask", v.result.task) + "\". Choose a file made with npm run ai -- log-mapping or the bpmviz-log-mapping skill.");
+          messageDialog("This is not a log mapping", file.name + " is an AI result for \"" + schema.label("aiTask", v.result.task) + "\". Choose a file made with npm run ai -- log-mapping or the aixray-log-mapping skill.");
           return;
         }
         B.aiPanel.openResult(app, v, { fileName: file.name, context: { activities: st.activities }, onProposals: takeProposals });
@@ -844,7 +844,7 @@
     if (want) B.ext.registerRecordsTab(tabDef); else B.ext.unregister("recordsTab", TAB_ID);
     tabOn = want;
   }
-  if (B.store && typeof B.store.createStore === "function" && !B.store.createStore.bpmvizEventLogs) {
+  if (B.store && typeof B.store.createStore === "function" && !B.store.createStore.aixrayEventLogs) {
     const create = B.store.createStore;
     const wrapped = function (initial) {
       const s = create.apply(this, arguments);
@@ -852,7 +852,7 @@
       syncTab(s.get());
       return s;
     };
-    wrapped.bpmvizEventLogs = true;
+    wrapped.aixrayEventLogs = true;
     B.store.createStore = wrapped;
   }
 

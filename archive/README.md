@@ -1,6 +1,6 @@
 # Archived prototypes
 
-These are the three earlier BPMVIZ apps and their generator prompts, kept for reference and as the source of the bundled examples. They are not maintained. Use `webui/index.htm` for real work.
+These are the three earlier AIxRay apps and their generator prompts, kept for reference and as the source of the bundled examples. They are not maintained. Use `webui/index.htm` for real work.
 
 | Folder | What it is | Converted example |
 |---|---|---|

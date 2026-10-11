@@ -1,12 +1,12 @@
 /*
- * BPMVIZ files: reading and writing local files in the browser. Bytes,
+ * AIxRay files: reading and writing local files in the browser. Bytes,
  * text decoding, raw deflate through the Compression Streams API (passed to
  * lib/zip.js and lib/xlsx.js as inflateRaw / deflateRaw), SHA-256 and
  * downloads. Nothing here uses the network.
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
 
   class FileLimitError extends Error {}
 

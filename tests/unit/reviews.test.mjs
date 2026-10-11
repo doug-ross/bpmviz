@@ -50,7 +50,7 @@ function packed(store, opts) {
 
 function response(e, packId, entries, extra) {
   return Object.assign({
-    schema: "bpmviz.review-response", schemaVersion: 1, packId, engagementId: e.id, engagementRevision: e.revision, format: "html",
+    schema: "aixray.review-response", schemaVersion: 1, packId, engagementId: e.id, engagementRevision: e.revision, format: "html",
     reviewer: { name: "A. Client", role: "Ops lead", organization: "Client Co" }, submittedAt: "2026-03-04T10:00:00.000Z", generalComment: "Mostly right",
     entries
   }, extra || {});
@@ -74,7 +74,7 @@ function excelResave(parts, opts) {
     if (p.name === "xl/_rels/workbook.xml.rels") {
       return { name: p.name, data: p.data.replace("</Relationships>", "<Relationship Id=\"rId99\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\" Target=\"sharedStrings.xml\"/></Relationships>") };
     }
-    if (o.dropHidden && p.name === "xl/workbook.xml") return { name: p.name, data: p.data.replace(/<sheet name="bpmviz-pack"[^>]*\/>/, "") };
+    if (o.dropHidden && p.name === "xl/workbook.xml") return { name: p.name, data: p.data.replace(/<sheet name="aixray-pack"[^>]*\/>/, "") };
     return p;
   });
   out.push({ name: "xl/sharedStrings.xml", data: ooxml.XML_HEAD + "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"" + strings.length + "\" uniqueCount=\"" + strings.length + "\">" +
@@ -111,7 +111,7 @@ test("review/recordPack stores a checked pack and refuses an empty one", () => {
   assert.equal(e.reviewPacks[0].engagementRevision, 0);
   assert.equal(e.reviewPacks[0].items.length, 5);
   assert.equal(payload.engagementId, "eng-tiny");
-  assert.equal(payload.responseSchema, "bpmviz.review-response");
+  assert.equal(payload.responseSchema, "aixray.review-response");
   assert.deepEqual(payload.verdicts.map(v => v.label), ["Confirm", "Dispute", "Not sure"]);
   assert.throws(() => store.dispatch("review/recordPack", { pack: Object.assign({}, pack, { id: "rp-empty", items: [] }) }), /at least one/);
   assert.throws(() => store.dispatch("review/recordPack", { pack }), /Duplicate ID/);
@@ -122,7 +122,7 @@ test("the Excel pack round-trips, including an Excel re-save with shared strings
   const store = storeLib.createStore(engagement());
   const { pack, payload } = packed(store);
   const spec = reviews.workbookSpec(pack, payload);
-  assert.deepEqual(spec.sheets.map(s => [s.name, !!s.hidden]), [["About", false], ["Review", false], ["bpmviz-pack", true]]);
+  assert.deepEqual(spec.sheets.map(s => [s.name, !!s.hidden]), [["About", false], ["Review", false], ["aixray-pack", true]]);
   assert.deepEqual(spec.sheets[1].rows[0], reviews.REVIEW_HEADERS);
   assert.deepEqual(spec.sheets[1].validations, [{ range: "F2:F6", list: ["Confirm", "Dispute", "Not sure"] }]);
   const fill = rows => {
@@ -148,7 +148,7 @@ test("the Excel pack round-trips, including an Excel re-save with shared strings
   for (const dropHidden of [false, true]) {
     const parts = excelResave(xlsx.writeWorkbook(filled), { dropHidden });
     const wb = await xlsx.readWorkbookAsync(await zip.writeZipAsync(parts, { deflateRaw }), { inflateRaw });
-    assert.equal(wb.sheets.some(s => s.name === "bpmviz-pack"), !dropHidden);
+    assert.equal(wb.sheets.some(s => s.name === "aixray-pack"), !dropHidden);
     const r2 = reviews.responseFromWorkbook(wb);
     assert.deepEqual(r2.entries, r1.entries, "dropHidden " + dropHidden);
     assert.equal(r2.packId, pack.id);
@@ -175,7 +175,7 @@ test("Excel answers are matched by header and verdict wording is normalized", ()
   assert.equal(checked.response.entries[3].verdict, "", "an unrecognized verdict is no answer, never confirm");
   ["Confirmed", "OK", "correct", "No", "Incorrect", "Not sure", "don't know", "", null, true].forEach(v => assert.ok(["confirm", "dispute", "unsure", ""].includes(reviews.normalizeVerdict(v)), String(v)));
   assert.equal(reviews.normalizeVerdict("don't know"), "unsure");
-  assert.throws(() => reviews.responseFromWorkbook({ sheets: [{ name: "Events", rows: [["case", "activity"]] }] }), /not a BPMVIZ review pack/);
+  assert.throws(() => reviews.responseFromWorkbook({ sheets: [{ name: "Events", rows: [["case", "activity"]] }] }), /not an AIxRay review pack/);
   assert.throws(() => reviews.responseFromWorkbook({ sheets: [{ name: "About", rows: [["Pack reference", "rp-1"], ["Engagement reference", "eng-tiny"]] }] }), /Review sheet/);
 });
 
@@ -186,7 +186,7 @@ test("a response for another engagement is refused", () => {
   assert.match(p.errors[0].message, /different engagement/);
   const fixture = reviews.prepareApply(validate.validateEngagement(example("underwriting-current-state")).engagement, responseFixture("other-engagement.review-response.json"));
   assert.equal(fixture.ok, false);
-  assert.equal(reviews.prepareApply(e, { schema: "bpmviz.engagement" }).ok, false);
+  assert.equal(reviews.prepareApply(e, { schema: "aixray.engagement" }).ok, false);
 });
 
 test("prepareApply works out the changes, flags renamed steps and counts the answers", () => {

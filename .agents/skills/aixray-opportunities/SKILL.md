@@ -1,11 +1,11 @@
 ---
-name: bpmviz-opportunities
-description: Suggest pain points, opportunities and open questions for a BPMVIZ engagement and save them as an AI result file to review in the BPMVIZ app. Use only when the user asks for $bpmviz-opportunities.
+name: aixray-opportunities
+description: Suggest pain points, opportunities and open questions for an AIxRay engagement and save them as an AI result file to review in the AIxRay app. Use only when the user asks for $aixray-opportunities.
 ---
 
-# Suggest records for a BPMVIZ engagement
+# Suggest records for an AIxRay engagement
 
-Work from the BPMVIZ repository folder. Do not change the engagement file or any file in the repository; write only the working file and the result file named below.
+Work from the AIxRay repository folder. Do not change the engagement file or any file in the repository; write only the working file and the result file named below.
 
 ## 1. Check the data-handling rules before reading the engagement
 
@@ -23,16 +23,16 @@ This prints the engagement without sensitive records, visit lists or links. Do n
 
 ## 3. Draft
 
-Read `tools/prompts/ai-common.md` and `tools/prompts/ai-opportunities.md` and follow them. The payload shape is `$defs.opportunities` in `webui/schema/ai-result.schema.json`: every field is required, with `null` or an empty list when there is nothing to say. Write one JSON object to `bpmviz-opportunities.draft.json`:
+Read `tools/prompts/ai-common.md` and `tools/prompts/ai-opportunities.md` and follow them. The payload shape is `$defs.opportunities` in `webui/schema/ai-result.schema.json`: every field is required, with `null` or an empty list when there is nothing to say. Write one JSON object to `aixray-opportunities.draft.json`:
 
     { "payload": { "suggestions": [ ... ] }, "notes": "...", "warnings": [ ... ] }
 
 ## 4. Check and save
 
-    npm run ai -- wrap opportunities --in <engagement file> --payload bpmviz-opportunities.draft.json --remove-payload --out <name>.opportunities.ai-result.json --with codex --plan <plan> <the confirmation flags used for the gate>
+    npm run ai -- wrap opportunities --in <engagement file> --payload aixray-opportunities.draft.json --remove-payload --out <name>.opportunities.ai-result.json --with codex --plan <plan> <the confirmation flags used for the gate>
 
 Fix any problems it lists and run it again, at most three times. Once the result is written, the draft file is deleted.
 
 ## 5. Hand over
 
-Tell the user the result file name, how many suggestions it holds and the warnings it printed. They open the engagement in BPMVIZ, then open the result file with Open, tick the suggestions they want and apply them. Applied suggestions stay marked as AI drafts until someone reviews them.
+Tell the user the result file name, how many suggestions it holds and the warnings it printed. They open the engagement in AIxRay, then open the result file with Open, tick the suggestions they want and apply them. Applied suggestions stay marked as AI drafts until someone reviews them.

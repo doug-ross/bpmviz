@@ -1,5 +1,5 @@
 /*
- * BPMVIZ BPMN import: reads BPMN 2.0 XML into a current-state model.
+ * AIxRay BPMN import: reads BPMN 2.0 XML into a current-state model.
  *
  * Supported: one process with lanes, start/end/intermediate events,
  * task types, exclusive and parallel gateways, and sequence flows.
@@ -9,7 +9,7 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("./util.js"), require("./schema.js"));
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.bpmn = factory(B.util, B.schema); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.bpmn = factory(B.util, B.schema); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema) {
   "use strict";
 

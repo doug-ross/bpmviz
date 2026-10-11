@@ -1,5 +1,5 @@
 /*
- * BPMVIZ layout: node placement and orthogonal connector routing.
+ * AIxRay layout: node placement and orthogonal connector routing.
  *
  * Ported from the v2 comparison renderer. Nodes sit in swimlane rows and
  * column slots; several nodes that share a lane and column get their own
@@ -8,7 +8,7 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("./schema.js"));
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.layout = factory(B.schema); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.layout = factory(B.schema); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (schema) {
   "use strict";
 

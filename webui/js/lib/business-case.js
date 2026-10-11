@@ -1,5 +1,5 @@
 /*
- * BPMVIZ business-case: one-page business cases for a single opportunity, a
+ * AIxRay business-case: one-page business cases for a single opportunity, a
  * CFO one-pager across the whole portfolio, and the move-to-wave command.
  * Built entirely on lib/value-case.js: this file adds no new figures, only
  * ways to read and present the ones value-case.js already computes
@@ -9,7 +9,7 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./value-case.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.businessCase = factory(B.util, B.schema, B.valueCase);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, valueCase) {

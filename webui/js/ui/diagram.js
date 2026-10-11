@@ -5,7 +5,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, s, clear, icon } = B.dom;
   const { fitted, update, measure } = B.textfit;
   const { G } = B.layout;

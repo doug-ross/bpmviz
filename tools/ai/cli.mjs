@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * BPMVIZ AI tasks on your own Claude Code or Codex sign-in.
+ * AIxRay AI tasks on your own Claude Code or Codex sign-in.
  *   npm run ai -- status
  *   npm run ai -- extract notes.docx diagram.png --process-name "Claims intake"
  *   npm run ai -- opportunities --in claims.engagement.json --yes
@@ -31,7 +31,7 @@ const csv = lib("csv");
 const xlsx = lib("xlsx");
 const mining = lib("mining");
 
-const HELP = `BPMVIZ AI tasks, run on your own Claude Code or Codex sign-in.
+const HELP = `AIxRay AI tasks, run on your own Claude Code or Codex sign-in.
 
 Usage: npm run ai -- <command> [options]
 
@@ -45,7 +45,7 @@ Commands
                                   Suggest which step each event log activity belongs to
   check <result> [--in <file>]    Check an AI result file, and what it would change in the engagement
   gate [--in <file>]              Say whether this engagement may go to this AI account, and what to confirm
-  text <file>                     Print the text BPMVIZ reads from a document
+  text <file>                     Print the text AIxRay reads from a document
   input <task> --in <file>        Print what a task sends to the AI tool (log-mapping also needs --activities)
   wrap <task> --payload <file>    Turn an agent skill's output into a checked result file
 
@@ -225,7 +225,7 @@ async function cmdStatus(opts) {
     rows.push(st);
     if (!st.installed) { say(opts, p.name + ": not installed."); continue; }
     say(opts, p.name + " " + st.version + ": " + (st.loggedIn ? "signed in" + (st.org ? " to " + st.org : "") + ", " + st.planLabel + "." : "not signed in.") +
-      (st.apiKey ? " Uses an API key; BPMVIZ needs --use-api-key for that." : "") +
+      (st.apiKey ? " Uses an API key; AIxRay needs --use-api-key for that." : "") +
       (st.loggedIn && !st.planDetected ? " Give your plan with --plan commercial or --plan consumer." : ""));
   }
   emitJson(opts, { type: "status", providers: rows });
@@ -324,7 +324,7 @@ async function cmdWrap(opts) {
   const context = task === "log-mapping" && opts.activities ? { activities: await readActivities(opts.activities, opts["activity-column"]) } : undefined;
   const envelope = ai.makeEnvelope({
     task, engagementId: engagement ? engagement.id : null, engagementRevision: engagement ? engagement.revision : null, baselineModelId,
-    generated: { tool: "bpmviz-ai wrap", provider: PROVIDERS[provider] ? provider : "other", model: opts.model || "", surface: opts.surface || "skill",
+    generated: { tool: "aixray-ai wrap", provider: PROVIDERS[provider] ? provider : "other", model: opts.model || "", surface: opts.surface || "skill",
       at: new Date().toISOString(), jobId: "", plan: g.plan },
     dataHandling: g.dataHandling, sources: [], notes, warnings, payload
   });
@@ -334,7 +334,7 @@ async function cmdWrap(opts) {
   const out = opts.out || baseName(opts.in || (opts.payload), task) + "." + task + ".ai-result.json";
   fs.writeFileSync(out, JSON.stringify(v.result, null, 2) + "\n");
   if (opts["remove-payload"]) fs.rmSync(opts.payload, { force: true });
-  say(opts, "Wrote " + out + ". Open it in BPMVIZ with Open to review and apply.");
+  say(opts, "Wrote " + out + ". Open it in AIxRay with Open to review and apply.");
   emitJson(opts, { type: "written", file: out });
   return 0;
 }
@@ -390,9 +390,9 @@ async function cmdTask(opts) {
     if (applied) say(opts, "Wrote " + applied + " with every item applied as an unreviewed AI draft.");
   }
   say(opts, task === "extract" ?
-    "Open the result in BPMVIZ with Open, check it, then open it as a new engagement and save it." : task === "log-mapping" ?
-    "In BPMVIZ, open the engagement, choose More actions, Import an event log, pick the log, and in the activities step choose Load an AI mapping result." :
-    "Open the result in BPMVIZ with Open (with the engagement open), tick the items you want and apply them.");
+    "Open the result in AIxRay with Open, check it, then open it as a new engagement and save it." : task === "log-mapping" ?
+    "In AIxRay, open the engagement, choose More actions, Import an event log, pick the log, and in the activities step choose Load an AI mapping result." :
+    "Open the result in AIxRay with Open (with the engagement open), tick the items you want and apply them.");
   emitJson(opts, { type: "written", file: out, applied, result: opts.json ? r.result : undefined });
   return 0;
 }

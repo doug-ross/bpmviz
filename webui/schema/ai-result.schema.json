@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bpmviz.local/schema/ai-result.schema.json",
-  "title": "BPMVIZ AI result",
+  "$id": "https://aixray.local/schema/ai-result.schema.json",
+  "title": "AIxRay AI result",
   "description": "Output of one AI task (extract, opportunities, future-state, summary or log-mapping), schema version 1. The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
   "type": "object",
   "required": [
@@ -12,7 +12,7 @@
   ],
   "properties": {
     "schema": {
-      "const": "bpmviz.ai-result"
+      "const": "aixray.ai-result"
     },
     "schemaVersion": {
       "const": 1

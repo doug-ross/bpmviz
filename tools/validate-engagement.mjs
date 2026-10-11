@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Validates BPMVIZ engagement files, and AI result files, with the same
+ * Validates AIxRay engagement files, and AI result files, with the same
  * checks the app runs on Open.
  *
  *   node tools/validate-engagement.mjs file.engagement.json [more files] [--json] [--quiet]

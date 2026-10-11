@@ -21,14 +21,14 @@ const { validateEngagement } = lib("validate");
 const fakes = path.join(root, "tests", "fixtures", "ai");
 let scratch;
 const saved = {};
-const ENV_KEYS = ["BPMVIZ_CLAUDE_BIN", "BPMVIZ_CODEX_BIN", "FAKE_AI_MODE", "FAKE_AI_STATE", "FAKE_AI_LOG", "FAKE_CLAUDE_AUTH", "FAKE_CODEX_AUTH",
+const ENV_KEYS = ["AIXRAY_CLAUDE_BIN", "AIXRAY_CODEX_BIN", "FAKE_AI_MODE", "FAKE_AI_STATE", "FAKE_AI_LOG", "FAKE_CLAUDE_AUTH", "FAKE_CODEX_AUTH",
   "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "CLAUDECODE"];
 
 beforeEach(() => {
   ENV_KEYS.forEach(k => { saved[k] = process.env[k]; delete process.env[k]; });
-  scratch = fs.mkdtempSync(path.join(os.tmpdir(), "bpmviz-test-"));
-  process.env.BPMVIZ_CLAUDE_BIN = path.join(fakes, "fake-claude.mjs");
-  process.env.BPMVIZ_CODEX_BIN = path.join(fakes, "fake-codex.mjs");
+  scratch = fs.mkdtempSync(path.join(os.tmpdir(), "aixray-test-"));
+  process.env.AIXRAY_CLAUDE_BIN = path.join(fakes, "fake-claude.mjs");
+  process.env.AIXRAY_CODEX_BIN = path.join(fakes, "fake-codex.mjs");
   process.env.FAKE_AI_STATE = path.join(scratch, "state");
   process.env.FAKE_AI_LOG = path.join(scratch, "log.jsonl");
 });

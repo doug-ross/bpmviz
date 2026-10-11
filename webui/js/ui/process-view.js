@@ -5,7 +5,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, s, clear, icon, iconButton, announce, isTypingTarget } = B.dom;
   const { schema, units, layout, lenses, replay: replayLib } = B;
   const { Diagram, Camera, Navigator } = B.diagram;

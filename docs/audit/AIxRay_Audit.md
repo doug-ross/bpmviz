@@ -1,12 +1,12 @@
-# BPMVIZ: Product, Functionality, UI/UX, and Architecture Audit
+# AIxRay: Product, Functionality, UI/UX, and Architecture Audit
 
 **Audit date:** September 25, 2026  
-**Scope:** Uploaded `bpmviz-main.zip`, interpreted against the supplied Astra audit brief.  
+**Scope:** Uploaded `aixray-main.zip`, interpreted against the supplied Astra audit brief.  
 **Decision:** Converge on the Astra v2 renderer, establish a portable engagement model, and build a trustworthy workshop-capture experience before expanding simulation or ROI functionality.
 
 ## Audit basis and limits
 
-The archive contains 15 files, including three applications, three generator prompts, a README, and a license. All three application variants were inspected. Source references below are relative to `bpmviz-main/`; line numbers refer to the uploaded snapshot, not a remote branch. The archive does not contain Git history, the source BPMN documents mentioned in the sample configurations, or a test suite. Therefore, original implementation chronology is inferred from structure, and source-diagram fidelity cannot be independently verified.
+The archive contains 15 files, including three applications, three generator prompts, a README, and a license. All three application variants were inspected. Source references below are relative to `aixray-main/`; line numbers refer to the uploaded snapshot, not a remote branch. The archive does not contain Git history, the source BPMN documents mentioned in the sample configurations, or a test suite. Therefore, original implementation chronology is inferred from structure, and source-diagram fidelity cannot be independently verified.
 
 Browser tests used Chromium with each application's local JavaScript and stylesheet assets assembled in memory without changing the repository. Direct `file:` and localhost navigation were blocked by the test environment. External browser requests were intercepted. Screenshots were captured at 1366x768, 1440x900, 1920x1080, 2560x1440, and 1024x768. Focused tests covered replay state, geometry collisions, metric formatting, selected keyboard interactions, before-only rendering, malformed configuration, and harmless untrusted-markup handling.
 
@@ -43,7 +43,7 @@ These are observed rendering and interaction tests, not certification of direct-
 | `webui/` | Config-driven single-process explorer; 6 lanes, 20 configured nodes, 5 sample submissions; playback, scrubber, task SLA bars, heat, event log, minimap | Separate branding/model/samples/engine files; stable node IDs; sample paths can include repeated node visits and parallel branches | Replay ignores later visits; three governance activities share coordinates; unsafe HTML interpolation; misleading live copy; no authoring/persistence | Legacy example and migration fixture; reuse concepts, not the defective state engine |
 | `racer/webui/` | Cash-matching before/after race, shared lane catalog, case selection, milestone comparison, supplied executive metrics | Establishes synchronized process comparison | Monolithic UI; positional edges; weaker text safety/accessibility; resets playback on case change; cosmetic rather than analytical bottlenecks | Historical prototype only; preserve as an archived sample |
 | `racer/webui-v2-astra/` | Underwriting sample with 40 before nodes in 7 lanes and 38 after nodes in 9 lanes; 5 illustrative cases; six themes; native dialogs; validation; navigator; splitter; before-only mode | Most complete presentation and inspection experience; rich business metadata; safe escaping in inspected detail paths; reduced-motion startup behavior | Monolithic file; off-route state defect; scorecard unit bug; positional graph identity; no editable engagement model; no persistent work | Canonical renderer and application foundation after targeted repairs |
-| `tools/bpmviz_creator_prompt.txt` | Generates three JavaScript configurations from process documentation | Clear legacy contracts and sample-path instructions | Encourages invented samples; relies on a mental checklist; disallows fields needed for provenance; no machine validator or review UI | Legacy migration documentation, not the future primary workflow |
+| `tools/aixray_creator_prompt.txt` | Generates three JavaScript configurations from process documentation | Clear legacy contracts and sample-path instructions | Encourages invented samples; relies on a mental checklist; disallows fields needed for provenance; no machine validator or review UI | Legacy migration documentation, not the future primary workflow |
 | `racer/tools/master-prompt-racer.txt` | Generates a before/after `window.PROCESS` object | Captures the original comparison contract | Prescriptive AI future state; assumed dramatic duration compression; arbitrary financial targets; lossy handling of intermediate events | Deprecate as an authoritative generator |
 | `racer/tools/master-prompt-astra-1.txt` | Source-grounded process generator with detailed operating-model and economic rules | Best facts/assumptions separation, source-mapping guidance, and economic discipline | Outputs executable JavaScript; its guidance is not enforced by the viewer or a persisted evidence model | Main generator specification, revised to the canonical JSON contract |
 | `README.md` | Explains static deployment and generating three JS files | Simple onboarding | Does not explain the two Racer variants, which entrypoint is canonical, migration, limits, or testing | Replace with an application map, quick start, trust limits, and migration guide |
@@ -84,7 +84,7 @@ The current-state column below describes the uploaded snapshot. Recommendations 
 | Presentation | A polished v2 shell, themes, details, and navigator exist | Dense sidebars and tiny fitted labels; no dedicated executive layout/export | Presenter view with focused process segments, selected findings, and visible assumptions |
 | Follow-up | Files can be copied manually outside the application | No saved engagement, action log, opportunity register, snapshot, or deliverable export | Portable engagement file, recoverable local draft, linked actions, and selected exports |
 
-**Product conclusion:** Today BPMVIZ primarily helps clients watch and inspect a preconfigured process illustration. The requested consulting lifecycle requires editable, persistent, traceable knowledge around that illustration.
+**Product conclusion:** Today AIxRay primarily helps clients watch and inspect a preconfigured process illustration. The requested consulting lifecycle requires editable, persistent, traceable knowledge around that illustration.
 
 # 4. Prioritized UI/UX and accuracy findings
 
@@ -330,7 +330,7 @@ Effort estimates are relative design estimates, not delivery commitments: **S** 
 | P0-07 | Safe content boundary and network-neutral defaults | Engagement owner; confidentiality and trust; clear data handling | M; P0-04 | DOM helpers, import validation, branding, static assets | Untrusted labels remain text; unsafe URLs rejected; bundled workflow makes no external requests; no Telemetry connected claim without an actual connection |
 | P0-08 | Automated regression fixtures and supported-deployment checks | Maintainer; predictable client sessions; fewer regressions | M; starts immediately, grows with P0-01 to 07 | `tests/`, browser harness, fixtures, documentation | Tests cover rework, excluded routes, unit conversion, cost warnings, before-only, invalid input, save/recovery, keyboard, and supported deployment modes |
 
-## P1: Make BPMVIZ a process-improvement tool
+## P1: Make AIxRay a process-improvement tool
 
 | ID | Recommendation / problem solved | Persona; client value; UX effect | Effort; dependencies | Likely files/components | Acceptance criteria |
 |---|---|---|---|---|---|
@@ -395,7 +395,7 @@ These sources inform engineering recommendations only. They are not evidence abo
 
 # Recommended First Build
 
-## Scope: BPMVIZ Workshop Workbench v0.1
+## Scope: AIxRay Workshop Workbench v0.1
 
 The smallest coherent first build is a trustworthy, saveable current-state workshop experience using the v2 renderer. It should allow a consultant to open a prepared engagement, inspect and correct its descriptive metadata, capture linked client observations, and leave with a usable record.
 

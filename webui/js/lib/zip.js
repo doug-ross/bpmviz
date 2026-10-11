@@ -1,5 +1,5 @@
 /*
- * BPMVIZ zip: a small ZIP writer and reader for Office files (XLSX, PPTX)
+ * AIxRay zip: a small ZIP writer and reader for Office files (XLSX, PPTX)
  * and packs. Compression is passed in: the browser gives Compression
  * Streams wrappers (ui/files.js), Node tests give node:zlib. The reader
  * refuses archives that would expand past set limits, the same limits as
@@ -7,7 +7,7 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.zip = factory(); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.zip = factory(); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 

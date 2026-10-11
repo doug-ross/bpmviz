@@ -1,5 +1,5 @@
 {
-  "name": "bpmviz",
+  "name": "aixray",
   "version": "0.1.0",
   "private": true,
   "description": "Process workshop workbench: replay a process, capture client findings against it, and hand off a portable engagement file.",

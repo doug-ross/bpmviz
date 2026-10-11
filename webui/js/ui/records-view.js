@@ -4,7 +4,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, clear, icon, iconButton, formatDate, downloadBlob, announce } = B.dom;
   const { schema, exporting } = B;
   const badge = (t, tone) => B.drawer.badge(t, tone);

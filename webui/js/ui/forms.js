@@ -5,7 +5,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { h, icon, formatDate } = B.dom;
   const { schema } = B;
   const { openDialog, confirmDialog } = B.dialogs;
@@ -112,7 +112,7 @@
         field("Action authority", aiFields.authority), field("Human review", aiFields.humanReview)),
       h("div", { class: "field-row" },
         field("Auditability", aiFields.auditability), field("Failure handling", aiFields.failureHandling)));
-    // Sections registered with BPMVIZ.ext.registerRecordDialogSection: { el, collect() -> patch, check() -> message or null }.
+    // Sections registered with AIxRay.ext.registerRecordDialogSection: { el, collect() -> patch, check() -> message or null }.
     const extCtx = B.ext.context(app, {});
     const extSections = B.ext.list("recordDialogSection").map(def => {
       const out = B.ext.guard("recordDialogSection", def, () => def.render(r, extCtx), null);

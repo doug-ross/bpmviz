@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Converts a legacy BPMVIZ configuration to an engagement JSON file.
+ * Converts a legacy AIxRay configuration to an engagement JSON file.
  *
  *   node tools/convert-legacy.mjs <folder-or-process.js> [--out file.engagement.json]
  *        [--exclude-optional] [--batch] [--business-day <minutes>] [--client "Name"]

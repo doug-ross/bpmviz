@@ -1,5 +1,5 @@
 {
-  "schema": "bpmviz.engagement",
+  "schema": "aixray.engagement",
   "schemaVersion": 1,
   "id": "eng-rpa-delivery",
   "revision": 0,
@@ -19,7 +19,7 @@
     "currency": "USD",
     "disclosure": "Demonstration data. Sample automation requests with illustrative durations; no live telemetry.",
     "summary": "Automation requests move from intake through AI-assisted scoping, a parallel governance fan-out, build, QA and UAT. Samples include QA and UAT rework loops.",
-    "credits": "Sample from the original BPMVIZ explorer by Doug Ross (MIT License)."
+    "credits": "Sample from the original AIxRay explorer by Doug Ross (MIT License)."
   },
   "milestones": [],
   "models": [

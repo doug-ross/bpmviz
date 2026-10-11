@@ -40,9 +40,9 @@ const itemRef = { type: "string", pattern: "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,
 
 const doc = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://bpmviz.local/schema/engagement.schema.json",
-  title: "BPMVIZ engagement",
-  description: "Portable engagement file for the BPMVIZ process workshop workbench, schema version 1. " +
+  $id: "https://aixray.local/schema/engagement.schema.json",
+  title: "AIxRay engagement",
+  description: "Portable engagement file for the AIxRay process workshop workbench, schema version 1. " +
     "The validator in webui/js/lib/validate.js enforces this contract and also checks references between " +
     "objects, timing and economic reconciliation, which JSON Schema cannot express.",
   type: "object",
@@ -364,8 +364,8 @@ console.log("Wrote " + path.relative(root, out));
 const T = aiResults.TASK_SCHEMAS;
 const resultDoc = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://bpmviz.local/schema/ai-result.schema.json",
-  title: "BPMVIZ AI result",
+  $id: "https://aixray.local/schema/ai-result.schema.json",
+  title: "AIxRay AI result",
   description: "Output of one AI task (extract, opportunities, future-state, summary or log-mapping), schema version 1. " +
     "The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. " +
     "webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
@@ -414,8 +414,8 @@ console.log("Wrote " + path.relative(root, resultOut));
 
 const responseDoc = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://bpmviz.local/schema/review-response.schema.json",
-  title: "BPMVIZ review response",
+  $id: "https://aixray.local/schema/review-response.schema.json",
+  title: "AIxRay review response",
   description: "A client reviewer's answers to a review pack, schema version 1. The app imports it with Open; " +
     "validateReviewResponse in webui/js/lib/validate.js enforces this contract and refuses a response made for another engagement.",
   type: "object",

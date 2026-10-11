@@ -1,5 +1,5 @@
 /*
- * BPMVIZ xlsx: writes simple Excel workbooks and reads cell values back.
+ * AIxRay xlsx: writes simple Excel workbooks and reads cell values back.
  *
  * Writing: every text cell is an inline string, so no cell can be a formula.
  * Reading: shared strings, inline strings, rich-text runs and the cached
@@ -9,7 +9,7 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("./zip.js"), require("./ooxml.js"));
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.xlsx = factory(B.zip, B.ooxml); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.xlsx = factory(B.zip, B.ooxml); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (zip, ooxml) {
   "use strict";
 

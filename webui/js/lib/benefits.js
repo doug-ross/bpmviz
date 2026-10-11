@@ -1,5 +1,5 @@
 /*
- * BPMVIZ benefits: compares two event-log datasets (a baseline and one taken
+ * AIxRay benefits: compares two event-log datasets (a baseline and one taken
  * after a change) step by step, and checks whether an opportunity's modeled
  * value case was realized by what the logs actually measured.
  *
@@ -13,7 +13,7 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./dataset-query.js"), require("./value-case.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.benefits = factory(B.util, B.datasetQuery, B.valueCase);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, dq, valueCase) {
@@ -269,7 +269,7 @@
   }
 
   /**
-   * A lens for BPMVIZ.lenses.registerLens: the percent change in each step's
+   * A lens for AIxRay.lenses.registerLens: the percent change in each step's
    * median duration between a model's most recent baseline log and the most
    * recent log marked as after a change that compares to it. ctx is the
    * usual lens context ({ model, engagement, ... }); returns the lens result

@@ -93,7 +93,7 @@ export function userPrompt(o) {
 /** The message for a repair session: the draft that failed and what is wrong with it. */
 export function repairPrompt(o) {
   const lines = ["Task: " + o.task + ". Job " + o.jobId + ". Repair round " + o.round + ".",
-    "An earlier draft for this task did not pass the BPMVIZ checks. Fix only what the list below names and keep everything else as it is."];
+    "An earlier draft for this task did not pass the AIxRay checks. Fix only what the list below names and keep everything else as it is."];
   lines.push("Problems:\n" + o.problems.slice(0, 60).map(p => "- " + (p.path ? p.path + ": " : "") + p.message).join("\n"));
   if (o.fileDraft) {
     lines.push("The draft is in " + o.fileDraft + ". Edit it in place with the Edit tool, or rewrite it with the Write tool. Then return your notes and warnings.");

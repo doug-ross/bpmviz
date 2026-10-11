@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bpmviz.local/schema/review-response.schema.json",
-  "title": "BPMVIZ review response",
+  "$id": "https://aixray.local/schema/review-response.schema.json",
+  "title": "AIxRay review response",
   "description": "A client reviewer's answers to a review pack, schema version 1. The app imports it with Open; validateReviewResponse in webui/js/lib/validate.js enforces this contract and refuses a response made for another engagement.",
   "type": "object",
   "required": [
@@ -14,7 +14,7 @@
   "additionalProperties": false,
   "properties": {
     "schema": {
-      "const": "bpmviz.review-response"
+      "const": "aixray.review-response"
     },
     "schemaVersion": {
       "const": 1

@@ -77,7 +77,7 @@ test("XML escaping removes characters XML cannot hold", () => {
   assert.match(ct, /PartName="\/x.xml"/);
   const rels = ooxml.rels([{ id: "rId1", type: ooxml.REL.officeDocument, target: "a&b.xml" }]);
   assert.match(rels, /Target="a&amp;b.xml"/);
-  const core = ooxml.coreProps({ title: "Review <pack>", creator: "BPMVIZ", created: "2026-03-01T10:00:00.000Z" });
+  const core = ooxml.coreProps({ title: "Review <pack>", creator: "AIxRay", created: "2026-03-01T10:00:00.000Z" });
   assert.match(core, /<dc:title>Review &lt;pack&gt;<\/dc:title>/);
   assert.match(core, /2026-03-01T10:00:00Z/);
   assert.match(ooxml.appProps({ company: "Client & Co" }), /<Company>Client &amp; Co<\/Company>/);
@@ -85,12 +85,12 @@ test("XML escaping removes characters XML cannot hold", () => {
 
 test("written workbooks read back with hidden sheets, validations and no formulas", async () => {
   const spec = {
-    props: { title: "Review pack", creator: "BPMVIZ" },
+    props: { title: "Review pack", creator: "AIxRay" },
     sheets: [
       { name: "Review", headerRows: 1, freeze: { rows: 1 }, columns: [12, 40, { width: 20 }],
         rows: [["Item ID", "Item", "Verdict"], ["step/m/work", "=SUM(A1:A9)", null], ["record/r1", "Line one\nline two \u00e9", "Confirm"], [1, 2.5, true]],
         validations: [{ range: "C2:C200", list: ["Confirm", "Dispute", "Not sure"] }] },
-      { name: "bpmviz-pack", hidden: true, rows: [["packId", "pack-1"], ["engagementId", "eng-tiny"]] },
+      { name: "aixray-pack", hidden: true, rows: [["packId", "pack-1"], ["engagementId", "eng-tiny"]] },
       { name: "Dates", rows: [[{ date: 45658.5 }]] },
       { name: "A/B:C*?[x]", rows: [["odd name"]] }
     ]
@@ -101,10 +101,10 @@ test("written workbooks read back with hidden sheets, validations and no formula
   assert.match(sheet1, /t="inlineStr"><is><t xml:space="preserve">=SUM\(A1:A9\)<\/t>/);
   assert.match(sheet1, /<dataValidation type="list"[^>]*sqref="C2:C200"><formula1>&quot;Confirm,Dispute,Not sure&quot;<\/formula1>/);
   assert.match(sheet1, /state="frozen"/);
-  assert.match(parts.find(p => p.name === "xl/workbook.xml").data, /name="bpmviz-pack" sheetId="2" state="hidden"/);
+  assert.match(parts.find(p => p.name === "xl/workbook.xml").data, /name="aixray-pack" sheetId="2" state="hidden"/);
   for (const bytes of [zip.writeZip(parts), await xlsx.workbookBytesAsync(spec, { deflateRaw })]) {
     const wb = await xlsx.readWorkbookAsync(bytes, { inflateRaw });
-    assert.deepEqual(wb.sheets.map(s => [s.name, s.hidden]), [["Review", false], ["bpmviz-pack", true], ["Dates", false], ["A B C   x", false]]);
+    assert.deepEqual(wb.sheets.map(s => [s.name, s.hidden]), [["Review", false], ["aixray-pack", true], ["Dates", false], ["A B C   x", false]]);
     assert.deepEqual(wb.sheets[0].rows, [["Item ID", "Item", "Verdict"], ["step/m/work", "=SUM(A1:A9)"], ["record/r1", "Line one\nline two \u00e9", "Confirm"], [1, 2.5, true]]);
     assert.deepEqual(wb.sheets[1].rows, [["packId", "pack-1"], ["engagementId", "eng-tiny"]]);
     assert.deepEqual(wb.sheets[2].rows, [[{ date: 45658.5 }]]);

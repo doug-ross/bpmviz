@@ -46,7 +46,7 @@ test("storage failure is reported, not thrown", () => {
 
 test("a corrupted draft is ignored", () => {
   const storage = memoryStorage();
-  storage.setItem("bpmviz:draft:eng-x", "{broken");
+  storage.setItem("aixray:draft:eng-x", "{broken");
   assert.equal(createDraftStore(storage).loadDraft("eng-x"), null);
 });
 

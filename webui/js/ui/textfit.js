@@ -4,7 +4,7 @@
  */
 (function (root) {
   "use strict";
-  const B = root.BPMVIZ = root.BPMVIZ || {};
+  const B = root.AIxRay = root.AIxRay || {};
   const { s } = B.dom;
   const FONT = '"Ubuntu", system-ui, "Segoe UI", sans-serif';
   const canvas = document.createElement("canvas");

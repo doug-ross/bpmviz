@@ -18,8 +18,8 @@ import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import { launch, fileUrl, watch, root } from "../../tools/lib/browser.mjs";
 
-process.env.BPMVIZ_CLAUDE_BIN = path.join(root, "tests", "fixtures", "ai", "fake-claude.mjs");
-process.env.BPMVIZ_CODEX_BIN = path.join(root, "tests", "fixtures", "ai", "fake-codex.mjs");
+process.env.AIXRAY_CLAUDE_BIN = path.join(root, "tests", "fixtures", "ai", "fake-claude.mjs");
+process.env.AIXRAY_CODEX_BIN = path.join(root, "tests", "fixtures", "ai", "fake-codex.mjs");
 
 const require = createRequire(import.meta.url);
 const lib = name => require(path.join(root, "webui", "js", "lib", name + ".js"));
@@ -32,7 +32,7 @@ const BASELINE = path.join(root, "docs", "samples", "underwriting-baseline.csv")
 const AFTER = path.join(root, "docs", "samples", "underwriting-after.csv");
 
 let browser = null;
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "bpmviz-e2e-"));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "aixray-e2e-"));
 before(async () => { browser = await launch(); });
 after(async () => {
   if (browser) await browser.close();
@@ -56,7 +56,7 @@ const atStep = (p, n) => p.waitForFunction(k => {
 
 /* Runs the event-log wizard on one of the sample logs; returns the new dataset. */
 async function importLog(p, file, role) {
-  const before = await p.evaluate(() => (window.BPMVIZ.app.store.get().datasets || []).map(d => d.id));
+  const before = await p.evaluate(() => (window.AIxRay.app.store.get().datasets || []).map(d => d.id));
   await p.setInputFiles("#file-input", { name: path.basename(file), mimeType: "text/csv", buffer: fs.readFileSync(file) });
   await p.waitForSelector("dialog[open] #li-preview");
   await p.click("#li-next");
@@ -82,7 +82,7 @@ async function importLog(p, file, role) {
   await atStep(p, 5);
   await p.click("#li-next");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
-  return p.evaluate(ids => window.BPMVIZ.app.store.get().datasets.find(d => !ids.includes(d.id)), before);
+  return p.evaluate(ids => window.AIxRay.app.store.get().datasets.find(d => !ids.includes(d.id)), before);
 }
 
 test("event log to value case, client review, exports and benefits on the underwriting example", async t => {
@@ -93,7 +93,7 @@ test("event log to value case, client review, exports and benefits on the underw
   const p = await ctx.newPage();
   const problems = watch(p);
   await p.goto(fileUrl() + "#example=underwriting-current-state");
-  await p.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && !!window.BPMVIZ.app.store);
+  await p.waitForFunction(() => window.AIxRay && window.AIxRay.app && !!window.AIxRay.app.store);
   await p.waitForSelector(".node");
 
   // 1. The baseline log, through the wizard.
@@ -105,7 +105,7 @@ test("event log to value case, client review, exports and benefits on the underw
   assert.equal(base.scenarioIds.length, 3);
   const scrub = base.steps.find(s => s.nodeId === "scrub-sov-geocode");
   assert.ok(scrub.duration.p50 > 180 && scrub.duration.p50 < 300, "the sample log's steps sit in working hours, so business-time durations are real: " + scrub.duration.p50);
-  const stored = await p.evaluate(() => JSON.stringify(window.BPMVIZ.app.store.get()));
+  const stored = await p.evaluate(() => JSON.stringify(window.AIxRay.app.store.get()));
   assert.ok(!stored.includes("BASE-0001"), "no case IDs are stored");
   await p.waitForSelector("#rv-tab-event-logs[aria-selected=true]");
   assert.match(await p.textContent("#rv-panel"), /underwriting-baseline/);
@@ -123,7 +123,7 @@ test("event log to value case, client review, exports and benefits on the underw
   assert.match(await p.textContent("#pv-lens-info"), /business time/);
 
   // 3. A value case on the observed share of cases and observed durations.
-  await p.evaluate(() => window.BPMVIZ.app.dispatch("record/add", { record: { kind: "opportunity", title: "Automate SOV scrub and triage",
+  await p.evaluate(() => window.AIxRay.app.dispatch("record/add", { record: { kind: "opportunity", title: "Automate SOV scrub and triage",
     linkedModelId: "m-current", linkedNodeIds: ["scrub-sov-geocode", "appetite-capacity-triage"], opportunity: { intervention: "deterministic-automation", effort: "M" } } }));
   await p.click("#tab-records");
   await p.click("#rv-tab-opportunities");
@@ -140,7 +140,7 @@ test("event log to value case, client review, exports and benefits on the underw
   await p.waitForFunction(() => /Estimated at/.test(document.getElementById("bc-vc-preview").textContent));
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
-  const vc = await p.evaluate(() => window.BPMVIZ.app.store.get().records.find(r => r.title === "Automate SOV scrub and triage").opportunity);
+  const vc = await p.evaluate(() => window.AIxRay.app.store.get().records.find(r => r.title === "Automate SOV scrub and triage").opportunity);
   assert.equal(vc.wave, "now");
   assert.deepEqual([vc.valueCase.shareSource, vc.valueCase.effortSource, vc.valueCase.datasetId], ["dataset", "dataset", base.id]);
   assert.match(await p.textContent("#rv-panel table tbody tr td:nth-child(6)"), /\$[\d,]+(\.\d\d)? a year/);
@@ -184,7 +184,7 @@ test("event log to value case, client review, exports and benefits on the underw
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
   let state = await p.evaluate(() => {
-    const e = window.BPMVIZ.app.store.get();
+    const e = window.AIxRay.app.store.get();
     const v = id => e.models[0].nodes.find(n => n.id === id).provenance.validation;
     return { reviews: e.reviews.length, confirm: v("check-clearance-dedup"), dispute: v("scrub-sov-geocode") };
   });
@@ -213,7 +213,7 @@ test("event log to value case, client review, exports and benefits on the underw
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
   state = await p.evaluate(() => {
-    const e = window.BPMVIZ.app.store.get();
+    const e = window.AIxRay.app.store.get();
     const v = id => e.models[0].nodes.find(n => n.id === id).provenance.validation;
     return { reviews: e.reviews.map(r => r.source), triage: v("appetite-capacity-triage"), decline: v("send-decline-letter") };
   });
@@ -235,8 +235,8 @@ test("event log to value case, client review, exports and benefits on the underw
   const bpmn = await download(p, () => p.click("#exp-bpmn"));
   assert.match(bpmn.name, /\.bpmn$/);
   const round = await p.evaluate(text => {
-    const r = window.BPMVIZ.bpmn.importDocument(new DOMParser().parseFromString(text, "application/xml"), { fileName: "roundtrip.bpmn" });
-    const m = window.BPMVIZ.app.store.get().models.find(x => x.id === "m-current");
+    const r = window.AIxRay.bpmn.importDocument(new DOMParser().parseFromString(text, "application/xml"), { fileName: "roundtrip.bpmn" });
+    const m = window.AIxRay.app.store.get().models.find(x => x.id === "m-current");
     const ids = new Set(m.nodes.filter(n => !n.removed).map(n => n.id));
     return {
       back: { nodes: r.engagement.models[0].nodes.length, edges: r.engagement.models[0].edges.length, lanes: r.engagement.models[0].lanes.length, warnings: r.warnings },

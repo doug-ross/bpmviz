@@ -1,11 +1,11 @@
 /*
- * BPMVIZ units: typed measures and time-basis-aware formatting.
+ * AIxRay units: typed measures and time-basis-aware formatting.
  * Every displayed number carries a unit; nothing is formatted by guessing
  * from a label.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("./util.js"));
-  else { const B = root.BPMVIZ = root.BPMVIZ || {}; B.units = factory(B.util); }
+  else { const B = root.AIxRay = root.AIxRay || {}; B.units = factory(B.util); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util) {
   "use strict";
 

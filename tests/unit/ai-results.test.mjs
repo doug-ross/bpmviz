@@ -86,10 +86,10 @@ test("the data-handling gate covers every plan and confidentiality level", () =>
 });
 
 test("result files are recognized and malformed ones are refused", () => {
-  assert.equal(ai.isAiResult({ schema: "bpmviz.ai-result" }), true);
-  assert.equal(ai.isAiResult({ schema: "bpmviz.engagement" }), false);
-  assert.equal(ai.validateAiResult({ schema: "bpmviz.engagement" }).ok, false);
-  assert.match(ai.validateAiResult({ schema: "bpmviz.ai-result", schemaVersion: 2, task: "summary" }).errors[0].message, /newer version/);
+  assert.equal(ai.isAiResult({ schema: "aixray.ai-result" }), true);
+  assert.equal(ai.isAiResult({ schema: "aixray.engagement" }), false);
+  assert.equal(ai.validateAiResult({ schema: "aixray.engagement" }).ok, false);
+  assert.match(ai.validateAiResult({ schema: "aixray.ai-result", schemaVersion: 2, task: "summary" }).errors[0].message, /newer version/);
   assert.equal(ai.parseAiResultText("{not json").ok, false);
   const e = loaded();
   const missing = envelope(e, "opportunities", { suggestions: [{ ref: "s1", kind: "opportunity", title: "x" }] });
@@ -292,7 +292,7 @@ test("an extracted engagement is forced to draft status and marked as AI work", 
   assert.equal(again.ok, true);
   assert.equal(again.engagement.records[0].generated.provider, "claude");
 
-  const broken = envelope(null, "extract", { engagement: { schema: "bpmviz.engagement", schemaVersion: 1, id: "x", models: [] } });
+  const broken = envelope(null, "extract", { engagement: { schema: "aixray.engagement", schemaVersion: 1, id: "x", models: [] } });
   const bad = ai.validateAiResult(broken);
   assert.equal(bad.ok, false);
   assert.ok(bad.errors.some(x => x.path.startsWith("payload.engagement")));

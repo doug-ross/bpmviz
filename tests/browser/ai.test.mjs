@@ -23,8 +23,8 @@ async function open(t, hash) {
   const page = await context.newPage();
   const problems = watch(page);
   await page.goto(fileUrl() + (hash || ""));
-  await page.waitForFunction(() => window.BPMVIZ && window.BPMVIZ.app && document.getElementById("app"));
-  if (hash) await page.waitForFunction(() => !!window.BPMVIZ.app.store);
+  await page.waitForFunction(() => window.AIxRay && window.AIxRay.app && document.getElementById("app"));
+  if (hash) await page.waitForFunction(() => !!window.AIxRay.app.store);
   t.after(async () => { await context.close(); });
   return { page, problems };
 }
@@ -43,7 +43,7 @@ function resultFile(task, payload, extra) {
   return { name: task + ".ai-result.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(env)) };
 }
 
-const state = page => page.evaluate(() => window.BPMVIZ.app.store.get());
+const state = page => page.evaluate(() => window.AIxRay.app.store.get());
 
 test("the app stays offline and opens, reviews and applies suggested records", async t => {
   const s = await open(t, "#example=underwriting-current-state&ws=records");
@@ -75,17 +75,17 @@ test("the app stays offline and opens, reviews and applies suggested records", a
   await s.page.waitForSelector("#rv-mark-reviewed");
   assert.equal(await s.page.locator(".badge", { hasText: "AI draft" }).count(), 2);
 
-  await s.page.evaluate(() => { window.BPMVIZ.app.goto("present"); window.BPMVIZ.app.presentView.setMode("handoff"); });
+  await s.page.evaluate(() => { window.AIxRay.app.goto("present"); window.AIxRay.app.presentView.setMode("handoff"); });
   assert.doesNotMatch(await s.page.textContent("#handoff-doc"), /Pre-check clearance rules/, "unreviewed drafts stay out of the handoff");
   assert.match(await s.page.textContent("#handoff-doc"), /2 AI-drafted records are not yet reviewed/);
   await s.page.check("#pr-unreviewed");
   assert.match(await s.page.textContent("#handoff-doc"), /Pre-check clearance rules\s*AI draft, not reviewed/);
 
-  await s.page.evaluate(() => { window.BPMVIZ.app.goto("records"); });
+  await s.page.evaluate(() => { window.AIxRay.app.goto("records"); });
   await s.page.click("#rv-mark-reviewed");
   await s.page.click("dialog[open] .btn-primary");
-  await s.page.waitForFunction(() => window.BPMVIZ.app.store.get().records.every(r => r.generated.reviewed));
-  await s.page.evaluate(() => { window.BPMVIZ.app.store.undo(); window.BPMVIZ.app.store.undo(); });
+  await s.page.waitForFunction(() => window.AIxRay.app.store.get().records.every(r => r.generated.reviewed));
+  await s.page.evaluate(() => { window.AIxRay.app.store.undo(); window.AIxRay.app.store.undo(); });
   assert.equal((await state(s.page)).records.length, 0, "undo removes the applied suggestions");
   clean(s.problems);
 });
@@ -122,7 +122,7 @@ test("a future-state change set opens as an AI draft that can be marked reviewed
   assert.ok(draft.lanes.some(l => l.name === "Clearance automation"));
   assert.equal(draft.nodes.find(n => n.label === "Run duplicate check").lineage.change, "added");
   await s.page.click(".pane-head .link-btn:has-text('Mark reviewed')");
-  await s.page.waitForFunction(() => window.BPMVIZ.app.store.get().models.find(x => x.generated).generated.reviewed);
+  await s.page.waitForFunction(() => window.AIxRay.app.store.get().models.find(x => x.generated).generated.reviewed);
   clean(s.problems);
 });
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bpmviz.local/schema/engagement.schema.json",
-  "title": "BPMVIZ engagement",
-  "description": "Portable engagement file for the BPMVIZ process workshop workbench, schema version 1. The validator in webui/js/lib/validate.js enforces this contract and also checks references between objects, timing and economic reconciliation, which JSON Schema cannot express.",
+  "$id": "https://aixray.local/schema/engagement.schema.json",
+  "title": "AIxRay engagement",
+  "description": "Portable engagement file for the AIxRay process workshop workbench, schema version 1. The validator in webui/js/lib/validate.js enforces this contract and also checks references between objects, timing and economic reconciliation, which JSON Schema cannot express.",
   "type": "object",
   "required": [
     "schema",
@@ -14,7 +14,7 @@
   "additionalProperties": false,
   "properties": {
     "schema": {
-      "const": "bpmviz.engagement"
+      "const": "aixray.engagement"
     },
     "schemaVersion": {
       "const": 1

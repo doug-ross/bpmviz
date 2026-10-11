@@ -1,5 +1,5 @@
 /*
- * BPMVIZ validate: checks an engagement in layers and returns a sanitized copy.
+ * AIxRay validate: checks an engagement in layers and returns a sanitized copy.
  *
  * Layers: parse and schema, identity, graph references, semantic support,
  * timing and replay membership, units, economic reconciliation, evidence.
@@ -11,7 +11,7 @@
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"),
       require("./economics.js"), require("./migrate.js"), require("./replay.js"));
   } else {
-    const B = root.BPMVIZ = root.BPMVIZ || {};
+    const B = root.AIxRay = root.AIxRay || {};
     B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay);
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay) {
@@ -910,7 +910,7 @@
   }
 
   /**
-   * Checks a client's review response file (schema bpmviz.review-response).
+   * Checks a client's review response file (schema aixray.review-response).
    * With an engagement, a response made for another engagement is refused and
    * entries for items that no longer exist are left out with a warning.
    * Returns { ok, errors, warnings, response }; response is null when errors exist.
@@ -923,11 +923,11 @@
       return { ok, errors: c.errors, warnings: c.warnings, response: ok ? response : null };
     };
     if (!util.isPlainObject(data) || data.schema !== schema.REVIEW_RESPONSE_ID) {
-      c.error("schema", "This is not a BPMVIZ review response (expected schema \"" + schema.REVIEW_RESPONSE_ID + "\").");
+      c.error("schema", "This is not an AIxRay review response (expected schema \"" + schema.REVIEW_RESPONSE_ID + "\").");
       return done(null);
     }
     if (data.schemaVersion !== 1) {
-      c.error("schemaVersion", Number(data.schemaVersion) > 1 ? "This review response was made by a newer version of BPMVIZ." : "Unknown review response version.");
+      c.error("schemaVersion", Number(data.schemaVersion) > 1 ? "This review response was made by a newer version of AIxRay." : "Unknown review response version.");
       return done(null);
     }
     knownKeys(c, data, "", ["schema", "schemaVersion", "packId", "engagementId", "engagementRevision", "format", "reviewer",
@@ -1074,11 +1074,11 @@
   function validateEngagement(input) {
     const c = new Checker();
     if (!util.isPlainObject(input)) {
-      c.error("", "The file does not contain a BPMVIZ engagement object.");
+      c.error("", "The file does not contain an AIxRay engagement object.");
       return { ok: false, errors: c.errors, warnings: c.warnings, engagement: null };
     }
     if (input.schema !== schema.SCHEMA_ID) {
-      c.error("schema", "This is not a BPMVIZ engagement file (expected schema \"" + schema.SCHEMA_ID + "\"). " +
+      c.error("schema", "This is not an AIxRay engagement file (expected schema \"" + schema.SCHEMA_ID + "\"). " +
         "Legacy .js configurations can be converted with tools/convert-legacy.mjs.");
       return { ok: false, errors: c.errors, warnings: c.warnings, engagement: null };
     }
