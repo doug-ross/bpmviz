@@ -475,7 +475,7 @@
     } else {
       let data = null;
       try { data = JSON.parse(text); } catch (_) { /* parseEngagementText reports it */ }
-      const jsonHandler = data && typeof data.schema === "string" ? B.ext.list("jsonHandler").find(x => x.schema === data.schema) : null;
+      const jsonHandler = data && typeof data.schema === "string" ? B.ext.list("jsonHandler").find(x => x.schema === schema.currentFormatId(data.schema)) : null;
       if (jsonHandler) {
         try {
           await jsonHandler.open(app, data, { fileName: file.name });

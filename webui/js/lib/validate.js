@@ -922,7 +922,7 @@
       const ok = c.errors.length === 0;
       return { ok, errors: c.errors, warnings: c.warnings, response: ok ? response : null };
     };
-    if (!util.isPlainObject(data) || data.schema !== schema.REVIEW_RESPONSE_ID) {
+    if (!util.isPlainObject(data) || schema.currentFormatId(data.schema) !== schema.REVIEW_RESPONSE_ID) {
       c.error("schema", "This is not a file of review answers from AIxRay.");
       return done(null);
     }
@@ -1077,10 +1077,13 @@
       c.error("", "This file does not contain an AIxRay project.");
       return { ok: false, errors: c.errors, warnings: c.warnings, engagement: null };
     }
-    if (input.schema !== schema.SCHEMA_ID) {
+    if (schema.currentFormatId(input.schema) !== schema.SCHEMA_ID) {
       c.error("schema", "This is not an AIxRay project file. " +
         "To open an older .js configuration, convert it first with tools/convert-legacy.mjs.");
       return { ok: false, errors: c.errors, warnings: c.warnings, engagement: null };
+    }
+    if (schema.isLegacyFormatId(input.schema)) {
+      c.warn("schema", "This file was saved by BPMVIZ, the earlier name of AIxRay. It opens as usual, and AIxRay saves it as an AIxRay project file.", "format.renamed", "info");
     }
     const migrated = migrate.migrateEngagement(input);
     if (migrated.error) {

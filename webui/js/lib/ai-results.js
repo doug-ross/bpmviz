@@ -462,7 +462,7 @@
   /* ---------- The result file ---------- */
 
   function isAiResult(data) {
-    return util.isPlainObject(data) && data.schema === RESULT_SCHEMA;
+    return util.isPlainObject(data) && schema.currentFormatId(data.schema) === RESULT_SCHEMA;
   }
 
   function stampOf(result) {
