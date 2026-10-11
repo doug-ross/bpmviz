@@ -265,14 +265,14 @@
     openResponse(app, data, info);
   }
 
-  /* An .xlsx file is a review pack when it has the hidden aixray-pack sheet, or About and Review sheets that carry a pack reference. */
+  /* An .xlsx file is a review pack when it has the hidden aixray-pack sheet (bpmviz-pack before the rename), or About and Review sheets that carry a pack reference. */
   async function isReviewWorkbook(bytes) {
     if (!bytes || bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) return false;
     try {
       const pkg = await B.zip.openZipAsync(bytes, { inflateRaw: B.files.inflateRaw });
       const wb = await pkg.readText("xl/workbook.xml");
       if (!wb) return false;
-      if (/<(?:\w+:)?sheet\b[^>]*\bname="aixray-pack"/i.test(wb)) return true;
+      if (/<(?:\w+:)?sheet\b[^>]*\bname="(?:aixray|bpmviz)-pack"/i.test(wb)) return true;
       if (!/<(?:\w+:)?sheet\b[^>]*\bname="About"/i.test(wb) || !/<(?:\w+:)?sheet\b[^>]*\bname="Review"/i.test(wb)) return false;
       R.responseFromWorkbook(await B.xlsx.readWorkbookAsync(bytes, { inflateRaw: B.files.inflateRaw }));
       return true;

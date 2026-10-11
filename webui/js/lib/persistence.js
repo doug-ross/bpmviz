@@ -13,6 +13,8 @@
   "use strict";
 
   const PREFIX = "aixray:";
+  /* Keys written before the app was renamed from BPMVIZ. They move to PREFIX once (see moveLegacyKeys). */
+  const LEGACY_PREFIX = "bpmviz:";
   const DRAFT = PREFIX + "draft:";
   const SNAPSHOTS = PREFIX + "snapshots:";
   const INDEX = PREFIX + "index";
@@ -25,7 +27,49 @@
       /quota/i.test(String(err.message)));
   }
 
+  /**
+   * Moves drafts, snapshots and preferences saved under the old BPMVIZ keys to
+   * the current ones, once. A key that already exists under the new name wins.
+   * The two draft indexes are merged. Returns how many keys were moved.
+   */
+  function moveLegacyKeys(storage) {
+    if (!storage) return 0;
+    let moved = 0;
+    try {
+      const keys = [];
+      for (let i = 0; i < storage.length; i++) {
+        const k = storage.key(i);
+        if (k && k.startsWith(LEGACY_PREFIX)) keys.push(k);
+      }
+      if (!keys.length) return 0;
+      const parse = raw => { try { return raw ? JSON.parse(raw) : null; } catch (_) { return null; } };
+      const oldIndex = parse(storage.getItem(LEGACY_PREFIX + "index"));
+      keys.forEach(k => {
+        if (k === LEGACY_PREFIX + "index" || k === LEGACY_PREFIX + "probe") return;
+        const target = PREFIX + k.slice(LEGACY_PREFIX.length);
+        try {
+          if (storage.getItem(target) === null) { storage.setItem(target, storage.getItem(k)); moved++; }
+          storage.removeItem(k);
+        } catch (_) { /* storage full: leave the old key for the next attempt */ }
+      });
+      if (Array.isArray(oldIndex)) {
+        const current = parse(storage.getItem(PREFIX + "index"));
+        const seen = new Set();
+        const merged = (Array.isArray(current) ? current : []).concat(oldIndex)
+          .filter(x => x && typeof x.id === "string" && !seen.has(x.id) && seen.add(x.id) && storage.getItem(PREFIX + "draft:" + x.id) !== null)
+          .sort((a, b) => String(b.savedAt || "").localeCompare(String(a.savedAt || "")))
+          .slice(0, 20);
+        storage.setItem(PREFIX + "index", JSON.stringify(merged));
+      }
+      storage.removeItem(LEGACY_PREFIX + "index");
+      storage.removeItem(LEGACY_PREFIX + "probe");
+    } catch (_) { /* storage blocked: nothing to move */ }
+    return moved;
+  }
+
   function createDraftStore(storage) {
+    moveLegacyKeys(storage);
+
     function read(key) {
       try {
         const raw = storage ? storage.getItem(key) : null;
@@ -160,5 +204,5 @@
     };
   }
 
-  return { createDraftStore, memoryStorage, PREFIX };
+  return { createDraftStore, memoryStorage, moveLegacyKeys, PREFIX, LEGACY_PREFIX };
 });

@@ -143,6 +143,8 @@ The deck covers scope, pain points, opportunities with their modeled value, the 
 
 The file format is documented in `webui/schema/engagement.schema.json`, and the bundled examples in `webui/examples/` are complete files to copy from.
 
+AIxRay was called BPMVIZ before. Files saved under that name still open as they are: project files, review answers from forms sent out before the rename (web page or Excel), AI result files, and drafts kept in the browser. AIxRay saves them with the current `aixray.*` format tags, so an older BPMVIZ copy cannot open them after that.
+
 ## Keyboard
 
 | Keys | Action |
