@@ -1,0 +1,5 @@
+/* Styles for the benefits tracking feature (benefits slice). Owned by that slice; see docs/extensions.md. Use the tokens in tokens.css. */
+
+.benefits-pair { padding-top: var(--space-4); margin-top: var(--space-4); border-top: 1px solid var(--border); }
+.benefits-pair:first-child { padding-top: 0; margin-top: 0; border-top: 0; }
+.benefits-pair .facts { margin-bottom: var(--space-3); }

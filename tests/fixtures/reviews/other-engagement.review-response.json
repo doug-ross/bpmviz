@@ -1,0 +1,14 @@
+{
+  "schema": "aixray.review-response",
+  "schemaVersion": 1,
+  "packId": "rp-fixture-2",
+  "engagementId": "eng-another-client",
+  "engagementRevision": 4,
+  "format": "html",
+  "reviewer": { "name": "Sam Other", "role": "Operations manager", "organization": "Another Client" },
+  "submittedAt": "2026-03-05T10:00:00.000Z",
+  "generalComment": "",
+  "entries": [
+    { "itemRef": "step/m-current/check-clearance-dedup", "verdict": "confirm", "comment": "" }
+  ]
+}
