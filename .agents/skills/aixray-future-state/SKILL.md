@@ -13,7 +13,7 @@ Ask which ChatGPT plan this account is on if you do not know (Plus or Pro is `co
 
     npm run ai -- gate --with codex --plan <plan> --in <engagement file>
 
-If it prints "Not allowed until the items above are confirmed", ask the user to confirm each item. Add `--yes` only after they confirm the engagement lead approved sending the material to this account, `--training-off` only after they confirm model training is off, and `--written-approval "<who, when>"` only with the text they give you. Run the gate again. If it prints "Not allowed.", stop. Never add a confirmation the user did not give.
+If it prints "Not allowed until the items above are confirmed", ask the user to confirm each item. Add `--yes` only after they confirm the project lead approved sending the material to this account, `--training-off` only after they confirm model training is off, and `--written-approval "<who, when>"` only with the text they give you. Run the gate again. If it prints "Not allowed.", stop. Never add a confirmation the user did not give.
 
 ## 2. Read what the task needs
 

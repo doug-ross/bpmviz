@@ -21,26 +21,27 @@
   const badge = (t, tone) => B.drawer.badge(t, tone);
 
   const TITLES = {
-    extract: "Review the extracted engagement",
-    opportunities: "Review suggested records",
+    extract: "Review the drafted project",
+    opportunities: "Review the suggestions",
     "future-state": "Review the future-state draft",
     summary: "Review the drafted summary",
-    "log-mapping": "Review the suggested activity mappings"
+    "log-mapping": "Review the suggested steps"
   };
   const PLAN = { unknown: "not stated", commercial: "commercial", consumer: "consumer" };
   const OP_LABEL = { modify: "Change", insert: "Add", remove: "Remove" };
   const OP_TONE = { modify: "info", insert: "success", remove: "warning" };
-  const CONF_TONE = { high: "success", medium: "info", low: "warning" };
 
-  function provenanceLine(result) {
+  /* Who drafted it, on which plan, what was sent, and the file it came from. */
+  function provenanceLine(result, fileName) {
     const g = result.generated;
     const d = result.dataHandling;
     const who = [schema.label("aiProvider", g.provider), g.model].filter(Boolean).join(", ");
     const parts = ["Drafted by " + who + " through the " + schema.label("aiSurface", g.surface).toLowerCase() + (g.at ? " on " + formatDate(g.at) : "") + "."];
     parts.push("Plan: " + PLAN[g.plan] + ".");
     parts.push("Sent as " + schema.label("confidentiality", d.confidentiality).toLowerCase() + " material" +
-      (d.approvalConfirmed ? ", with approval confirmed" : "") + (d.sensitiveIncluded ? ", including sensitive records" : "") + ".");
+      (d.approvalConfirmed ? ", with approval confirmed" : "") + (d.sensitiveIncluded ? ", including sensitive findings" : "") + ".");
     if (result.sources.length) parts.push("Sources: " + result.sources.map(x => x.name).join(", ") + ".");
+    if (fileName) parts.push("File: " + fileName + ".");
     return h("p", { class: "small muted" }, parts.join(" "));
   }
 
@@ -54,7 +55,7 @@
     if (!list.length && !rules.length) return null;
     return h("section", { class: "ai-warnings", "aria-label": "Before you apply" },
       list.length ? [h("h3", null, "Check before you apply (" + list.length + ")"), issueList(list, 12)] : null,
-      rules.length ? [h("h3", null, "Draft rules applied"), issueList(rules, 12)] : null);
+      rules.length ? [h("h3", null, "What AIxRay changed to keep this a draft"), issueList(rules, 12)] : null);
   }
 
   function para(label, value) {
@@ -69,10 +70,10 @@
       const o = it.opportunity || {};
       return [
         it.description ? h("p", { class: "small" }, it.description) : null,
-        o.intervention ? para("Intervention", schema.label("intervention", o.intervention) + (o.effort ? ", " + schema.label("effortSize", o.effort).toLowerCase() + " effort" : "")) : null,
-        para("Why not a simpler option", o.simplerAlternative),
+        o.intervention ? para("Type of change", schema.label("intervention", o.intervention) + (o.effort ? ", " + schema.label("effortSize", o.effort).toLowerCase() + " effort" : "")) : null,
+        para("Why not a simpler change", o.simplerAlternative),
         para("Expected benefit", o.expectedBenefit),
-        para("Next validation", o.validationAction),
+        para("How to confirm it", o.validationAction),
         para("Steps", it.stepLabels.join(", ")),
         para("Based on", it.basedOnTitles.join("; ")),
         para("Why", it.rationale)
@@ -92,15 +93,19 @@
     ];
   }
 
+  /* One quiet line under the title: what the item is and how sure the AI is. */
+  const itemMeta = parts => h("span", { class: "ai-item-meta" }, parts.filter(Boolean).join(" \u00b7 "));
+  const confidenceText = c => c ? c.charAt(0).toUpperCase() + c.slice(1) + " confidence" : "";
+
   function itemHead(task, it) {
     if (task === "opportunities") {
-      return [badge(schema.label("recordKind", it.kind), it.kind === "opportunity" ? "info" : ""), " ", h("strong", null, it.title),
-        " ", badge("Confidence: " + it.confidence, CONF_TONE[it.confidence]), it.priority ? [" ", badge(schema.label("priority", it.priority) + " priority", "")] : null];
+      return [h("strong", null, it.title), itemMeta([schema.label("recordKind", it.kind), confidenceText(it.confidence),
+        it.priority ? schema.label("priority", it.priority) + " priority" : ""])];
     }
     if (task === "future-state") return [badge(OP_LABEL[it.op], OP_TONE[it.op]), " ", h("strong", null, it.title)];
     if (task === "log-mapping") {
-      return [h("strong", null, it.activity), it.stepLabel ? [" to ", h("strong", null, it.stepLabel)] : " stays unmapped",
-        " ", badge("Confidence: " + it.confidence, CONF_TONE[it.confidence])];
+      return [h("strong", null, it.activity), it.stepLabel ? [" to ", h("strong", null, it.stepLabel)] : " stays unmatched",
+        itemMeta([confidenceText(it.confidence)])];
     }
     return h("strong", null, it.title);
   }
@@ -139,11 +144,11 @@
     } else if (result.task === "opportunities") {
       app.goto("records");
       app.recordsView.setTab("records");
-      announce(count + " AI draft record" + (count === 1 ? "" : "s") + " added. Undo removes them.");
+      announce(count + " AI draft finding" + (count === 1 ? "" : "s") + " added. Undo removes " + (count === 1 ? "it" : "them") + ".");
     } else {
       app.goto("present");
       app.presentView.setMode("handoff");
-      announce("Summary added as an AI draft. Review it before the handoff.");
+      announce("Summary added as an AI draft. Check it before you share the report.");
     }
   }
 
@@ -151,8 +156,8 @@
     const e = app.store ? app.store.get() : null;
     const review = aiResults.prepareReview(result, e, info.context);
     if (review.errors.length) {
-      messageDialog("This AI draft cannot be applied here", h("div", null,
-        h("p", null, (info.fileName || "The draft") + " does not match the open engagement. Nothing was changed."),
+      messageDialog("This AI draft can't be used here", h("div", null,
+        h("p", null, (info.fileName || "The draft") + " doesn't match the open project. Nothing was changed."),
         issueList(review.errors)));
       return null;
     }
@@ -184,23 +189,23 @@
     const intro = task === "future-state" ? h("div", { class: "ai-intro" },
       h("p", null, h("strong", null, p.name), review.baseline ? " starts as a copy of " + review.baseline.name + " v" + review.baseline.version + "." : ""),
       p.summary ? h("p", { class: "small" }, p.summary) : null,
-      p.lanes.length ? para("New swimlanes, added when a chosen change uses them", p.lanes.map(l => l.name + " (" + schema.label("laneType", l.type).toLowerCase() + ")").join(", ")) : null) :
-      task === "opportunities" ? h("p", { class: "small" }, "Tick the suggestions to add as records. Each one is added as an AI draft, linked to the steps named, and stays out of the handoff until someone marks it reviewed.") :
-      task === "log-mapping" ? h("p", { class: "small" }, "Tick the mappings to bring into the event-log import" + (review.baseline ? " for " + review.baseline.name : "") + ". Each one still needs its own tick in the activities step before the log is added.") :
-      h("p", { class: "small" }, "The summary is added as a draft. It stays out of the handoff until someone reviews it, and the printed handoff says it was drafted with AI assistance.");
+      p.lanes.length ? para("New lanes, added only if a change you pick uses them", p.lanes.map(l => l.name + " (" + schema.label("laneType", l.type).toLowerCase() + ")").join(", ")) : null) :
+      task === "opportunities" ? h("p", { class: "small" }, "Tick the suggestions you want as findings. Each one is added as an AI draft, linked to its steps, and stays out of the report until someone marks it reviewed.") :
+      task === "log-mapping" ? h("p", { class: "small" }, "Tick the mappings you want in the event log import" + (review.baseline ? " for " + review.baseline.name : "") + ". You still tick each one in the Activities step before the log is added.") :
+      h("p", { class: "small" }, "The summary is added as a draft. It stays out of the report until someone reviews it, and the printed report says it was drafted with AI assistance.");
     const body = h("div", { class: "ai-review" },
-      provenanceLine(result),
-      warningsBlock(result, warnings, review),
       intro,
+      warningsBlock(result, warnings, review),
       tools,
-      review.items.length ? list : h("p", { class: "empty" }, "The draft has no items to apply."),
-      h("p", { class: "note" }, single ? "Undo removes the summary again." : task === "log-mapping" ?
-        "Nothing in the engagement changes here. Mappings marked \"Cannot be applied\" name a step that is not in the model, a gateway, or an activity that was not sent." : task === "future-state" ?
-        "Changes marked \"Cannot be applied\" refer to steps or connectors that are not in the baseline, or would break the flow. Undo removes the whole draft." :
-        "Undo removes every record added in this step."),
+      review.items.length ? list : h("p", { class: "empty" }, "This draft has nothing to apply."),
+      h("p", { class: "note" }, single ? "Undo removes the summary." : task === "log-mapping" ?
+        "Nothing in the project changes here. A mapping marked \"Cannot be applied\" points to a step that is not in the model, to a gateway, or to an activity that was not sent." : task === "future-state" ?
+        "A change marked \"Cannot be applied\" refers to a step or connector that is not in the baseline, or would break the flow. Undo removes the whole draft." :
+        "Undo removes all the findings added here."),
+      provenanceLine(result, info.fileName),
       err);
     const api = openDialog({
-      title: TITLES[task], eyebrow: "AI draft" + (info.fileName ? ": " + info.fileName : ""), wide: true, body,
+      title: TITLES[task], eyebrow: "AI draft", wide: true, body,
       actions: saveAction(app, result, info).concat([
         { label: "Cancel" },
         { label: "Apply selected", variant: "btn-primary", keepOpen: true, onClick: dlg => {
@@ -217,7 +222,7 @@
             out = app.store.dispatch(cmd.type, cmd.payload);
           } catch (e2) {
             err.hidden = false;
-            err.textContent = e2 instanceof B.store.StoreError ? e2.message : "The draft could not be applied: " + (e2 && e2.message ? e2.message : e2);
+            err.textContent = e2 instanceof B.store.StoreError ? e2.message : "The draft couldn't be applied: " + (e2 && e2.message ? e2.message : e2);
             if (!(e2 instanceof B.store.StoreError)) console.error(e2);
             return false;
           }
@@ -240,27 +245,27 @@
       h("dt", null, "Process"), h("dd", null, x.processName),
       x.client ? [h("dt", null, "Client"), h("dd", null, x.client)] : null,
       h("dt", null, "Confidentiality"), h("dd", null, x.confidentiality),
-      h("dt", null, "Content"), h("dd", null, [x.records + " records", x.evidence + " sources", x.assumptions + " assumptions", x.scenarios + " scenarios"].join(", ")));
+      h("dt", null, "Content"), h("dd", null, [x.records + " findings", x.evidence + " sources", x.assumptions + " assumptions", x.scenarios + " scenarios"].join(", ")));
     const models = h("div", { class: "table-wrap" }, h("table", { class: "table" },
-      h("thead", null, h("tr", null, ["Model", "Role", "Swimlanes", "Steps"].map(c => h("th", { scope: "col" }, c)))),
+      h("thead", null, h("tr", null, ["Model", "Role", "Lanes", "Steps"].map(c => h("th", { scope: "col" }, c)))),
       h("tbody", null, x.models.map(m => h("tr", null, h("td", null, m.name), h("td", null, m.role), h("td", { class: "num" }, String(m.lanes)), h("td", { class: "num" }, String(m.steps)))))));
     const body = h("div", { class: "ai-review" },
-      provenanceLine(result),
+      h("p", { class: "small" }, "This opens as a new project. Everything in it is a draft: no step is confirmed, no source is reviewed, and every model and finding is marked as an AI draft until someone reviews it."),
       warningsBlock(result, warnings, review),
-      h("p", { class: "small" }, "The extraction opens as a new engagement. Everything in it is a draft: no step is validated, no source is reviewed, and every model and record is marked as AI work until someone reviews it."),
       facts, models,
-      h("p", { class: "note" }, "Save the new engagement to a file to keep it. The engagement that is open now is not changed."));
+      h("p", { class: "note" }, "Save the new project to a file to keep it. The project open now does not change."),
+      provenanceLine(result, info.fileName));
     return openDialog({
-      title: TITLES.extract, eyebrow: "AI draft" + (info.fileName ? ": " + info.fileName : ""), wide: true, body,
+      title: TITLES.extract, eyebrow: "AI draft", wide: true, body,
       actions: saveAction(app, result, info).concat([
         { label: "Cancel" },
-        { label: "Open as a new engagement", variant: "btn-primary", autofocus: true, onClick: () => {
-          app.guardUnsaved("replace the open engagement with the extracted draft").then(ok => {
+        { label: "Open as a new project", variant: "btn-primary", autofocus: true, onClick: () => {
+          app.guardUnsaved("replace the open project with the AI draft").then(ok => {
             if (!ok) return;
             const eng = util.clone(result.payload.engagement);
             eng.id = util.uid("eng");
             app.loadEngagement(eng, { savedRevision: -1, warnings, source: "ai" });
-            announce("Extracted draft opened. Review it with the client, then save it to a file.");
+            announce("AI draft opened. Check it with the people who do the work, then save it to a file.");
           });
         } }
       ])
@@ -274,18 +279,18 @@
   function openResult(app, validation, info) {
     const meta = info || {};
     if (!validation.ok) {
-      messageDialog("This AI draft could not be opened", h("div", null,
+      messageDialog("This AI draft didn't open", h("div", null,
         h("p", null, (meta.fileName || "The file") + " has " + validation.errors.length + " problem" + (validation.errors.length === 1 ? "" : "s") + ". Nothing was changed."),
         issueList(validation.errors),
-        h("p", { class: "small muted" }, "Run the task again, or check the file with: npm run ai -- check <file>")));
+        h("p", { class: "small muted" }, "Run the task again, or check the file with npm run ai -- check <file>.")));
       return null;
     }
     const result = validation.result;
     if (result.task === "extract") return reviewExtraction(app, result, validation.warnings, meta);
     if (result.task === "log-mapping" && !meta.onProposals) {
       messageDialog("Open this mapping from the event-log import", h("div", null,
-        h("p", null, (meta.fileName || "This file") + " suggests which step each activity of an event log belongs to. It is used while a log is imported, so nothing was changed."),
-        h("p", { class: "small" }, "Choose More actions, Import an event log, pick the log, and in the activities step choose Load an AI mapping result.")));
+        h("p", null, (meta.fileName || "This file") + " suggests a step for each activity in an event log. You use it while you import the log, so nothing was changed."),
+        h("p", { class: "small" }, "Choose More actions, Import an event log, pick the log, and in the Match activities step choose Load an AI mapping result.")));
       return null;
     }
     return reviewChanges(app, result, validation.warnings, meta);
@@ -296,16 +301,21 @@
   const HELPER = !!document.querySelector("meta[name='aixray-ai-helper']");
   const TOKEN_KEY = "aixray:ai-token";
   const TASK_NAMES = {
-    extract: "Extract a current state", opportunities: "Suggest records",
-    "future-state": "Draft a future state", summary: "Draft the handoff summary",
-    "log-mapping": "Map log activities to steps"
+    extract: "Create a process from documents", opportunities: "Suggest findings",
+    "future-state": "Draft a future state", summary: "Draft the summary",
+    "log-mapping": "Match event log activities to steps"
   };
   const TASK_HINTS = {
-    extract: "Draft a new engagement from process documents: PDF, Word, PowerPoint, diagram images, notes or BPMN.",
-    opportunities: "Pain points, opportunities and open questions, linked to the steps of the open engagement.",
-    "future-state": "Changes to the current state: steps changed, added and removed, and new swimlanes.",
-    summary: "The executive summary that opens the printed handoff.",
-    "log-mapping": "Which step each activity name in an event log belongs to. Only the names and the steps are sent."
+    extract: "Turn PDF, Word, PowerPoint, diagram images, notes or BPMN files into a draft process in a new project.",
+    opportunities: "Pain points, opportunities and open questions for the open project, each linked to its steps.",
+    "future-state": "A proposed future state: steps changed, added or removed, and any new lanes.",
+    summary: "The executive summary at the start of the printed report.",
+    "log-mapping": "A suggested step for each activity name in the event log. Only the activity names and the steps are sent."
+  };
+  /* The Start button names what the task produces. */
+  const START_LABELS = {
+    extract: "Create draft", opportunities: "Get suggestions", "future-state": "Draft future state",
+    summary: "Draft summary", "log-mapping": "Get suggestions"
   };
   const ACCEPT = ".pdf,.docx,.pptx,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.markdown,.csv,.tsv,.json,.bpmn,.xml";
   const helper = { token: null, providers: null, limits: null, problem: "" };
@@ -340,17 +350,17 @@
     try {
       res = await root.fetch(url, { method, headers, body: payload, credentials: "omit", cache: "no-store", redirect: "error" });
     } catch (_) {
-      return { ok: false, code: "helper.offline", message: "The AI helper is not answering. Check that npm run serve -- --ai is still running." };
+      return { ok: false, code: "helper.offline", message: "The AI helper isn't responding. Check that npm run serve -- --ai is still running in the terminal." };
     }
     let data = null;
     try { data = await res.json(); } catch (_) { data = null; }
     if (res.status === 401) {
       helper.token = null;
       storedToken(null);
-      return { ok: false, code: "helper.session", message: "This tab is not connected to the AI helper. Open the latest link printed in the terminal." };
+      return { ok: false, code: "helper.session", message: "This tab isn't connected to the AI helper. Open the latest link printed in the terminal." };
     }
-    if (!res.ok) return { ok: false, code: "http." + res.status, message: (data && data.message) || "The AI helper refused the request (" + res.status + ")." };
-    return data || { ok: false, code: "helper.reply", message: "The AI helper sent an unexpected reply." };
+    if (!res.ok) return { ok: false, code: "http." + res.status, message: (data && data.message) || "The AI helper refused the request. Try again, or restart npm run serve -- --ai." };
+    return data || { ok: false, code: "helper.reply", message: "The AI helper sent a reply AIxRay didn't expect. Restart npm run serve -- --ai and try again." };
   }
 
   async function ensureHelper() {
@@ -378,7 +388,7 @@
     const name = st.provider === "claude" ? "Claude Code" : "Codex";
     if (!st.installed) return name + ": not installed";
     if (!st.loggedIn) return name + ": not signed in";
-    if (st.apiKey) return name + ": signed in with an API key (use the command line with --use-api-key)";
+    if (st.apiKey) return name + ": signed in with an API key, so use the command line with --use-api-key";
     return name + " " + st.version + ", " + st.planLabel + (st.org ? ", " + st.org : "");
   }
 
@@ -386,32 +396,36 @@
     return bytes >= 1048576 ? util.formatNumber(bytes / 1048576, 1) + " MB" : util.formatNumber(Math.max(1, Math.round(bytes / 1024)), 0) + " KB";
   }
 
-  /* What goes to the AI tool for a task on the open engagement. */
+  /* What goes to the AI tool for a task on the open project. */
   function sentSummary(e, task, opts) {
     const input = aiResults.buildTaskInput(e, task, opts);
     if (task === "log-mapping") {
       const model = e.models.find(m => m.id === input.modelId);
       const preview = JSON.stringify(input, null, 1);
+      const secret = input.excluded.secretActivities;
       return h("div", { id: "ai-sent" },
         h("ul", { class: "plain-list small" },
           h("li", null, input.activities.length + " activity name" + (input.activities.length === 1 ? "" : "s") + " from the event log" +
-            (input.excluded.activities ? ", " + input.excluded.activities + " less frequent names left out" : "")),
-          input.excluded.secretActivities ? h("li", { id: "ai-sent-secret" }, input.excluded.secretActivities + " activity name" +
-            (input.excluded.secretActivities === 1 ? " that looks" : "s that look") + " like a credential left out; map " +
-            (input.excluded.secretActivities === 1 ? "it" : "them") + " by hand") : null,
-          h("li", null, "The " + input.steps.length + " steps of " + (model ? model.name : "the model") + " (gateways left out): ID, name, swimlane and description")),
-        h("p", { class: "small muted" }, "No events, case IDs, times, counts or people from the log, plus the AIxRay task instructions."),
+            (input.excluded.activities ? ", without the " + input.excluded.activities + " least frequent" : "")),
+          secret ? h("li", { id: "ai-sent-secret" }, secret + " activity name" + (secret === 1 ? " that looks" : "s that look") +
+            " like a credential, left out. Match " + (secret === 1 ? "it" : "them") + " yourself.") : null,
+          h("li", null, "The " + input.steps.length + " steps of " + (model ? model.name : "the model") + ", without gateways: ID, name, lane and description"),
+          h("li", null, "The AIxRay instructions for this task")),
+        h("p", { class: "small muted" }, "No events, case IDs, times, counts or people from the log are sent."),
         h("details", { class: "small" }, h("summary", null, "Show exactly what is sent"),
           h("pre", { class: "ai-preview" }, preview.length > 40000 ? preview.slice(0, 40000) + "\n..." : preview)));
     }
     const models = input.models.map(m => m.name + " (" + m.steps.length + " steps, " + m.connectors.length + " connectors)").join("; ");
-    const lines = [models, input.records.length + " records" + (input.excluded.sensitiveRecords ? ", " + input.excluded.sensitiveRecords + " sensitive records left out" : ""),
-      input.assumptions.length + " assumptions", input.evidence.length + (input.evidence.length === 1 ? " evidence source" : " evidence sources") + " with their extracted facts"];
-    if (task === "summary") lines.push("the modeled figures and evidence counts; AI drafts not yet reviewed are left out");
+    const sensitiveLeft = input.excluded.sensitiveRecords;
+    const lines = [models, input.records.length + " finding" + (input.records.length === 1 ? "" : "s") + (sensitiveLeft ? ", without " + sensitiveLeft + " marked sensitive" : ""),
+      input.assumptions.length + " assumption" + (input.assumptions.length === 1 ? "" : "s"),
+      input.evidence.length + (input.evidence.length === 1 ? " source" : " sources") + ", with the facts taken from them"];
+    if (task === "summary") lines.push("The figures for the report and the number of sources. AI drafts not reviewed yet are left out");
+    lines.push("The AIxRay instructions for this task");
     const text = JSON.stringify(input, null, 1);
     return h("div", { id: "ai-sent" },
       h("ul", { class: "plain-list small" }, lines.map(l => h("li", null, l))),
-      h("p", { class: "small muted" }, "No visit lists, links or engagement history, plus the AIxRay task instructions."),
+      h("p", { class: "small muted" }, "Not sent: scenario paths, source links or the project history."),
       h("details", { class: "small" }, h("summary", null, "Show exactly what is sent"),
         h("pre", { class: "ai-preview" }, text.length > 40000 ? text.slice(0, 40000) + "\n..." : text)));
   }
@@ -431,13 +445,13 @@
     const taskOptions = o.taskOptions || {};
     if (!(await ensureHelper())) { messageDialog("AI helper not connected", helper.problem); return null; }
     const e = app.store ? app.store.get() : null;
-    if (task !== "extract" && !e) { messageDialog("Open an engagement first", "This task works on the open engagement."); return null; }
+    if (task !== "extract" && !e) { messageDialog("Open a project first", "This task works on the open project."); return null; }
     const usable = helper.providers.filter(p => p.installed && p.loggedIn && !p.apiKey);
     if (!usable.length) {
       messageDialog("No AI tool is ready", h("div", null,
-        h("p", null, "AIxRay did not find Claude Code or Codex signed in to a subscription on this machine."),
+        h("p", null, "AIxRay couldn't find Claude Code or Codex signed in to a subscription on this computer."),
         h("ul", { class: "plain-list small" }, helper.providers.map(p => h("li", null, providerLine(p)))),
-        h("p", { class: "small" }, "docs/ai.md explains how to install and sign in. Then try again.")));
+        h("p", { class: "small" }, "To install one and sign in, see docs/ai.md. Then try again.")));
       return null;
     }
     const pref = k => { try { return app.drafts.getPref(k); } catch (_) { return null; } };
@@ -449,7 +463,7 @@
       h("option", { value: "" }, "Choose the plan this account is on"),
       h("option", { value: "commercial" }, "ChatGPT Business or Enterprise (commercial)"),
       h("option", { value: "consumer" }, "ChatGPT Plus or Pro (consumer)"));
-    const planField = field("Plan", plan, "Codex does not report the plan. AIxRay remembers your answer in this browser.");
+    const planField = field("Plan", plan, "Codex doesn't say which plan you're on. AIxRay remembers your answer in this browser.");
     const planNote = h("p", { class: "small", id: "ai-plan-detected" });
 
     const files = h("input", { type: "file", id: "ai-files", multiple: true, accept: ACCEPT, class: "input" });
@@ -460,7 +474,7 @@
     const conf = h("select", { class: "select", id: "ai-conf" }, schema.ENUMS.confidentiality.map(v =>
       h("option", { value: v, selected: v === "client-confidential" }, schema.label("confidentiality", v))));
     const dataStatus = h("select", { class: "select", id: "ai-data" },
-      h("option", { value: "supplied" }, "Supplied by the client or the engagement"),
+      h("option", { value: "supplied" }, "Provided for this project"),
       h("option", { value: "demonstration" }, "Demonstration material"));
     const currents = e ? e.models.filter(m => m.role === "current") : [];
     const baseline = h("select", { class: "select", id: "ai-baseline" }, currents.map(m => h("option", { value: m.id }, m.name + " v" + m.version)));
@@ -516,27 +530,28 @@
     const savedPlan = pref("aiPlan:" + initial.provider);
     if (savedPlan) plan.value = savedPlan;
 
-    const sections = [h("p", { class: "small" }, TASK_HINTS[task]),
-      h("div", { class: "field-row" }, field("AI tool", provider)), planField, planNote];
+    // What goes out first, then where it goes, then the data-handling check right above Start.
+    const sections = [h("p", { class: "small" }, TASK_HINTS[task])];
     if (task === "extract") {
-      sections.push(field("Documents", files, "Up to " + (helper.limits ? helper.limits.files : 20) + " files. Scanned PDF pages have no text; add them as images."), fileList,
-        h("div", { class: "field-row" }, field("Process name", processName), field("Client display name", client)),
-        field("Engagement name", engName),
+      sections.push(field("Documents", files, "Up to " + (helper.limits ? helper.limits.files : 20) + " files. Scanned PDF pages have no text, so add them as images."), fileList,
+        h("div", { class: "field-row" }, field("Process name", processName), field("Client name", client)),
+        field("Project name", engName),
         h("div", { class: "field-row" }, field("Confidentiality", conf), field("Data status", dataStatus)));
     } else {
       if (task === "future-state" && currents.length > 1) sections.push(field("Start from", baseline));
-      if (hasSensitive && task !== "log-mapping") sections.push(h("label", { class: "check" }, sensitive, "Also send records marked sensitive"));
+      if (hasSensitive && task !== "log-mapping") sections.push(h("label", { class: "check" }, sensitive, "Also send findings marked sensitive"));
+      sections.push(h("section", { "aria-labelledby": "ai-sent-head" }, h("h3", { id: "ai-sent-head", class: "small" }, "What will be sent"), sent));
     }
-    sections.push(h("section", { class: "ai-warnings", "aria-labelledby": "ai-gate-head" },
-      h("h3", { id: "ai-gate-head" }, "Data handling"), gateMsg, gateRows.approval, gateRows.trainingOff, gateRows.writtenApproval));
-    if (task !== "extract") sections.push(h("section", { "aria-labelledby": "ai-sent-head" }, h("h3", { id: "ai-sent-head", class: "small" }, "What will be sent"), sent));
-    sections.push(h("p", { class: "note" }, "The task runs on your own sign-in and can take several minutes. You review every item before anything in the engagement changes."));
+    sections.push(h("div", { class: "field-row" }, field("AI tool", provider), planField), planNote,
+      h("section", { class: "ai-warnings", "aria-labelledby": "ai-gate-head" },
+        h("h3", { id: "ai-gate-head" }, "Data handling"), gateMsg, gateRows.approval, gateRows.trainingOff, gateRows.writtenApproval),
+      h("p", { class: "note" }, "The task uses your own Claude or ChatGPT account and can take several minutes. You review every item before anything changes."));
 
     const api = openDialog({
       title: TASK_NAMES[task] + " with AI", eyebrow: "AI task", wide: true, body: h("div", { class: "form-grid" }, sections),
       actions: [
         { label: "Cancel" },
-        { label: "Start", variant: "btn-primary", keepOpen: true, onClick: dlg => {
+        { label: START_LABELS[task], variant: "btn-primary", keepOpen: true, onClick: dlg => {
           if (!sync().allowed) return false;
           const chosen = current();
           try {
@@ -559,6 +574,7 @@
     });
     startBtn = api.dialog.querySelector(".dlg-foot .btn-primary");
     startBtn.id = "ai-start";
+    startBtn.setAttribute("aria-describedby", "ai-gate-message");
     sync();
     return api;
   }
@@ -567,13 +583,16 @@
 
   /* Runs a task on the helper and shows its progress; the review opens when it finishes. */
   async function runJob(app, task, body, files, chosen, info) {
-    const status = h("p", { role: "status", id: "ai-status" }, "Starting");
+    const status = h("p", { role: "status", id: "ai-status" }, "Starting the task");
     const log = h("ol", { class: "ai-progress small", id: "ai-log" });
     const clock = h("p", { class: "small muted" });
     let jobId = null;
     let finished = false;
     const t0 = Date.now();
-    const timer = setInterval(() => { clock.textContent = Math.round((Date.now() - t0) / 1000) + " s"; }, 1000);
+    const timer = setInterval(() => {
+      const s = Math.round((Date.now() - t0) / 1000);
+      clock.textContent = s < 60 ? s + " s" : Math.floor(s / 60) + " min " + (s % 60) + " s";
+    }, 1000);
     const stop = () => { finished = true; clearInterval(timer); };
     const cancel = () => {
       if (finished) return;
@@ -591,17 +610,17 @@
       stop();
       dlg.close();
       if (jobId) call("DELETE", "api/ai/jobs/" + jobId);
-      messageDialog("The AI task did not finish", h("div", null, h("p", null, message), extra || null));
+      messageDialog("The AI task didn't finish", h("div", null, h("p", null, message), extra || null));
     };
     const created = await call("POST", "api/ai/jobs", Object.assign({}, body, { sourceNames: files.map(f => f.name) }));
     if (finished) return;
     if (!created.ok) { fail(created.message, gateList(created.gate) || (created.errors ? issueList(created.errors, 6) : null)); return; }
     jobId = created.id;
     for (let i = 0; i < files.length; i++) {
-      status.textContent = "Handing " + files[i].name + " to the helper on this machine";
+      status.textContent = "Passing " + files[i].name + " to the AI helper on this computer";
       const up = await call("PUT", "api/ai/jobs/" + jobId + "/sources/" + i, files[i]);
       if (finished) return;
-      if (!up.ok) { fail(files[i].name + ": " + (up.code === "http.413" ? "the file is too large." : up.message)); return; }
+      if (!up.ok) { fail(up.code === "http.413" ? files[i].name + " is too large. Use smaller files, or fewer of them." : files[i].name + ": " + up.message); return; }
     }
     const started = await call("POST", "api/ai/jobs/" + jobId + "/start", {});
     if (finished) return;
@@ -641,7 +660,7 @@
       on: { click: () => { api.close(); openTask(app, task); } } },
       h("strong", null, TASK_NAMES[task]), h("span", { class: "small muted" }, TASK_HINTS[task])));
     const api = openDialog({ title: "Draft with AI", eyebrow: "AI task", body: h("div", { class: "ai-task-list" }, buttons,
-      has ? null : h("p", { class: "note" }, "Open an engagement to use the other three tasks.")), actions: [{ label: "Close" }] });
+      has ? null : h("p", { class: "note" }, "Open a project to use the other three tasks.")), actions: [{ label: "Close" }] });
     return api;
   }
 

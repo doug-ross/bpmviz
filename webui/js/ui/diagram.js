@@ -14,7 +14,7 @@
   const replayLib = B.replay;
 
   const STATE_TEXT = {
-    pending: "Not started", unscheduled: "No timing supplied", excluded: "Not in this scenario",
+    pending: "Not started", unscheduled: "No timing recorded", excluded: "Not in scenario",
     unknown: "Route not confirmed", done: "Complete", active: "In progress"
   };
 
@@ -214,7 +214,7 @@
       const i = g.info;
       const parts = [i.node.label, i.typeLabel, i.lane ? i.lane.name : ""];
       if (status) parts.push(status);
-      if (g.records) parts.push(g.records + (g.records === 1 ? " linked record" : " linked records"));
+      if (g.records) parts.push(g.records + (g.records === 1 ? " finding" : " findings"));
       if (i.node.removed) parts.push("removed in this draft");
       parts.push("Press Enter for details");
       g.setAttribute("aria-label", parts.filter(Boolean).join(". ") + ".");

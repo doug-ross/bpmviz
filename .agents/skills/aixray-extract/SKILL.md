@@ -3,7 +3,7 @@ name: aixray-extract
 description: Draft an AIxRay current-state engagement from process documents (PDF, Word, PowerPoint, diagram images, notes or BPMN) and save it as an AI result file to review in the AIxRay app. Use only when the user asks for $aixray-extract.
 ---
 
-# Extract a current state for AIxRay
+# Create a process from documents for AIxRay
 
 Work from the AIxRay repository folder. Do not change files in the repository; write only the working file and the result file named below.
 
@@ -13,7 +13,7 @@ Ask the user, in one message, for anything not given yet: the source files, the 
 
     npm run ai -- gate --with codex --plan <plan> --confidentiality <level> --data-status <supplied|demonstration>
 
-If it prints "Not allowed until the items above are confirmed", ask the user to confirm each item it lists. Add `--yes` only after they confirm the engagement lead approved sending the material to this account, `--training-off` only after they confirm model training is off for this account, and `--written-approval "<who, when>"` only with the approval text they give you. Run the gate again. If it prints "Not allowed.", stop: this material cannot go to this account. Never add a confirmation the user did not give.
+If it prints "Not allowed until the items above are confirmed", ask the user to confirm each item it lists. Add `--yes` only after they confirm the project lead approved sending the material to this account, `--training-off` only after they confirm model training is off for this account, and `--written-approval "<who, when>"` only with the approval text they give you. Run the gate again. If it prints "Not allowed.", stop: this material cannot go to this account. Never add a confirmation the user did not give.
 
 ## 2. Read the sources
 
@@ -37,4 +37,4 @@ If it lists problems, fix the draft and run it again, at most three times. Once 
 
 ## 5. Hand over
 
-Tell the user the result file name and the warnings it printed. They open the file in AIxRay with Open, check the summary and choose "Open as a new engagement". Nothing in the draft is validated; say so.
+Tell the user the result file name and the warnings it printed. They open the file in AIxRay with Open, check the summary and choose "Open as a new project". Nothing in the draft is confirmed yet; say so.

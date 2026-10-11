@@ -129,7 +129,7 @@ test("leaving the value case blank does not record an empty one", async t => {
   const saved = await p.evaluate(() => window.AIxRay.app.store.get().records.find(r => r.title === "Not modeled yet").opportunity);
   assert.equal(saved.valueCase, undefined, "no value case field was touched, so none should be recorded");
   const cell = await p.textContent("#rv-panel table tbody tr td:nth-child(6)");
-  assert.match(cell, /Not modeled/);
+  assert.match(cell, /No estimate yet/);
   clean(s.problems);
 });
 
@@ -232,7 +232,7 @@ test("the Business case present mode shows a portfolio page and a single opportu
   await p.waitForSelector("#bc-onepager");
   assert.match(await p.textContent("#bc-onepager"), /Business case: Printable opportunity/);
   assert.match(await p.textContent("#bc-onepager"), /\$22,500/);
-  await p.selectOption("#bc-present-select", { label: "Portfolio overview" });
+  await p.selectOption("#bc-present-select", { label: "All opportunities" });
   await p.waitForSelector("#bc-portfolio");
   await p.click("#pr-handoff");
   await p.waitForSelector("#handoff-doc");

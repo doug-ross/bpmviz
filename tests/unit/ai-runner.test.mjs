@@ -260,7 +260,7 @@ test("the CLI writes a result, checks it, and can apply it to a copy of the enga
   const applied = JSON.parse(fs.readFileSync(path.join(scratch, "tiny.with-ai.engagement.json"), "utf8"));
   assert.equal(applied.records.length, 1);
   assert.equal(applied.records[0].generated.reviewed, false);
-  assert.match(printed.join(""), /Needed: I confirm the engagement lead approved/);
+  assert.match(printed.join(""), /Needed: I confirm the project lead approved/);
   const wrapped = path.join(scratch, "wrapped.json");
   fs.writeFileSync(path.join(scratch, "payload.json"), JSON.stringify({ title: "Summary", text: "One bottleneck.", keyPoints: [], caveats: [] }));
   process.stderr.write = () => true;

@@ -208,11 +208,12 @@ test("menu items, start actions, file handlers and JSON handlers see files first
   });
   await p.click("#start-demo");
   const startOrder = await p.$$eval(".start-actions button", els => els.map(e => e.id));
-  assert.equal(startOrder[startOrder.indexOf("start-new") + 1], "start-demo");
+  assert.deepEqual(startOrder.slice(0, 4), ["start-try", "start-open", "start-new", "start-bpmn"]);
+  assert.equal(startOrder[startOrder.length - 1], "start-demo", "registered start actions follow the built-in ones");
   await p.click("#btn-menu");
   const menu = await p.$$eval("#app-menu button", els => els.map(e => e.id || e.textContent));
   assert.equal(menu[menu.findIndex(x => /Import a BPMN file/.test(x)) + 1], "menu-demo-import");
-  assert.equal(menu[menu.findIndex(x => /Save as a new file/.test(x)) + 1], "menu-demo-export");
+  assert.equal(menu[menu.findIndex(x => /Save a copy/.test(x)) + 1], "menu-demo-export");
   assert.equal(await p.isDisabled("#menu-demo-export"), true, "needs an open engagement");
   await p.click("#menu-demo-import");
   await p.setInputFiles("#file-input", { name: "first.demo", mimeType: "application/octet-stream", buffer: Buffer.from("PK picky") });

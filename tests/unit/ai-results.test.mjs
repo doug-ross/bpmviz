@@ -301,8 +301,8 @@ test("an extracted engagement is forced to draft status and marked as AI work", 
 test("results for another engagement are refused and stale ones are flagged", () => {
   const e = loaded();
   const file = ai.validateAiResult(envelope(e, "summary", { title: "t", text: "Short.", keyPoints: [], caveats: [] })).result;
-  assert.match(ai.prepareReview(file, Object.assign({}, e, { id: "eng-other" })).errors[0].message, /different engagement/);
-  assert.match(ai.prepareReview(file, null).errors[0].message, /Open the engagement/);
+  assert.match(ai.prepareReview(file, Object.assign({}, e, { id: "eng-other" })).errors[0].message, /different project/);
+  assert.match(ai.prepareReview(file, null).errors[0].message, /Open the project this draft was made for/);
   const moved = Object.assign({}, e, { revision: e.revision + 3 });
   assert.ok(ai.prepareReview(file, moved).warnings.some(w => w.code === "result.stale"));
   const consumer = ai.validateAiResult(envelope(e, "summary", { title: "t", text: "Short.", keyPoints: [], caveats: [] },

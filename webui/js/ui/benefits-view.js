@@ -44,6 +44,11 @@
     return util.isFiniteNumber(v) ? util.formatNumber(v, digits == null ? 2 : digits) : "Not measured";
   }
 
+  /* "X to Y (change)", or a single "Not measured" when neither log has a figure. */
+  function beforeAfter(beforeText, afterText, change) {
+    return beforeText === "Not measured" && afterText === "Not measured" ? "Not measured" : beforeText + " to " + afterText + (change || "");
+  }
+
   function changeText(before, after) {
     if (!util.isFiniteNumber(before) || !util.isFiniteNumber(after)) return "";
     return " (" + units.formatPercentChange(before, after) + ")";
@@ -57,13 +62,13 @@
     const sojAfter = s.sojourn.after ? s.sojourn.after.p50 : null;
     return h("tr", null,
       h("td", null, h("div", { class: "title-cell" }, s.label),
-        s.smallSample ? h("div", { class: "desc" }, "Rests on fewer than " + benefits.SMALL_SAMPLE_MIN + " visits in one of the logs.") : null,
+        s.smallSample ? h("div", { class: "desc" }, "Fewer than " + benefits.SMALL_SAMPLE_MIN + " visits in one of the logs.") : null,
         !s.duration.after && s.duration.before ? h("div", { class: "desc" }, "Not visited in the after log.") : null),
-      h("td", { class: "num" }, minuteText(s.duration.before, pair.baseline, e) + " to " + minuteText(s.duration.after, pair.after, e) + changeText(durBefore, durAfter)),
-      h("td", { class: "num" }, minuteText(s.sojourn.before, pair.baseline, e) + " to " + minuteText(s.sojourn.after, pair.after, e) + changeText(sojBefore, sojAfter)),
-      h("td", { class: "num" }, pct(s.reworkRate.before) + " to " + pct(s.reworkRate.after)),
-      h("td", { class: "num" }, pct(s.caseShare.before) + " to " + pct(s.caseShare.after)),
-      h("td", { class: "num" }, count(s.visitsPerCase.before) + " to " + count(s.visitsPerCase.after)));
+      h("td", { class: "num" }, beforeAfter(minuteText(s.duration.before, pair.baseline, e), minuteText(s.duration.after, pair.after, e), changeText(durBefore, durAfter))),
+      h("td", { class: "num" }, beforeAfter(minuteText(s.sojourn.before, pair.baseline, e), minuteText(s.sojourn.after, pair.after, e), changeText(sojBefore, sojAfter))),
+      h("td", { class: "num" }, beforeAfter(pct(s.reworkRate.before), pct(s.reworkRate.after))),
+      h("td", { class: "num" }, beforeAfter(pct(s.caseShare.before), pct(s.caseShare.after))),
+      h("td", { class: "num" }, beforeAfter(count(s.visitsPerCase.before), count(s.visitsPerCase.after))));
   }
 
   function overallFacts(cmp, pair, e) {
@@ -88,7 +93,7 @@
     const figure = f => f ? h("span", null, units.formatMeasure(f.value, f.unit, c), " ", badge(schema.label("assumptionStatus", f.basis) || f.basis, BASIS_TONE[f.basis])) : h("span", { class: "muted" }, "Not calculated");
     return h("div", { class: "table-wrap" }, h("table", { class: "table" },
       h("caption", { class: "sr-only" }, "Expected versus measured change per opportunity"),
-      h("thead", null, h("tr", null, ["Opportunity", "Modeled (expected)", "Measured change", "Status"].map(t => h("th", { scope: "col" }, t)))),
+      h("thead", null, h("tr", null, ["Opportunity", "Expected (modeled)", "Measured change", "Status"].map(t => h("th", { scope: "col" }, t)))),
       h("tbody", null, rows.map(r => h("tr", null,
         h("td", null, h("div", { class: "title-cell" }, r.title), r.notes.length ? h("div", { class: "desc" }, r.notes.join(" ")) : null),
         h("td", { class: "num" }, figure(r.expected)),
@@ -102,21 +107,23 @@
     const removeBtn = h("button", { class: "btn", type: "button" }, "Remove this comparison");
     removeBtn.addEventListener("click", () => ctx.dispatch("dataset/update", { id: pair.after.id, patch: { comparesToDatasetId: null } }, "Comparison removed"));
     return h("div", { class: "benefits-pair" },
-      h("p", { class: "section-title" }, pair.after.name + " compared to " + pair.baseline.name),
+      h("h4", { class: "benefits-pair-title" }, pair.after.name + " compared to " + pair.baseline.name),
       h("p", { class: "small" },
-        badge(schema.label("dataStatus", pair.baseline.dataStatus), ""), " baseline \u00b7 ",
-        badge(schema.label("dataStatus", pair.after.dataStatus), ""), " after"),
+        "Baseline: ", badge(schema.label("dataStatus", pair.baseline.dataStatus), ""), " \u00b7 After: ",
+        badge(schema.label("dataStatus", pair.after.dataStatus), "")),
       cmp.overall ? overallFacts(cmp, pair, e) : null,
+      vs.length ? [h("p", { class: "section-title benefits-sub" }, "Expected versus measured change"), expectedVsRealizedTable(vs, e)] : null,
+      h("p", { class: "section-title benefits-sub" }, "Step by step"),
       cmp.steps.length ? h("div", { class: "table-wrap" }, h("table", { class: "table" },
         h("caption", { class: "sr-only" }, "Step-by-step comparison"),
-        h("thead", null, h("tr", null, ["Step", "Median duration", "Median time in step (sojourn)", "Rework rate", "Share of cases", "Visits per case"].map(t => h("th", { scope: "col" }, t)))),
+        h("thead", null, h("tr", null, ["Step", "Median duration", "Median time since the previous event", "Rework rate", "Share of cases", "Visits per case"].map(t => h("th", { scope: "col" }, t)))),
         h("tbody", null, cmp.steps.map(s => stepRow(s, pair, e))))) :
-        h("p", { class: "small muted" }, "Neither log has a measured step in common to compare."),
+        h("p", { class: "small muted" }, "The two logs have no measured step in common to compare."),
       cmp.unmatched.length ? h("p", { class: "note" },
         cmp.unmatched.length + " step" + (cmp.unmatched.length === 1 ? "" : "s") + " with no match in the other log: " +
         cmp.unmatched.map(u => u.label + " (" + u.side + ")").join(", ") + ".") : null,
-      cmp.caveats.length ? h("ul", { class: "plain-list small" }, cmp.caveats.map(c => h("li", null, c))) : null,
-      vs.length ? [h("p", { class: "section-title", style: { marginTop: "var(--space-3)" } }, "Expected versus measured change"), expectedVsRealizedTable(vs, e)] : null,
+      cmp.caveats.length ? [h("p", { class: "section-title benefits-sub" }, "Notes"),
+        h("ul", { class: "plain-list small" }, cmp.caveats.map(c => h("li", null, c)))] : null,
       h("div", { class: "form-actions" }, removeBtn));
   }
 
@@ -139,10 +146,10 @@
       { id: afterSel.value, patch: { role: "after", comparesToDatasetId: baseSel.value } }, "Comparison recorded", err));
     return h("div", { class: "form-grid" },
       h("p", { class: "section-title" }, "Record a comparison"),
-      h("p", { class: "small" }, "Choose an event log taken after a change and the baseline it compares to. Either log can already be in the engagement."),
+      h("p", { class: "small" }, "Choose the event log taken after the change and the baseline log to compare it with."),
       h("div", { class: "field-row" },
         h("div", { class: "field" }, h("label", { for: "bv-link-after" }, "Event log after the change"), afterSel),
-        h("div", { class: "field" }, h("label", { for: "bv-link-baseline" }, "Compares to this baseline log"), baseSel)),
+        h("div", { class: "field" }, h("label", { for: "bv-link-baseline" }, "Baseline log"), baseSel)),
       h("div", { class: "form-actions" }, saveBtn),
       err);
   }
@@ -161,13 +168,12 @@
     if (datasets.length > 1) {
       body.push(linkForm(e, ctx));
     } else {
-      body.push(h("p", { class: "small muted" }, "Import a second event log, taken after the change, to compare against this one."));
+      body.push(h("p", { class: "small muted" }, "No comparison yet. Import a second event log, taken after the change, to compare with this one."));
     }
     return h("section", { class: "card", id: "bv-section", "aria-labelledby": "bv-h" },
       h("h3", { id: "bv-h" }, "Benefits"),
       h("p", { class: "note" },
-        "Measured change between two event logs for the same process: what the logs actually recorded, not savings realized. " +
-        "A measured change can be confounded by seasonality, a different volume mix or a mapping that drifted between the two logs; read the caveats before reporting a figure."),
+        "The measured change between two event logs of the same process. Seasonal effects, a different mix of work or a change in how activities were matched can also move these figures, so check the notes under each comparison before you report a figure."),
       body);
   }
 
@@ -194,13 +200,13 @@
           " comparison" + (pairs.length === 1 ? "" : "s") + ": " + pairs.map(p => p.after.name + " compared to " + p.baseline.name).join("; ") + "."),
         vsRows.length ? h("ul", null, vsRows.map(r => h("li", null,
           r.title + ": " + STATUS_LABEL[r.status] + (r.realized ? " (" + units.formatMeasure(r.realized.value, r.realized.unit, {}) + " measured)" : "")))) : null,
-        caveats.size ? [h("h4", null, "Caveats"), h("ul", null, [...caveats].map(c => h("li", null, c)))] : null
+        caveats.size ? [h("h4", null, "Notes"), h("ul", null, [...caveats].map(c => h("li", null, c)))] : null
       ];
     }
   });
 
   if (B.lenses && typeof B.lenses.registerLens === "function") {
-    B.lenses.registerLens({ id: "observed-change", label: "Observed change", compute: ctx => benefits.observedChangeLens(ctx) });
+    B.lenses.registerLens({ id: "observed-change", label: "Measured change", compute: ctx => benefits.observedChangeLens(ctx) });
   }
 
   B.benefitsView = { pairsOf, renderBenefitsSection };

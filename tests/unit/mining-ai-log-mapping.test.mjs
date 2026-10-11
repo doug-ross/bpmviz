@@ -85,7 +85,7 @@ test("the review flags unknown steps, gateways and names that were not sent; app
   assert.match(problems[1], /gateway is a decision point/);
   assert.match(problems[2], /Step gone is not in Current state/);
   assert.match(problems[3], /was not sent to the assistant/);
-  assert.match(review.items[4].notes[0], /stays unmapped/);
+  assert.match(review.items[4].notes[0], /stays unmatched/);
   assert.equal(review.items[0].title, "Work done to Do the work");
   const cmd = ai.applyCommand(result, review, review.items.map(it => it.key));
   assert.equal(cmd.type, "log-mapping/proposals");
@@ -93,7 +93,7 @@ test("the review flags unknown steps, gateways and names that were not sent; app
   assert.equal(cmd.payload.modelId, "m-current");
   assert.equal(cmd.payload.stamp.task, "log-mapping");
   const other = ai.prepareReview(Object.assign({}, result, { engagementId: "eng-other" }), e);
-  assert.match(other.errors[0].message, /different engagement/);
+  assert.match(other.errors[0].message, /different project/);
 });
 
 test("the AI is sent step names and activity names only, most frequent first, with gateways left out", () => {
@@ -131,7 +131,7 @@ test("the runner maps activities with the fake Claude, sends only names and repa
   assert.equal(second.repair, true);
   assert.doesNotMatch(JSON.stringify(first.input), /events/);
   await assert.rejects(runTask({ task: "log-mapping", provider: "claude", engagement: internal(), approvalConfirmed: true, taskOptions: { activities: [] } }), /activity names to map/);
-  await assert.rejects(runTask({ task: "log-mapping", provider: "claude", engagement: internal(), approvalConfirmed: true, taskOptions: { modelId: "m-gone", activities: ACTIVITIES } }), /not in the engagement/);
+  await assert.rejects(runTask({ task: "log-mapping", provider: "claude", engagement: internal(), approvalConfirmed: true, taskOptions: { modelId: "m-gone", activities: ACTIVITIES } }), /not in the project/);
 });
 
 test("Codex maps activities too, and client material on a consumer plan is refused before anything runs", async () => {

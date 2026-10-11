@@ -1,20 +1,20 @@
 # AI tasks on your Claude or ChatGPT subscription
 
-AIxRay can ask an AI assistant to draft five things for an engagement:
+AIxRay can ask an AI assistant to draft five things for a project:
 
 | Task | What you get | Command |
 |---|---|---|
-| Extract a current state | A new engagement drafted from PDF, Word, PowerPoint, diagram images, notes or BPMN | `npm run ai -- extract <files...>` |
-| Suggest opportunities | Pain points, opportunities and open questions linked to steps | `npm run ai -- opportunities --in <file>` |
-| Draft a future state | Changes to the current state: steps changed, added and removed, new swimlanes | `npm run ai -- future-state --in <file>` |
-| Draft the handoff summary | The executive summary that opens the printed handoff | `npm run ai -- summary --in <file>` |
-| Map event log activities to steps | A suggested step for each activity name in an event log, for the event-log import | `npm run ai -- log-mapping --in <file> --activities <file>` |
+| Create a process from documents | A new project drafted from PDF, Word, PowerPoint, diagram images, notes or BPMN | `npm run ai -- extract <files...>` |
+| Suggest findings | Pain points, opportunities and open questions linked to steps | `npm run ai -- opportunities --in <file>` |
+| Draft a future state | Changes to the current state: steps changed, added and removed, new lanes | `npm run ai -- future-state --in <file>` |
+| Draft the summary | The executive summary that opens the printed report | `npm run ai -- summary --in <file>` |
+| Match event log activities to steps | A suggested step for each activity name in an event log, for the event log import | `npm run ai -- log-mapping --in <file> --activities <file>` |
 
 The assistant is **Claude Code** (on a Claude Pro, Max, Team or Enterprise plan) or **Codex** (on a ChatGPT Plus, Pro, Business or Enterprise plan). AIxRay runs the tool you have installed, on the account you signed in with, so the work counts against your subscription's usage and not against an API key. AIxRay never asks for, sees or stores a password, token or key.
 
-Every task produces an **AI result file**. You open it in AIxRay with Open, look at each proposed item, tick the ones you want and apply them in one step that Undo reverses. Applied items stay marked **AI draft, not reviewed**, and the handoff, presenter view and exports leave them out until someone marks them reviewed.
+Every task produces an **AI result file**. You open it in AIxRay with Open, look at each proposed item, tick the ones you want and apply them in one step that Undo reverses. Applied items stay marked **AI draft, not reviewed**, and the report, the Present view and exports leave them out until someone marks them reviewed.
 
-A log-mapping result is the exception: it changes nothing in the engagement. You load it in the event-log import, in the activities step, and each mapping you take still needs its own tick there before the log is added. See [event-logs.md](event-logs.md).
+A log-mapping result is the exception: it changes nothing in the project. You load it in the event log import, in the Match activities step, and each match you take still needs its own tick there before the log is added. See [event-logs.md](event-logs.md).
 
 There are three ways to start a task:
 
@@ -48,16 +48,16 @@ If `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `OPENAI_API_KEY` or `CODEX_API_K
 
 ## Which material may go to which plan
 
-| Engagement confidentiality | Commercial plan (Claude Team or Enterprise, ChatGPT Business or Enterprise) | Consumer plan (Claude Pro or Max, ChatGPT Plus or Pro) |
+| Project confidentiality | Commercial plan (Claude Team or Enterprise, ChatGPT Business or Enterprise) | Consumer plan (Claude Pro or Max, ChatGPT Plus or Pro) |
 |---|---|---|
 | Demonstration data, or Public | Allowed | Allowed |
-| Internal | With the engagement lead's approval (`--yes`) | Only with model training turned off (`--training-off`) |
-| Client confidential | With the engagement lead's approval (`--yes`) | Not allowed |
+| Internal | With the project lead's approval (`--yes`) | Only with model training turned off (`--training-off`) |
+| Client confidential | With the project lead's approval (`--yes`) | Not allowed |
 | Restricted | With approval and written client approval (`--yes --written-approval "Name, date"`) | Not allowed |
 
 Commercial plans do not use your conversations to train models by default. Consumer plans may, unless you turn it off: in Claude, Settings, Privacy, "Help improve Claude"; in ChatGPT, Settings, Data controls, "Improve the model for everyone". Your organization's own rules come first: if it has not approved an assistant for client material, do not use one.
 
-AIxRay applies this table before anything is sent, in all three routes. Claude Code reports its plan, so AIxRay uses that; for Codex it uses the plan you declare. An extraction has no engagement yet, so its confidentiality is Client confidential unless you say otherwise with `--confidentiality`. Records marked sensitive are never sent unless you add `--include-sensitive`. The result file records the plan and the confirmations you gave.
+AIxRay applies this table before anything is sent, in all three routes. Claude Code reports its plan, so AIxRay uses that; for Codex it uses the plan you declare. An extraction has no project yet, so its confidentiality is Client confidential unless you say otherwise with `--confidentiality`. Findings marked sensitive are never sent unless you add `--include-sensitive`. The result file records the plan and the confirmations you gave.
 
 Check a case without running anything:
 
@@ -76,15 +76,15 @@ npm run ai -- log-mapping --in claims.engagement.json --activities claims-log.cs
 npm run ai -- check claims.opportunities.ai-result.json --in claims.engagement.json
 ```
 
-Each task writes `<name>.<task>.ai-result.json` in the current folder (or `--out <file>`), prints what it holds and lists anything to check. Then open the engagement in AIxRay, open the result file with Open, and review it. For an extraction there is no engagement to open first: the result opens as a new engagement.
+Each task writes `<name>.<task>.ai-result.json` in the current folder (or `--out <file>`), prints what it holds and lists anything to check. Then open the project in AIxRay, open the result file with Open, and review it. For an extraction there is no project to open first: the result opens as a new project (**Open as a new project**).
 
 | Option | Meaning |
 |---|---|
 | `--with claude` or `--with codex` | Which tool to use. Claude Code is the default. |
 | `--plan commercial` or `--plan consumer` | Your plan, when the tool does not report it. |
 | `--yes`, `--training-off`, `--written-approval "<text>"` | The confirmations from the table above. |
-| `--include-sensitive` | Also send records marked sensitive. |
-| `--baseline <model id>` | The current-state model a future state starts from, or the model a log mapping maps to. |
+| `--include-sensitive` | Also send findings marked sensitive. |
+| `--baseline <model id>` | The current-state model a future state starts from, or the model whose steps a log mapping matches the activities to. |
 | `--activities <file>` | log-mapping: the activity names. A `.txt` file with one name per line (as the import's Save names for the command line writes it), or the event log itself as `.csv`, `.tsv` or `.xlsx`. |
 | `--activity-column <name>` | log-mapping: the column that holds the activity names, when AIxRay does not find it from the header. |
 | `--confidentiality`, `--data-status`, `--process-name`, `--client`, `--engagement-name` | Details for an extraction. |
@@ -97,7 +97,7 @@ Exit codes: 0 done, 1 failed, 2 wrong usage, 3 stopped by the data-handling rule
 
 `npm run ai -- text <file>` prints the text AIxRay reads from a document, which is a quick way to see what an assistant will get from a PDF or a slide deck. `npm run ai -- input <task> --in <file>` prints exactly what a task sends; for log-mapping add `--activities <file>`.
 
-For log mapping the assistant sees the steps of one model (ID, label, swimlane and description, without gateways) and the activity names, most frequent first, up to 500 of them. It never sees events, times, case IDs, counts or people. Activity names that look like a key or token are left out before anything is sent, and the result says how many. A mapping to a step that is not in the model, to a gateway, or for a name that was not sent cannot be used.
+For log mapping the assistant sees the steps of one model (ID, label, lane and description, without gateways) and the activity names, most frequent first, up to 500 of them. It never sees events, times, case IDs, counts or people. Activity names that look like a key or token are left out before anything is sent, and the result says how many. A suggested match to a step that is not in the model, to a gateway, or for a name that was not sent cannot be used.
 
 ## Agent skills
 
@@ -120,12 +120,12 @@ npm run serve -- --ai
 
 This starts AIxRay at `http://127.0.0.1:8080` with a local AI helper and prints a link that ends in `#ai=` and a one-time code. Open that link. The app then shows:
 
-- **Extract from documents with AI** on the start screen.
-- **Suggest with AI** in Records, Opportunities.
-- **Draft a future state with AI** in the Process workspace.
-- **Draft with AI** next to the executive summary in Present, Handoff summary.
+- **Create from documents with AI** on the start screen.
+- **Suggest findings with AI** in the Findings tab, and in the Process tab's side panel.
+- **Draft a future state with AI** in the Process tab's side panel.
+- **Draft with AI** next to the executive summary in Present, Report.
 - **Draft with AI** in More actions, for any of the first four.
-- **Ask AI for the rest** in the activities step of the event-log import, for the activity names that are not mapped yet.
+- **Ask AI for the rest** in the Match activities step of the event log import, for the activity names that are not matched yet.
 
 The task dialog shows the tool and plan, the data-handling check and what will be sent, then runs the task and shows its progress. Cancel stops the tool. When it finishes, the review dialog opens as it does for a result file.
 
@@ -136,9 +136,9 @@ The helper accepts requests only from the page it served, in the tab that used t
 - **Least access.** Claude Code runs with `--restricted --safe-mode --strict-mcp-config`: no shell or code tools, no web access, no hooks, CLAUDE.md files, skills, plugins or MCP servers, and file tools limited to the job folder. An extraction may write only in the job's `out/` folder; the other tasks get no tools at all. If the tool starts with any other tool, the run is stopped. Codex runs in a read-only sandbox without your `config.toml` or rules files (so none of your MCP servers, notification hooks or profiles), with the shell, the command runner, web search, apps, browser and computer use, sub-agents, hooks, plugins and memories turned off, and receives everything in the prompt.
 - **No history.** Sessions are not saved (`--no-session-persistence`, `--ephemeral`). Each job works in a new temporary folder that is removed when it ends.
 - **Sources are data.** Documents are fenced with markers that carry a random code, and the assistant is told to report any instruction it finds in them rather than follow it. Such reports appear as warnings in the review.
-- **Drafts stay drafts.** An extraction has every step set to not validated, every source to not reviewed and every link removed, and it takes the confidentiality and data status you declared. Suggestions and changes that point at steps that do not exist cannot be applied.
+- **Drafts stay drafts.** An extraction has every step set to Not confirmed yet, every source to Not reviewed and every link removed, and it takes the confidentiality and data status you declared. Suggestions and changes that point at steps that do not exist cannot be applied.
 - **Credentials are caught.** A result that contains something that looks like a key, token or private key is refused. For log mapping, activity names that look like one are not sent at all.
-- **Figures are traced.** A drafted summary is checked against the engagement's figures, and any number that cannot be found is flagged for review.
+- **Figures are traced.** A drafted summary is checked against the project's figures, and any number that cannot be found is flagged for review.
 - **A person decides.** Nothing is applied until you tick it, and applied items stay marked as AI drafts until someone reviews them.
 
 ## Limits
@@ -146,7 +146,7 @@ The helper accepts requests only from the page it served, in the tab that used t
 - Up to 20 sources per job, 25 MB each and 60 MB in total. DOCX and PPTX archives that would expand past 120 MB are refused.
 - Scanned PDF pages have no text. AIxRay says how many; export those pages as images and add them as sources.
 - Codex reads documents only through the text AIxRay puts in the prompt, up to about 300,000 characters. Claude Code can open the rest of a long document from the job folder.
-- Log mapping sends at most 500 activity names, the most frequent first; the rest stay for you to map.
+- Log mapping sends at most 500 activity names, the most frequent first; the rest stay for you to match.
 - A task takes from one to twenty minutes. Plan usage limits apply; when you hit one, AIxRay says so and does not retry.
 - If a draft fails the checks, AIxRay asks the tool to fix it, at most twice, each time in a fresh session that sees only the draft and the problems.
 

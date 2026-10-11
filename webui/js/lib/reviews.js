@@ -32,7 +32,10 @@
   const PACK_SHEET = "aixray-pack";
   const REVIEW_SHEET = "Review";
   const ABOUT_SHEET = "About";
-  const REVIEW_HEADERS = ["Item ID", "Type", "Lane", "Item", "Details", "Verdict", "Comment"];
+  /* Answers are read back by header name (HEADER_ALIASES), so older workbooks with Verdict and Comment still import. */
+  const REVIEW_HEADERS = ["Item ID", "Type", "Lane", "Item", "Details", "Your answer", "Your comment"];
+  /* What each answer means, for the instructions on the About sheet. */
+  const VERDICT_MEANING = { confirm: "if the row is right as written", dispute: "if it is wrong or incomplete", unsure: "if you can't say" };
   const STEP_SHAPES = ["task", "gateway"];
   /* Record kinds a pack offers, in the order they appear. */
   const FINDING_KINDS = ["pain", "opportunity", "decision", "assumption", "question", "action", "note"];
@@ -255,31 +258,35 @@
     const items = payload.items || [];
     const s = payload.stakeholder || {};
     const verdictWords = (payload.verdicts || []).map(v => v.label);
+    const choices = (payload.verdicts || []).map(v => "\"" + v.label + "\"" + (VERDICT_MEANING[v.value] ? " " + VERDICT_MEANING[v.value] : ""));
+    const choiceText = choices.length > 1 ? choices.slice(0, -1).join(", ") + (choices.length > 2 ? ", or " : " or ") + choices[choices.length - 1] : choices.join("");
     const about = [
       ["Process review", payload.title],
       ["Client", payload.client],
-      ["Engagement", payload.engagementName],
-      ["Process model", payload.modelName],
+      ["Project", payload.engagementName],
+      ["Process", payload.modelName],
       ["Prepared for", [s.name, s.role, s.organization].filter(Boolean).join(", ")],
       ["Prepared on", dateOnly(payload.createdAt)],
       ["Items to review", items.length],
       ["Data status", payload.dataStatus],
       ["Confidentiality", payload.confidentiality],
-      [],
+      []
+    ];
+    if (payload.note) about.push(["Note from the team", payload.note], []);
+    about.push(
       ["How to review"],
-      ["1", "Open the Review sheet. Each row is a step in the process or a finding from the workshop."],
-      ["2", "In the Verdict column, choose " + verdictWords.join(", ") + ". Confirm means the row is right as written."],
-      ["3", "Use the Comment column to say what is wrong, missing or unclear. A comment helps most when you dispute a row or are not sure."],
-      ["4", "Fill in your details below, save the workbook and send it back to the team. Keep the sheets and the Item ID column as they are."],
+      ["1", "Go to the Review sheet. Each row is one step in the process, or one point the team noted, such as a problem or an idea."],
+      ["2", "In the Your answer column, choose " + choiceText + "."],
+      ["3", "In the Your comment column, say what is wrong, missing or unclear. Comments help most when a row is wrong or you are not sure."],
+      ["4", "Fill in your details below, save the workbook and send it back to the team. Please don't rename the sheets, or change the Item ID column or the references at the bottom of this sheet."],
       [],
       ["Your name", s.name || ""],
       ["Your role", s.role || ""],
       ["Your organization", s.organization || ""],
       ["General comment", ""],
       []
-    ];
-    if (payload.note) about.push(["Note from the team", payload.note], []);
-    about.push(["Pack reference", pack.id], ["Engagement reference", payload.engagementId], ["Engagement revision", payload.engagementRevision]);
+    );
+    about.push(["Form reference", pack.id], ["Project reference", payload.engagementId], ["Project version", payload.engagementRevision]);
     const review = [REVIEW_HEADERS.slice()].concat(items.map(it => [it.itemRef, it.type, it.lane, it.label, it.details, "", ""]));
     const safe = rows => rows.map(row => row.map(safeCell));
     const sheets = [
@@ -293,7 +300,7 @@
     ];
     return {
       sheets,
-      props: { title: "Process review: " + text(payload.title), subject: "Client review pack", creator: "AIxRay", created: payload.createdAt, modified: payload.createdAt }
+      props: { title: "Process review: " + text(payload.title), subject: "Review form", creator: "AIxRay", created: payload.createdAt, modified: payload.createdAt }
     };
   }
 
@@ -363,15 +370,18 @@
    * Throws ReviewError when the workbook is not an AIxRay review pack.
    */
   function responseFromWorkbook(wb) {
-    if (!wb || !Array.isArray(wb.sheets)) throw new ReviewError("This file could not be read as a workbook.");
+    if (!wb || !Array.isArray(wb.sheets)) throw new ReviewError("This file couldn't be read as an Excel workbook.");
     const hidden = keyValues(findSheet(wb, PACK_SHEET));
     const about = keyValues(findSheet(wb, ABOUT_SHEET));
-    const packId = text(hidden.get("packid")).trim() || text(about.get("pack reference")).trim();
-    const engagementId = text(hidden.get("engagementid")).trim() || text(about.get("engagement reference")).trim();
+    // The About sheet's reference rows, under their current names or the older ones.
+    const aboutRef = keys => keys.map(k => text(about.get(k)).trim()).find(Boolean) || "";
+    const packId = text(hidden.get("packid")).trim() || aboutRef(["form reference", "pack reference"]);
+    const engagementId = text(hidden.get("engagementid")).trim() || aboutRef(["project reference", "engagement reference"]);
     if (!packId || !engagementId) {
-      throw new ReviewError("This workbook is not an AIxRay review pack, or its pack reference was removed. Ask the reviewer for the workbook as it was sent, with the About sheet unchanged.");
+      throw new ReviewError("This workbook is not an AIxRay review form, or its form reference was removed. Ask the reviewer to send back the workbook with the About sheet unchanged.");
     }
-    let rev = hidden.has("engagementrevision") ? hidden.get("engagementrevision") : about.get("engagement revision");
+    let rev = hidden.has("engagementrevision") ? hidden.get("engagementrevision") :
+      about.has("project version") ? about.get("project version") : about.get("engagement revision");
     if (typeof rev === "string" && /^\d+$/.test(rev.trim())) rev = Number(rev.trim());
     let sheet = findSheet(wb, REVIEW_SHEET);
     let headerAt = -1, cols = {};
@@ -388,7 +398,7 @@
       sheet = (wb.sheets || []).find(s => scanFor(s)) || null;
       found = sheet ? scanFor(sheet) : null;
     }
-    if (!found) throw new ReviewError("The Review sheet with the Item ID and Verdict columns was not found in this workbook.");
+    if (!found) throw new ReviewError("This workbook has no Review sheet with Item ID and Your answer columns.");
     headerAt = found.at;
     cols = found.cols;
     const entries = [];
@@ -488,19 +498,18 @@
     const pack = (e.reviewPacks || []).find(p => p.id === response.packId) || null;
     const packItems = new Map(pack ? pack.items.map(it => [it.itemRef, it]) : []);
     if (!pack) {
-      warnings.push(issue("review.pack", "This engagement has no record of review pack " + response.packId + ". The answers are matched to steps and findings by their IDs.", "info", "packId"));
+      warnings.push(issue("review.pack", "This project has no record of the review form these answers belong to, so they are matched to steps and findings by their IDs.", "info", "packId"));
     }
     // Recording the pack is one change, so a pack made at revision n is current at n + 1.
     const madeAt = Number.isInteger(response.engagementRevision) ? response.engagementRevision : null;
     if (madeAt !== null && e.revision > madeAt + 1) {
       const n = e.revision - madeAt - 1;
-      warnings.push(issue("review.revision", "The engagement has had " + n + " change" + (n === 1 ? "" : "s") + " since the pack was made (revision " + madeAt +
-        " then, " + e.revision + " now). Any step renamed since then is listed here.", "info", "engagementRevision"));
+      warnings.push(issue("review.revision", "The project has had " + n + " change" + (n === 1 ? "" : "s") + " since the review form was created. Any step renamed since then is listed here.", "info", "engagementRevision"));
     }
     const again = (e.reviews || []).find(r => r.packId === response.packId && r.submittedAt && r.submittedAt === response.submittedAt &&
       (r.reviewer.name || "") === (response.reviewer.name || ""));
     if (again) {
-      warnings.push(issue("review.again", "A response from " + who(again.reviewer) + " to this pack, submitted at the same time, was already imported on " + dateOnly(again.receivedAt) + ". Importing it again adds a second copy.", "warning"));
+      warnings.push(issue("review.again", "These answers from " + who(again.reviewer) + " were already imported on " + dateOnly(again.receivedAt) + ". Importing them again adds a second copy.", "warning"));
     }
     const latest = latestVerdicts(e);
     // Ordered as latestVerdicts will order the stored review: by the submission
@@ -513,19 +522,19 @@
       if (!it) return;
       if (!en.verdict && !en.comment.trim()) { counts.blank++; return; }
       const packItem = packItems.get(en.itemRef);
-      if (pack && !packItem) warnings.push(issue("review.extra", "\"" + clip(it.label, 80) + "\" was not in the pack but has an answer; it is included.", "info"));
+      if (pack && !packItem) warnings.push(issue("review.extra", "\"" + clip(it.label, 80) + "\" wasn't in the review form but has an answer. It is included.", "info"));
       const packLabel = packItem ? packItem.label : null;
       const renamed = packLabel !== null && packLabel !== it.label.slice(0, 300);
       if (renamed) {
         warnings.push(issue("review.renamed", (it.kind === "step" ? "Step" : "Finding") + " \"" + clip(it.label, 80) + "\" was called \"" + clip(packLabel, 80) +
-          "\" in the pack. Check that the answer still applies.", "warning"));
+          "\" in the review form. Check that the answer still applies.", "warning"));
       }
       const prev = latest.get(en.itemRef) || null;
       const superseded = !!(prev && compareTimes(answeredAt, prev.at) < 0);
       if (prev && en.verdict && prev.verdict !== en.verdict) {
-        warnings.push(issue("review.conflict", "\"" + clip(it.label, 80) + "\": " + who(prev.reviewer) + " answered " + schema.label("reviewVerdict", prev.verdict).toLowerCase() +
-          (prev.at ? " on " + dateOnly(prev.at) : "") + "; this response says " + schema.label("reviewVerdict", en.verdict).toLowerCase() + ". " +
-          (superseded ? "The earlier response is older than the one already imported, so that answer stays current." : "The latest answer becomes current."), "warning"));
+        warnings.push(issue("review.conflict", "\"" + clip(it.label, 80) + "\": " + who(prev.reviewer) + " answered \"" + schema.label("reviewVerdict", prev.verdict) + "\"" +
+          (prev.at ? " on " + dateOnly(prev.at) : "") + "; this file says \"" + schema.label("reviewVerdict", en.verdict) + "\". " +
+          (superseded ? "This file is older, so the answer already imported still counts." : "This file is newer, so its answer counts."), "warning"));
       }
       const current = it.node ? ((it.node.provenance && it.node.provenance.validation) || "unvalidated") : null;
       const target = it.node && !superseded && VALIDATION_FOR[en.verdict] ? VALIDATION_FOR[en.verdict] : null;
@@ -616,10 +625,10 @@
     /* Records a pack that was sent to a client stakeholder. */
     "review/recordPack"(e, p) {
       e.reviewPacks = e.reviewPacks || [];
-      if (e.reviewPacks.length >= L.reviewPacks) throw new H.StoreError("limit", "This engagement already records " + L.reviewPacks + " review packs. Delete old packs in Records, Client review.");
+      if (e.reviewPacks.length >= L.reviewPacks) throw new H.StoreError("limit", "This project already has " + L.reviewPacks + " review forms, the most it can hold. Delete old ones in Findings, Reviews.");
       const r = validate.sanitizeReviewPack(p.pack, e);
-      if (r.errors.length) throw new H.StoreError("invalid", "Review pack: " + r.errors[0].message);
-      if (!r.value.items.length) throw new H.StoreError("invalid", "A review pack needs at least one step or finding.");
+      if (r.errors.length) throw new H.StoreError("invalid", "Review form: " + r.errors[0].message);
+      if (!r.value.items.length) throw new H.StoreError("invalid", "A review form needs at least one step or finding.");
       e.reviewPacks.push(r.value);
       return { id: r.value.id };
     },
@@ -631,7 +640,7 @@
      */
     "review/apply"(e, p) {
       e.reviews = e.reviews || [];
-      if (e.reviews.length >= L.reviews) throw new H.StoreError("limit", "This engagement already holds " + L.reviews + " reviews.");
+      if (e.reviews.length >= L.reviews) throw new H.StoreError("limit", "This project already has " + L.reviews + " reviews, the most it can hold.");
       const raw = p.review;
       if (!raw || typeof raw !== "object") throw new H.StoreError("invalid", "There is no review to apply.");
       const validations = Array.isArray(p.validations) ? p.validations : [];
@@ -648,8 +657,8 @@
       if (p.evidence) {
         const ev = p.evidence;
         const title = H.cleanText(ev.title, 300).trim();
-        if (!title) throw new H.StoreError("invalid", "The evidence source needs a title.");
-        if (e.evidence.length >= L.evidence) throw new H.StoreError("limit", "This engagement already holds " + L.evidence + " evidence sources.");
+        if (!title) throw new H.StoreError("invalid", "The source needs a title.");
+        if (e.evidence.length >= L.evidence) throw new H.StoreError("limit", "This project already has " + L.evidence + " sources, the most it can hold.");
         const taken = new Set(e.evidence.map(x => x.id));
         evidenceId = util.uid("ev");
         while (taken.has(evidenceId)) evidenceId = util.uid("ev");
@@ -665,7 +674,7 @@
           if (!node.provenance.evidenceRefs.includes(evidenceId)) node.provenance.evidenceRefs.push(evidenceId);
         });
       }
-      if (e.records.length + questions.length > L.records) throw new H.StoreError("limit", "This engagement cannot hold more than " + L.records + " records.");
+      if (e.records.length + questions.length > L.records) throw new H.StoreError("limit", "A project can't hold more than " + L.records + " findings.");
       const questionIds = questions.map(q => {
         const record = H.newRecord(e, Object.assign({}, q, { kind: "question", evidenceRefs: [] }));
         if (evidenceId) record.evidenceRefs = [evidenceId];
@@ -692,7 +701,7 @@
     "review/deletePack"(e, p) {
       const before = (e.reviewPacks || []).length;
       e.reviewPacks = (e.reviewPacks || []).filter(x => x.id !== p.id);
-      if (e.reviewPacks.length === before) throw new H.StoreError("not-found", "Review pack not found.");
+      if (e.reviewPacks.length === before) throw new H.StoreError("not-found", "Review form not found.");
       (e.reviews || []).forEach(r => { if (r.packId === p.id) r.packId = null; });
       return { id: p.id };
     }

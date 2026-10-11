@@ -34,7 +34,7 @@ test("opportunities become epics and actions become tasks, each with the steps t
   assert.ok(epic.acceptanceCriteria.includes("Pilot with 10 cases"));
   assert.ok(epic.acceptanceCriteria.some(c => /drops by 40%/.test(c)));
   assert.ok(epic.acceptanceCriteria.some(c => /drops by 10%/.test(c)));
-  assert.ok(epic.acceptanceCriteria.some(c => /75% of affected cases/.test(c)));
+  assert.ok(epic.acceptanceCriteria.some(c => /reaches 75% of cases/.test(c)));
   assert.equal(items.tasks[0].title, "Run the pilot");
 });
 

@@ -6,7 +6,7 @@ argument-hint: <source files...>
 allowed-tools: Read, Glob, Grep, Edit(./aixray-extract.draft.json), Bash(npm run ai *), PowerShell(npm run ai *)
 ---
 
-# Extract a current state for AIxRay
+# Create a process from documents for AIxRay
 
 Sources: $ARGUMENTS
 
@@ -18,7 +18,7 @@ Ask the user, in one message, for anything not given yet: the source files, the 
 
     npm run ai -- gate --with claude --confidentiality <level> --data-status <supplied|demonstration>
 
-If it prints "Not allowed until the items above are confirmed", ask the user to confirm each item it lists. Add `--yes` only after they confirm the engagement lead approved sending the material to this account, and `--written-approval "<who, when>"` only with the approval text they give you. Run the gate again. If it prints "Not allowed.", stop: this material cannot go to this account. Never add a confirmation the user did not give.
+If it prints "Not allowed until the items above are confirmed", ask the user to confirm each item it lists. Add `--yes` only after they confirm the project lead approved sending the material to this account, and `--written-approval "<who, when>"` only with the approval text they give you. Run the gate again. If it prints "Not allowed.", stop: this material cannot go to this account. Never add a confirmation the user did not give.
 
 ## 2. Read the sources
 
@@ -41,4 +41,4 @@ If it lists problems, fix the draft and run it again, at most three times. Once 
 
 ## 5. Hand over
 
-Tell the user the result file name and the warnings it printed. They open the file in AIxRay with Open, check the summary and choose "Open as a new engagement". Nothing in the draft is validated; say so.
+Tell the user the result file name and the warnings it printed. They open the file in AIxRay with Open, check the summary and choose "Open as a new project". Nothing in the draft is confirmed yet; say so.

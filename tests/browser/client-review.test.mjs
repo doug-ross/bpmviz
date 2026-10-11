@@ -84,8 +84,8 @@ test("an HTML pack opens on its own, keeps answers in a file and imports back", 
   await p.click("#tab-present");
   await p.click("#pr-action-client-review");
   await p.waitForSelector("dialog[open] #cr-name");
-  assert.match(await p.textContent("#cr-summary"), /The pack will list 36 items: 35 steps and 1 finding\./);
-  assert.match(await p.textContent("dialog[open]"), /Sensitive records are left out/);
+  assert.match(await p.textContent("#cr-summary"), /The form will list 36 items: 35 steps and 1 finding\./);
+  assert.match(await p.textContent("dialog[open]"), /Sensitive findings are left out/);
   await p.click("label:has(#cr-inc-steps)");
   assert.match(await p.textContent("#cr-summary"), /1 item: 0 steps and 1 finding/);
   await p.click("label:has(#cr-inc-steps)");
@@ -155,7 +155,7 @@ test("an HTML pack opens on its own, keeps answers in a file and imports back", 
   await pp2.waitForSelector("#pack article.item");
   const wrong = Object.assign({}, response, { packId: "rp-another" });
   await pp2.setInputFiles("#pack-load-file", { name: "wrong.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(wrong)) });
-  await pp2.waitForFunction(() => /different review pack/.test(document.getElementById("pack-status").textContent));
+  await pp2.waitForFunction(() => /different review form/.test(document.getElementById("pack-status").textContent));
   await pp2.setInputFiles("#pack-load-file", { name: saved.name, mimeType: "application/json", buffer: saved.bytes });
   await pp2.waitForFunction(() => /Loaded 3 answers/.test(document.getElementById("pack-status").textContent));
   assert.equal(await pp2.isChecked("#pack-v-" + iDispute + "-dispute"), true);
@@ -169,8 +169,8 @@ test("an HTML pack opens on its own, keeps answers in a file and imports back", 
   await p.waitForSelector("dialog[open] #cr-apply-validation");
   const dlg = await p.textContent("dialog[open]");
   assert.match(dlg, /From Dana Reviewer, Head of Underwriting Operations/);
-  assert.match(dlg, /Validation: Not validated to Validated/);
-  assert.match(dlg, /Validation: Not validated to Disputed/);
+  assert.match(dlg, /Changes from Not confirmed yet to Confirmed/);
+  assert.match(dlg, /Changes from Not confirmed yet to Disputed/);
   assert.equal(await p.isChecked("#cr-apply-questions"), true);
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
@@ -194,8 +194,8 @@ test("an HTML pack opens on its own, keeps answers in a file and imports back", 
   await p.click("#rv-tab-client-review");
   assert.equal((await p.textContent("#rv-tab-client-review .count")).trim(), "1");
   const panel = await p.textContent("#rv-panel");
-  assert.match(panel, /Review packs \(1\)/);
-  assert.match(panel, /Responses received \(1\)/);
+  assert.match(panel, /Review forms \(1\)/);
+  assert.match(panel, /Reviews received \(1\)/);
   assert.match(panel, /1 confirmed, 1 disputed, 1 not sure/);
   assert.match(panel, /Latest answer per item \(3\)/);
   assert.equal(await p.isHidden("#rv-add"), true);
@@ -211,15 +211,15 @@ test("an HTML pack opens on its own, keeps answers in a file and imports back", 
   const side = await p.textContent("#cr-drawer");
   assert.match(side, /Dispute/);
   assert.match(side, /Geocoding is done by the CAT team\./);
-  assert.match(side, /Validation of this step: disputed\./);
+  assert.match(side, /This step is disputed\./);
 
-  // Handoff: after the Evidence part.
+  // Report: after the Sources part.
   await p.click("#tab-present");
   await p.click("#pr-handoff");
   await p.waitForSelector("#hd-client-review");
   const placed = await p.$eval("#handoff-doc", doc => {
     const kids = [...doc.children];
-    const ev = kids.findIndex(k => k.tagName === "H2" && k.textContent === "Evidence");
+    const ev = kids.findIndex(k => k.tagName === "H2" && k.textContent === "Sources");
     return kids.findIndex(k => k.id === "hd-client-review") === ev + 2;
   });
   assert.equal(placed, true);
@@ -286,19 +286,19 @@ test("responses for another engagement or over the size limit are refused; an un
   const fixtures = path.join(root, "tests", "fixtures", "reviews");
   await p.setInputFiles("#file-input", path.join(fixtures, "other-engagement.review-response.json"));
   await p.waitForSelector("dialog[open]");
-  assert.match(await p.textContent("dialog[open]"), /Review response not imported[\s\S]*different engagement/);
+  assert.match(await p.textContent("dialog[open]"), /Review answers not imported[\s\S]*different project/);
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
   const big = JSON.parse(fs.readFileSync(path.join(fixtures, "underwriting-current.review-response.json"), "utf8"));
   big.generalComment = "x".repeat(2 * 1024 * 1024 + 10);
   await p.setInputFiles("#file-input", { name: "big.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(big)) });
   await p.waitForSelector("dialog[open]");
-  assert.match(await p.textContent("dialog[open]"), /larger than the 2 MB limit/);
+  assert.match(await p.textContent("dialog[open]"), /larger than 2 MB, the most AIxRay can open/);
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
   await p.setInputFiles("#file-input", path.join(fixtures, "underwriting-current.review-response.json"));
   await p.waitForSelector("dialog[open] #cr-apply-validation");
-  assert.match(await p.textContent("dialog[open]"), /no record of the pack/);
+  assert.match(await p.textContent("dialog[open]"), /no record of the review form/);
   await p.click("#cr-apply-evidence");
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
@@ -370,7 +370,7 @@ test("the Client review tab follows the open engagement, and Download again leav
   assert.equal(data.items.some(it => it.kind === "record"), false);
   assert.equal(html.includes("SOV rekeyed by hand"), false);
   await p.waitForSelector("dialog[open]");
-  assert.match(await p.textContent("dialog[open]"), /1 item of the 36 in the pack was left out/);
+  assert.match(await p.textContent("dialog[open]"), /1 item of the 36 in the form was left out/);
   await p.click("dialog[open] .dlg-foot .btn-primary");
   await p.waitForFunction(() => !document.querySelector("dialog[open]"));
   clean(s.problems);

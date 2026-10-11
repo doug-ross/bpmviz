@@ -17,8 +17,8 @@ const ai = require(path.join(root, "webui", "js", "lib", "ai-results.js"));
 export const MAX_REPAIRS = 2;
 export const TASKS = ["extract", "opportunities", "future-state", "summary", "log-mapping"];
 const SECRET_ADVICE = {
-  extract: "Remove credentials from the sources", opportunities: "Remove credentials from the engagement",
-  "future-state": "Remove credentials from the engagement", summary: "Remove credentials from the engagement",
+  extract: "Remove credentials from the sources", opportunities: "Remove credentials from the project",
+  "future-state": "Remove credentials from the project", summary: "Remove credentials from the project",
   "log-mapping": "Check the activity names and the model steps"
 };
 const TIMEOUT_MS = { extract: 20 * 60000, opportunities: 8 * 60000, "future-state": 10 * 60000, summary: 6 * 60000, "log-mapping": 6 * 60000 };
@@ -89,16 +89,16 @@ export async function runTask(o) {
   if (!TASKS.includes(task)) throw new AiFailure("input.task", "Unknown task \"" + task + "\".");
   const emit = ev => { if (o.onEvent) o.onEvent(ev); };
   const e = o.engagement || null;
-  if (task !== "extract" && !e) throw new AiFailure("input.missing", "This task reads an engagement. Give the engagement file with --in.");
+  if (task !== "extract" && !e) throw new AiFailure("input.missing", "This task needs a project. Give the project file with --in.");
   const taskOptions = cleanTaskOptions(task, o.taskOptions);
   if (task === "log-mapping") {
     if (!taskOptions.activities.length) throw new AiFailure("input.missing", "Give the activity names to map, with --activities.");
     const model = e.models.find(m => m.id === taskOptions.modelId) || (taskOptions.modelId ? null : e.models.find(m => m.role === "current"));
-    if (!model) throw new AiFailure("input.baseline", "The model " + (taskOptions.modelId || "to map to") + " is not in the engagement.");
+    if (!model) throw new AiFailure("input.baseline", "The model " + (taskOptions.modelId || "to map to") + " is not in the project.");
     taskOptions.modelId = model.id;
   }
 
-  emit({ type: "stage", stage: "status", message: "Checking " + provider.name + " and its sign-in" });
+  emit({ type: "stage", stage: "status", message: "Checking " + provider.name + " and your sign-in" });
   const status = o.status || await provider.status(o);
   if (!status.installed) throw new AiFailure("provider.notInstalled", failureMessage(o.provider, "provider.notInstalled"));
   if (!status.loggedIn) throw new AiFailure("auth.signedOut", failureMessage(o.provider, "auth.signedOut"));
@@ -126,21 +126,21 @@ export async function runTask(o) {
       }
       if (info.warning) warnings.push({ code: "source.unreadable", path: info.name, message: info.name + ": " + info.warning });
     }
-    if (task === "extract" && !job.sources.length) throw new AiFailure("input.missing", "Give at least one source document to extract from.");
+    if (task === "extract" && !job.sources.length) throw new AiFailure("input.missing", "Add at least one document to create the process from.");
 
     const input = e ? ai.buildTaskInput(e, task, Object.assign({ includeSensitive: o.includeSensitive, baselineModelId: o.baselineModelId }, taskOptions)) : null;
     const baselineModelId = task === "future-state" || task === "log-mapping" ? input.baselineModelId : null;
     const reviewContext = task === "log-mapping" ? { activities: input.activities } : undefined;
-    if (task === "future-state" && !baselineModelId) throw new AiFailure("input.baseline", "The engagement has no current-state model to start from.");
+    if (task === "future-state" && !baselineModelId) throw new AiFailure("input.baseline", "The project has no current-state model to start from.");
     if (input && input.excluded.activities) {
-      warnings.push({ code: "input.activities", path: "activities", message: "Only the " + input.activities.length + " most frequent activity names were sent; " + input.excluded.activities + " were not." });
+      warnings.push({ code: "input.activities", path: "activities", message: "Only the " + input.activities.length + " most frequent activity names were sent. The other " + input.excluded.activities + " were not." });
     }
     if (input && input.excluded.secretActivities) {
       const n = input.excluded.secretActivities;
-      warnings.push({ code: "input.secret", path: "activities", message: n + " activity name" + (n === 1 ? " that looks" : "s that look") + " like a credential " + (n === 1 ? "was" : "were") + " not sent. Map " + (n === 1 ? "it" : "them") + " by hand in the event-log import." });
+      warnings.push({ code: "input.secret", path: "activities", message: n + " activity name" + (n === 1 ? " that looks" : "s that look") + " like a credential " + (n === 1 ? "was" : "were") + " not sent. Map " + (n === 1 ? "it" : "them") + " yourself in the event log import." });
     }
     if (input && input.excluded.sensitiveRecords) {
-      warnings.push({ code: "input.sensitive", path: "records", message: input.excluded.sensitiveRecords + " sensitive records were not sent." });
+      warnings.push({ code: "input.sensitive", path: "records", message: input.excluded.sensitiveRecords + " finding" + (input.excluded.sensitiveRecords === 1 ? "" : "s") + " marked sensitive " + (input.excluded.sensitiveRecords === 1 ? "was" : "were") + " not sent." });
     }
 
     job.write("system.md", systemPrompt(task, o.provider));
@@ -202,7 +202,7 @@ export async function runTask(o) {
       let review = null;
       if (validation) {
         const secret = validation.errors.find(x => x.code === "output.secret");
-        if (secret) throw new AiFailure("output.secret", "The draft contained what looks like a credential (" + secret.path + "), so it was not kept. " + SECRET_ADVICE[task] + " and run the task again.");
+        if (secret) throw new AiFailure("output.secret", "The draft contained something that looks like a credential, so AIxRay did not keep it. " + SECRET_ADVICE[task] + " and run the task again.");
         validation.errors.forEach(x => problems.push(x));
         if (validation.ok && e) {
           review = ai.prepareReview(validation.result, e, reviewContext);

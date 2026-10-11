@@ -47,7 +47,7 @@
     if (vc) {
       if (util.isFiniteNumber(vc.effortReductionPct)) criteria.push("Effort on the affected steps drops by " + util.formatNumber(vc.effortReductionPct, 1) + "%.");
       if (util.isFiniteNumber(vc.durationReductionPct)) criteria.push("Elapsed time on the affected steps drops by " + util.formatNumber(vc.durationReductionPct, 1) + "%.");
-      if (util.isFiniteNumber(vc.shareOfCasesPct)) criteria.push("Reaches " + util.formatNumber(vc.shareOfCasesPct, 1) + "% of affected cases.");
+      if (util.isFiniteNumber(vc.shareOfCasesPct)) criteria.push("The change reaches " + util.formatNumber(vc.shareOfCasesPct, 1) + "% of cases.");
     }
     questions.filter(q => sharesStep(record, q)).forEach(q => criteria.push("Open question: " + q.title));
     return criteria;
