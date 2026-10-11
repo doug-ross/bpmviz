@@ -66,34 +66,41 @@
     function build() {
       el.displaySel = h("select", { class: "select", id: "pv-display", "aria-label": "Process view" });
       el.scenarioSel = h("select", { class: "select", id: "pv-scenario", "aria-label": "Scenario" });
-      el.rewind = iconButton("rewind", "Rewind to start", { id: "pv-rewind" });
+      el.rewind = iconButton("rewind", "Back to the start", { id: "pv-rewind" });
       el.play = iconButton("play", "Play", { id: "pv-play", "data-playing": "false" }, { showLabel: true, title: "Play (Space)" });
       el.end = iconButton("end", "Go to end", { id: "pv-end" });
       el.speed = h("button", { type: "button", class: "btn", id: "pv-speed", title: "Playback speed" }, "1\u00d7");
-      el.scrub = h("input", { type: "range", min: 0, max: 1000, step: 1, value: 0, id: "pv-scrub", "aria-label": "Scenario time" });
+      el.scrub = h("input", { type: "range", min: 0, max: 1000, step: 1, value: 0, id: "pv-scrub", "aria-label": "Playback position" });
       el.clock = h("span", { class: "clock", id: "pv-clock", "aria-live": "off" }, "");
-      el.findInput = h("input", { class: "input", id: "pv-find", type: "search", placeholder: "Find a step, role or system",
+      el.findInput = h("input", { class: "input", id: "pv-find", type: "search", placeholder: "Search steps, roles or systems", "aria-label": "Search steps, roles or systems",
         role: "combobox", "aria-expanded": "false", "aria-controls": "pv-find-list", "aria-autocomplete": "list", autocomplete: "off", spellcheck: "false" });
       el.findList = h("ul", { class: "find-results", id: "pv-find-list", role: "listbox", "aria-label": "Matching steps", hidden: true });
       el.lensSel = h("select", { class: "select", id: "pv-lens", "aria-label": "Lens" });
-      el.readable = h("button", { type: "button", class: "btn", id: "pv-readable", title: "Readable view (0)", "aria-pressed": "true" }, "Readable");
-      el.widthBtn = h("button", { type: "button", class: "btn", id: "pv-width", title: "Fit the width (W)", "aria-pressed": "false" }, "Width");
-      el.overviewBtn = iconButton("overview", "Overview of every lane (F); labels may be too small to read", { id: "pv-overview", "aria-pressed": "false" }, { showLabel: true, title: "Overview (F)" });
+      el.readable = h("button", { type: "button", class: "btn", id: "pv-readable", title: "Zoom to a size you can read (0)", "aria-pressed": "true" }, "Readable size");
+      el.widthBtn = h("button", { type: "button", class: "btn", id: "pv-width", title: "Fit the process to the width (W)", "aria-pressed": "false" }, "Fit width");
+      el.overviewBtn = iconButton("overview", "See every lane at once (F); labels may be too small to read", { id: "pv-overview", "aria-pressed": "false" }, { showLabel: true, title: "Overview (F)" });
       el.overviewBtn.querySelector(".label").textContent = "Overview";
       el.zoomOut = iconButton("zoomOut", "Zoom out (-)", { id: "pv-zout" });
       el.zoomIn = iconButton("zoomIn", "Zoom in (+)", { id: "pv-zin" });
-      el.labels = h("button", { type: "button", class: "btn", id: "pv-labels", "aria-pressed": "true", title: "Show connector labels" }, "Labels");
-      el.panelBtn = iconButton("panel", "Show or hide the side panel", { id: "pv-panel", "aria-pressed": "true" });
+      el.labels = h("button", { type: "button", class: "btn", id: "pv-labels", "aria-pressed": "true", title: "Show the labels on connectors" }, "Labels");
+      el.panelBtn = iconButton("panel", "Show or hide the details panel", { id: "pv-panel", "aria-pressed": "true" });
 
+      // Controls are grouped by what people are doing: choosing what to look at,
+      // playing a case through the process, finding a step, and adjusting the display.
       el.toolbar = h("div", { class: "proc-toolbar", role: "toolbar", "aria-label": "Process controls" },
-        h("div", { class: "tb-group" }, h("label", { class: "tb-label", for: "pv-display" }, "View"), el.displaySel),
-        h("div", { class: "tb-group" }, h("label", { class: "tb-label", for: "pv-scenario" }, "Scenario"), el.scenarioSel),
-        h("div", { class: "tb-group", role: "group", "aria-label": "Playback" }, el.rewind, el.play, el.end, el.speed,
-          h("span", { class: "scrub" }, el.scrub), el.clock),
-        h("div", { class: "tb-group find" }, icon("search"), el.findInput, el.findList),
-        h("div", { class: "tb-group" }, h("label", { class: "tb-label", for: "pv-lens" }, "Lens"), el.lensSel),
-        h("div", { class: "tb-group", role: "group", "aria-label": "Zoom" }, el.readable, el.widthBtn, el.overviewBtn, el.zoomOut, el.zoomIn),
-        h("div", { class: "tb-group" }, el.labels, el.panelBtn));
+        h("div", { class: "tb-row" },
+          h("div", { class: "tb-section", role: "group", "aria-label": "What you are looking at" },
+            h("div", { class: "tb-group" }, h("label", { class: "tb-label", for: "pv-display" }, "View"), el.displaySel),
+            h("div", { class: "tb-group" }, h("label", { class: "tb-label", for: "pv-scenario" }, "Scenario"), el.scenarioSel)),
+          h("div", { class: "tb-section tb-play", role: "group", "aria-label": "Playback" }, el.rewind, el.play, el.end, el.speed,
+            h("span", { class: "scrub" }, el.scrub), el.clock),
+          h("div", { class: "tb-group tb-find find" }, icon("search"), el.findInput, el.findList)),
+        h("div", { class: "tb-row tb-row-display", role: "group", "aria-label": "Display" },
+          h("div", { class: "tb-group" }, h("label", { class: "tb-label", for: "pv-lens" }, "Lens"), el.lensSel),
+          h("div", { class: "tb-group btn-group", role: "group", "aria-label": "Zoom presets" }, el.readable, el.widthBtn, el.overviewBtn),
+          h("div", { class: "tb-group", role: "group", "aria-label": "Zoom" }, el.zoomOut, el.zoomIn),
+          h("span", { class: "tb-spacer" }),
+          h("div", { class: "tb-group" }, el.labels, el.panelBtn)));
 
       el.strip = h("div", { class: "strip", id: "pv-strip", "aria-label": "Milestone progress" });
       el.panes = h("div", { class: "panes", id: "pv-panes" });
@@ -167,7 +174,7 @@
       el.side.addEventListener("focusin", ev => {
         if (view.playing && ev.target.matches("input, textarea, select")) {
           setPlaying(false);
-          announce("Playback paused while you edit.");
+          announce("Paused while you edit.");
         }
       });
       bindFind();
@@ -179,15 +186,15 @@
       const e = eng();
       clear(el.displaySel);
       e.models.forEach(m => el.displaySel.appendChild(h("option", { value: "m:" + m.id },
-        m.name + " (" + (m.locked ? "locked baseline" : schema.label("modelStatus", m.status).toLowerCase()) + ")")));
+        m.name + " (" + (m.locked ? "baseline" : schema.label("modelStatus", m.status).toLowerCase()) + ")")));
       e.models.filter(m => m.role === "future").forEach(f => {
         const base = f.basedOn ? e.models.find(m => m.id === f.basedOn.modelId) : currentModel();
-        el.displaySel.appendChild(h("option", { value: "c:" + f.id }, "Compare " + (base ? base.name : "current") + " with " + f.name));
+        el.displaySel.appendChild(h("option", { value: "c:" + f.id }, "Side by side: " + (base ? base.name : "Current state") + " and " + f.name));
       });
       if (![...el.displaySel.options].some(o => o.value === view.display)) view.display = "m:" + currentModel().id;
       el.displaySel.value = view.display;
       clear(el.scenarioSel);
-      if (!e.scenarios.length) el.scenarioSel.appendChild(h("option", { value: "" }, "No scenario timing"));
+      if (!e.scenarios.length) el.scenarioSel.appendChild(h("option", { value: "" }, "No timing recorded"));
       e.scenarios.forEach(sc => el.scenarioSel.appendChild(h("option", { value: sc.id }, sc.name + (sc.statusLabel ? " (" + sc.statusLabel + ")" : ""))));
       if (!e.scenarios.some(x => x.id === view.scenarioId)) view.scenarioId = e.scenarios.length ? e.scenarios[0].id : "";
       el.scenarioSel.value = view.scenarioId;
@@ -227,12 +234,12 @@
       const status = m.locked ? B.drawer.badge("Locked baseline", "purple") :
         B.drawer.badge(schema.label("modelStatus", m.status), m.status === "draft" ? "info" : m.status === "proposed" ? "warning" : "");
       let hint = "";
-      if (!rp) hint = m.role === "future" && m.basedOn ? "No timing modeled for this draft" : "No scenario timing";
+      if (!rp) hint = m.role === "future" && m.basedOn ? "No timing for this draft yet" : "No timing recorded";
       else if (sc) hint = schema.label("timingMethod", sc.timing.method);
       const summary = m.role === "future" && m.basedOn ? changeSummary(m) : "";
       const g = m.generated;
       const ai = g ? [B.drawer.badge(g.reviewed ? "AI draft, reviewed" : "AI draft", g.reviewed ? "" : "purple"),
-        g.reviewed ? null : h("button", { type: "button", class: "link-btn small", title: "Confirm you checked this AI-drafted model",
+        g.reviewed ? null : h("button", { type: "button", class: "link-btn small", title: "Confirm you have checked this AI draft",
           on: { click: () => app.dispatch("model/markReviewed", { modelId: m.id }, m.name + " marked reviewed.") } }, "Mark reviewed")] : null;
       return h("header", { class: "pane-head" },
         h("span", { class: "pane-title" }, m.name), h("span", { class: "muted small" }, "v" + m.version), status, ai,
@@ -256,7 +263,7 @@
         const rp = replays.get(m.id);
         const svg = s("svg", { "aria-label": m.name + " diagram", role: "group" });
         const gutter = h("div", { class: "gutter", "aria-hidden": "true" });
-        const note = h("div", { class: "overview-note", hidden: true }, "Overview scale. Labels are too small to read; use Readable, Find, or select a step.");
+        const note = h("div", { class: "overview-note", hidden: true }, "Overview scale. Labels are too small to read; use Readable size, search, or select a step.");
         const viewEl = h("div", { class: "view" }, svg, note);
         const paneEl = h("section", { class: "pane", "aria-label": m.name }, paneHead(m, rp), h("div", { class: "pane-body" }, gutter, viewEl));
         const d = new Diagram({
@@ -459,7 +466,7 @@
       const T = total();
       view.t = Math.min(T, view.t + dt / PLAY_MS * T * view.speed);
       applyStates();
-      if (view.t >= T) { setPlaying(false); announce("Scenario replay finished."); return; }
+      if (view.t >= T) { setPlaying(false); announce("End of the scenario."); return; }
       raf = requestAnimationFrame(tick);
     }
 
@@ -579,7 +586,7 @@
         fullDetails: (modelId, nodeId) => {
           const m = e.models.find(x => x.id === modelId), n = m && m.nodes.find(x => x.id === nodeId);
           if (!n) return;
-          B.dialogs.openDialog({ title: n.label, eyebrow: "All recorded fields", wide: true,
+          B.dialogs.openDialog({ title: n.label, eyebrow: "All details", wide: true,
             body: B.drawer.fullDetailsBody(e, m, n, replays.get(modelId), view.t),
             actions: [{ label: "Close", variant: "btn-primary", autofocus: true }] });
         },

@@ -258,7 +258,7 @@
 
   /* ---------- Draft rules for extracted engagements ---------- */
 
-  const EXTRACT_DISCLOSURE = "Drafted with AI assistance from source documents. Not yet validated with the client.";
+  const EXTRACT_DISCLOSURE = "Drafted with AI assistance from source documents. Not yet confirmed with the people who do the work.";
 
   /*
    * An extracted engagement is a draft: nothing in it is validated, no data
@@ -275,9 +275,12 @@
     e.migration = null;
     // The person who ran the job declared the data status and confidentiality; the AI does not choose them.
     const status = d.dataStatus && d.dataStatus !== "observed" ? d.dataStatus : "supplied";
-    if (e.meta.dataStatus !== status) { note("Data status changed from " + e.meta.dataStatus + " to " + status + ", as declared for the job.", "meta.dataStatus"); e.meta.dataStatus = status; }
+    if (e.meta.dataStatus !== status) {
+      note("Data status changed from " + schema.label("dataStatus", e.meta.dataStatus) + " to " + schema.label("dataStatus", status) + ", as set for this task.", "meta.dataStatus");
+      e.meta.dataStatus = status;
+    }
     if (d.confidentiality && e.meta.confidentiality !== d.confidentiality) {
-      note("Confidentiality changed from " + e.meta.confidentiality + " to " + d.confidentiality + ", as declared for the job.", "meta.confidentiality");
+      note("Confidentiality changed from " + schema.label("confidentiality", e.meta.confidentiality) + " to " + schema.label("confidentiality", d.confidentiality) + ", as set for this task.", "meta.confidentiality");
       e.meta.confidentiality = d.confidentiality;
     }
     if (!e.meta.disclosure) e.meta.disclosure = EXTRACT_DISCLOSURE;
@@ -289,23 +292,27 @@
         if (n.provenance.source === "workshop") n.provenance.source = "generated";
       });
     });
-    if (steps) note(steps + " step" + (steps === 1 ? " was" : "s were") + " marked validated; set to not validated.");
+    if (steps) note(steps + " step" + (steps === 1 ? " was" : "s were") + " marked as confirmed. AIxRay set " + (steps === 1 ? "it" : "them") + " to not confirmed yet.");
     let ev = 0, links = 0;
     e.evidence.forEach(x => {
       if (x.status !== "unreviewed" || x.reviewer || x.reviewDate) { x.status = "unreviewed"; x.reviewer = ""; x.reviewDate = ""; ev++; }
       if (x.link) { x.link = null; links++; }
     });
-    if (ev) note(ev + " evidence item" + (ev === 1 ? " was" : "s were") + " marked reviewed; set to not reviewed.");
-    if (links) note(links + " evidence link" + (links === 1 ? " was" : "s were") + " removed. Add links yourself after checking them.");
-    e.scenarios.forEach(s => { if (s.provenance === "observed") { s.provenance = "supplied"; note("Scenario " + s.name + " changed from observed to supplied."); } });
+    if (ev) note(ev + " source" + (ev === 1 ? " was" : "s were") + " marked as reviewed. AIxRay set " + (ev === 1 ? "it" : "them") + " to not reviewed.");
+    if (links) note(links + " source link" + (links === 1 ? " was" : "s were") + " removed. Add links yourself after you check them.");
+    e.scenarios.forEach(s => { if (s.provenance === "observed") { s.provenance = "supplied"; note("Scenario " + s.name + " changed from measured to provided."); } });
     e.assumptions.forEach(a => {
-      if (a.status === "validated" || a.status === "observed") { note("Assumption " + a.label + " changed from " + a.status + " to supplied."); a.status = "supplied"; }
+      if (a.status === "validated" || a.status === "observed") {
+        note("Assumption " + a.label + " changed from " + (a.status === "validated" ? "confirmed" : "measured") + " to provided.");
+        a.status = "supplied";
+      }
     });
     // Observed data comes from an event log a person imports, never from an extraction.
-    const DROP = { datasets: "event log", reviewPacks: "review pack", reviews: "client review" };
+    const DROP = { datasets: ["event log", "event logs"], reviewPacks: ["review form", "review forms"], reviews: ["set of review answers", "sets of review answers"] };
     Object.keys(DROP).forEach(key => {
       if (!Array.isArray(e[key])) return;
-      if (e[key].length) note(e[key].length + " " + DROP[key] + (e[key].length === 1 ? " was" : "s were") + " removed. Import event logs and reviews yourself.", key);
+      const n = e[key].length;
+      if (n) note(n + " " + DROP[key][n === 1 ? 0 : 1] + (n === 1 ? " was" : " were") + " removed. Add event logs and review answers yourself.", key);
       delete e[key];
     });
     let observed = 0;
@@ -321,7 +328,7 @@
       if (vc.datasetId || vc.shareSource === "dataset" || vc.effortSource === "dataset") { vc.datasetId = null; vc.shareSource = "manual"; vc.effortSource = "node"; observed++; }
       if (vc.basis === "observed" || vc.basis === "validated") { vc.basis = "supplied"; observed++; }
     });
-    if (observed) note(observed + " observed or validated figure" + (observed === 1 ? " was" : "s were") + " set to supplied.");
+    if (observed) note(observed + " measured or confirmed figure" + (observed === 1 ? " was" : "s were") + " set to provided.");
     e.records.forEach(r => { r.generated = Object.assign({}, mark); });
     return { engagement: e, changes };
   }
@@ -367,12 +374,12 @@
 
   function sanitizeFutureState(p, errors, warnings) {
     const laneRefs = new Set();
-    if (p.lanes.length > MAX_NEW_LANES) warnings.push({ code: "payload.truncated", message: "Only the first " + MAX_NEW_LANES + " new swimlanes are kept.", path: "payload.lanes" });
+    if (p.lanes.length > MAX_NEW_LANES) warnings.push({ code: "payload.truncated", message: "Only the first " + MAX_NEW_LANES + " new lanes are kept.", path: "payload.lanes" });
     const lanes = p.lanes.slice(0, MAX_NEW_LANES).map((l, i) => {
       const ref = text(l.ref, 60).trim();
       const name = text(l.name, 200).trim();
-      if (!ref || laneRefs.has(ref)) errors.push({ path: "payload.lanes[" + i + "].ref", message: "Each new swimlane needs a unique ref." });
-      if (!name) errors.push({ path: "payload.lanes[" + i + "].name", message: "Each new swimlane needs a name." });
+      if (!ref || laneRefs.has(ref)) errors.push({ path: "payload.lanes[" + i + "].ref", message: "Each new lane needs a unique ref." });
+      if (!name) errors.push({ path: "payload.lanes[" + i + "].name", message: "Each new lane needs a name." });
       laneRefs.add(ref);
       return { ref, name, role: text(l.role, 300), type: l.type };
     });
@@ -444,7 +451,7 @@
       seen.add(activity);
       let nodeId = m.nodeId === null || m.nodeId === "" ? null : m.nodeId;
       if (nodeId !== null && !util.isValidId(nodeId)) {
-        warnings.push({ code: "payload.reference", message: "The step for \"" + activity.slice(0, 60) + "\" is not a valid ID; the activity stays unmapped.", path: path + ".nodeId" });
+        warnings.push({ code: "payload.reference", message: "The step for \"" + activity.slice(0, 60) + "\" is not a valid ID; the activity stays unmatched.", path: path + ".nodeId" });
         nodeId = null;
       }
       mappings.push({ activity, nodeId, confidence: m.confidence, rationale: text(m.rationale, 2000) });
@@ -472,16 +479,16 @@
     const warnings = [];
     const done = result => ({ ok: !errors.length, errors, warnings, result: errors.length ? null : result });
     if (!isAiResult(input)) {
-      errors.push({ path: "schema", message: "This is not an AIxRay AI result file (expected schema \"" + RESULT_SCHEMA + "\")." });
+      errors.push({ path: "schema", message: "This is not an AIxRay AI result file." });
       return done(null);
     }
     if (input.schemaVersion !== RESULT_VERSION) {
       errors.push({ path: "schemaVersion", message: Number(input.schemaVersion) > RESULT_VERSION ?
-        "This AI result was made by a newer version of AIxRay." : "Unknown AI result version." });
+        "This AI result was made by a newer version of AIxRay. Update AIxRay to open it." : "AIxRay does not recognize the version of this AI result file." });
       return done(null);
     }
     if (!schema.ENUMS.aiTask.includes(input.task)) {
-      errors.push({ path: "task", message: "Unknown AI task \"" + String(input.task).slice(0, 40) + "\"." });
+      errors.push({ path: "task", message: "AIxRay does not recognize the AI task \"" + String(input.task).slice(0, 40) + "\"." });
       return done(null);
     }
     const task = input.task;
@@ -497,13 +504,13 @@
       warnings: sanitizeWarnings(input.warnings),
       payload: null
     };
-    if (task !== "extract" && !result.engagementId) errors.push({ path: "engagementId", message: "The result does not say which engagement it was made for." });
+    if (task !== "extract" && !result.engagementId) errors.push({ path: "engagementId", message: "The result does not say which project it was made for." });
     if (task === "future-state" && !result.baselineModelId) errors.push({ path: "baselineModelId", message: "A future-state result needs the baseline model ID." });
     if (task === "log-mapping" && !result.baselineModelId) errors.push({ path: "baselineModelId", message: "A log-mapping result needs the ID of the model the activities are mapped to." });
 
     scanSecrets({ payload: input.payload, notes: input.notes, warnings: input.warnings }).forEach(hit => {
       errors.push({ path: hit.path, code: "output.secret", message: "This looks like " + hit.kind + ". The result was not loaded. " +
-        (task === "log-mapping" ? "Check the activity names and the model steps" : task === "extract" ? "Remove it from the sources" : "Remove it from the engagement") + " and run the task again." });
+        (task === "log-mapping" ? "Check the activity names and the model steps" : task === "extract" ? "Remove it from the sources" : "Remove it from the project") + " and run the task again." });
     });
 
     const payload = input.payload;
@@ -567,10 +574,10 @@
   /* ---------- Data handling ---------- */
 
   const GATE_TEXT = {
-    plan: "Say which plan this AI account is on.",
-    approval: "I confirm the engagement lead approved sending this material to this AI account.",
-    writtenApproval: "Written client approval for restricted material (who approved, and when).",
-    trainingOff: "I turned off model training for this account (Claude: Settings, Privacy, \"Help improve Claude\". ChatGPT: Settings, Data controls, \"Improve the model for everyone\")."
+    plan: "Choose the plan this AI account is on.",
+    approval: "I confirm the project lead approved sending this material to this AI account.",
+    writtenApproval: "The client's written approval for restricted material: who approved, and when.",
+    trainingOff: "I turned off model training for this account. In Claude: Settings, Privacy, \"Help improve Claude\". In ChatGPT: Settings, Data controls, \"Improve the model for everyone\"."
   };
 
   /*
@@ -596,8 +603,8 @@
       message = label + " needs a known plan. Choose the plan this AI account is on.";
     } else if (plan === "commercial") {
       requires = level === "restricted" ? ["approval", "writtenApproval"] : ["approval"];
-      message = label + " may be sent to a commercial plan with the engagement lead's approval" +
-        (level === "restricted" ? " and written client approval." : ".");
+      message = label + " may be sent to a commercial plan with the project lead's approval" +
+        (level === "restricted" ? " and the client's written approval." : ".");
     } else if (level === "internal") {
       requires = ["trainingOff"];
       message = "Internal material may be sent to a consumer plan only with model training turned off.";
@@ -789,7 +796,7 @@
       if (ok || seen.has(x.raw)) return;
       seen.add(x.raw);
       flagged.push({ code: "summary.number", path, level: "warning",
-        message: "The figure \"" + x.raw + "\" does not appear in the engagement figures or records. Check it before accepting." });
+        message: "The figure \"" + x.raw + "\" is not in the project's figures or findings. Check it before you accept the summary." });
     });
     check(payload.title, "payload.title");
     check(payload.text, "payload.text");
@@ -806,13 +813,12 @@
   /** Whether the result belongs to this engagement, and whether it has changed since. */
   function staleCheck(result, engagement) {
     if (result.task === "extract") return { error: "", warning: "" };
-    if (!engagement) return { error: "Open the engagement this draft was made for, then open the draft again.", warning: "" };
+    if (!engagement) return { error: "Open the project this draft was made for, then open the draft again.", warning: "" };
     if (result.engagementId !== engagement.id) {
-      return { error: "This draft was made for a different engagement (" + result.engagementId + "). Open that engagement, then open the draft again.", warning: "" };
+      return { error: "This draft was made for a different project. Open that project, then open the draft again.", warning: "" };
     }
     if (result.engagementRevision !== null && result.engagementRevision !== engagement.revision) {
-      return { error: "", warning: "The engagement changed after this draft was made (revision " + result.engagementRevision +
-        ", now " + engagement.revision + "). Check each item against the current content." };
+      return { error: "", warning: "The project has changed since this draft was made. Check each item against the project as it is now." };
     }
     return { error: "", warning: "" };
   }
@@ -842,7 +848,7 @@
         return !!hit;
       });
       const basedOn = s.basedOnRecordIds.filter(id => records.has(id));
-      if (titles.has(s.title.toLowerCase())) notes.push("A record with this title already exists.");
+      if (titles.has(s.title.toLowerCase())) notes.push("A finding with this title already exists.");
       const why = [s.rationale && "Why: " + s.rationale, "Confidence: " + s.confidence + ".",
         basedOn.length ? "Based on: " + basedOn.map(id => records.get(id).title).join("; ") + "." : ""].filter(Boolean).join(" ");
       return {
@@ -860,7 +866,7 @@
 
   function futureStateItems(result, engagement, out) {
     const baseline = engagement.models.find(m => m.id === result.baselineModelId);
-    if (!baseline) { out.errors.push({ path: "baselineModelId", message: "The baseline model " + result.baselineModelId + " is not in this engagement." }); return []; }
+    if (!baseline) { out.errors.push({ path: "baselineModelId", message: "The current-state model this draft starts from is not in this project." }); return []; }
     if (baseline.role !== "current") { out.errors.push({ path: "baselineModelId", message: "A future-state draft must start from a current-state model." }); return []; }
     out.baseline = { id: baseline.id, name: baseline.name, version: baseline.version };
     const p = result.payload;
@@ -897,9 +903,9 @@
           touched.set(node.id, o.op);
         }
       }
-      if (o.laneRef && !lanes.has(o.laneRef)) problems.push("Swimlane " + o.laneRef + " is not in the baseline or the new swimlanes.");
+      if (o.laneRef && !lanes.has(o.laneRef)) problems.push("Lane " + o.laneRef + " is not in the baseline or the new lanes.");
       if (o.op === "modify" && o.label && node && o.label !== node.label) changes.push("Rename to \"" + o.label + "\"");
-      if (o.laneRef && lanes.has(o.laneRef) && (!node || node.laneId !== o.laneRef)) changes.push("Swimlane: " + lanes.get(o.laneRef));
+      if (o.laneRef && lanes.has(o.laneRef) && (!node || node.laneId !== o.laneRef)) changes.push("Lane: " + lanes.get(o.laneRef));
       if (o.semanticType && (!node || node.semanticType !== o.semanticType)) changes.push("Type: " + schema.typeInfo(o.semanticType).label);
       if (o.touchEffortMinutes !== null) changes.push("Touch effort: " + util.formatNumber(o.touchEffortMinutes) + " min");
       if (o.typicalDurationMinutes !== null) changes.push("Typical duration: " + util.formatNumber(o.typicalDurationMinutes) + " min");
@@ -910,7 +916,7 @@
       o.details.forEach(d => changes.push((d.key === "desc" ? "Description" : d.key) + ": " + d.value.slice(0, 160)));
       if (o.op === "modify" && !changes.length) problems.push("This change does not change anything.");
       const addresses = o.addressesRecordIds.filter(id => records.has(id)).map(id => records.get(id).title);
-      if (addresses.length < o.addressesRecordIds.length) notes.push("Some linked records were not found.");
+      if (addresses.length < o.addressesRecordIds.length) notes.push("Some linked findings were not found.");
       return { key: "o" + i, index: i, op: o.op, title, changes, rationale: o.rationale, addresses, problems, notes };
     });
   }
@@ -924,7 +930,7 @@
     const records = new Set(engagement.records.map(r => r.id));
     const notes = flagged.map(f => f.message);
     const missing = p.keyPoints.reduce((n, k) => n + k.supportingRecordIds.filter(id => !records.has(id)).length, 0);
-    if (missing) notes.push(missing + " supporting record reference" + (missing === 1 ? " was" : "s were") + " not found.");
+    if (missing) notes.push(missing + " supporting finding" + (missing === 1 ? " was" : "s were") + " not found.");
     const existing = (engagement.narratives || []).find(n => n.kind === "executive-summary");
     if (existing) notes.push("Accepting this replaces the current executive summary.");
     flagged.forEach(f => out.warnings.push(f));
@@ -937,7 +943,7 @@
    */
   function logMappingItems(result, engagement, out, context) {
     const model = engagement.models.find(m => m.id === result.baselineModelId);
-    if (!model) { out.errors.push({ path: "baselineModelId", message: "The model " + result.baselineModelId + " is not in this engagement." }); return []; }
+    if (!model) { out.errors.push({ path: "baselineModelId", message: "The model these activities were matched to is not in this project." }); return []; }
     out.baseline = { id: model.id, name: model.name, version: model.version };
     const nodes = new Map(model.nodes.filter(n => !n.removed).map(n => [n.id, n]));
     const names = context && Array.isArray(context.activities) ?
@@ -946,9 +952,9 @@
       const problems = [], notes = [];
       const node = m.nodeId ? nodes.get(m.nodeId) : null;
       if (m.nodeId && !node) problems.push("Step " + m.nodeId + " is not in " + model.name + ".");
-      else if (node && schema.typeInfo(node.semanticType).shape === "gateway") problems.push("A gateway is a decision point, not an activity. Choose a step instead.");
+      else if (node && schema.typeInfo(node.semanticType).shape === "gateway") problems.push("A gateway is a decision point, so an activity cannot map to it. Choose a step instead.");
       if (names && !names.has(m.activity)) problems.push("The activity \"" + m.activity + "\" was not sent to the assistant.");
-      if (!m.nodeId) notes.push("No matching step suggested; the activity stays unmapped.");
+      if (!m.nodeId) notes.push("No matching step suggested; the activity stays unmatched.");
       return {
         key: "m" + i, index: i, activity: m.activity, nodeId: m.nodeId, stepLabel: node ? node.label : "",
         confidence: m.confidence, rationale: m.rationale,

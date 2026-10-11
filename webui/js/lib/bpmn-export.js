@@ -82,9 +82,9 @@
    */
   function exportModel(e, modelId) {
     const model = (e && e.models || []).find(m => m.id === modelId);
-    if (!model) throw new BpmnExportError("No model with id \"" + modelId + "\" was found.");
+    if (!model) throw new BpmnExportError("That process is no longer in this project.");
     const nodes = model.nodes.filter(n => !n.removed);
-    if (!nodes.length) throw new BpmnExportError("\"" + model.name + "\" has no steps to export once removed steps are left out.");
+    if (!nodes.length) throw new BpmnExportError("\"" + model.name + "\" has no steps to export. Removed steps are left out of BPMN files.");
     const nodeSet = new Set(nodes.map(n => n.id));
     const edges = model.edges.filter(ed => !ed.removed && nodeSet.has(ed.from) && nodeSet.has(ed.to));
 

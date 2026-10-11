@@ -101,7 +101,7 @@
     const after = dq.get(e, afterId);
     const caveats = [];
     if (!baseline || !after) {
-      caveats.push("One of the two event logs is no longer in the engagement, so nothing can be compared.");
+      caveats.push("One of the two event logs is no longer in the project, so nothing can be compared.");
       return { baseline: datasetHeader(baseline), after: datasetHeader(after), overall: null, steps: [], unmatched: [], caveats };
     }
 
@@ -148,26 +148,26 @@
 
     if (util.isFiniteNumber(baseline.period && baseline.period.days) && util.isFiniteNumber(after.period && after.period.days) &&
       baseline.period.days > 0 && Math.abs(after.period.days - baseline.period.days) / baseline.period.days > 0.2) {
-      caveats.push("The two measurement periods are different lengths (" + baseline.period.days + " vs " + after.period.days +
-        " days), which can affect volume and mix.");
+      caveats.push("The two logs cover periods of different lengths (" + baseline.period.days + " and " + after.period.days +
+        " days), which can change volume and mix.");
     }
     if (util.isFiniteNumber(overall.cases.before) && util.isFiniteNumber(overall.cases.after) && overall.cases.before > 0 &&
       Math.abs(overall.cases.after - overall.cases.before) / overall.cases.before > 0.2) {
-      caveats.push("Case volume differs by more than 20% between the two logs; the mix of work may not be the same.");
+      caveats.push("Case volume differs by more than 20% between the two logs, so the mix of work may have changed.");
     }
     if (unmatched.length) {
       caveats.push(unmatched.length + " step" + (unmatched.length === 1 ? "" : "s") + " in one log " +
-        (unmatched.length === 1 ? "has" : "have") + " no match in the other, usually because the mapping changed.");
+        (unmatched.length === 1 ? "has" : "have") + " no match in the other, usually because the activity matching changed.");
     }
     if (smallSampleSteps) {
       caveats.push(smallSampleSteps + " step" + (smallSampleSteps === 1 ? "" : "s") + " rest" + (smallSampleSteps === 1 ? "s" : "") +
-        " on fewer than " + SMALL_SAMPLE_MIN + " visits in one of the logs; treat the change with caution.");
+        " on fewer than " + SMALL_SAMPLE_MIN + " visits in one of the logs, so " + (smallSampleSteps === 1 ? "its" : "their") + " change is less reliable.");
     }
     if (!sameTimeBasis(baseline, after)) {
-      caveats.push("The two event logs measure time differently (calendar time in one, business time in the other, or a different working day), so their durations cannot be compared directly. Import one of them again with the other's time basis.");
+      caveats.push("The two event logs measure time differently (calendar and business time, or different working days), so their durations cannot be compared. Import one of them again with the other's time basis.");
     }
     if (baseline.dataStatus === "demonstration" || after.dataStatus === "demonstration") {
-      caveats.push("At least one of the two event logs is demonstration data, not from a real engagement.");
+      caveats.push("At least one of the two event logs is demonstration data.");
     }
 
     return { baseline: datasetHeader(baseline), after: datasetHeader(after), overall, steps, unmatched, caveats };
@@ -196,17 +196,17 @@
       const hoursOut = (result.outputs || []).find(o => o.key === "annualHoursSaved");
       const expected = hoursOut && hoursOut.value !== null ?
         { value: hoursOut.value, unit: "hour", basis: hoursOut.basis, label: "Modeled human hours saved per year" } : null;
-      if (!expected) notes.push("The value case for this opportunity is not complete enough to model a figure to compare against.");
+      if (!expected) notes.push("The business case for this opportunity is not complete enough to give an expected figure.");
 
       let realized = null;
       if (!baseline || !after) {
-        notes.push("One of the two event logs is no longer in the engagement.");
+        notes.push("One of the two event logs is no longer in the project.");
       } else if (!sameTimeBasis(baseline, after)) {
         notes.push("The two event logs measure time differently, so their durations cannot be compared.");
       } else {
         const scope = valueCase.affected(e, r);
         if (!scope.model || scope.model.id !== baseline.modelId) {
-          notes.push("This opportunity's steps are not in the model the baseline event log maps to.");
+          notes.push("This opportunity's steps are not in the process version the baseline log is measured against.");
         } else if (!scope.nodeIds.length) {
           notes.push("This opportunity has no linked work steps to measure.");
         } else {
@@ -245,8 +245,8 @@
             const modeledVolume = hoursInputs.length && util.isFiniteNumber(hoursInputs[0].value) && hoursInputs[0].unit === "casesPerYear" ? hoursInputs[0].value : null;
             const volume = modeledVolume !== null ? modeledVolume : util.isFiniteNumber(dq.annualVolume(after)) ? dq.annualVolume(after) : dq.annualVolume(baseline);
             if (util.isFiniteNumber(volume)) {
-              realized = { value: (beforeMinutes - afterMinutes) / 60 * volume, unit: "hour", basis: pairBasis(baseline, after), label: "Measured human hours saved per year" };
-              if (modeledVolume === null) notes.push("The measured change is scaled to the after log's annualized volume, as the value case has none.");
+              realized = { value: (beforeMinutes - afterMinutes) / 60 * volume, unit: "hour", basis: pairBasis(baseline, after), label: "Measured change in human hours per year" };
+              if (modeledVolume === null) notes.push("The measured change is scaled to the after log's annualized volume, as the business case has none.");
               if (small) notes.push("At least one measured step rests on fewer than " + SMALL_SAMPLE_MIN + " visits in one of the logs.");
             } else {
               notes.push("Neither event log has an annual volume to scale the measured change to a year.");

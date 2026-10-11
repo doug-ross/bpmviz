@@ -22,7 +22,7 @@ test("malformed JSON is rejected with a readable message", () => {
 test("a file that is not an engagement is rejected", () => {
   const r = validateEngagement({ PROCESS: { before: {} } });
   assert.equal(r.ok, false);
-  assert.match(r.errors[0].message, /not an AIxRay engagement/);
+  assert.match(r.errors[0].message, /not an AIxRay project file/);
 });
 
 test("a file from a newer schema version is rejected", () => {
@@ -63,7 +63,7 @@ test("non-finite and negative timing is rejected", () => {
   assert.equal(r.ok, false);
   const messages = r.errors.map(x => x.path + " " + x.message).join("\n");
   assert.match(messages, /visits\[0\]\.start Must be at least 0/);
-  assert.match(messages, /visits\[1\]\.end Expected a finite number/);
+  assert.match(messages, /visits\[1\]\.end Expected a number/);
   assert.match(messages, /visits\[2\]\.end A visit cannot end before it starts/);
 });
 

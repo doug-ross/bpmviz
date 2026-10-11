@@ -48,26 +48,26 @@ Most callbacks receive the common context:
 
 | Function | Shape | Where it appears |
 | --- | --- | --- |
-| `registerMenuItem` | `{ id, order, icon, label, group, needsEngagement, run(app) }`; `group` is `import`, `export` or `ai` | The More actions menu, button `menu-<id>`: `import` after "Import a BPMN file", `export` after "Save as a new file", `ai` after "Draft with AI" |
-| `registerStartAction` | `{ id, order, icon, label, run(app) }` | The start screen after "New from a template", button `start-<id>` |
+| `registerMenuItem` | `{ id, order, icon, label, group, needsEngagement, run(app) }`; `group` is `import`, `export` or `ai` | The More actions menu, button `menu-<id>`: `import` after "Import a BPMN file", `export` after "Save a copy", `ai` after "Draft with AI" |
+| `registerStartAction` | `{ id, order, icon, label, run(app) }` | The start screen after the built-in buttons ("Import a BPMN file", or "Create from documents with AI" when the AI helper runs), button `start-<id>` |
 | `registerFileHandler` | `{ id, order, extensions, maxBytes, priority, probe(bytes, name), open(app, file, bytes) }` | `app.openFile`: handlers for the file's extension run before the 10 MB text read, highest `priority` first; a handler whose `probe` resolves false is skipped. `maxBytes` defaults to 10 MB. The extensions join the file picker's accept list |
 | `registerJsonHandler` | `{ id, order, schema, open(app, data, { fileName }) }` | `app.openFile`, after `JSON.parse`, for files whose `schema` field matches, before the AI result check |
-| `registerRecordsTab` | `{ id, order, label, count(engagement), render(panel, ctx) }` | Records workspace, tab `rv-tab-<id>` before Review. Add record, Export CSV and the AI button are hidden on it |
-| `registerOpportunityView` | `{ id, order, label, render(host, ctx) }`; `ctx.records` holds the filtered opportunities | A Register / view switcher (`rv-oppview-<id>`) above the opportunity register |
-| `registerOpportunityColumn` | `{ id, order, header, after, cell(record, ctx) }` | A column in the opportunity register after the column headed `after` (or at the end) |
-| `registerRecordDialogSection` | `{ id, order, kinds, render(record, ctx) }` returning `{ el, collect(), check() }` | Inside the Opportunity fieldset of the record dialog. `check()` returns a message to block saving or null; `collect()` returns fields merged into `payload.opportunity`. `kinds` defaults to `["opportunity"]` |
-| `registerValueSection` | `{ id, order, render(ctx) }`; `ctx.scenario` is the selected scenario or null | Value workspace, after the reconciliation card (also when there is no scenario). Return a `section.card` |
-| `registerPresentMode` | `{ id, order, label, printable, render(content, ctx) }` | Present mode buttons (`pr-mode-<id>`). A printable mode is wrapped in `.handoff`, so Print prints it |
-| `registerPresentAction` | `{ id, order, icon, label, run(app, ctx) }` | The Present bar before Engagement JSON, button `pr-action-<id>` |
-| `registerHandoffSection` | `{ id, order, after, render(handoff, ctx) }`; `after` is `summary`, `scope`, `pain`, `opportunity`, `decision`, `action`, `question`, `value`, `evidence` or `end` | The handoff summary, after the named part. `handoff` is `exporting.buildHandoff` output |
-| `registerDrawerSection` | `{ id, order, where, render(ctx, model, node) }`; `where` is `overview` or `step` | The process side panel: after the scorecard (overview, `node` is null) or after Provenance on a step's Summary tab |
+| `registerRecordsTab` | `{ id, order, label, count(engagement), render(panel, ctx) }` | Findings tab, sub-tab `rv-tab-<id>` before To check. Add finding, Export to CSV and Suggest findings with AI are hidden on it |
+| `registerOpportunityView` | `{ id, order, label, render(host, ctx) }`; `ctx.records` holds the filtered opportunities | A List / view switcher (`rv-oppview-<id>`) above the list in Findings, Opportunities |
+| `registerOpportunityColumn` | `{ id, order, header, after, cell(record, ctx) }` | A column in the Opportunities list after the column headed `after` (or at the end) |
+| `registerRecordDialogSection` | `{ id, order, kinds, render(record, ctx) }` returning `{ el, collect(), check() }` | Inside the Opportunity fieldset of the finding dialog (Add a finding, Edit finding). `check()` returns a message to block saving or null; `collect()` returns fields merged into `payload.opportunity`. `kinds` defaults to `["opportunity"]` |
+| `registerValueSection` | `{ id, order, render(ctx) }`; `ctx.scenario` is the selected scenario or null | Value tab, after the "Do the provided figures add up?" card (also when there is no scenario). Return a `section.card` |
+| `registerPresentMode` | `{ id, order, label, printable, render(content, ctx) }` | The Show as buttons in Present (`pr-mode-<id>`), after Present and Report. A printable mode is wrapped in `.handoff`, so Print or save as PDF prints it |
+| `registerPresentAction` | `{ id, order, icon, label, run(app, ctx) }` | The Present bar before Save a copy, button `pr-action-<id>` |
+| `registerHandoffSection` | `{ id, order, after, render(handoff, ctx) }`; `after` is `summary`, `scope`, `pain`, `opportunity`, `decision`, `action`, `question`, `value`, `evidence` or `end` | The report (Present, Report), after the named part; `evidence` is the Sources section. `handoff` is `exporting.buildHandoff` output |
+| `registerDrawerSection` | `{ id, order, where, render(ctx, model, node) }`; `where` is `overview` or `step` | The process side panel: after the scorecard (overview, `node` is null) or after "Where this came from" on a step's Details tab |
 | `registerStructuralEvent(typeOrPrefix)` | `"area/verb"` or `"area/"` | Store events that rebuild the process canvas. Pre-registered: `dataset/import`, `dataset/delete`, `review/apply` |
-| `registerRefreshEvent(prefix)` | `"area/"` | Store events that refresh lenses, record counts and the side panel. Pre-registered: `dataset/`, `review/`, `opportunity/` |
+| `registerRefreshEvent(prefix)` | `"area/"` | Store events that refresh lenses, finding counts and the side panel. Pre-registered: `dataset/`, `review/`, `opportunity/` |
 
 Other hooks:
 
 - `AIxRay.lenses.registerLens({ id, label, compute(ctx) })` adds a lens. `compute` gets `{ model, replay, t, engagement, scenarioName }` and returns the lens result shape (`description`, `unit`, `population`, `coverage`, `nodes`, `edges`, `legend`, `notes`). A node entry with a `category` gets the class `lens-<category>`.
-- `app.presentView.renderPng({ scale })` resolves `{ blob, width, height }` for the process panes in the Process workspace, and rejects when the canvas has not been drawn yet.
+- `app.presentView.renderPng({ scale })` resolves `{ blob, width, height }` for the process panes in the Process tab, and rejects when the canvas has not been drawn yet.
 - `app.openFile(file)`, `app.openPicker()`, `app.dispatch(...)`, `app.goto(workspace)` and `app.recordsView.setOpportunityView(id)` are available to features.
 
 ## Store commands

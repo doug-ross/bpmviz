@@ -1,6 +1,6 @@
 /*
- * Dialog forms: workshop records (including opportunities), evidence sources,
- * the executive summary, engagement settings, and the constrained
+ * Dialog forms: findings (records, including opportunities), sources
+ * (evidence), the executive summary, project settings, and the constrained
  * future-state edits.
  */
 (function (root) {
@@ -31,7 +31,7 @@
     return h("div", { class: "ai-origin" + (g.reviewed ? " reviewed" : "") }, icon("agent"),
       h("div", { class: "grow" },
         h("strong", null, g.reviewed ? "AI draft, reviewed" + (g.reviewedAt ? " " + formatDate(g.reviewedAt) : "") : "AI draft, not reviewed"),
-        h("div", { class: "small muted" }, "Drafted by " + bits.join(", ") + ". Unreviewed AI drafts stay out of the handoff and exports."),
+        h("div", { class: "small muted" }, "Drafted by " + bits.join(", ") + ". AI drafts stay out of reports and exports until someone reviews them."),
         checkbox ? h("label", { class: "check" }, checkbox, checkLabel) : null));
   }
 
@@ -65,7 +65,7 @@
     const owner = input(r.owner, { maxlength: 200, list: "rec-owner-list", autocomplete: "off" });
     const status = select("recordStatus", r.status);
     const priority = select("priority", r.priority);
-    const modelSel = h("select", { class: "select" }, h("option", { value: "" }, "Not linked to a model"),
+    const modelSel = h("select", { class: "select" }, h("option", { value: "" }, "Not linked"),
       e.models.map(m => h("option", { value: m.id, selected: m.id === r.linkedModelId }, m.name)));
     const steps = h("select", { class: "select", multiple: true, size: 8 });
     const fillSteps = selected => {
@@ -98,20 +98,20 @@
       humanReview: textarea(ai.humanReview, 2), auditability: textarea(ai.auditability, 2), failureHandling: textarea(ai.failureHandling, 2)
     };
     const mode = h("select", { class: "select" },
-      [["", "Not decided"], ["assist", "Assistance: a person decides"], ["autonomous", "Autonomous action within set limits"]].map(([v, l]) =>
+      [["", "Not decided"], ["assist", "AI assists, a person decides"], ["autonomous", "AI acts on its own within set limits"]].map(([v, l]) =>
         h("option", { value: v, selected: v === ai.mode }, l)));
     const aiBlock = h("fieldset", { class: "form-grid", style: { border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "var(--space-3)" } },
       h("legend", { class: "field-label" }, "AI assessment"),
-      h("p", { class: "note" }, "A human review label on a diagram describes a check without enforcing it. Record who can act, what they review and what happens when the AI is wrong."),
-      field("Mode", mode),
+      h("p", { class: "note" }, "Tagging a step for human review does not make the review happen. Say who can act, what they check and what happens when the AI gets it wrong."),
+      field("How the AI works", mode),
       h("div", { class: "field-row" },
-        field("Input structure", aiFields.inputStructure), field("Data availability", aiFields.dataAvailability)),
+        field("How structured the input is", aiFields.inputStructure), field("Data available", aiFields.dataAvailability)),
       h("div", { class: "field-row" },
-        field("Judgment required", aiFields.judgment), field("Exception conditions", aiFields.exceptions)),
+        field("Judgment required", aiFields.judgment), field("Exceptions", aiFields.exceptions)),
       h("div", { class: "field-row" },
-        field("Action authority", aiFields.authority), field("Human review", aiFields.humanReview)),
+        field("What the AI may do", aiFields.authority), field("Human review", aiFields.humanReview)),
       h("div", { class: "field-row" },
-        field("Auditability", aiFields.auditability), field("Failure handling", aiFields.failureHandling)));
+        field("Audit trail", aiFields.auditability), field("When the AI gets it wrong", aiFields.failureHandling)));
     // Sections registered with AIxRay.ext.registerRecordDialogSection: { el, collect() -> patch, check() -> message or null }.
     const extCtx = B.ext.context(app, {});
     const extSections = B.ext.list("recordDialogSection").map(def => {
@@ -120,12 +120,12 @@
     }).filter(Boolean);
     const oppBlock = h("fieldset", { class: "form-grid", style: { border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "var(--space-3)" } },
       h("legend", { class: "field-label" }, "Opportunity"),
-      h("div", { class: "field-row" }, field("Intervention", intervention), field("Effort", effort)),
-      field("Why not a simpler option?", simpler, "For example: why automate rather than eliminate or standardize the step."),
+      h("div", { class: "field-row" }, field("Type of change", intervention), field("Effort", effort)),
+      field("Why not a simpler change?", simpler, "For example, why automate the step instead of removing or standardizing it?"),
       field("Expected benefit", benefit),
       field("Affected volume", volume),
       h("div", { class: "field-row" }, field("Risk", risk), field("Dependencies", deps)),
-      field("Next validation action", validation),
+      field("How to confirm it", validation),
       extSections.map(x => x.out.el),
       aiBlock);
     const syncKind = () => {
@@ -140,15 +140,15 @@
     const err = errorLine();
     const owners = [...new Set(e.records.map(x => x.owner).filter(Boolean))];
     const body = h("form", { class: "form-grid", novalidate: true },
-      g ? aiOrigin(g, aiReviewed, "I checked this record against the sources") : null,
+      g ? aiOrigin(g, aiReviewed, "I checked this finding against the sources") : null,
       h("div", { class: "field-row" }, field("Type", kind), field("Status", status), field("Priority", priority)),
       field("Title", title),
       field("Details", desc),
-      h("div", { class: "field-row" }, field("Owner", owner), field("Linked model", modelSel)),
-      field("Linked steps", steps, "Ctrl or Cmd to select several."),
-      e.evidence.length ? field("Evidence", evidence) : null,
-      h("label", { class: "check" }, sensitive, "Sensitive: leave out of exports and the handoff unless selected"),
-      h("label", { class: "check" }, handoff, "Include in the client handoff"),
+      h("div", { class: "field-row" }, field("Owner", owner), field("Linked to", modelSel)),
+      field("Steps", steps, "Hold Ctrl or Cmd to select more than one."),
+      e.evidence.length ? field("Sources", evidence) : null,
+      h("label", { class: "check" }, sensitive, "Sensitive (kept out of reports and exports unless you include it)"),
+      h("label", { class: "check" }, handoff, "Include in the report"),
       oppBlock, err, h("datalist", { id: "rec-owner-list" }, owners.map(x => h("option", { value: x }))));
     body.addEventListener("submit", ev => ev.preventDefault());
 
@@ -180,25 +180,25 @@
     const actions = [];
     if (existing) {
       actions.push({ label: "Delete", variant: "btn-danger", keepOpen: true, onClick: api => {
-        confirmDialog("Delete this record?", "\"" + r.title + "\" will be removed. You can undo this from the menu.", "Delete", true).then(ok => {
-          if (ok && app.dispatch("record/delete", { id: r.id }, "Record deleted")) api.close();
+        confirmDialog("Delete this finding?", "\"" + r.title + "\" will be deleted. You can undo this from the menu.", "Delete", true).then(ok => {
+          if (ok && app.dispatch("record/delete", { id: r.id }, "Finding deleted")) api.close();
         });
         return false;
       } });
     }
     actions.push({ label: "Cancel" });
-    actions.push({ label: existing ? "Save record" : "Add record", variant: "btn-primary", keepOpen: true, onClick: api => {
-      if (!title.value.trim()) { err.hidden = false; err.textContent = "Give the record a title."; title.focus(); return false; }
+    actions.push({ label: existing ? "Save finding" : "Add finding", variant: "btn-primary", keepOpen: true, onClick: api => {
+      if (!title.value.trim()) { err.hidden = false; err.textContent = "Give the finding a title."; title.focus(); return false; }
       const problem = activeSections().map(x => (typeof x.out.check === "function" ? B.ext.guard("recordDialogSection", x.def, () => x.out.check(), null) : null)).find(Boolean);
       if (problem) { err.hidden = false; err.textContent = String(problem); return false; }
       const payload = collect();
       const ok = existing ?
-        app.dispatch("record/update", { id: r.id, patch: payload }, "Record saved", err) :
+        app.dispatch("record/update", { id: r.id, patch: payload }, "Finding saved", err) :
         app.dispatch("record/add", { record: payload }, schema.label("recordKind", payload.kind) + " added", err);
       if (ok) api.close();
       return false;
     } });
-    return openDialog({ title: existing ? "Edit record" : "New record", eyebrow: "Workshop record", body, actions, initialFocus: existing ? "input" : "select" });
+    return openDialog({ title: existing ? "Edit finding" : "Add a finding", body, actions, initialFocus: existing ? "input" : "select" });
   }
 
   /* The executive summary that opens the handoff. Written by hand or accepted from an AI draft. */
@@ -213,16 +213,15 @@
     const err = errorLine();
     const body = h("form", { class: "form-grid", novalidate: true },
       g ? aiOrigin(g, null) : null,
-      h("p", { class: "small" }, "The summary opens the printed handoff. Separate paragraphs with a blank line; lines that start with a hyphen print as a list."),
       field("Title", title),
-      field("Summary", text),
-      h("label", { class: "check" }, reviewed, g ? "Reviewed: I checked this AI draft against the engagement" : "Reviewed and ready for the handoff"),
+      field("Summary", text, "It opens the printed report. Leave a blank line between paragraphs, and start a line with a hyphen to make a list."),
+      h("label", { class: "check" }, reviewed, g ? "Reviewed: I checked this AI draft against the project" : "Reviewed and ready for the report"),
       err);
     body.addEventListener("submit", ev => ev.preventDefault());
     const actions = [];
     if (n) {
       actions.push({ label: "Delete", variant: "btn-danger", keepOpen: true, onClick: api => {
-        confirmDialog("Delete the executive summary?", "The summary will be removed from the handoff. You can undo this from the menu.", "Delete", true).then(ok => {
+        confirmDialog("Delete the executive summary?", "The summary will be removed from the report. You can undo this from the menu.", "Delete", true).then(ok => {
           if (ok && app.dispatch("narrative/delete", { kind: "executive-summary" }, "Summary deleted")) api.close();
         });
         return false;
@@ -230,13 +229,13 @@
     }
     actions.push({ label: "Cancel" });
     actions.push({ label: "Save summary", variant: "btn-primary", keepOpen: true, onClick: api => {
-      if (!text.value.trim()) { err.hidden = false; err.textContent = "Write the summary text first."; text.focus(); return false; }
+      if (!text.value.trim()) { err.hidden = false; err.textContent = "Write the summary first."; text.focus(); return false; }
       const ok = app.dispatch("narrative/set", { kind: "executive-summary", title: title.value, text: text.value,
         status: reviewed.checked ? "reviewed" : "draft" }, "Summary saved", err);
       if (ok) api.close();
       return false;
     } });
-    return openDialog({ title: n ? "Edit the executive summary" : "Write an executive summary", eyebrow: "Handoff summary", body, actions, wide: true, initialFocus: "textarea" });
+    return openDialog({ title: n ? "Edit the executive summary" : "Write an executive summary", eyebrow: "Report", body, actions, wide: true, initialFocus: "textarea" });
   }
 
   function evidenceDialog(app, evidence) {
@@ -252,18 +251,18 @@
     const link = input(v.link || "", { type: "url", placeholder: "https://" });
     const err = errorLine();
     const body = h("form", { class: "form-grid", novalidate: true },
-      field("Source title", title, "The document, system extract, interview or observation."),
-      field("Locator", locator, "Page, section, sheet, timestamp or file name."),
-      field("Fact taken from the source", fact),
-      h("div", { class: "field-row" }, field("Review status", status), field("Reviewer", reviewer), field("Review date", date)),
-      field("Link", link, "Optional. Only http and https links are kept."),
-      h("p", { class: "note" }, "A source marked unavailable stays in the record so the gap is visible."),
+      field("Source title", title, "For example a document, a system report, an interview or something you saw."),
+      field("Where in the source", locator, "Page, section, sheet, timestamp or file name."),
+      field("What the source says", fact),
+      h("div", { class: "field-row" }, field("Review status", status), field("Reviewed by", reviewer), field("Date reviewed", date)),
+      field("Link", link, "Optional. Only web links (http or https) are kept."),
+      h("p", { class: "note" }, "If you can't get a source, mark it unavailable. It stays listed so the gap is visible."),
       err);
     body.addEventListener("submit", ev => ev.preventDefault());
     const actions = [];
     if (existing) {
       actions.push({ label: "Delete", variant: "btn-danger", keepOpen: true, onClick: api => {
-        confirmDialog("Delete this source?", "References to it from steps and records will be removed.", "Delete", true).then(ok => {
+        confirmDialog("Delete this source?", "Steps and findings that use it will lose the link.", "Delete", true).then(ok => {
           if (ok && app.dispatch("evidence/delete", { id: v.id }, "Source deleted")) api.close();
         });
         return false;
@@ -278,7 +277,7 @@
       if (ok) api.close();
       return false;
     } });
-    return openDialog({ title: existing ? "Edit source" : "Add a source", eyebrow: "Evidence", body, actions });
+    return openDialog({ title: existing ? "Edit source" : "Add a source", body, actions });
   }
 
   function settingsDialog(app) {
@@ -295,15 +294,15 @@
     const summary = textarea(m.summary, 3);
     const err = errorLine();
     const body = h("form", { class: "form-grid", novalidate: true },
-      h("div", { class: "field-row" }, field("Client display name", client), field("Engagement", engagement)),
+      h("div", { class: "field-row" }, field("Client name", client), field("Project name", engagement)),
       field("Process name", process),
       h("div", { class: "field-row" }, field("Confidentiality", conf), field("Data status", data, "Shown on every screen and export.")),
-      h("div", { class: "field-row" }, field("Timing calendar", cal), field("Minutes in a business day", perDay), field("Currency", currency, "ISO code, such as USD or EUR.")),
-      field("Disclosure", disclosure, "Printed in the footer and on the handoff summary."),
-      field("Summary", summary),
+      h("div", { class: "field-row" }, field("Count time as", cal), field("Minutes in a business day", perDay), field("Currency", currency, "Three-letter code, such as USD or EUR.")),
+      field("Disclosure", disclosure, "Shown in the footer and printed on the report."),
+      field("Project summary", summary),
       err);
     body.addEventListener("submit", ev => ev.preventDefault());
-    return openDialog({ title: "Engagement settings", body, actions: [
+    return openDialog({ title: "Project settings", body, actions: [
       { label: "Cancel" },
       { label: "Save settings", variant: "btn-primary", keepOpen: true, onClick: api => {
         const ok = app.dispatch("meta/update", { patch: {
@@ -323,7 +322,7 @@
     const model = e.models.find(m => m.id === modelId);
     const node = model.nodes.find(n => n.id === nodeId);
     const outs = model.edges.filter(x => x.from === nodeId && !x.removed);
-    if (!outs.length) { B.dialogs.messageDialog("Nothing to insert after", node.label + " has no outgoing connector, so there is nowhere to insert a step."); return; }
+    if (!outs.length) { B.dialogs.messageDialog("Nowhere to insert a step", node.label + " doesn't lead to another step, so a new step can't go after it."); return; }
     const label = input("", { maxlength: 300 });
     const edge = h("select", { class: "select" }, outs.map(x => {
       const to = model.nodes.find(n => n.id === x.to);
@@ -336,9 +335,9 @@
     const why = textarea("", 2);
     const err = errorLine();
     const body = h("form", { class: "form-grid", novalidate: true },
-      h("p", { class: "small" }, "The new step goes after " + node.label + ". The connector you choose is split around it."),
-      field("Step name", label), outs.length > 1 ? field("Connector", edge) : null,
-      h("div", { class: "field-row" }, field("Swimlane", lane), field("Step type", type)),
+      h("p", { class: "small" }, "The new step goes after " + node.label + "."),
+      field("Step name", label), outs.length > 1 ? field("Which path", edge) : null,
+      h("div", { class: "field-row" }, field("Lane", lane), field("Step type", type)),
       field("Description", desc), field("Reason for the change", why), err);
     body.addEventListener("submit", ev => ev.preventDefault());
     openDialog({ title: "Insert a step", eyebrow: model.name, body, actions: [
@@ -359,13 +358,13 @@
     const why = textarea("", 3);
     const err = errorLine();
     const body = h("form", { class: "form-grid", novalidate: true },
-      h("p", { class: "small" }, node.label + " stays in the draft marked as removed, and its neighbours are connected directly. The baseline is not affected."),
+      h("p", { class: "small" }, node.label + " stays in " + model.name + ", marked as removed, and the steps on either side are joined up. The current state (baseline) doesn't change."),
       field("Reason for removing it", why), err);
     body.addEventListener("submit", ev => ev.preventDefault());
     openDialog({ title: "Remove " + node.label + "?", eyebrow: model.name, body, actions: [
       { label: "Cancel" },
       { label: "Remove step", variant: "btn-danger", keepOpen: true, onClick: api => {
-        const ok = app.dispatch("model/removeStep", { modelId, nodeId, rationale: why.value }, node.label + " removed from the draft", err);
+        const ok = app.dispatch("model/removeStep", { modelId, nodeId, rationale: why.value }, node.label + " removed from " + model.name, err);
         if (ok) api.close();
         return false;
       } }

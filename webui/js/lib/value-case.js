@@ -88,7 +88,7 @@
   function compute(e, record, opts) {
     const vc = record && record.opportunity && record.opportunity.valueCase;
     if (!vc) {
-      return { recordId: record ? record.id : null, outputs: [], basis: null, confidence: "", missing: ["value case"], notes: ["No value case is recorded for this opportunity."] };
+      return { recordId: record ? record.id : null, outputs: [], basis: null, confidence: "", missing: ["value case"], notes: ["This opportunity has no business case yet."] };
     }
     const notes = [];
     const drivers = economics.driverMap(e, scenarioOf(e, opts));
@@ -98,7 +98,7 @@
     const dsBasis = dataset ? dq.basisOf(dataset) : null;
     const scope = affected(e, record);
     if (scope.skipped.length) notes.push("Not counted as work steps: " + scope.skipped.join(", ") + ".");
-    if (vc.datasetId && !dataset) notes.push("The linked event log is no longer in the engagement.");
+    if (vc.datasetId && !dataset) notes.push("The linked event log is no longer in this project.");
 
     // Hours per affected case, step by step. A step's visits come from the
     // event log when it has them. When the share of cases affected also
@@ -116,7 +116,7 @@
         const minutes = s ? p50(s.duration) : null;
         hours = minutes === null ? null : minutes / 60;
         status = dsBasis;
-        if (s && s.duration && dq.smallSample(s.duration)) notes.push(n.label + ": the observed duration rests on " + s.duration.n + " visits.");
+        if (s && s.duration && dq.smallSample(s.duration)) notes.push(n.label + ": the measured time comes from only " + s.duration.n + " visits.");
       } else {
         hours = hoursOf(n.measures && n.measures.touchEffort);
         status = nodeStatus(n);
@@ -130,15 +130,15 @@
       } else {
         shareAssumedEven = true;
       }
-      const label = (vc.effortSource === "dataset" ? "Observed median duration x visits, " : "Touch effort x visits, ") + n.label;
+      const label = (vc.effortSource === "dataset" ? "Measured median time x visits, " : "Touch effort x visits, ") + n.label;
       return inp(label, hours === null ? null : hours * visits, "hour", weakest([status || "supplied"].concat(visitStatus ? [visitStatus] : [])));
     });
-    if (assumedVisits) notes.push("One visit per affected case is assumed for " + assumedVisits + " step" + (assumedVisits === 1 ? "" : "s") + " without event-log data.");
-    if (shareAssumedEven && scope.nodes.length > 1) notes.push("The share of cases affected is assumed to apply evenly across every affected step; the event log cannot say which affected cases reach which step.");
-    if (vc.effortSource === "dataset") notes.push("Observed step duration stands in for effort; it can include waiting inside the step.");
+    if (assumedVisits) notes.push("One visit per affected case is assumed for " + assumedVisits + " step" + (assumedVisits === 1 ? "" : "s") + " with no event log data.");
+    if (shareAssumedEven && scope.nodes.length > 1) notes.push("The share of cases affected is assumed to apply evenly across every affected step, because the event log can't show which affected cases reach which step.");
+    if (vc.effortSource === "dataset") notes.push("Measured step time stands in for effort, so it can include waiting within the step.");
     const hoursPerCase = output({
       key: "hoursPerCase", label: "Human hours per affected case", unit: "hour",
-      formula: "sum over affected steps of (touch effort in hours, or observed median duration) \u00d7 visits per affected case"
+      formula: "sum over affected steps of (touch effort in hours, or measured median time) \u00d7 visits per affected case"
     }, {
       inputs: stepInputs.length ? stepInputs : [inp("Affected work steps", null, "count", null)],
       compute: () => stepInputs.reduce((sum, i) => sum + i.value, 0)
@@ -148,7 +148,7 @@
     let volumeInput = driverInput(drivers, "annualVolume");
     if (!util.isFiniteNumber(volumeInput.value) && dataset && dq.annualVolume(dataset) !== null) {
       volumeInput = inp("Annual volume (from the event log)", dq.annualVolume(dataset), "casesPerYear", dsBasis);
-      notes.push("Annual volume is annualized from the event log period.");
+      notes.push("Annual volume is scaled up to a year from the period the event log covers.");
     }
 
     // Share of cases affected.
@@ -156,7 +156,7 @@
     if (vc.shareSource === "dataset") {
       const cs = dataset ? dq.caseShareForNodes(dataset, scope.nodeIds) : null;
       shareInput = inp("Share of cases affected (from the event log)", cs ? cs.value * 100 : null, "percent", dsBasis);
-      if (cs && !cs.exact) notes.push("Between " + pct(cs.lower) + " and " + pct(cs.upper) + " of cases visit these steps; some cases are in variants that were not kept.");
+      if (cs && !cs.exact) notes.push("Between " + pct(cs.lower) + " and " + pct(cs.upper) + " of cases reach these steps. The exact share isn't known because some less common paths were not kept from the event log.");
     } else {
       shareInput = inp("Share of cases affected", vc.shareOfCasesPct, "percent", vc.basis);
     }
@@ -186,17 +186,17 @@
       inputs: [inp("Labor cost of the hours saved per year", labor.value, "currency", labor.basis),
         inp("Annual running cost", running, "currency", vc.basis, false)],
       compute: () => labor.value - (running || 0),
-      notes: [running === null || running === undefined ? "Annual running cost not recorded; the figure is before running costs." : "",
+      notes: [running === null || running === undefined ? "Annual running cost not recorded, so this figure is before running costs." : "",
         "A modeled benefit, not realized cash. Adoption and ramp-up are not included."]
     });
 
     const fte = output({
-      key: "fteReleased", label: "Redeployable capacity (FTE-equivalent)", unit: "fte",
+      key: "fteReleased", label: "Time freed up (FTE-equivalent)", unit: "fte",
       formula: "human hours saved per year \u00f7 productive hours per FTE"
     }, {
       inputs: [inp("Human hours saved per year", annualHours.value, "hour", annualHours.basis), driverInput(drivers, "productiveHoursPerFte")],
       compute: () => annualHours.value / val("productiveHoursPerFte"),
-      notes: ["Capacity is time that can be redeployed. Headcount and cash savings depend on decisions this model does not make."]
+      notes: ["This is time people can spend on other work. Any headcount or cash saving depends on decisions outside this estimate."]
     });
 
     const payback = output({
@@ -208,11 +208,11 @@
       notes: ["Months. Shown only when the net annual benefit is above zero."]
     });
 
-    // Elapsed time: observed median durations where the event log has them, else typed typical durations.
+    // Elapsed time: measured median durations where the event log has them, else typed typical durations.
     const durationInputs = scope.nodes.map(n => {
       const s = dataset ? dq.step(dataset, n.id) : null;
       const observed = s ? p50(s.duration) : null;
-      if (observed !== null) return inp("Observed median duration, " + n.label, observed, "minute", dsBasis);
+      if (observed !== null) return inp("Measured median time, " + n.label, observed, "minute", dsBasis);
       const t = n.measures && n.measures.typicalDuration;
       const minutes = t && util.isFiniteNumber(t.value) ? units.toMinutes(t.value, t.unit, tb) : null;
       return inp("Typical duration, " + n.label, minutes, "minute", nodeStatus(n));
@@ -369,7 +369,7 @@
     const totalOverlaps = [];
     byStepAcrossWaves.forEach(x => { if (x.waves.size > 1) totalOverlaps.push({ modelId: x.modelId, nodeId: x.nodeId, label: x.label, recordIds: x.recordIds, waves: [...x.waves] }); });
     total.overlaps = totalOverlaps;
-    const notes = ["Wave totals add opportunities planned together. They are modeled figures, not realized savings."];
+    const notes = ["Wave totals add up the opportunities planned in each wave. They are modeled figures, not realized savings."];
     if (overlaps.length) notes.push(overlaps.length + " step" + (overlaps.length === 1 ? " is" : "s are") + " changed by more than one opportunity in the same wave, so their savings may be counted twice.");
     if (totalOverlaps.length) notes.push(totalOverlaps.length + " step" + (totalOverlaps.length === 1 ? " is" : "s are") +
       " changed by opportunities planned in more than one wave, so the total may count part of their savings twice: " + totalOverlaps.map(x => x.label).join(", ") + ".");

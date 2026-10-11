@@ -88,12 +88,32 @@
   }
 
   /** Lists validation errors and warnings with their field paths. */
-  function issueList(items, limit) {
-    const max = limit || 50;
-    return h("ul", { class: "issue-list" }, items.slice(0, max).map(item =>
-      h("li", null, item.message, item.path ? [" ", h("code", null, item.path)] : null)),
-      items.length > max ? h("li", { class: "muted" }, (items.length - max) + " more not shown.") : null);
+  /** Where in the file a problem sits. Hidden until someone asks for it (see withPathToggle). */
+  function issuePath(p) {
+    return p ? h("span", { class: "issue-path" }, "In the file: ", h("code", null, p)) : null;
   }
 
-  B.dialogs = { openDialog, choose, confirmDialog, messageDialog, issueList };
+  /** Wraps a list that may hold issuePath spans with a "Show where in the file" switch. */
+  function withPathToggle(list) {
+    if (!list.querySelector(".issue-path")) return list;
+    const wrap = h("div", { class: "issue-wrap" });
+    const btn = h("button", { type: "button", class: "link-btn issue-toggle", "aria-pressed": "false" }, "Show where in the file");
+    btn.addEventListener("click", () => {
+      const on = !wrap.classList.contains("show-paths");
+      wrap.classList.toggle("show-paths", on);
+      btn.setAttribute("aria-pressed", String(on));
+      btn.textContent = on ? "Hide where in the file" : "Show where in the file";
+    });
+    wrap.append(list, btn);
+    return wrap;
+  }
+
+  function issueList(items, limit) {
+    const max = limit || 50;
+    return withPathToggle(h("ul", { class: "issue-list" }, items.slice(0, max).map(item =>
+      h("li", null, item.message, issuePath(item.path))),
+      items.length > max ? h("li", { class: "muted" }, "And " + (items.length - max) + " more.") : null));
+  }
+
+  B.dialogs = { openDialog, choose, confirmDialog, messageDialog, issueList, issuePath, withPathToggle };
 })(typeof globalThis !== "undefined" ? globalThis : this);

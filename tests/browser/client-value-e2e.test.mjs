@@ -115,7 +115,7 @@ test("event log to value case, client review, exports and benefits on the underw
   await p.click("#tab-process");
   await p.waitForSelector(".node");
   const scenarios = await p.$$eval("#pv-scenario option", os => os.map(o => o.textContent));
-  assert.equal(scenarios.filter(x => /^Observed variant \d/.test(x)).length, 3, "three observed scenarios: " + scenarios.join(" | "));
+  assert.equal(scenarios.filter(x => /^Measured variant \d/.test(x)).length, 3, "three measured scenarios: " + scenarios.join(" | "));
   await p.selectOption("#pv-lens", "observed-share");
   assert.match(await p.textContent("#pv-lens-info"), /260 cases in underwriting-baseline/);
   assert.ok((await p.$$(".node .lens-bar[visibility=visible]")).length >= 20);
