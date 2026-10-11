@@ -26,7 +26,7 @@
 
   function findModel(e, modelId) {
     const m = e.models.find(x => x.id === modelId);
-    if (!m) throw new StoreError("not-found", "Model not found.");
+    if (!m) throw new StoreError("not-found", "That process diagram no longer exists.");
     return m;
   }
 
@@ -39,7 +39,7 @@
   function editableModel(e, modelId) {
     const m = findModel(e, modelId);
     if (m.locked) {
-      throw new StoreError("locked", "The " + m.name + " baseline is locked because a future state is based on it. Edit the future-state draft instead.");
+      throw new StoreError("locked", m.name + " is locked because a future state is based on it. Make your changes in the future state instead.");
     }
     return m;
   }
@@ -73,11 +73,11 @@
     }
     if (patch.sub !== undefined) node.sub = cleanText(patch.sub, 300);
     if (patch.semanticType !== undefined && patch.semanticType !== null) {
-      if (!schema.SEMANTIC_TYPES[patch.semanticType]) throw new StoreError("invalid", "Unknown step type.");
+      if (!schema.SEMANTIC_TYPES[patch.semanticType]) throw new StoreError("invalid", "Choose a step type from the list.");
       node.semanticType = patch.semanticType;
     }
     if (patch.laneId !== undefined) {
-      if (!model.lanes.some(l => l.id === patch.laneId)) throw new StoreError("invalid", "Unknown swimlane.");
+      if (!model.lanes.some(l => l.id === patch.laneId)) throw new StoreError("invalid", "Choose a lane from the list.");
       node.laneId = patch.laneId;
     }
     if (patch.details) {
@@ -120,7 +120,7 @@
     const now = util.nowIso();
     const kind = enumValue("recordKind", input.kind, "note");
     const title = cleanText(input.title, 300).trim();
-    if (!title) throw new StoreError("invalid", "A record needs a title.");
+    if (!title) throw new StoreError("invalid", "Give the finding a title.");
     const model = input.linkedModelId ? e.models.find(m => m.id === input.linkedModelId) : null;
     const linkedNodeIds = Array.isArray(input.linkedNodeIds) ? input.linkedNodeIds.filter(id =>
       model ? model.nodes.some(n => n.id === id) : e.models.some(m => m.nodes.some(n => n.id === id))) : [];
@@ -171,7 +171,7 @@
     if (o.wave !== undefined && o.wave !== null) out.wave = enumValue("wave", o.wave, "");
     if (o.valueCase !== undefined && o.valueCase !== null) {
       const r = validate.sanitizeValueCase(o.valueCase, e, record);
-      if (r.errors.length) throw new StoreError("invalid", "Value case: " + r.errors[0].message);
+      if (r.errors.length) throw new StoreError("invalid", "Business case: " + r.errors[0].message);
       out.valueCase = r.value;
     }
     return out;
@@ -227,7 +227,7 @@
 
     "record/update"(e, p) {
       const r = e.records.find(x => x.id === p.id);
-      if (!r) throw new StoreError("not-found", "Record not found.");
+      if (!r) throw new StoreError("not-found", "That finding no longer exists.");
       const merged = newRecord(e, Object.assign({}, r, p.patch || {},
         { opportunity: Object.assign({}, r.opportunity || {}, (p.patch || {}).opportunity || {}) }));
       merged.id = r.id;
@@ -244,7 +244,7 @@
     "record/delete"(e, p) {
       const before = e.records.length;
       e.records = e.records.filter(r => r.id !== p.id);
-      if (e.records.length === before) throw new StoreError("not-found", "Record not found.");
+      if (e.records.length === before) throw new StoreError("not-found", "That finding no longer exists.");
       pruneReviewRefs(e, ref => ref === "record/" + p.id);
       return { id: p.id };
     },
@@ -252,7 +252,7 @@
     "evidence/add"(e, p) {
       const input = p.evidence || {};
       const title = cleanText(input.title, 300).trim();
-      if (!title) throw new StoreError("invalid", "A source needs a title.");
+      if (!title) throw new StoreError("invalid", "Give the source a title.");
       let link = null;
       if (input.link) {
         link = util.safeHttpUrl(String(input.link));
@@ -271,11 +271,11 @@
 
     "evidence/update"(e, p) {
       const ev = e.evidence.find(x => x.id === p.id);
-      if (!ev) throw new StoreError("not-found", "Source not found.");
+      if (!ev) throw new StoreError("not-found", "That source no longer exists.");
       const patch = p.patch || {};
       if (patch.title !== undefined) {
         const t = cleanText(patch.title, 300).trim();
-        if (!t) throw new StoreError("invalid", "A source needs a title.");
+        if (!t) throw new StoreError("invalid", "Give the source a title.");
         ev.title = t;
       }
       ["locator", "extractedFact", "reviewer", "reviewDate"].forEach(k => {
@@ -326,7 +326,7 @@
 
     "scenario/override"(e, p) {
       const s = e.scenarios.find(x => x.id === p.scenarioId);
-      if (!s) throw new StoreError("not-found", "Scenario not found.");
+      if (!s) throw new StoreError("not-found", "That scenario no longer exists.");
       s.economics = s.economics || { beforeModelId: null, afterModelId: null,
         supplied: { beforeCostPerCase: null, afterCostPerCase: null, costSavedPerCase: null, fteCapacity: null, text: {} }, overrides: {} };
       if (p.value === null || p.value === "") delete s.economics.overrides[p.key];
@@ -340,7 +340,7 @@
 
     "measure/set"(e, p) {
       const s = e.scenarios.find(x => x.id === p.scenarioId);
-      if (!s) throw new StoreError("not-found", "Scenario not found.");
+      if (!s) throw new StoreError("not-found", "That scenario no longer exists.");
       findModel(e, p.modelId);
       let m = s.measures.find(x => x.key === p.key);
       if (!m) {
@@ -364,7 +364,7 @@
       copy.status = "draft";
       copy.locked = false;
       copy.version = 1;
-      copy.name = cleanText(p.name, 200).trim() || "Future state draft";
+      copy.name = cleanText(p.name, 200).trim() || "Future state";
       copy.basedOn = { modelId: source.id, version: source.version };
       delete copy.generated;
       copy.nodes.forEach(n => { n.lineage = { baselineNodeId: n.id, change: "unchanged", rationale: "" }; n.removed = false; });
@@ -377,7 +377,7 @@
     "model/rename"(e, p) {
       const m = findModel(e, p.modelId);
       const name = cleanText(p.name, 200).trim();
-      if (!name) throw new StoreError("invalid", "A model needs a name.");
+      if (!name) throw new StoreError("invalid", "Enter a name.");
       m.name = name;
       return { modelId: m.id };
     },
@@ -391,7 +391,7 @@
 
     "model/delete"(e, p) {
       const m = findModel(e, p.modelId);
-      if (m.role !== "future" || !m.basedOn) throw new StoreError("invalid", "Only a cloned future-state draft can be deleted.");
+      if (m.role !== "future" || !m.basedOn) throw new StoreError("invalid", "Only a future state planned from the current state can be deleted.");
       e.models = e.models.filter(x => x.id !== m.id);
       const base = e.models.find(x => x.id === m.basedOn.modelId);
       if (base && !e.models.some(x => x.basedOn && x.basedOn.modelId === base.id)) base.locked = false;
@@ -414,7 +414,7 @@
 
     "model/insertStep"(e, p) {
       const model = editableModel(e, p.modelId);
-      if (model.role !== "future") throw new StoreError("invalid", "Steps can be added to a future-state draft only.");
+      if (model.role !== "future") throw new StoreError("invalid", "You can add steps to a future state only.");
       const edge = model.edges.find(x => x.id === p.edgeId && !x.removed);
       if (!edge) throw new StoreError("not-found", "Choose the connector to insert the step on.");
       const label = cleanText(p.label, 300).trim();
@@ -447,7 +447,7 @@
 
     "model/removeStep"(e, p) {
       const model = editableModel(e, p.modelId);
-      if (model.role !== "future") throw new StoreError("invalid", "Steps can be removed from a future-state draft only.");
+      if (model.role !== "future") throw new StoreError("invalid", "You can remove steps from a future state only.");
       const node = findNode(model, p.nodeId);
       if (schema.typeInfo(node.semanticType).shape === "start") throw new StoreError("invalid", "The start event cannot be removed.");
       if (node.removed) return { nodeId: node.id };
@@ -476,9 +476,9 @@
 
     "model/addLane"(e, p) {
       const model = editableModel(e, p.modelId);
-      if (model.role !== "future") throw new StoreError("invalid", "Lanes can be added to a future-state draft only.");
+      if (model.role !== "future") throw new StoreError("invalid", "You can add lanes to a future state only.");
       const name = cleanText(p.name, 200).trim();
-      if (!name) throw new StoreError("invalid", "A swimlane needs a name.");
+      if (!name) throw new StoreError("invalid", "Give the lane a name.");
       const id = util.uniqueId(util.slug(name), new Set(model.lanes.map(l => l.id)));
       model.lanes.push({ id, name, role: cleanText(p.role, 300), type: enumValue("laneType", p.type, "human") });
       return { laneId: id };
@@ -500,7 +500,7 @@
 
     "model/markReviewed"(e, p) {
       const m = findModel(e, p.modelId);
-      if (!m.generated) throw new StoreError("invalid", "This model was not drafted with AI.");
+      if (!m.generated) throw new StoreError("invalid", "This wasn't drafted with AI.");
       m.generated.reviewed = true;
       m.generated.reviewedAt = util.nowIso();
       return { modelId: m.id };
@@ -550,7 +550,7 @@
       const patch = p.patch || {};
       if (patch.name !== undefined) {
         const name = cleanText(patch.name, 200).trim();
-        if (!name) throw new StoreError("invalid", "An event log needs a name.");
+        if (!name) throw new StoreError("invalid", "Give the event log a name.");
         d.name = name;
       }
       if (patch.role !== undefined) d.role = enumValue("datasetRole", patch.role, d.role);
@@ -560,8 +560,8 @@
         const target = patch.comparesToDatasetId;
         if (target === null || target === "") d.comparesToDatasetId = null;
         else {
-          if (target === d.id) throw new StoreError("invalid", "An event log cannot be compared with itself.");
-          if (!e.datasets.some(x => x.id === target)) throw new StoreError("not-found", "The event log to compare with was not found.");
+          if (target === d.id) throw new StoreError("invalid", "Choose a different event log to compare with.");
+          if (!e.datasets.some(x => x.id === target)) throw new StoreError("not-found", "The event log to compare with no longer exists.");
           d.comparesToDatasetId = target;
         }
       }
@@ -630,7 +630,7 @@
         if (ref === null || ref === undefined || ref === "") return undefined;
         if (laneMap.has(ref)) return laneMap.get(ref);
         if (model.lanes.some(l => l.id === ref)) return ref;
-        throw new StoreError("invalid", "Unknown swimlane " + ref + ".");
+        throw new StoreError("invalid", "Unknown lane " + ref + ".");
       };
       const patchOf = op => {
         const details = {};

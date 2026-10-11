@@ -29,8 +29,8 @@
 
     /* Built-in modes, then modes registered with AIxRay.ext.registerPresentMode. */
     function modes() {
-      return [{ id: "presenter", label: "Presenter view", builtin: true, printable: false },
-        { id: "handoff", label: "Handoff summary", builtin: true, printable: true }].concat(B.ext.list("presentMode"));
+      return [{ id: "presenter", label: "Present", builtin: true, printable: false },
+        { id: "handoff", label: "Report", builtin: true, printable: true }].concat(B.ext.list("presentMode"));
     }
 
     function renderModeTabs() {
@@ -48,7 +48,7 @@
       el.modeTabs.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
     }
 
-    /* Buttons registered with AIxRay.ext.registerPresentAction, before Engagement JSON. */
+    /* Buttons registered with AIxRay.ext.registerPresentAction, just before Save a copy (pr-json). */
     function renderActions() {
       const list = B.ext.list("presentAction");
       const key = list.map(a => a.id).join("|");
@@ -63,31 +63,39 @@
     }
 
     function build() {
-      el.modeTabs = h("div", { class: "btn-group", role: "group", "aria-label": "Present mode" });
+      el.modeTabs = h("div", { class: "btn-group", role: "group", "aria-label": "Show as" });
       el.actions = h("span", { class: "present-actions", style: { display: "contents" } });
       renderModeTabs();
       el.sensitive = h("input", { type: "checkbox", id: "pr-sensitive" });
       el.sensitive.addEventListener("change", () => { includeSensitive = el.sensitive.checked; render(); });
       el.unreviewed = h("input", { type: "checkbox", id: "pr-unreviewed" });
       el.unreviewed.addEventListener("change", () => { includeUnreviewedAi = el.unreviewed.checked; render(); });
-      el.unreviewedLabel = h("label", { class: "check", title: "AI drafts are marked as not reviewed wherever they appear" }, el.unreviewed, "Include AI drafts not yet reviewed");
-      const btn = (iconName, label, id, fn) => {
-        const b = h("button", { type: "button", class: "btn", id }, icon(iconName), label);
+      el.unreviewedLabel = h("label", { class: "check", title: "Unreviewed AI drafts stay marked as AI drafts wherever they appear" }, el.unreviewed, "Include unreviewed AI drafts");
+      const btn = (iconName, label, id, fn, title) => {
+        const b = h("button", { type: "button", class: "btn", id, title: title || null }, icon(iconName), label);
         b.addEventListener("click", fn);
         return b;
       };
-      el.bar = h("div", { class: "present-bar", role: "toolbar", "aria-label": "Present and export" },
-        el.modeTabs,
-        h("label", { class: "check" }, el.sensitive, "Include sensitive records"),
-        el.unreviewedLabel,
-        h("span", { class: "spacer" }),
-        btn("printer", "Print or save as PDF", "pr-print", printHandoff),
-        btn("download", "Records CSV", "pr-csv", exportCsv),
-        btn("image", "Process SVG", "pr-svg", () => exportDiagram("svg")),
-        btn("image", "Process PNG", "pr-png", () => exportDiagram("png")),
-        el.actions,
-        btn("save", "Engagement JSON", "pr-json", () => app.saveAs()),
-        btn("fullscreen", "Full screen", "pr-full", () => { const t = el.root; if (t.requestFullscreen) t.requestFullscreen().catch(() => {}); }));
+      // Row 1: what to show and the one action that fits it (Full screen to present, Print for a report).
+      // Row 2: what to include, then sharing and exports. Registered actions stay directly before Save a copy (pr-json).
+      el.full = btn("fullscreen", "Full screen", "pr-full", () => { const t = el.root; if (t.requestFullscreen) t.requestFullscreen().catch(() => {}); });
+      el.print = btn("printer", "Print or save as PDF", "pr-print", printHandoff, "Print the report, or save it as a PDF");
+      el.bar = h("div", { class: "present-bar", role: "toolbar", "aria-label": "Present, report and export" },
+        h("div", { class: "tb-row" },
+          h("div", { class: "tb-group" }, h("span", { class: "tb-label" }, "Show as"), el.modeTabs),
+          h("span", { class: "tb-spacer" }),
+          el.full, el.print),
+        h("div", { class: "tb-row tb-row-display" },
+          h("div", { class: "tb-group", role: "group", "aria-label": "Include" },
+            h("label", { class: "check" }, el.sensitive, "Include sensitive findings"),
+            el.unreviewedLabel),
+          h("span", { class: "tb-spacer" }),
+          h("div", { class: "tb-group present-exports", role: "group", "aria-label": "Share and export" },
+            btn("download", "Export findings (CSV)", "pr-csv", exportCsv, "The findings in the report, as a CSV file"),
+            btn("image", "Export diagram (SVG)", "pr-svg", () => exportDiagram("svg"), "The process diagram as it is shown on the Process tab"),
+            btn("image", "Export diagram (PNG)", "pr-png", () => exportDiagram("png"), "The process diagram as it is shown on the Process tab"),
+            el.actions,
+            btn("save", "Save a copy", "pr-json", () => app.saveAs(), "Save a copy of the project file"))));
       el.content = h("div", { style: { minHeight: "0", overflow: "auto" } });
       el.root = h("div", { class: "present-ws" }, el.bar, el.content);
       return el.root;
@@ -168,16 +176,16 @@
             r.description ? h("span", null, r.description.length > 180 ? r.description.slice(0, 180) + "..." : r.description) : null,
             h("div", { class: "muted small" }, [r.owner ? "Owner: " + r.owner : "No owner", schema.label("recordStatus", r.status)].join(" \u00b7 "))))));
       });
-      if (!any) side.appendChild(h("p", { class: "small muted" }, focusStep ? "No findings for this step are marked for the handoff." :
-        "No findings are marked for the handoff yet. Capture them against steps in the Process workspace."));
+      if (!any) side.appendChild(h("p", { class: "small muted" }, focusStep ? "No findings for this step are in the report." :
+        "No findings in the report yet. Select a step on the Process tab and add one."));
       const excluded = e.records.filter(r => r.sensitive && r.includeInHandoff).length;
-      if (excluded && !includeSensitive) side.appendChild(h("p", { class: "note" }, excluded + " sensitive records are hidden."));
+      if (excluded && !includeSensitive) side.appendChild(h("p", { class: "note" }, excluded + (excluded === 1 ? " sensitive finding is hidden." : " sensitive findings are hidden.")));
       const drafts = e.records.filter(r => r.includeInHandoff && exporting.isUnreviewedAi(r) && (includeSensitive || !r.sensitive)).length;
-      if (drafts && !includeUnreviewedAi) side.appendChild(h("p", { class: "note" }, drafts + " AI drafts not yet reviewed are hidden."));
+      if (drafts && !includeUnreviewedAi) side.appendChild(h("p", { class: "note" }, drafts + (drafts === 1 ? " unreviewed AI draft is hidden." : " unreviewed AI drafts are hidden.")));
       if (e.meta.disclosure) side.appendChild(h("p", { class: "note" }, e.meta.disclosure));
     }
 
-    /* ---------- Handoff summary ---------- */
+    /* ---------- Report (the handoff summary) ---------- */
 
     function renderHandoff() {
       const e = eng();
@@ -199,13 +207,13 @@
       const steps = r => r.steps.join(", ") || "Not linked";
       const doc = h("article", { class: "handoff-doc", id: "handoff-doc" },
         h("div", { class: "handoff-sail", "aria-hidden": "true" }),
-        h("p", { class: "eyebrow", style: { marginTop: "var(--space-4)" } }, [hd.client, hd.engagementName].filter(Boolean).join(" \u00b7 ") || "Process workshop"),
+        h("p", { class: "eyebrow", style: { marginTop: "var(--space-4)" } }, [hd.client, hd.engagementName].filter(Boolean).join(" \u00b7 ") || "Process review"),
         h("h1", null, hd.title),
-        h("p", { class: "lede" }, "Workshop handoff: the process as reviewed, what was found, what was decided, and who owns the next steps."),
+        h("p", { class: "lede" }, "The process as reviewed, what was found and decided, and who owns each next step."),
         h("dl", { class: "facts" },
           h("dt", null, "Data status"), h("dd", null, hd.dataStatus),
           h("dt", null, "Confidentiality"), h("dd", null, hd.confidentiality),
-          h("dt", null, "Engagement revision"), h("dd", null, String(hd.revision)),
+          h("dt", null, "File version"), h("dd", null, String(hd.revision)),
           h("dt", null, "Prepared"), h("dd", null, formatDate(hd.generatedAt)),
           hd.scenario ? [h("dt", null, "Scenario"), h("dd", null, hd.scenario.name + ". " + hd.scenario.provenance + ", " + hd.scenario.timing.toLowerCase() + ".")] : null,
           h("dt", null, "Timing"), h("dd", null, hd.timeBasis)),
@@ -213,13 +221,13 @@
         ext("summary"),
         h("h2", null, "Scope"),
         h("div", { class: "table-wrap" }, h("table", { class: "table" },
-          h("thead", null, h("tr", null, ["Model", "Role", "Version", "Status", "Steps"].map(col => h("th", { scope: "col" }, col)))),
+          h("thead", null, h("tr", null, ["Diagram", "Type", "Version", "Status", "Steps"].map(col => h("th", { scope: "col" }, col)))),
           h("tbody", null, hd.models.map(m => h("tr", null, h("td", null, m.name), h("td", null, m.role), h("td", null, String(m.version)), h("td", null, m.status), h("td", { class: "num" }, String(m.steps))))))),
         ext("scope"),
-        sec("Pain points", "pain", [["Finding", title], ["Steps", steps], ["Owner", r => r.owner || "Unassigned"], ["Status", r => r.status]]),
+        sec("Pain points", "pain", [["Pain point", title], ["Steps", steps], ["Owner", r => r.owner || "Unassigned"], ["Status", r => r.status]]),
         ext("pain"),
-        sec("Opportunities", "opportunity", [["Opportunity", title], ["Intervention", r => r.opportunity ? r.opportunity.intervention || "Not chosen" : ""],
-          ["Expected benefit", r => r.opportunity ? r.opportunity.expectedBenefit : ""], ["Next validation", r => r.opportunity ? r.opportunity.validationAction : ""], ["Owner", r => r.owner || "Unassigned"]]),
+        sec("Opportunities", "opportunity", [["Opportunity", title], ["Type of change", r => r.opportunity ? r.opportunity.intervention || "Not chosen" : ""],
+          ["Expected benefit", r => r.opportunity ? r.opportunity.expectedBenefit : ""], ["How to confirm", r => r.opportunity ? r.opportunity.validationAction : ""], ["Owner", r => r.owner || "Unassigned"]]),
         ext("opportunity"),
         sec("Decisions", "decision", [["Decision", title], ["Steps", steps], ["Owner", r => r.owner || "Unassigned"], ["Status", r => r.status]]),
         ext("decision"),
@@ -227,26 +235,27 @@
         ext("action"),
         sec("Open questions", "question", [["Question", title], ["Steps", steps], ["Owner", r => r.owner || "Unassigned"]]),
         ext("question"),
-        sec("Assumptions captured", "assumption", [["Assumption", title], ["Owner", r => r.owner || "Unassigned"], ["Evidence", r => r.evidence.join("; ") || "None"]]),
+        sec("Assumptions", "assumption", [["Assumption", title], ["Owner", r => r.owner || "Unassigned"], ["Sources", r => r.evidence.join("; ") || "None"]]),
         sec("Notes", "note", [["Note", title], ["Steps", steps], ["Owner", r => r.owner || "Unassigned"]]),
-        h("h2", null, "Economic assumptions"),
+        h("h2", null, "Cost and volume assumptions"),
         hd.assumptions.length ? h("div", { class: "table-wrap" }, h("table", { class: "table" },
           h("thead", null, h("tr", null, ["Assumption", "Value", "Status", "Source"].map(col => h("th", { scope: "col" }, col)))),
           h("tbody", null, hd.assumptions.map(a => h("tr", null, h("td", null, a.label), h("td", { class: "num" }, a.value), h("td", null, a.status), h("td", null, a.source || "")))))) :
-          h("p", null, "No economic assumptions are recorded."),
-        hd.value && hd.value.length ? [h("h3", null, "Modeled figures for the scenario"),
-          h("ul", null, hd.value.map(v => h("li", null, v.label + ": " + v.text + " (" + v.basis + " inputs; " + v.formula + ")")))] : null,
-        hd.reconciliation && hd.reconciliation.warnings.length ? [h("h3", null, "Figures that do not reconcile"),
+          h("p", null, "No cost or volume assumptions yet."),
+        hd.value && hd.value.length ? [h("h3", null, "Modeled figures for " + (hd.scenario ? hd.scenario.name : "the scenario")),
+          h("ul", null, hd.value.map(v => h("li", null, v.label + ": " + v.text + " (from " + schema.label("assumptionStatus", v.basis).toLowerCase() + " inputs; " + v.formula + ")")))] : null,
+        hd.reconciliation && hd.reconciliation.warnings.length ? [h("h3", null, "Figures that do not add up"),
           h("ul", null, hd.reconciliation.warnings.map(w => h("li", null, w)))] : null,
         ext("value"),
-        h("h2", null, "Evidence"),
-        h("p", null, hd.evidence.total + (hd.evidence.total === 1 ? " source" : " sources") + " recorded: " + hd.evidence.validated + " validated, " + hd.evidence.unreviewed + " not reviewed, " +
+        h("h2", null, "Sources"),
+        h("p", null, hd.evidence.total + (hd.evidence.total === 1 ? " source" : " sources") + ": " + hd.evidence.validated + " confirmed, " + hd.evidence.unreviewed + " not reviewed, " +
           hd.evidence.disputed + " disputed, " + hd.evidence.unavailable + " unavailable. " +
-          hd.evidence.stepsWithoutProvenance + " of " + hd.evidence.currentSteps + " current-state steps have no recorded provenance."),
+          hd.evidence.stepsWithoutProvenance + " of " + hd.evidence.currentSteps + " current-state steps have nothing recorded about where they came from."),
         ext("evidence"),
-        hd.excludedSensitive ? h("p", { class: "note" }, hd.excludedSensitive + " sensitive records are not included in this summary.") : null,
-        hd.excludedUnreviewedAi ? h("p", { class: "note no-print" }, hd.excludedUnreviewedAi + " AI-drafted records are not yet reviewed and are not included. Review them in Records, or tick Include AI drafts not yet reviewed.") : null,
-        hd.disclosure ? [h("h2", null, "Disclosure"), h("p", null, hd.disclosure)] : null,
+        hd.excludedSensitive ? h("p", { class: "note" }, hd.excludedSensitive + (hd.excludedSensitive === 1 ? " sensitive finding is" : " sensitive findings are") + " left out of this report.") : null,
+        hd.excludedUnreviewedAi ? h("p", { class: "note no-print" }, hd.excludedUnreviewedAi + (hd.excludedUnreviewedAi === 1 ? " AI-drafted finding is" : " AI-drafted findings are") +
+          " left out until someone reviews " + (hd.excludedUnreviewedAi === 1 ? "it" : "them") + " on the Findings tab. To show " + (hd.excludedUnreviewedAi === 1 ? "it" : "them") + " anyway, tick Include unreviewed AI drafts.") : null,
+        hd.disclosure ? [h("h2", null, "About this data"), h("p", null, hd.disclosure)] : null,
         ext("end"));
       el.content.appendChild(h("div", { class: "handoff" }, doc));
     }
@@ -272,7 +281,7 @@
 
     function reviewSummary() {
       B.dialogs.confirmDialog("Mark the summary reviewed?",
-        "Confirm that you checked the AI-drafted summary against the engagement. The handoff then prints it with a line saying it was drafted with AI assistance and reviewed, with the date.", "Mark reviewed")
+        "Confirm that you checked the AI-drafted summary against the project. The report then includes it, with a line saying it was drafted with AI assistance and the date it was reviewed.", "Mark reviewed")
         .then(ok => { if (ok) app.dispatch("narrative/review", { kind: "executive-summary" }, "Summary marked reviewed."); });
     }
 
@@ -283,7 +292,7 @@
         n && n.generated && !n.generated.reviewed ? h("button", { type: "button", class: "btn", id: "pr-summary-review", on: { click: reviewSummary } }, icon("check"), "Mark summary reviewed") : null,
         B.aiPanel.enabled ? h("button", { type: "button", class: "btn", id: "pr-summary-ai", on: { click: () => B.aiPanel.openTask(app, "summary") } }, icon("agent"), "Draft with AI") : null);
       if (!hd.executiveSummary) {
-        return [n ? h("p", { class: "note no-print" }, "An AI-drafted executive summary is waiting for review. It stays out of the handoff until it is reviewed, unless you include AI drafts not yet reviewed.") : null, tools];
+        return [n ? h("p", { class: "note no-print" }, "An AI-drafted executive summary is waiting for review. It stays out of the report until someone reviews it, unless you include unreviewed AI drafts.") : null, tools];
       }
       const x = hd.executiveSummary;
       return h("section", { class: "exec-summary", "aria-labelledby": "hd-summary" },
@@ -295,7 +304,7 @@
 
     /* ---------- Exports ---------- */
 
-    /* Prints the current mode when it is printable, otherwise the handoff summary. */
+    /* Prints the current mode when it is printable, otherwise the report. */
     function printHandoff() {
       const current = modes().find(m => m.id === mode);
       if (!current || !current.printable) { mode = "handoff"; render(); }
@@ -305,8 +314,8 @@
     function exportCsv() {
       const e = eng();
       const csv = exporting.recordsToCsv(e, { includeSensitive, includeUnreviewedAi, handoffOnly: true });
-      downloadBlob(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }), exporting.fileBase(e) + "-handoff-records.csv");
-      announce("Handoff records exported" + (includeSensitive ? ", including sensitive records." : "."));
+      downloadBlob(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }), exporting.fileBase(e) + "-report-findings.csv");
+      announce("Findings in the report exported" + (includeSensitive ? ", including sensitive findings." : "."));
     }
 
     const STYLE_PROPS = ["fill", "stroke", "stroke-width", "stroke-dasharray", "opacity", "font-family", "font-size", "font-weight", "text-decoration", "fill-opacity"];
@@ -326,9 +335,9 @@
       out.appendChild(s("rect", { x: 0, y: 0, width: "100%", height: "100%", fill: bgColor }));
       out.appendChild(s("text", { x: 16, y: 30, "font-size": 20, "font-weight": 700, fill: ink }, e.meta.processName));
       out.appendChild(s("text", { x: 16, y: 54, "font-size": 12, fill: muted },
-        [schema.label("dataStatus", e.meta.dataStatus), sc ? "Scenario: " + sc.name + " (" + schema.label("scenarioProvenance", sc.provenance).toLowerCase() + ") at " + units.formatDuration(app.view.t, e.meta.timeBasis) : "No scenario",
+        [schema.label("dataStatus", e.meta.dataStatus), sc ? "Scenario: " + sc.name + " (" + schema.label("scenarioProvenance", sc.provenance).toLowerCase() + ") at " + units.formatDuration(app.view.t, e.meta.timeBasis) : "No timing recorded",
           "Exported " + formatDate(new Date().toISOString())].join("  \u00b7  ")));
-      out.appendChild(s("text", { x: 16, y: 72, "font-size": 11, fill: muted }, "Legend: bold green outline complete, bold blue outline in progress, faded dashed outline not in scenario, dotted purple outline route not confirmed."));
+      out.appendChild(s("text", { x: 16, y: 72, "font-size": 11, fill: muted }, "Key: bold green outline, complete; bold blue outline, in progress; faded dashed outline, not in scenario; dotted purple outline, route not confirmed."));
       let y = headerH;
       sourcePanes.forEach(p => {
         const d = p.diagram;
@@ -388,7 +397,7 @@
       const o = opts || {};
       return new Promise((resolve, reject) => {
         const svg = buildSvg();
-        if (!svg) { reject(new Error("Open the Process workspace once so the diagram is drawn, then try again.")); return; }
+        if (!svg) { reject(new Error("Open the Process tab once so the diagram is drawn, then try again.")); return; }
         const img = new Image();
         const url = URL.createObjectURL(new Blob([svg.text], { type: "image/svg+xml" }));
         img.onload = () => {
@@ -401,10 +410,10 @@
           URL.revokeObjectURL(url);
           canvas.toBlob(blob => {
             if (blob) resolve({ blob, width: canvas.width, height: canvas.height });
-            else reject(new Error("Your browser could not render the diagram to an image. Use the SVG export instead."));
+            else reject(new Error("Your browser could not turn the diagram into an image. Use Export diagram (SVG) instead."));
           }, "image/png");
         };
-        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Your browser could not render the diagram to an image. Use the SVG export instead.")); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Your browser could not turn the diagram into an image. Use Export diagram (SVG) instead.")); };
         img.src = url;
       });
     }
@@ -413,15 +422,15 @@
       const e = eng();
       if (!app.processView.panes.length) app.goto("process");
       const svg = buildSvg();
-      if (!svg) { B.dialogs.messageDialog("Nothing to export", "Open the Process workspace once so the diagram is drawn, then export again."); return; }
+      if (!svg) { B.dialogs.messageDialog("Nothing to export yet", "Open the Process tab once so the diagram is drawn, then export again."); return; }
       const base = exporting.fileBase(e) + "-process";
       if (kind === "svg") {
         downloadBlob(new Blob([svg.text], { type: "image/svg+xml" }), base + ".svg");
-        announce("Process SVG exported.");
+        announce("Diagram exported as SVG.");
         return;
       }
-      renderPng().then(r => { downloadBlob(r.blob, base + ".png"); announce("Process PNG exported."); })
-        .catch(err => B.dialogs.messageDialog("PNG export failed", err.message));
+      renderPng().then(r => { downloadBlob(r.blob, base + ".png"); announce("Diagram exported as PNG."); })
+        .catch(err => B.dialogs.messageDialog("The PNG export did not work", err.message));
     }
 
     function renderMode() {
@@ -436,6 +445,9 @@
       if (!modes().some(m => m.id === mode)) mode = "presenter";
       renderModeTabs();
       renderActions();
+      const current = modes().find(m => m.id === mode);
+      el.full.classList.toggle("btn-primary", mode === "presenter");
+      el.print.classList.toggle("btn-primary", !!(current && current.printable));
       const e = eng();
       el.unreviewedLabel.hidden = !(e.records.some(r => exporting.isUnreviewedAi(r)) || (e.narratives || []).some(n => exporting.isUnreviewedAi(n)));
       if (el.unreviewedLabel.hidden && includeUnreviewedAi) { includeUnreviewedAi = false; el.unreviewed.checked = false; }

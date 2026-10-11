@@ -122,7 +122,7 @@ test("the handoff summary reports measured change after the value section", asyn
   await p.click("#pr-handoff");
   const doc = await p.$eval("#handoff-doc", el => {
     const kids = [...el.children];
-    const valueHead = kids.findIndex(k => k.tagName === "H2" && k.textContent === "Evidence");
+    const valueHead = kids.findIndex(k => k.tagName === "H2" && k.textContent === "Sources");
     const benefitsHead = kids.findIndex(k => k.tagName === "H3" && k.textContent === "Benefits measured");
     return { beforeEvidence: benefitsHead !== -1 && benefitsHead < valueHead, text: el.textContent };
   });

@@ -129,7 +129,7 @@ test("a CSV log is mapped, measured and added in one step, shows everywhere, and
   await p.click("#tab-process");
   await p.waitForSelector(".node");
   await p.selectOption("#pv-lens", "observed-share");
-  assert.match(await p.textContent("#pv-lens-info"), /Observed share of cases: .* of \d+ activities appear in the log/);
+  assert.match(await p.textContent("#pv-lens-info"), /Measured share of cases: .* of \d+ activities appear in the log/);
   assert.match(await p.textContent("#pv-lens-info"), /13 cases in underwriting/);
   assert.ok((await p.$$(".node .lens-bar[visibility=visible]")).length >= 20);
   await p.selectOption("#pv-lens", "observed-time");
@@ -284,7 +284,7 @@ test("a log opened with no engagement asks for one first", async t => {
   const p = s.page;
   await p.setInputFiles("#file-input", { name: "underwriting.csv", mimeType: "text/csv", buffer: fs.readFileSync(LOG) });
   await p.waitForSelector("dialog[open]");
-  assert.match(await p.textContent("dialog[open]"), /Open an engagement first/);
+  assert.match(await p.textContent("dialog[open]"), /Open a project first/);
   const accept = await p.evaluate(() => {
     const input = document.getElementById("file-input");
     input.click = () => {};

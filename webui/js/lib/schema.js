@@ -20,20 +20,20 @@
     modelStatus: [["baseline", "Baseline"], ["draft", "Draft"], ["proposed", "Proposed"]],
     dataStatus: [
       ["demonstration", "Demonstration data"],
-      ["supplied", "Supplied scenario"],
-      ["observed", "Observed data"]
+      ["supplied", "Provided data"],
+      ["observed", "Measured data"]
     ],
     confidentiality: [
       ["internal", "Internal"], ["client-confidential", "Client confidential"],
       ["restricted", "Restricted"], ["public", "Public"]
     ],
     timeCalendar: [["calendar", "Calendar time"], ["business", "Business time"]],
-    membership: [["included", "In scenario"], ["excluded", "Not in scenario"], ["unknown", "Not confirmed"]],
-    scenarioProvenance: [["illustrative", "Illustrative"], ["supplied", "Supplied"], ["observed", "Observed"]],
+    membership: [["included", "In scenario"], ["excluded", "Not in scenario"], ["unknown", "Route not confirmed"]],
+    scenarioProvenance: [["illustrative", "Illustrative"], ["supplied", "Provided"], ["observed", "Measured"]],
     timingMethod: [
-      ["explicit-visits", "Explicit visits"],
-      ["proportional-scale", "Scaled from a representative route"],
-      ["population-illustration", "Population illustration"]
+      ["explicit-visits", "Timed step by step"],
+      ["proportional-scale", "Scaled from one typical route"],
+      ["population-illustration", "Illustrates a group of cases"]
     ],
     recordKind: [
       ["pain", "Pain point"], ["opportunity", "Opportunity"], ["question", "Open question"],
@@ -44,37 +44,37 @@
     effortSize: [["", "Not set"], ["S", "Small"], ["M", "Medium"], ["L", "Large"]],
     intervention: [
       ["", "Not chosen"],
-      ["eliminate", "Eliminate the step"],
+      ["eliminate", "Remove the step"],
       ["simplify", "Simplify"],
       ["standardize", "Standardize"],
-      ["integrate", "Integrate systems"],
-      ["orchestrate", "Orchestrate handoffs"],
+      ["integrate", "Connect systems"],
+      ["orchestrate", "Coordinate work between teams"],
       ["deterministic-automation", "Rules-based automation"],
       ["self-service", "Self-service"],
-      ["ai-assist", "AI assistance (human decides)"],
+      ["ai-assist", "AI assistance (a person decides)"],
       ["ai-agent", "AI agent (acts within limits)"],
-      ["control-data", "Control or data improvement"]
+      ["control-data", "Better controls or data"]
     ],
     evidenceStatus: [
-      ["unreviewed", "Not reviewed"], ["validated", "Validated"],
+      ["unreviewed", "Not reviewed"], ["validated", "Confirmed"],
       ["disputed", "Disputed"], ["unavailable", "Source unavailable"]
     ],
     provenanceSource: [
-      ["unknown", "Unknown"], ["source-document", "Source document"], ["client", "Client provided"],
-      ["consultant-estimate", "Consultant estimate"], ["generated", "Generated draft"], ["workshop", "Workshop capture"]
+      ["unknown", "Unknown"], ["source-document", "Document"], ["client", "Provided by your team"],
+      ["consultant-estimate", "Your estimate"], ["generated", "AI draft"], ["workshop", "Review session"]
     ],
-    validation: [["unvalidated", "Not validated"], ["validated", "Validated"], ["disputed", "Disputed"]],
-    assumptionStatus: [["illustrative", "Illustrative"], ["supplied", "Supplied"], ["observed", "Observed"], ["validated", "Validated"]],
-    waitType: [["", "Not set"], ["none", "No wait"], ["queue", "Queue wait"], ["external", "External party wait"], ["other", "Other delay"]],
+    validation: [["unvalidated", "Not confirmed yet"], ["validated", "Confirmed"], ["disputed", "Disputed"]],
+    assumptionStatus: [["illustrative", "Illustrative"], ["supplied", "Provided"], ["observed", "Measured"], ["validated", "Confirmed"]],
+    waitType: [["", "Not set"], ["none", "No wait"], ["queue", "Waiting in a queue"], ["external", "Waiting on an external party"], ["other", "Other delay"]],
     edgeType: [
       ["sequence", "Sequence"], ["conditional", "Conditional"], ["default", "Default"],
       ["loop", "Loop back"], ["sample", "Sampled"], ["message", "Message"]
     ],
     change: [["unchanged", "Unchanged"], ["modified", "Modified"], ["added", "Added"], ["removed", "Removed"]],
     aiTask: [
-      ["extract", "Extract a current state"], ["opportunities", "Suggest opportunities"],
-      ["future-state", "Draft a future state"], ["summary", "Draft a handoff summary"],
-      ["log-mapping", "Map event log activities to steps"]
+      ["extract", "Create a process from documents"], ["opportunities", "Suggest findings"],
+      ["future-state", "Draft a future state"], ["summary", "Draft the summary"],
+      ["log-mapping", "Match event log activities to steps"]
     ],
     aiProvider: [["claude", "Claude (Claude Code)"], ["codex", "ChatGPT (Codex)"], ["other", "Other assistant"]],
     aiSurface: [["cli", "Command line"], ["skill", "Agent skill"], ["app", "In-app helper"]],
@@ -88,7 +88,7 @@
     datasetRole: [["baseline", "Baseline"], ["after", "After the change"]],
     logFormat: [["csv", "Comma-separated text"], ["tsv", "Tab-separated text"], ["xlsx", "Excel workbook"]],
     timestampMode: [["single", "One timestamp per event"], ["start-end", "Start and end timestamps"]],
-    caseIdHandling: [["hashed", "Hashed"], ["sequence", "Numbered in sequence"], ["original", "Original IDs kept"]],
+    caseIdHandling: [["hashed", "Replaced with codes"], ["sequence", "Numbered in sequence"], ["original", "Original IDs kept"]],
     mappingMethod: [
       ["exact", "Same name"], ["fuzzy", "Similar name"], ["ai", "Suggested by AI"],
       ["manual", "Chosen by hand"], ["ignored", "Left out"]

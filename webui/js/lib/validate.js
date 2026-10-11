@@ -45,7 +45,7 @@
     }
     if (typeof v === "number" || typeof v === "boolean") v = String(v);
     if (typeof v !== "string") {
-      c.error(path, "Expected text.");
+      c.error(path, "Expected text here.");
       return o.fallback !== undefined ? o.fallback : "";
     }
     const max = o.max || L.stringLength;
@@ -64,7 +64,7 @@
       return o.fallback !== undefined ? o.fallback : null;
     }
     if (typeof v !== "number" || !Number.isFinite(v)) {
-      c.error(path, "Expected a finite number.");
+      c.error(path, "Expected a number.");
       return o.fallback !== undefined ? o.fallback : null;
     }
     if (o.min !== undefined && v < o.min) c.error(path, "Must be at least " + o.min + ".");
@@ -85,7 +85,7 @@
       return o.fallback !== undefined ? o.fallback : allowed[0];
     }
     if (!allowed.includes(v)) {
-      c.warn(path, "Unrecognized value \"" + String(v).slice(0, 60) + "\"; using \"" +
+      c.warn(path, "Unknown value \"" + String(v).slice(0, 60) + "\" was replaced with \"" +
         (o.fallback !== undefined ? o.fallback : allowed[0]) + "\".", "enum.unknown");
       return o.fallback !== undefined ? o.fallback : allowed[0];
     }
@@ -94,17 +94,17 @@
 
   function arr(c, v, path, max) {
     if (v === undefined || v === null) return [];
-    if (!Array.isArray(v)) { c.error(path, "Expected a list."); return []; }
-    if (max && v.length > max) { c.error(path, "More than " + max + " entries."); return v.slice(0, max); }
+    if (!Array.isArray(v)) { c.error(path, "Expected a list here."); return []; }
+    if (max && v.length > max) { c.error(path, "Too many entries: the most allowed is " + max + "."); return v.slice(0, max); }
     return v;
   }
 
   function obj(c, v, path, required) {
     if (v === undefined || v === null) {
-      if (required) c.error(path, "An object is required.");
+      if (required) c.error(path, "This section is missing.");
       return {};
     }
-    if (!util.isPlainObject(v)) { c.error(path, "Expected an object."); return {}; }
+    if (!util.isPlainObject(v)) { c.error(path, "This section is not in the expected format."); return {}; }
     return v;
   }
 
@@ -114,7 +114,7 @@
       return typeof v === "string" ? v : "";
     }
     if (taken) {
-      if (taken.has(v)) c.error(path, "Duplicate ID \"" + v + "\".");
+      if (taken.has(v)) c.error(path, "Duplicate ID \"" + v + "\": each ID can be used only once.");
       taken.add(v);
     }
     return v;
@@ -123,7 +123,7 @@
   function idList(c, v, path) {
     return arr(c, v, path, 1000).filter((x, i) => {
       if (util.isValidId(x)) return true;
-      c.warn(path + "[" + i + "]", "Ignored an invalid reference.", "ref.invalid");
+      c.warn(path + "[" + i + "]", "A link that was not valid was left out.", "ref.invalid");
       return false;
     });
   }
@@ -134,7 +134,7 @@
     if (typeof v === "number") return Number.isFinite(v) ? v : null;
     if (typeof v === "boolean") return v;
     if (v === null || v === undefined) return null;
-    if (depth >= L.detailDepth) { c.warn(path, "Nested detail too deep; ignored.", "detail.depth"); return null; }
+    if (depth >= L.detailDepth) { c.warn(path, "Detail nested too deeply was left out.", "detail.depth"); return null; }
     if (Array.isArray(v)) {
       return v.slice(0, 500).map((x, i) => freeForm(c, x, path + "[" + i + "]", depth + 1)).filter(x => x !== null);
     }
@@ -181,7 +181,7 @@
     const n = obj(c, raw, path, true);
     knownKeys(c, n, path, ["id", "kind", "title", "text", "status", "generated", "createdAt", "updatedAt"]);
     const kind = en(c, n.kind, "narrativeKind", path + ".kind");
-    if (kinds.has(kind)) c.error(path + ".kind", "Only one narrative of each kind is allowed.");
+    if (kinds.has(kind)) c.error(path + ".kind", "There can be only one summary of each kind.");
     kinds.add(kind);
     const out = {
       id: idOf(c, n.id, path + ".id"),
@@ -203,11 +203,11 @@
       "dataStatus", "timeBasis", "currency", "disclosure", "summary", "credits"]);
     let tb = m.timeBasis;
     if (!util.isPlainObject(tb)) {
-      c.warn("meta.timeBasis", "No time basis declared; assuming calendar minutes.", "time.basis");
+      c.warn("meta.timeBasis", "The file does not say how time is counted, so calendar time is used.", "time.basis");
       tb = {};
     }
     const unit = tb.unit === undefined ? "minute" : tb.unit;
-    if (unit !== "minute") c.error("meta.timeBasis.unit", "Only \"minute\" is supported as the timing unit.");
+    if (unit !== "minute") c.error("meta.timeBasis.unit", "Timings must be in minutes (\"minute\").");
     const currency = typeof m.currency === "string" && /^[A-Z]{3}$/.test(m.currency) ? m.currency : "USD";
     return {
       clientDisplayName: str(c, m.clientDisplayName, "meta.clientDisplayName", { max: 200 }),
@@ -264,11 +264,11 @@
         type: en(c, lane.type, "laneType", lp + ".type")
       });
     });
-    if (!model.lanes.length) c.error(path + ".lanes", "A model needs at least one swimlane.");
+    if (!model.lanes.length) c.error(path + ".lanes", "A process needs at least one lane.");
 
     const nodeIds = new Set();
     const nodes = arr(c, m.nodes, path + ".nodes", L.nodesPerModel);
-    if (!nodes.length) c.error(path + ".nodes", "A model needs at least one step.");
+    if (!nodes.length) c.error(path + ".nodes", "A process needs at least one step.");
     nodes.forEach((n, j) => {
       const np = path + ".nodes[" + j + "]";
       const node = obj(c, n, np, true);
@@ -277,13 +277,13 @@
       const semanticType = typeof node.semanticType === "string" ? node.semanticType : "task";
       if (!schema.SEMANTIC_TYPES[semanticType]) {
         c.warn(np + ".semanticType", "Step type \"" + semanticType.slice(0, 60) +
-          "\" is not supported. It is shown as a generic step and is not replayed.", "semantic.unsupported");
+          "\" is not supported. It is shown as a plain step, and playback does not interpret it.", "semantic.unsupported");
       } else if (!schema.SEMANTIC_TYPES[semanticType].replay) {
         c.warn(np + ".semanticType", schema.SEMANTIC_TYPES[semanticType].label +
-          " is shown, but its execution semantics are not replayed.", "semantic.limited", "info");
+          " is shown, but playback does not follow its rules.", "semantic.limited", "info");
       }
       const laneId = typeof node.laneId === "string" ? node.laneId : "";
-      if (!laneIds.has(laneId)) c.error(np + ".laneId", "Unknown swimlane \"" + String(node.laneId).slice(0, 60) + "\".");
+      if (!laneIds.has(laneId)) c.error(np + ".laneId", "Unknown lane \"" + String(node.laneId).slice(0, 60) + "\".");
       const tags = obj(c, node.tags, np + ".tags");
       const meas = obj(c, node.measures, np + ".measures");
       const prov = obj(c, node.provenance, np + ".provenance");
@@ -401,7 +401,7 @@
       if (FORBIDDEN_KEYS.has(modelId)) return;
       const rp = path + ".runs." + modelId;
       const model = modelsById.get(modelId);
-      if (!model) { c.error(rp, "Run refers to an unknown model."); return; }
+      if (!model) { c.error(rp, "Timing refers to a process that is not in the file."); return; }
       const r = obj(c, runs[modelId], rp);
       knownKeys(c, r, rp, ["visits", "transitions", "membership", "pauseAt", "milestones"]);
       const nodeIds = new Set(model.nodes.map(n => n.id));
@@ -411,7 +411,7 @@
       const membership = {};
       const mem = obj(c, r.membership, rp + ".membership");
       Object.keys(mem).forEach(nodeId => {
-        if (!nodeIds.has(nodeId)) { c.warn(rp + ".membership." + nodeId, "Membership for an unknown step was ignored.", "ref.dangling"); return; }
+        if (!nodeIds.has(nodeId)) { c.warn(rp + ".membership." + nodeId, "A route setting for an unknown step was left out.", "ref.dangling"); return; }
         membership[nodeId] = en(c, mem[nodeId], "membership", rp + ".membership." + nodeId, { fallback: "unknown" });
       });
       const visits = [];
@@ -424,7 +424,7 @@
         const end = num(c, visit.end, vp + ".end", { required: true, min: 0 });
         if (start !== null && end !== null && end < start) c.error(vp + ".end", "A visit cannot end before it starts.");
         if (membership[visit.nodeId] === "excluded") {
-          c.warn(vp, "Visit to a step marked Not in scenario was ignored.", "membership.conflict");
+          c.warn(vp, "Timing for a step marked Not in scenario was left out.", "membership.conflict");
           return;
         }
         visits.push({ id, nodeId: visit.nodeId, start: start || 0, end: end === null ? (start || 0) : end });
@@ -453,7 +453,7 @@
       });
       if (!transitions.length && visits.length > 1 && r.transitions === undefined) {
         replay.deriveTransitions(model, visits).forEach(tr => transitions.push(tr));
-        c.warn(rp + ".transitions", "No transitions were supplied, so they were derived from visit timing and the connectors. Check loops and exclusive decisions.", "transitions.derived", "info");
+        c.warn(rp + ".transitions", "The file does not say how the case moves between steps, so AIxRay worked it out from the timings and connectors. Check loops and decisions.", "transitions.derived", "info");
       }
       scenario.runs[modelId] = {
         visits, transitions, membership,
@@ -470,7 +470,7 @@
       const values = {}, suppliedText = {};
       const vals = obj(c, me.values, mp + ".values");
       Object.keys(vals).forEach(k => {
-        if (!modelsById.has(k)) { c.warn(mp + ".values." + k, "Value for an unknown model was ignored.", "ref.dangling"); return; }
+        if (!modelsById.has(k)) { c.warn(mp + ".values." + k, "A value for a process that is not in the file was left out.", "ref.dangling"); return; }
         values[k] = num(c, vals[k], mp + ".values." + k);
       });
       const st = obj(c, me.suppliedText, mp + ".suppliedText");
@@ -500,7 +500,7 @@
       });
       const modelRef = (v, p) => {
         if (v == null) return null;
-        if (!modelsById.has(v)) { c.error(p, "Refers to an unknown model."); return null; }
+        if (!modelsById.has(v)) { c.error(p, "Refers to a process that is not in the file."); return null; }
         return v;
       };
       scenario.economics = {
@@ -527,7 +527,7 @@
       knownKeys(c, o, op, ["datasetId", "variantId", "caseLabel"]);
       const datasetId = util.isValidId(o.datasetId) ? o.datasetId : null;
       if (!datasetId || (datasetIds && !datasetIds.has(datasetId))) {
-        c.warn(op + ".datasetId", "Event log \"" + String(o.datasetId).slice(0, 60) + "\" not found; the link to it was removed.", "ref.dangling");
+        c.warn(op + ".datasetId", "Event log \"" + String(o.datasetId).slice(0, 60) + "\" not found; link removed.", "ref.dangling");
       } else {
         scenario.observedFrom = {
           datasetId,
@@ -567,7 +567,7 @@
   function optionalRef(c, v, path, known, what) {
     if (v === undefined || v === null || v === "") return null;
     if (util.isValidId(v) && known.has(v)) return v;
-    c.warn(path, what + " \"" + String(v).slice(0, 60) + "\" not found; reference removed.", "ref.dangling");
+    c.warn(path, what + " \"" + String(v).slice(0, 60) + "\" not found; link removed.", "ref.dangling");
     return null;
   }
 
@@ -595,24 +595,24 @@
       "timeBasis", "mapping", "cases", "steps", "transitions", "variants", "otherVariants", "scenarioIds", "notes"]);
     const id = idOf(c, d.id, path + ".id", taken);
     const modelId = optionalRef(c, d.modelId, path + ".modelId", refs.modelsById, "Model");
-    if (d.modelId == null) c.warn(path + ".modelId", "The event log is not linked to a model.", "dataset.model", "info");
+    if (d.modelId == null) c.warn(path + ".modelId", "The event log is not linked to a process.", "dataset.model", "info");
     const nodes = modelId ? refs.nodeIndex.get(modelId) : null;
     const edges = modelId ? refs.edgeIndex.get(modelId) : null;
     const nodeRef = (v, p) => {
-      if (!util.isValidId(v)) { c.warn(p, "Ignored an invalid step reference.", "ref.invalid"); return null; }
-      if (nodes && !nodes.has(v)) { c.warn(p, "Step \"" + v + "\" not found; reference removed.", "ref.dangling"); return null; }
+      if (!util.isValidId(v)) { c.warn(p, "A link to a step was not valid and was left out.", "ref.invalid"); return null; }
+      if (nodes && !nodes.has(v)) { c.warn(p, "Step \"" + v + "\" not found; link removed.", "ref.dangling"); return null; }
       return v;
     };
     let compares = null;
     if (d.comparesToDatasetId != null && d.comparesToDatasetId !== "") {
-      if (d.comparesToDatasetId === d.id) c.warn(path + ".comparesToDatasetId", "An event log cannot be compared with itself; reference removed.", "ref.dangling");
+      if (d.comparesToDatasetId === d.id) c.warn(path + ".comparesToDatasetId", "An event log cannot be compared with itself; the comparison was removed.", "ref.dangling");
       else compares = optionalRef(c, d.comparesToDatasetId, path + ".comparesToDatasetId", datasetIds, "Event log");
     }
     const sp = path + ".source";
     const src = obj(c, d.source, sp);
     knownKeys(c, src, sp, ["fileName", "format", "sha256", "rows", "events", "timestampMode", "caseIds", "resources",
       "droppedRows", "unmatchedEvents", "excludedIncompleteCases"]);
-    if (src.sha256 && !/^[0-9a-f]{64}$/.test(String(src.sha256))) c.warn(sp + ".sha256", "The file fingerprint is not a SHA-256 value; it was removed.", "dataset.hash");
+    if (src.sha256 && !/^[0-9a-f]{64}$/.test(String(src.sha256))) c.warn(sp + ".sha256", "The file fingerprint was not valid, so it was removed.", "dataset.hash");
     const pp = path + ".period", tp = path + ".timeBasis", cp = path + ".cases", op = path + ".otherVariants";
     const period = obj(c, d.period, pp);
     const tb = obj(c, d.timeBasis, tp);
@@ -717,7 +717,7 @@
         fromNodeId: from, toNodeId: to, count: count(c, row.count, trp + ".count"),
         edgeIds: idList(c, row.edgeIds, trp + ".edgeIds").filter(x => {
           if (!edges || edges.has(x)) return true;
-          c.warn(trp + ".edgeIds", "Connector \"" + x + "\" not found; reference removed.", "ref.dangling");
+          c.warn(trp + ".edgeIds", "Connector \"" + x + "\" not found; link removed.", "ref.dangling");
           return false;
         })
       });
@@ -737,7 +737,7 @@
     });
     out.scenarioIds = idList(c, arr(c, d.scenarioIds, path + ".scenarioIds", L.scenariosPerDataset), path + ".scenarioIds").filter(x => {
       if (refs.scenarioIds.has(x)) return true;
-      c.warn(path + ".scenarioIds", "Scenario \"" + x + "\" not found; reference removed.", "ref.dangling");
+      c.warn(path + ".scenarioIds", "Scenario \"" + x + "\" not found; link removed.", "ref.dangling");
       return false;
     });
     return out;
@@ -754,7 +754,7 @@
     const scope = modelId || (record && record.linkedModelId) || null;
     const nodeIds = idList(c, v.nodeIds, path + ".nodeIds").filter(id => {
       const ok = scope && refs.nodeIndex.has(scope) ? refs.nodeIndex.get(scope).has(id) : [...refs.nodeIndex.values()].some(s => s.has(id));
-      if (!ok) c.warn(path + ".nodeIds", "Step \"" + id + "\" not found; reference removed.", "ref.dangling");
+      if (!ok) c.warn(path + ".nodeIds", "Step \"" + id + "\" not found; link removed.", "ref.dangling");
       return ok;
     });
     const pct = key => num(c, v[key], path + "." + key, { min: 0, max: 100 });
@@ -796,7 +796,7 @@
 
   /* A reference to a reviewed item. Unreadable or dangling references give null with a warning. */
   function itemRefOf(c, v, path, refs) {
-    if (!parseItemRef(v)) { c.warn(path, "Ignored an invalid item reference.", "ref.invalid"); return null; }
+    if (!parseItemRef(v)) { c.warn(path, "A link to an item was not valid and was left out.", "ref.invalid"); return null; }
     if (refs && !itemRefResolves(v, refs)) { c.warn(path, "Item \"" + String(v).slice(0, 120) + "\" not found; it was left out.", "ref.dangling"); return null; }
     return v;
   }
@@ -840,7 +840,7 @@
     knownKeys(c, applied, ap, ["validations", "questions", "evidenceId"]);
     return {
       id: idOf(c, r.id, path + ".id", taken),
-      packId: optionalRef(c, r.packId, path + ".packId", refs.packIds, "Review pack"),
+      packId: optionalRef(c, r.packId, path + ".packId", refs.packIds, "Review form"),
       receivedAt: str(c, r.receivedAt, path + ".receivedAt", { max: 40 }),
       submittedAt: str(c, r.submittedAt, path + ".submittedAt", { max: 40 }),
       source: en(c, r.source, "reviewFormat", path + ".source"),
@@ -923,11 +923,11 @@
       return { ok, errors: c.errors, warnings: c.warnings, response: ok ? response : null };
     };
     if (!util.isPlainObject(data) || data.schema !== schema.REVIEW_RESPONSE_ID) {
-      c.error("schema", "This is not an AIxRay review response (expected schema \"" + schema.REVIEW_RESPONSE_ID + "\").");
+      c.error("schema", "This is not a file of review answers from AIxRay.");
       return done(null);
     }
     if (data.schemaVersion !== 1) {
-      c.error("schemaVersion", Number(data.schemaVersion) > 1 ? "This review response was made by a newer version of AIxRay." : "Unknown review response version.");
+      c.error("schemaVersion", Number(data.schemaVersion) > 1 ? "These review answers were made by a newer version of AIxRay. Update AIxRay, then import them again." : "AIxRay does not recognize the version of these review answers.");
       return done(null);
     }
     knownKeys(c, data, "", ["schema", "schemaVersion", "packId", "engagementId", "engagementRevision", "format", "reviewer",
@@ -945,7 +945,7 @@
       entries: []
     };
     if (e && response.engagementId && response.engagementId !== e.id) {
-      c.error("engagementId", "This response was made for a different engagement (" + response.engagementId + "). Open that engagement, then import the response again.");
+      c.error("engagementId", "These answers are for a different project (" + response.engagementId + "). Open that project, then import the answers again.");
     }
     const byRef = new Map();
     arr(c, data.entries, "entries", L.reviewEntries).forEach((it, j) => {
@@ -956,7 +956,7 @@
       if (!itemRef) return;
       let verdict = x.verdict == null ? "" : x.verdict;
       if (verdict !== "" && !schema.ENUMS.reviewVerdict.includes(verdict)) {
-        c.warn(ip + ".verdict", "Unrecognized verdict \"" + String(verdict).slice(0, 40) + "\"; treated as no answer.", "enum.unknown");
+        c.warn(ip + ".verdict", "Unknown answer \"" + String(verdict).slice(0, 40) + "\"; treated as no answer.", "enum.unknown");
         verdict = "";
       }
       if (byRef.has(itemRef)) c.warn(ip, "Item \"" + itemRef + "\" is answered twice; the later answer is kept.", "review.duplicate");
@@ -976,7 +976,7 @@
       "linkedModelVersion", "linkedNodeIds", "evidenceRefs", "sensitive", "includeInHandoff", "opportunity",
       "generated", "createdAt", "updatedAt"]);
     const linkedModelId = r.linkedModelId && modelsById.has(r.linkedModelId) ? r.linkedModelId : null;
-    if (r.linkedModelId && !linkedModelId) c.warn(path + ".linkedModelId", "Linked model not found; link removed.", "ref.dangling");
+    if (r.linkedModelId && !linkedModelId) c.warn(path + ".linkedModelId", "Linked process not found; link removed.", "ref.dangling");
     const linkedNodeIds = idList(c, r.linkedNodeIds, path + ".linkedNodeIds").filter(id => {
       const ok = linkedModelId ? nodeIndex.get(linkedModelId).has(id) : [...nodeIndex.values()].some(s => s.has(id));
       if (!ok) c.warn(path + ".linkedNodeIds", "Linked step \"" + id + "\" not found; link removed.", "ref.dangling");
@@ -985,7 +985,7 @@
     const record = {
       id: idOf(c, r.id, path + ".id", ids),
       kind: en(c, r.kind, "recordKind", path + ".kind", { fallback: "note" }),
-      title: str(c, r.title, path + ".title", { max: 300 }).trim() || "Untitled record",
+      title: str(c, r.title, path + ".title", { max: 300 }).trim() || "Untitled finding",
       description: str(c, r.description, path + ".description"),
       owner: str(c, r.owner, path + ".owner", { max: 200 }),
       status: en(c, r.status, "recordStatus", path + ".status"),
@@ -1074,12 +1074,12 @@
   function validateEngagement(input) {
     const c = new Checker();
     if (!util.isPlainObject(input)) {
-      c.error("", "The file does not contain an AIxRay engagement object.");
+      c.error("", "This file does not contain an AIxRay project.");
       return { ok: false, errors: c.errors, warnings: c.warnings, engagement: null };
     }
     if (input.schema !== schema.SCHEMA_ID) {
-      c.error("schema", "This is not an AIxRay engagement file (expected schema \"" + schema.SCHEMA_ID + "\"). " +
-        "Legacy .js configurations can be converted with tools/convert-legacy.mjs.");
+      c.error("schema", "This is not an AIxRay project file. " +
+        "To open an older .js configuration, convert it first with tools/convert-legacy.mjs.");
       return { ok: false, errors: c.errors, warnings: c.warnings, engagement: null };
     }
     const migrated = migrate.migrateEngagement(input);
@@ -1120,17 +1120,17 @@
     const models = arr(c, raw.models, "models", L.models);
     models.forEach((m, i) => out.models.push(sanitizeModel(c, m, i, modelIds)));
     if (!out.models.some(m => m.role === "current")) {
-      c.error("models", "An engagement needs a current-state model.");
+      c.error("models", "A project needs a current state.");
     }
     const modelsById = new Map(out.models.map(m => [m.id, m]));
     out.models.forEach((m, i) => {
       if (!m.basedOn) return;
       const base = modelsById.get(m.basedOn.modelId);
-      if (!base) { c.error("models[" + i + "].basedOn.modelId", "Based on an unknown model."); return; }
+      if (!base) { c.error("models[" + i + "].basedOn.modelId", "Based on a process that is not in the file."); return; }
       const baseIds = new Set(base.nodes.map(n => n.id));
       m.nodes.forEach((n, j) => {
         if (n.lineage && n.lineage.baselineNodeId && !baseIds.has(n.lineage.baselineNodeId)) {
-          c.error("models[" + i + "].nodes[" + j + "].lineage.baselineNodeId", "Lineage points to a step that is not in the baseline.");
+          c.error("models[" + i + "].nodes[" + j + "].lineage.baselineNodeId", "This future-state step points to a baseline step that does not exist.");
         }
       });
     });
@@ -1176,7 +1176,7 @@
     // Evidence references must resolve.
     const dropDangling = (list, path) => list.filter(id => {
       if (evidenceIds.has(id)) return true;
-      c.warn(path, "Evidence reference \"" + id + "\" not found; reference removed.", "ref.dangling");
+      c.warn(path, "Source \"" + id + "\" not found; link removed.", "ref.dangling");
       return false;
     });
     out.models.forEach((m, i) => {
@@ -1215,7 +1215,7 @@
           n.provenance.source !== "unknown")).length;
         if (none) {
           c.warn("models[" + i + "]", m.name + ": " + none + " of " + m.nodes.length +
-            " steps have no recorded provenance.", "evidence.coverage", "info");
+            " steps have nothing recorded about where they came from.", "evidence.coverage", "info");
         }
       });
     }
@@ -1227,16 +1227,16 @@
   /** Parses JSON text with a size limit, then validates it. */
   function parseEngagementText(text) {
     if (typeof text !== "string") {
-      return { ok: false, errors: [{ path: "", message: "The file could not be read as text." }], warnings: [], engagement: null };
+      return { ok: false, errors: [{ path: "", message: "This file could not be read as text." }], warnings: [], engagement: null };
     }
     if (text.length > L.fileBytes) {
-      return { ok: false, errors: [{ path: "", message: "The file is larger than the 10 MB limit." }], warnings: [], engagement: null };
+      return { ok: false, errors: [{ path: "", message: "This file is larger than 10 MB, the most AIxRay can open." }], warnings: [], engagement: null };
     }
     let data;
     try {
       data = JSON.parse(text);
     } catch (err) {
-      return { ok: false, errors: [{ path: "", message: "The file is not valid JSON: " + String(err.message || err).slice(0, 200) }], warnings: [], engagement: null };
+      return { ok: false, errors: [{ path: "", message: "This file is not valid JSON: " + String(err.message || err).slice(0, 200) }], warnings: [], engagement: null };
     }
     return validateEngagement(data);
   }

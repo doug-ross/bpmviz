@@ -1,5 +1,5 @@
 /*
- * AIxRay client-exports: the "Export for client tools" dialog. Registers a
+ * AIxRay client-exports: the "Export to other tools" dialog. Registers a
  * present-bar action and an export menu item through AIxRay.ext; it does not
  * change the engagement, so it registers no store commands.
  */
@@ -16,7 +16,8 @@
   }
 
   function modelOption(m) {
-    return h("option", { value: m.id }, m.name + " (" + schema.label("modelRole", m.role) + ")");
+    const role = schema.label("modelRole", m.role);
+    return h("option", { value: m.id }, m.name.toLowerCase() === role.toLowerCase() ? m.name : m.name + " (" + role.toLowerCase() + ")");
   }
 
   function section(title, description, controlsEl, button) {
@@ -30,7 +31,7 @@
     const c = ctx || B.ext.context(app, {});
     const fresh = () => app.store.get();
     const eng0 = fresh();
-    if (!eng0.models.length) { B.dialogs.messageDialog("Nothing to export", "Add a model to the engagement first."); return; }
+    if (!eng0.models.length) { B.dialogs.messageDialog("Nothing to export", "Add a process to the project first."); return; }
 
     const state = {
       includeSensitive: !!c.includeSensitive, includeUnreviewedAi: !!c.includeUnreviewedAi,
@@ -73,10 +74,10 @@
         B.files.downloadBytes(bytes, B.exporting.fileBase(eng) + "-client-deck.pptx",
           "application/vnd.openxmlformats-officedocument.presentationml.presentation");
         setStatus("Deck exported.");
-        announce("Client deck exported.");
+        announce("Deck exported.");
       } catch (err) {
         setStatus("");
-        B.dialogs.messageDialog("The deck could not be built", err.message);
+        B.dialogs.messageDialog("The deck couldn't be built", err.message);
       }
     }
 
@@ -89,7 +90,7 @@
         B.files.downloadBytes(xml, name, "application/xml");
         announce("BPMN diagram exported.");
       } catch (err) {
-        B.dialogs.messageDialog("The BPMN file could not be built", err.message);
+        B.dialogs.messageDialog("The BPMN file couldn't be built", err.message);
       }
     }
 
@@ -97,7 +98,7 @@
       const eng = fresh();
       const items = B.backlog.backlogItems(eng, { includeSensitive: state.includeSensitive, includeUnreviewedAi: state.includeUnreviewedAi });
       const all = items.epics.concat(items.tasks);
-      if (!all.length) { B.dialogs.messageDialog("Nothing to export", "No opportunities or actions are recorded yet."); return; }
+      if (!all.length) { B.dialogs.messageDialog("Nothing to export", "No opportunities or actions yet. Add them in Findings, then export again."); return; }
       const base = B.exporting.fileBase(eng);
       if (formatSelect.value === "jira") {
         B.files.downloadBytes("\ufeff" + B.backlog.toJiraCsv(all), base + "-backlog-jira.csv", "text/csv;charset=utf-8");
@@ -112,32 +113,32 @@
     }
 
     const body = h("div", { class: "export-dialog" },
-      h("div", { class: "field-row" }, field("Scenario", scenarioSelect, "Used for the deck's modeled figures.")),
       h("div", { class: "export-toggles" },
-        h("label", { class: "check" }, sensitiveBox, "Include sensitive records"),
-        h("label", { class: "check" }, unreviewedBox, "Include AI drafts not yet reviewed")),
+        h("label", { class: "check" }, sensitiveBox, "Include sensitive findings"),
+        h("label", { class: "check" }, unreviewedBox, "Include unreviewed AI drafts")),
       h("div", { class: "export-grid" },
-        section("PowerPoint deck", "Scope, findings, opportunities ranked by modeled value, and the current process diagram.", null,
+        section("PowerPoint deck", "Scope, pain points, ranked opportunities, value by wave, the process diagram and next steps.",
+          field("Scenario", scenarioSelect, "Used for the figures in the deck."),
           h("button", { type: "button", class: "btn btn-primary", id: "exp-pptx", on: { click: downloadDeck } }, icon("download"), "Download deck")),
-        section("BPMN 2.0 diagram", "The chosen model as a standard BPMN file for process modeling tools.",
-          field("Model", modelSelect),
-          h("button", { type: "button", class: "btn btn-primary", id: "exp-bpmn", on: { click: downloadBpmn } }, icon("download"), "Download BPMN")),
-        section("Backlog", "Opportunities as epics or features and actions as tasks or user stories, with acceptance criteria.",
+        section("BPMN 2.0 diagram", "The chosen process as a standard BPMN file, for other process modeling tools.",
+          field("Process", modelSelect),
+          h("button", { type: "button", class: "btn btn-primary", id: "exp-bpmn", on: { click: downloadBpmn } }, icon("download"), "Download BPMN file")),
+        section("Backlog", "Opportunities become epics (Jira) or features (Azure DevOps), and actions become tasks or user stories, with acceptance criteria.",
           field("Format", formatSelect),
           h("button", { type: "button", class: "btn btn-primary", id: "exp-backlog", on: { click: downloadBacklog } }, icon("download"), "Download backlog"))),
       status);
 
     B.dialogs.openDialog({
-      title: "Export for client tools", wide: true, body,
-      actions: [{ label: "Close", value: true, variant: "btn-primary", autofocus: true }]
+      title: "Export to other tools", wide: true, body,
+      actions: [{ label: "Close", value: true, autofocus: true }]
     });
   }
 
-  B.ext.registerPresentAction({ id: "client-exports", icon: "download", label: "Export for client tools", run: (app, ctx) => openExportDialog(app, ctx) });
+  B.ext.registerPresentAction({ id: "client-exports", icon: "download", label: "Export to other tools", run: (app, ctx) => openExportDialog(app, ctx) });
   B.ext.registerMenuItem({
     // A high order keeps this item from claiming the first slot in the export group, which other
     // features (and tests that register their own menu item at runtime) may expect to come first.
-    id: "client-exports", order: 100, icon: "download", label: "Export for client tools", group: "export", needsEngagement: true,
+    id: "client-exports", order: 100, icon: "download", label: "Export to other tools", group: "export", needsEngagement: true,
     run: app => openExportDialog(app, B.ext.context(app, {}))
   });
 

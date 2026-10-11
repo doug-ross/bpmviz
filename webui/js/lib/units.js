@@ -21,10 +21,10 @@
     const tb = timeBasis || {};
     if (tb.calendar === "business") {
       const perDay = minutesPerDay(tb);
-      return "Business time. One day is " + util.formatNumber(perDay / 60, 2) + " working hours (" +
-        util.formatNumber(perDay, 0) + " minutes); weekends and holidays are not counted.";
+      return "Business time: a day is " + util.formatNumber(perDay / 60, 2) + " working hours (" +
+        util.formatNumber(perDay, 0) + " minutes), and weekends and holidays are not counted.";
     }
-    return "Calendar time. One day is 24 hours.";
+    return "Calendar time: a day is 24 hours.";
   }
 
   /** Compact duration for clocks and badges: "45m", "7h 30m", "12d 3h". */
@@ -72,12 +72,12 @@
   }
 
   const UNITS = {
-    minute: { label: "minutes (time basis)", kind: "time" },
+    minute: { label: "minutes", kind: "time" },
     businessMinute: { label: "business minutes", kind: "time" },
     hour: { label: "hours", kind: "time" },
     businessDay: { label: "business days", kind: "time" },
     calendarDay: { label: "calendar days", kind: "time" },
-    day: { label: "days (convention not stated)", kind: "time" },
+    day: { label: "days (calendar or business not stated)", kind: "time" },
     week: { label: "weeks", kind: "time" },
     count: { label: "count", kind: "count" },
     perDay: { label: "per day", kind: "rate" },

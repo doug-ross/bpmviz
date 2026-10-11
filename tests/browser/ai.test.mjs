@@ -77,7 +77,7 @@ test("the app stays offline and opens, reviews and applies suggested records", a
 
   await s.page.evaluate(() => { window.AIxRay.app.goto("present"); window.AIxRay.app.presentView.setMode("handoff"); });
   assert.doesNotMatch(await s.page.textContent("#handoff-doc"), /Pre-check clearance rules/, "unreviewed drafts stay out of the handoff");
-  assert.match(await s.page.textContent("#handoff-doc"), /2 AI-drafted records are not yet reviewed/);
+  assert.match(await s.page.textContent("#handoff-doc"), /2 AI-drafted findings are left out until someone reviews them/);
   await s.page.check("#pr-unreviewed");
   assert.match(await s.page.textContent("#handoff-doc"), /Pre-check clearance rules\s*AI draft, not reviewed/);
 
@@ -158,7 +158,7 @@ test("an extraction opens as a new draft engagement, and a result for another en
   raw.evidence = [{ id: "ev-1", title: "Underwriting guide", status: "validated", link: "https://example.com/guide" }];
   await s.page.setInputFiles("#file-input", resultFile("extract", { engagement: raw }, { dataHandling: { confidentiality: "client-confidential" } }));
   await s.page.waitForSelector("dialog[open]");
-  assert.match(await s.page.textContent("dialog[open]"), /Draft rules applied/);
+  assert.match(await s.page.textContent("dialog[open]"), /What AIxRay changed to keep this a draft/);
   await s.page.click("dialog[open] .btn-primary");
   await s.page.waitForSelector(".node");
   const e = await state(s.page);
@@ -170,7 +170,7 @@ test("an extraction opens as a new draft engagement, and a result for another en
 
   await s.page.setInputFiles("#file-input", resultFile("summary", { title: "t", text: "Short.", keyPoints: [], caveats: [] }));
   await s.page.waitForSelector("dialog[open]");
-  assert.match(await s.page.textContent("dialog[open]"), /made for a different engagement/);
+  assert.match(await s.page.textContent("dialog[open]"), /made for a different project/);
   await s.page.click("dialog[open] .btn-primary");
   assert.equal((await state(s.page)).id, e.id, "the open engagement is unchanged");
   clean(s.problems);

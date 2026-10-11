@@ -59,7 +59,7 @@ test("Ask AI for the rest maps the unmapped names through the helper, and each s
   await page.click("#li-ask-ai");
   await page.waitForSelector("#ai-start");
   assert.match(await page.textContent("#ai-sent"), /1 activity name from the event log/);
-  assert.match(await page.textContent("#ai-sent-secret"), /^1 activity name that looks like a credential left out; map it by hand$/);
+  assert.match(await page.textContent("#ai-sent-secret"), /^1 activity name that looks like a credential, left out\. Match it yourself\.$/);
   assert.doesNotMatch(await page.textContent("#ai-sent"), new RegExp(KEY), "the preview of what is sent leaves it out");
   assert.match(await page.textContent("#ai-sent"), /No events, case IDs, times, counts or people/);
   assert.match(await page.textContent("#ai-gate-message"), /Demonstration or public material may be sent to any plan/);

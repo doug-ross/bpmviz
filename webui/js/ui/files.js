@@ -16,12 +16,12 @@
 
   /** Reads a File or Blob as a Uint8Array, refusing files larger than max bytes. */
   function readBytes(file, max) {
-    if (max && file.size > max) return Promise.reject(new FileLimitError("The file is larger than the " + mb(max) + " limit."));
+    if (max && file.size > max) return Promise.reject(new FileLimitError("This file is larger than " + mb(max) + ", the most AIxRay can open."));
     if (typeof file.arrayBuffer === "function") return file.arrayBuffer().then(buf => new Uint8Array(buf));
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(new Uint8Array(reader.result));
-      reader.onerror = () => reject(reader.error || new Error("The file could not be read."));
+      reader.onerror = () => reject(reader.error || new Error("This file couldn't be read."));
       reader.readAsArrayBuffer(file);
     });
   }
@@ -39,7 +39,7 @@
       total += value.length;
       if (maxOutput && total > maxOutput) {
         await reader.cancel().catch(() => {});
-        throw new FileLimitError("A compressed part expands past " + mb(maxOutput) + ".");
+        throw new FileLimitError("Part of this file expands past " + mb(maxOutput) + " when unpacked, which is too large to open.");
       }
       chunks.push(value);
     }
@@ -56,13 +56,13 @@
 
   /** Raw DEFLATE decompression (ZIP method 8). maxOutput caps the result size. */
   function inflateRaw(bytes, maxOutput) {
-    if (!streamsAvailable()) return Promise.reject(new Error("This browser cannot read compressed files. Use a current Chrome, Edge, Firefox or Safari."));
+    if (!streamsAvailable()) return Promise.reject(new Error("This browser can't unpack this file. Use a recent version of Chrome, Edge, Firefox or Safari."));
     return pipe(new root.DecompressionStream("deflate-raw"), bytes, maxOutput);
   }
 
   /** Raw DEFLATE compression. */
   function deflateRaw(bytes) {
-    if (!streamsAvailable()) return Promise.reject(new Error("This browser cannot write compressed files."));
+    if (!streamsAvailable()) return Promise.reject(new Error("This browser can't create this file. Use a recent version of Chrome, Edge, Firefox or Safari."));
     return pipe(new root.CompressionStream("deflate-raw"), bytes, 0);
   }
 

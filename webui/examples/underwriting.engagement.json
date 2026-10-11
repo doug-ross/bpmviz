@@ -9215,27 +9215,27 @@
     "warnings": [
       {
         "code": "semantic.gateway",
-        "message": "Current state: gateway \"Authority Sign-off?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Current state: gateway \"Authority Sign-off?\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "authority-sign-off"
       },
       {
         "code": "semantic.gateway",
-        "message": "Current state: gateway \"Broker Response\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Current state: gateway \"Broker Response\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "broker-response"
       },
       {
         "code": "semantic.gateway",
-        "message": "Proposed future state: gateway \"Authority Sign-off?\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Proposed future state: gateway \"Authority Sign-off?\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "authority-sign-off"
       },
       {
         "code": "semantic.gateway",
-        "message": "Proposed future state: gateway \"Broker Response\" does not say whether it is exclusive or parallel. Replay treats it as exclusive.",
+        "message": "Proposed future state: gateway \"Broker Response\" does not say whether one path or all paths are taken. Playback treats it as one path (exclusive).",
         "path": "broker-response"
       },
       {
         "code": "field.role",
-        "message": "Proposed future state: step badges such as \"AI\" and \"HITL\" are now derived from the step tags.",
+        "message": "Proposed future state: step badges such as \"AI\" and \"HITL\" now come from the step tags.",
         "path": ""
       },
       {

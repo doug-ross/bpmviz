@@ -165,7 +165,7 @@
         driverInput(d, "beforeNonLaborCostPerCase", false)
       ],
       compute: () => x.beforeHours * rate + (beforeNonLabor || 0),
-      notes: [beforeNonLabor === null ? "Non-labor cost not supplied; the result covers labor only." : ""]
+      notes: [beforeNonLabor === null ? "No non-labor cost was provided, so this covers labor only." : ""]
     });
     outputs.push(beforeCost);
 
@@ -192,7 +192,7 @@
           driverInput(d, "incrementalCostPerCase")
         ],
         compute: () => x.afterHours * rate + (afterNonLabor || 0) + incremental,
-        notes: [afterNonLabor === null ? "Non-labor cost not supplied; the result covers labor and incremental cost only." : ""]
+        notes: [afterNonLabor === null ? "No non-labor cost was provided, so this covers labor and the incremental AI and service cost only." : ""]
       });
       outputs.push(afterCost);
 
@@ -209,7 +209,7 @@
 
       const effort = outputs.find(o => o.key === "effortSaved");
       outputs.push(output({
-        key: "capacityFte", label: "Redeployable capacity (FTE-equivalent)", unit: "fte",
+        key: "capacityFte", label: "Time freed up (FTE-equivalent)", unit: "fte",
         formula: "human effort saved per case \u00d7 annual eligible volume \u00f7 productive hours per FTE"
       }, {
         inputs: [
@@ -218,7 +218,7 @@
           driverInput(d, "productiveHoursPerFte")
         ],
         compute: () => effort.value * val("annualVolume") / val("productiveHoursPerFte"),
-        notes: ["Capacity is time that can be redeployed to other work. Headcount and cash savings depend on decisions this model does not make."]
+        notes: ["This is time people can spend on other work. Any headcount or cash saving depends on decisions this model does not make."]
       }));
 
       outputs.push(output({
@@ -230,7 +230,7 @@
           inp("Future cycle time", x.afterCycle, "minute", x.afterCycleStatus)
         ],
         compute: () => x.beforeCycle > 0 ? (x.beforeCycle - x.afterCycle) / x.beforeCycle * 100 : null,
-        notes: ["Elapsed time only. Cost and capacity use human effort, not cycle time."]
+        notes: ["Elapsed time only. Cost and capacity are worked out from human effort."]
       }));
 
       const saved = outputs.find(o => o.key === "costSaved");
@@ -243,7 +243,7 @@
           driverInput(d, "annualVolume")
         ],
         compute: () => saved.value * val("annualVolume"),
-        notes: ["A modeled difference, not realized cash. Adoption, ramp-up and realization are not included."]
+        notes: ["A modeled figure. It does not allow for adoption, ramp-up or how much of the difference becomes cash."]
       });
       outputs.push(annual);
 
@@ -256,7 +256,7 @@
           inp("Modeled annual cost difference", annual.value, "currency", annual.basis)
         ],
         compute: () => annual.value > 0 ? val("oneTimeInvestment") / (annual.value / 12) : null,
-        notes: ["Months. Shown only when an investment basis is recorded."]
+        notes: ["In months. Shown only when a one-time investment is entered and the annual difference is a saving."]
       }));
     }
     return { inputs: x, outputs };
@@ -284,7 +284,7 @@
       const calc = byKey[key];
       if (!calc || calc.value === null) {
         checks.push({ key, label, supplied: suppliedValue, calculated: null, unit, status: "not-checkable",
-          missing: calc ? calc.missing : ["future-state model"] });
+          missing: calc ? calc.missing : ["a future state"] });
         return;
       }
       const diff = suppliedValue - calc.value;
@@ -299,13 +299,13 @@
       }
       checks.push(item);
       if (!ok) {
-        let message = label + " is supplied as " + units.formatMeasure(suppliedValue, unit, ctx) +
-          " but the declared assumptions give " + units.formatMeasure(calc.value, unit, ctx) + ".";
+        let message = label + " was given as " + units.formatMeasure(suppliedValue, unit, ctx) +
+          ", but the assumptions give " + units.formatMeasure(calc.value, unit, ctx) + ".";
         if (item.impliedIncremental != null && x.drivers.incrementalCostPerCase) {
-          message += " The supplied figure implies an incremental cost of " +
-            units.formatMeasure(item.impliedIncremental, "currency", ctx) + " per case, not the declared " +
+          message += " That figure implies an incremental cost of " +
+            units.formatMeasure(item.impliedIncremental, "currency", ctx) + " per case, where the assumptions say " +
             units.formatMeasure(x.drivers.incrementalCostPerCase.value, "currency", ctx) +
-            ". Record a scenario override or correct the figure.";
+            ". Enter a value for this scenario only, or correct the figure.";
         }
         warnings.push({ code: "economics.unreconciled", key, message });
       }
@@ -314,7 +314,7 @@
     check("beforeCost", "Current-state cost per case", supplied.beforeCostPerCase, "currency");
     check("afterCost", "Future-state cost per case", supplied.afterCostPerCase, "currency");
     check("costSaved", "Cost difference per case", supplied.costSavedPerCase, "currency");
-    check("capacityFte", "Capacity release", supplied.fteCapacity, "fte", 1);
+    check("capacityFte", "Time freed up", supplied.fteCapacity, "fte", 1);
     const status = checks.some(c => c.status === "unreconciled") ? "unreconciled" :
       checks.length && checks.every(c => c.status === "reconciled") ? "reconciled" :
         checks.length ? "partial" : "none";
@@ -332,8 +332,8 @@
     if (annualized.length > 1) {
       notes.push({
         code: "economics.annualization",
-        message: "Each of the " + annualized.length + " scenarios annualizes the full eligible volume. " +
-          "They describe alternatives, so their annual figures must not be added together."
+        message: "Each of the " + annualized.length + " scenarios counts the full yearly volume. " +
+          "They are alternatives, so their annual figures must not be added together."
       });
     }
     return notes;

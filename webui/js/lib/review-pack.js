@@ -7,9 +7,10 @@
  * The pack data sits in a <script type="application/json"> block with <, >,
  * &, U+2028, U+2029 and every non-ASCII character written as \u escapes, and
  * the page shows it with textContent only. The reviewer answers each item,
- * then "Save response" downloads a review response file
- * (schema aixray.review-response); "Load saved response" reads one back so a
+ * then "Save answers" downloads a review response file
+ * (schema aixray.review-response); "Open saved answers" reads one back so a
  * review can continue later. The page stores nothing in the browser.
+ * In the app the pack is called a review form.
  *
  * PACK_SCRIPT and PACK_STYLE are fixed; their hashes are the constants
  * below, and tests/unit/review-pack.test.mjs checks that they match.
@@ -32,12 +33,13 @@
     let data = null;
     try { data = JSON.parse(doc.getElementById("pack-data").textContent); } catch (err) { data = null; }
     if (!data || !Array.isArray(data.items) || !data.packId) {
-      host.textContent = "This review page is damaged and cannot be shown. Ask the team for a new copy.";
+      host.textContent = "This review form is damaged and can't be shown. Ask the team that sent it for a new copy.";
       return;
     }
     const MAX_FILE = 2 * 1024 * 1024;
     const verdicts = Array.isArray(data.verdicts) && data.verdicts.length ? data.verdicts :
       [{ value: "confirm", label: "Confirm" }, { value: "dispute", label: "Dispute" }, { value: "unsure", label: "Not sure" }];
+    const labelOf = value => (verdicts.find(v => v.value === value) || { label: value }).label;
     const answers = data.items.map(() => ({ verdict: "", comment: "" }));
     const controls = [];
     let dirty = false;
@@ -115,8 +117,8 @@
         el("h4", { id: headId }, item.label),
         el("p", { class: "meta" }, [item.type, item.lane].filter(Boolean).join(" \u00b7 ")),
         item.details ? el("p", { class: "details" }, item.details) : null,
-        el("fieldset", { class: "opts" }, el("legend", null, "Your verdict on " + item.label), radios.map(r => r.wrap), clearBtn),
-        el("div", { class: "field" }, el("label", { for: "pack-c-" + i }, "Comment"), comment));
+        el("fieldset", { class: "opts" }, el("legend", null, "Your answer"), radios.map(r => r.wrap), clearBtn),
+        el("div", { class: "field" }, el("label", { for: "pack-c-" + i }, "Comment (optional)"), comment));
       controls[i].card = card;
       return card;
     }
@@ -175,8 +177,8 @@
     }
 
     function load(response) {
-      if (!response || response.schema !== (data.responseSchema || "aixray.review-response")) throw new Error("This file is not a saved review response.");
-      if (response.packId !== data.packId) throw new Error("This response belongs to a different review pack, so it was not loaded.");
+      if (!response || response.schema !== (data.responseSchema || "aixray.review-response")) throw new Error("This file isn't a set of answers saved from a review form.");
+      if (response.packId !== data.packId) throw new Error("These answers belong to a different review form, so they weren't loaded.");
       const r = response.reviewer || {};
       name.input.value = typeof r.name === "string" ? r.name : name.input.value;
       role.input.value = typeof r.role === "string" ? r.role : role.input.value;
@@ -197,20 +199,20 @@
       });
       updateProgress();
       dirty = false;
-      say("Loaded " + loaded + " answers from the saved response. Continue where you left off.");
+      say("Loaded " + loaded + " answers from your saved file. Carry on where you left off.");
     }
 
     const picker = el("input", { type: "file", accept: ".json,application/json", id: "pack-load-file", class: "sr-only", tabindex: -1, "aria-hidden": "true" });
     picker.addEventListener("change", () => {
       const f = picker.files && picker.files[0];
       if (!f) return;
-      if (f.size > MAX_FILE) { say("That file is larger than 2 MB, so it is not a saved response from this page."); picker.value = ""; return; }
+      if (f.size > MAX_FILE) { say("That file is larger than 2 MB, so it isn't a file saved from this form."); picker.value = ""; return; }
       const reader = new FileReader();
       reader.onload = () => {
-        try { load(JSON.parse(String(reader.result || ""))); } catch (err) { say(err && err.message && !/JSON/.test(err.message) ? err.message : "This file could not be read as a saved response."); }
+        try { load(JSON.parse(String(reader.result || ""))); } catch (err) { say(err && err.message && !/JSON/.test(err.message) ? err.message : "This file couldn't be read as saved answers."); }
         picker.value = "";
       };
-      reader.onerror = () => { say("The file could not be read."); picker.value = ""; };
+      reader.onerror = () => { say("The file couldn't be read."); picker.value = ""; };
       reader.readAsText(f);
     });
     const button = (id, label, primary, fn) => {
@@ -222,8 +224,8 @@
     const facts = [
       ["Prepared for", [s.name, s.role, s.organization].filter(Boolean).join(", ")],
       ["Prepared on", day(data.createdAt)],
-      ["Process model", data.modelName],
-      ["Items to review", String(data.items.length) + " (" + steps.length + " steps, " + findings.length + " findings)"],
+      ["Process", data.modelName],
+      ["Items to review", String(data.items.length) + " (" + steps.length + (steps.length === 1 ? " step, " : " steps, ") + findings.length + (findings.length === 1 ? " finding)" : " findings)")],
       ["Data status", data.dataStatus],
       ["Confidentiality", data.confidentiality]
     ].filter(f => f[1]);
@@ -232,19 +234,20 @@
       el("header", { class: "head" },
         el("p", { class: "eyebrow" }, [data.client, data.engagementName].filter(Boolean).join(" \u00b7 ") || "Process review"),
         el("h1", null, "Process review: " + (data.title || "")),
-        el("p", { class: "lede" }, "The team has listed the steps and findings from the workshop below. For each one, choose Confirm if it is right, Dispute if it is wrong or incomplete, or Not sure. Add a comment wherever something should change."),
+        el("p", { class: "lede" }, "Please check how the team has described this process. For each step and finding below, choose " + labelOf("confirm") + " if it is right, " +
+          labelOf("dispute") + " if it is wrong or incomplete, or " + labelOf("unsure") + " if you can't say. Add a comment wherever something should change."),
         el("dl", { class: "facts" }, facts.map(f => [el("dt", null, f[0]), el("dd", null, f[1])]))),
       data.note ? el("section", { class: "block", "aria-label": "Note from the team" }, el("h2", null, "Note from the team"), el("p", null, data.note)) : null,
       el("section", { class: "block", "aria-label": "About you" }, el("h2", null, "About you"), el("div", { class: "row" }, name.wrap, role.wrap, org.wrap)),
-      el("section", { class: "block", "aria-label": "How your answers are kept" }, el("h2", null, "How your answers are kept"),
-        el("p", null, "Your answers stay in this page until you choose Save response. That saves a file on your computer; send that file to the team. Nothing is sent from this page and nothing is stored in your browser."),
-        el("p", null, "To continue later, save a response, open this page again and choose Load saved response.")),
-      el("div", { class: "bar", role: "toolbar", "aria-label": "Save or load your answers" }, progress,
-        el("span", { class: "spacer" }), button("pack-load", "Load saved response", false, () => picker.click()), button("pack-save", "Save response", true, save), picker),
-      section("Steps in the process", steps, item => item.lane, "Each step as the team understood it. Confirm it if the step happens as described."),
-      section("Findings from the workshop", findings, item => item.type, "Pain points, opportunities and other findings recorded with the team."),
+      el("section", { class: "block", "aria-label": "How to send your answers" }, el("h2", null, "How to send your answers"),
+        el("p", null, "When you're done, choose Save answers. This saves a file on your computer. Send that file to the team, for example by email."),
+        el("p", null, "Nothing is sent from this page, and nothing is kept in your browser. To finish later, save your answers, open this page again and choose Open saved answers.")),
+      el("div", { class: "bar", role: "toolbar", "aria-label": "Save or open your answers" }, progress,
+        el("span", { class: "spacer" }), button("pack-load", "Open saved answers", false, () => picker.click()), button("pack-save", "Save answers", true, save), picker),
+      section("Steps in the process", steps, item => item.lane, "Each step as the team understands it. Choose " + labelOf("confirm") + " if it happens as described."),
+      section("What the team found", findings, item => item.type, "Problems, ideas for improvement and other points the team noted."),
       el("section", { class: "block", "aria-label": "General comment" }, el("h2", null, "General comment"), general.wrap),
-      el("div", { class: "foot" }, button("pack-save-end", "Save response", true, save), status),
+      el("div", { class: "foot" }, button("pack-save-end", "Save answers", true, save), status),
       data.disclosure ? el("p", { class: "small" }, data.disclosure) : null
     ]);
     updateProgress();
@@ -308,7 +311,7 @@
   ].join("\n");
 
   /* SHA-256 of PACK_SCRIPT and PACK_STYLE, base64, as the content security policy needs them. */
-  const PACK_SCRIPT_SHA256 = "nH7hkqwzQ5Y1VjAHN6nRuob9fukT3X0wyKexCB7FuCE=";
+  const PACK_SCRIPT_SHA256 = "WMvZhsbs0K2Uymax6CeM2+nS6vvBuYlr/yHYdiYfCjw=";
   const PACK_STYLE_SHA256 = "5dn3qn3UAcR0HU4XWCeOk+9c7kbALAAPPWCgqyff4iA=";
 
   const CSP = "default-src 'none'; script-src 'sha256-" + PACK_SCRIPT_SHA256 + "'; style-src 'sha256-" + PACK_STYLE_SHA256 +
@@ -332,7 +335,7 @@
       "<title>Process review</title>\n" +
       "<style>" + PACK_STYLE + "</style>\n" +
       "</head>\n<body>\n" +
-      "<noscript><p class=\"page\">This review page needs JavaScript. Open it in a current version of Chrome, Edge, Firefox or Safari.</p></noscript>\n" +
+      "<noscript><p class=\"page\">This review form needs JavaScript. Open it in a current version of Chrome, Edge, Firefox or Safari.</p></noscript>\n" +
       "<main class=\"page\" id=\"pack\"></main>\n" +
       "<script type=\"application/json\" id=\"pack-data\">" + jsonForScript(payload) + "</script>\n" +
       "<script>" + PACK_SCRIPT + "</script>\n" +
