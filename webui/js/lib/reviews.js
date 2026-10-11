@@ -30,6 +30,8 @@
 
   const L = schema.LIMITS;
   const PACK_SHEET = "aixray-pack";
+  /* The hidden sheet's name in forms made before the app was renamed from BPMVIZ. */
+  const LEGACY_PACK_SHEET = "bpmviz-pack";
   const REVIEW_SHEET = "Review";
   const ABOUT_SHEET = "About";
   /* Answers are read back by header name (HEADER_ALIASES), so older workbooks with Verdict and Comment still import. */
@@ -371,7 +373,7 @@
    */
   function responseFromWorkbook(wb) {
     if (!wb || !Array.isArray(wb.sheets)) throw new ReviewError("This file couldn't be read as an Excel workbook.");
-    const hidden = keyValues(findSheet(wb, PACK_SHEET));
+    const hidden = keyValues(findSheet(wb, PACK_SHEET) || findSheet(wb, LEGACY_PACK_SHEET));
     const about = keyValues(findSheet(wb, ABOUT_SHEET));
     // The About sheet's reference rows, under their current names or the older ones.
     const aboutRef = keys => keys.map(k => text(about.get(k)).trim()).find(Boolean) || "";
@@ -737,7 +739,7 @@
   }
 
   return {
-    PACK_SHEET, REVIEW_SHEET, ABOUT_SHEET, REVIEW_HEADERS, FINDING_KINDS, DEFAULT_KINDS, ReviewError,
+    PACK_SHEET, LEGACY_PACK_SHEET, REVIEW_SHEET, ABOUT_SHEET, REVIEW_HEADERS, FINDING_KINDS, DEFAULT_KINDS, ReviewError,
     stepRef, recordRef, resolveItem, packCounts, buildPackItems, newPack, packPayload, workbookSpec,
     normalizeVerdict, responseFromWorkbook, latestVerdicts, prepareApply, buildApplyPayload, summarize, who,
     commands: COMMANDS
