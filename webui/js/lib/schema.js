@@ -189,6 +189,27 @@
   const REVIEW_RESPONSE_ID = "aixray.review-response";
   const REVIEW_PACK_ID = "aixray.review-pack";
 
+  /*
+   * BPMVIZ was this app's earlier name. Files saved under it carry these
+   * format tags and still open; AIxRay always writes the current tags.
+   */
+  const LEGACY_FORMAT_IDS = Object.freeze({
+    "bpmviz.engagement": SCHEMA_ID,
+    "bpmviz.review-response": REVIEW_RESPONSE_ID,
+    "bpmviz.review-pack": REVIEW_PACK_ID,
+    "bpmviz.ai-result": "aixray.ai-result"
+  });
+
+  /** The current format tag for a tag read from a file: an old BPMVIZ tag maps to its AIxRay one. */
+  function currentFormatId(id) {
+    return typeof id === "string" && Object.prototype.hasOwnProperty.call(LEGACY_FORMAT_IDS, id) ? LEGACY_FORMAT_IDS[id] : id;
+  }
+
+  /** True when a tag read from a file is one of the old BPMVIZ tags. */
+  function isLegacyFormatId(id) {
+    return typeof id === "string" && Object.prototype.hasOwnProperty.call(LEGACY_FORMAT_IDS, id);
+  }
+
   function blankEngagement(meta) {
     const now = util.nowIso();
     const m = meta || {};
@@ -232,6 +253,7 @@
 
   return {
     SCHEMA_ID, SCHEMA_VERSION, ENUMS, LABELS, SEMANTIC_TYPES, RECORD_KIND_ORDER,
-    DRIVERS, LIMITS, REVIEW_RESPONSE_ID, REVIEW_PACK_ID, typeInfo, blankEngagement, label
+    DRIVERS, LIMITS, REVIEW_RESPONSE_ID, REVIEW_PACK_ID, LEGACY_FORMAT_IDS, currentFormatId, isLegacyFormatId,
+    typeInfo, blankEngagement, label
   };
 });
