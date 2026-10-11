@@ -1,0 +1,18 @@
+node_modules/
+test-results/
+*.log
+.DS_Store
+Thumbs.db
+
+# Personal Claude Code settings and skills stay on your machine.
+# Only the AIxRay skills in .claude/skills/aixray-*/ are shared.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/aixray-*/
+
+# AI working files and results hold client material; keep them out of the repository.
+*.ai-result.json
+aixray-*.draft.json
+*.with-ai.engagement.json
+!tests/fixtures/ai/*.ai-result.json

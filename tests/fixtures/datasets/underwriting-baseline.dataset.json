@@ -1,0 +1,1814 @@
+{
+  "id": "ds-uw-baseline",
+  "name": "Underwriting baseline log",
+  "role": "baseline",
+  "comparesToDatasetId": null,
+  "modelId": "m-current",
+  "dataStatus": "demonstration",
+  "createdAt": "2026-06-01T00:00:00.000Z",
+  "source": {
+    "fileName": "underwriting-baseline.csv",
+    "format": "csv",
+    "sha256": "",
+    "rows": 5043,
+    "events": 5040,
+    "timestampMode": "start-end",
+    "caseIds": "hashed",
+    "resources": "counted",
+    "droppedRows": 3,
+    "unmatchedEvents": 41,
+    "excludedIncompleteCases": 2
+  },
+  "period": {
+    "start": "2026-03-02T00:00:00.000Z",
+    "end": "2026-05-29T00:00:00.000Z",
+    "days": 88
+  },
+  "timeBasis": {
+    "calendar": "business",
+    "businessMinutesPerDay": 480,
+    "dayStartMinute": 540
+  },
+  "mapping": [
+    {
+      "activity": "Submission Received",
+      "nodeId": "submission-received",
+      "method": "exact",
+      "events": 250
+    },
+    {
+      "activity": "Check Clearance & Dedup",
+      "nodeId": "check-clearance-dedup",
+      "method": "exact",
+      "events": 250
+    },
+    {
+      "activity": "Scrub SOV & Geocode",
+      "nodeId": "scrub-sov-geocode",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Appetite & Capacity Triage",
+      "nodeId": "appetite-capacity-triage",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Assign to Underwriter",
+      "nodeId": "assign-to-underwriter",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Review COPE, Exposure & Loss Runs",
+      "nodeId": "review-cope-exposure-loss-runs",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Desk Review: COPE & Protections",
+      "nodeId": "desk-review-cope-protections",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Publish Risk Report: PML, MFL & Recs",
+      "nodeId": "publish-risk-report-pml-mfl-recs",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Ingest SOV into CAT Platform",
+      "nodeId": "ingest-sov-into-cat-platform",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Run Wind/Flood/Quake AAL & PML",
+      "nodeId": "run-wind-flood-quake-aal-pml",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Determine Layering & Participation",
+      "nodeId": "determine-layering-participation",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Technical Pricing & Rating",
+      "nodeId": "technical-pricing-rating",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Select Forms & Endorsements",
+      "nodeId": "select-forms-endorsements",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Assemble Multi-Option Quote",
+      "nodeId": "assemble-multi-option-quote",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Deliver Quote to Broker",
+      "nodeId": "deliver-quote-to-broker",
+      "method": "exact",
+      "events": 220
+    },
+    {
+      "activity": "Process Bind Order",
+      "nodeId": "process-bind-order",
+      "method": "exact",
+      "events": 185
+    },
+    {
+      "activity": "Validate Subjectivities & OFAC",
+      "nodeId": "validate-subjectivities-ofac",
+      "method": "exact",
+      "events": 185
+    },
+    {
+      "activity": "Issue Formal Binder",
+      "nodeId": "issue-formal-binder",
+      "method": "exact",
+      "events": 185
+    },
+    {
+      "activity": "Assemble Dec Sheet, Forms & Endorsements",
+      "nodeId": "assemble-dec-sheet-forms-endorsements",
+      "method": "exact",
+      "events": 185
+    },
+    {
+      "activity": "QA & Reinsurance Reconciliation",
+      "nodeId": "qa-reinsurance-reconciliation",
+      "method": "exact",
+      "events": 185
+    },
+    {
+      "activity": "Book Premium in PAS & GL",
+      "nodeId": "book-premium-in-pas-gl",
+      "method": "exact",
+      "events": 185
+    },
+    {
+      "activity": "Deliver Policy Package to Broker",
+      "nodeId": "deliver-policy-package-to-broker",
+      "method": "exact",
+      "events": 185
+    },
+    {
+      "activity": "Policy In Force & Serviced",
+      "nodeId": "policy-in-force-serviced",
+      "method": "exact",
+      "events": 185
+    },
+    {
+      "activity": "Structure Fac Placement Slip",
+      "nodeId": "structure-fac-placement-slip",
+      "method": "exact",
+      "events": 40
+    },
+    {
+      "activity": "Obtain Fac Binder from Market",
+      "nodeId": "obtain-fac-binder-from-market",
+      "method": "exact",
+      "events": 40
+    },
+    {
+      "activity": "Perform On-Site Loss Prevention Survey",
+      "nodeId": "perform-on-site-loss-prevention-survey",
+      "method": "exact",
+      "events": 25
+    },
+    {
+      "activity": "Send Decline Letter",
+      "nodeId": "send-decline-letter",
+      "method": "exact",
+      "events": 30
+    },
+    {
+      "activity": "Rejected (Clearance/Appetite)",
+      "nodeId": "rejected-clearance-appetite",
+      "method": "exact",
+      "events": 30
+    },
+    {
+      "activity": "Submission Lost",
+      "nodeId": "submission-lost",
+      "method": "exact",
+      "events": 35
+    },
+    {
+      "activity": "Email broker reminder",
+      "nodeId": null,
+      "method": "ignored",
+      "events": 41
+    }
+  ],
+  "cases": {
+    "count": 260,
+    "complete": 260,
+    "arrivalsPerDay": 2.95,
+    "annualizedVolume": 1078,
+    "cycleTime": {
+      "n": 260,
+      "mean": 5085.39,
+      "min": 1326.62,
+      "p10": 2211.04,
+      "p25": 3316.56,
+      "p50": 4422.08,
+      "p75": 6190.91,
+      "p90": 8844.16,
+      "max": 13266.24
+    },
+    "eventsPerCase": {
+      "n": 260,
+      "mean": 22.29,
+      "min": 5.82,
+      "p10": 9.69,
+      "p25": 14.54,
+      "p50": 19.38,
+      "p75": 27.14,
+      "p90": 38.77,
+      "max": 58.15
+    }
+  },
+  "steps": [
+    {
+      "nodeId": "submission-received",
+      "visits": 250,
+      "cases": 250,
+      "caseShare": 0.9615379999999999,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": null,
+      "wait": null,
+      "sojourn": null,
+      "resources": null,
+      "handoffRate": null
+    },
+    {
+      "nodeId": "check-clearance-dedup",
+      "visits": 250,
+      "cases": 250,
+      "caseShare": 0.9615379999999999,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 250,
+        "mean": 34.5,
+        "min": 9,
+        "p10": 15,
+        "p25": 22.5,
+        "p50": 30,
+        "p75": 42,
+        "p90": 60,
+        "max": 90
+      },
+      "wait": {
+        "n": 250,
+        "mean": 20.7,
+        "min": 5.4,
+        "p10": 9,
+        "p25": 13.5,
+        "p50": 18,
+        "p75": 25.2,
+        "p90": 36,
+        "max": 54
+      },
+      "sojourn": {
+        "n": 250,
+        "mean": 55.2,
+        "min": 14.4,
+        "p10": 24,
+        "p25": 36,
+        "p50": 48,
+        "p75": 67.2,
+        "p90": 96,
+        "max": 144
+      },
+      "resources": 3,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "scrub-sov-geocode",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 276,
+        "min": 72,
+        "p10": 120,
+        "p25": 180,
+        "p50": 240,
+        "p75": 336,
+        "p90": 480,
+        "max": 720
+      },
+      "wait": {
+        "n": 220,
+        "mean": 165.6,
+        "min": 43.2,
+        "p10": 72,
+        "p25": 108,
+        "p50": 144,
+        "p75": 201.6,
+        "p90": 288,
+        "max": 432
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 441.6,
+        "min": 115.2,
+        "p10": 192,
+        "p25": 288,
+        "p50": 384,
+        "p75": 537.6,
+        "p90": 768,
+        "max": 1152
+      },
+      "resources": 3,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "appetite-capacity-triage",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 103.5,
+        "min": 27,
+        "p10": 45,
+        "p25": 67.5,
+        "p50": 90,
+        "p75": 126,
+        "p90": 180,
+        "max": 270
+      },
+      "wait": {
+        "n": 220,
+        "mean": 62.1,
+        "min": 16.2,
+        "p10": 27,
+        "p25": 40.5,
+        "p50": 54,
+        "p75": 75.6,
+        "p90": 108,
+        "max": 162
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 165.6,
+        "min": 43.2,
+        "p10": 72,
+        "p25": 108,
+        "p50": 144,
+        "p75": 201.6,
+        "p90": 288,
+        "max": 432
+      },
+      "resources": 2,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "assign-to-underwriter",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 23,
+        "min": 6,
+        "p10": 10,
+        "p25": 15,
+        "p50": 20,
+        "p75": 28,
+        "p90": 40,
+        "max": 60
+      },
+      "wait": {
+        "n": 220,
+        "mean": 13.8,
+        "min": 3.6,
+        "p10": 6,
+        "p25": 9,
+        "p50": 12,
+        "p75": 16.8,
+        "p90": 24,
+        "max": 36
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 36.8,
+        "min": 9.6,
+        "p10": 16,
+        "p25": 24,
+        "p50": 32,
+        "p75": 44.8,
+        "p90": 64,
+        "max": 96
+      },
+      "resources": 3,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "review-cope-exposure-loss-runs",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 345,
+        "min": 90,
+        "p10": 150,
+        "p25": 225,
+        "p50": 300,
+        "p75": 420,
+        "p90": 600,
+        "max": 900
+      },
+      "wait": {
+        "n": 220,
+        "mean": 207,
+        "min": 54,
+        "p10": 90,
+        "p25": 135,
+        "p50": 180,
+        "p75": 252,
+        "p90": 360,
+        "max": 540
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 552,
+        "min": 144,
+        "p10": 240,
+        "p25": 360,
+        "p50": 480,
+        "p75": 672,
+        "p90": 960,
+        "max": 1440
+      },
+      "resources": 4,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "desk-review-cope-protections",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 414,
+        "min": 108,
+        "p10": 180,
+        "p25": 270,
+        "p50": 360,
+        "p75": 504,
+        "p90": 720,
+        "max": 1080
+      },
+      "wait": {
+        "n": 220,
+        "mean": 248.4,
+        "min": 64.8,
+        "p10": 108,
+        "p25": 162,
+        "p50": 216,
+        "p75": 302.4,
+        "p90": 432,
+        "max": 648
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 662.4,
+        "min": 172.8,
+        "p10": 288,
+        "p25": 432,
+        "p50": 576,
+        "p75": 806.4,
+        "p90": 1152,
+        "max": 1728
+      },
+      "resources": 2,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "publish-risk-report-pml-mfl-recs",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 207,
+        "min": 54,
+        "p10": 90,
+        "p25": 135,
+        "p50": 180,
+        "p75": 252,
+        "p90": 360,
+        "max": 540
+      },
+      "wait": {
+        "n": 220,
+        "mean": 124.2,
+        "min": 32.4,
+        "p10": 54,
+        "p25": 81,
+        "p50": 108,
+        "p75": 151.2,
+        "p90": 216,
+        "max": 324
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 331.2,
+        "min": 86.4,
+        "p10": 144,
+        "p25": 216,
+        "p50": 288,
+        "p75": 403.2,
+        "p90": 576,
+        "max": 864
+      },
+      "resources": 2,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "ingest-sov-into-cat-platform",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 138,
+        "min": 36,
+        "p10": 60,
+        "p25": 90,
+        "p50": 120,
+        "p75": 168,
+        "p90": 240,
+        "max": 360
+      },
+      "wait": {
+        "n": 220,
+        "mean": 82.8,
+        "min": 21.6,
+        "p10": 36,
+        "p25": 54,
+        "p50": 72,
+        "p75": 100.8,
+        "p90": 144,
+        "max": 216
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 220.8,
+        "min": 57.6,
+        "p10": 96,
+        "p25": 144,
+        "p50": 192,
+        "p75": 268.8,
+        "p90": 384,
+        "max": 576
+      },
+      "resources": 2,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "run-wind-flood-quake-aal-pml",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 276,
+        "min": 72,
+        "p10": 120,
+        "p25": 180,
+        "p50": 240,
+        "p75": 336,
+        "p90": 480,
+        "max": 720
+      },
+      "wait": {
+        "n": 220,
+        "mean": 165.6,
+        "min": 43.2,
+        "p10": 72,
+        "p25": 108,
+        "p50": 144,
+        "p75": 201.6,
+        "p90": 288,
+        "max": 432
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 441.6,
+        "min": 115.2,
+        "p10": 192,
+        "p25": 288,
+        "p50": 384,
+        "p75": 537.6,
+        "p90": 768,
+        "max": 1152
+      },
+      "resources": 2,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "determine-layering-participation",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 138,
+        "min": 36,
+        "p10": 60,
+        "p25": 90,
+        "p50": 120,
+        "p75": 168,
+        "p90": 240,
+        "max": 360
+      },
+      "wait": {
+        "n": 220,
+        "mean": 82.8,
+        "min": 21.6,
+        "p10": 36,
+        "p25": 54,
+        "p50": 72,
+        "p75": 100.8,
+        "p90": 144,
+        "max": 216
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 220.8,
+        "min": 57.6,
+        "p10": 96,
+        "p25": 144,
+        "p50": 192,
+        "p75": 268.8,
+        "p90": 384,
+        "max": 576
+      },
+      "resources": 2,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "technical-pricing-rating",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 345,
+        "min": 90,
+        "p10": 150,
+        "p25": 225,
+        "p50": 300,
+        "p75": 420,
+        "p90": 600,
+        "max": 900
+      },
+      "wait": {
+        "n": 220,
+        "mean": 207,
+        "min": 54,
+        "p10": 90,
+        "p25": 135,
+        "p50": 180,
+        "p75": 252,
+        "p90": 360,
+        "max": 540
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 552,
+        "min": 144,
+        "p10": 240,
+        "p25": 360,
+        "p50": 480,
+        "p75": 672,
+        "p90": 960,
+        "max": 1440
+      },
+      "resources": 2,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "select-forms-endorsements",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 103.5,
+        "min": 27,
+        "p10": 45,
+        "p25": 67.5,
+        "p50": 90,
+        "p75": 126,
+        "p90": 180,
+        "max": 270
+      },
+      "wait": {
+        "n": 220,
+        "mean": 62.1,
+        "min": 16.2,
+        "p10": 27,
+        "p25": 40.5,
+        "p50": 54,
+        "p75": 75.6,
+        "p90": 108,
+        "max": 162
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 165.6,
+        "min": 43.2,
+        "p10": 72,
+        "p25": 108,
+        "p50": 144,
+        "p75": 201.6,
+        "p90": 288,
+        "max": 432
+      },
+      "resources": 3,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "assemble-multi-option-quote",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 138,
+        "min": 36,
+        "p10": 60,
+        "p25": 90,
+        "p50": 120,
+        "p75": 168,
+        "p90": 240,
+        "max": 360
+      },
+      "wait": {
+        "n": 220,
+        "mean": 82.8,
+        "min": 21.6,
+        "p10": 36,
+        "p25": 54,
+        "p50": 72,
+        "p75": 100.8,
+        "p90": 144,
+        "max": 216
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 220.8,
+        "min": 57.6,
+        "p10": 96,
+        "p25": 144,
+        "p50": 192,
+        "p75": 268.8,
+        "p90": 384,
+        "max": 576
+      },
+      "resources": 5,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "deliver-quote-to-broker",
+      "visits": 220,
+      "cases": 220,
+      "caseShare": 0.8461540000000001,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 220,
+        "mean": 34.5,
+        "min": 9,
+        "p10": 15,
+        "p25": 22.5,
+        "p50": 30,
+        "p75": 42,
+        "p90": 60,
+        "max": 90
+      },
+      "wait": {
+        "n": 220,
+        "mean": 20.7,
+        "min": 5.4,
+        "p10": 9,
+        "p25": 13.5,
+        "p50": 18,
+        "p75": 25.2,
+        "p90": 36,
+        "max": 54
+      },
+      "sojourn": {
+        "n": 220,
+        "mean": 55.2,
+        "min": 14.4,
+        "p10": 24,
+        "p25": 36,
+        "p50": 48,
+        "p75": 67.2,
+        "p90": 96,
+        "max": 144
+      },
+      "resources": 5,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "process-bind-order",
+      "visits": 185,
+      "cases": 185,
+      "caseShare": 0.711538,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 185,
+        "mean": 69,
+        "min": 18,
+        "p10": 30,
+        "p25": 45,
+        "p50": 60,
+        "p75": 84,
+        "p90": 120,
+        "max": 180
+      },
+      "wait": {
+        "n": 185,
+        "mean": 41.4,
+        "min": 10.8,
+        "p10": 18,
+        "p25": 27,
+        "p50": 36,
+        "p75": 50.4,
+        "p90": 72,
+        "max": 108
+      },
+      "sojourn": {
+        "n": 185,
+        "mean": 110.4,
+        "min": 28.8,
+        "p10": 48,
+        "p25": 72,
+        "p50": 96,
+        "p75": 134.4,
+        "p90": 192,
+        "max": 288
+      },
+      "resources": 4,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "validate-subjectivities-ofac",
+      "visits": 185,
+      "cases": 185,
+      "caseShare": 0.711538,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 185,
+        "mean": 103.5,
+        "min": 27,
+        "p10": 45,
+        "p25": 67.5,
+        "p50": 90,
+        "p75": 126,
+        "p90": 180,
+        "max": 270
+      },
+      "wait": {
+        "n": 185,
+        "mean": 62.1,
+        "min": 16.2,
+        "p10": 27,
+        "p25": 40.5,
+        "p50": 54,
+        "p75": 75.6,
+        "p90": 108,
+        "max": 162
+      },
+      "sojourn": {
+        "n": 185,
+        "mean": 165.6,
+        "min": 43.2,
+        "p10": 72,
+        "p25": 108,
+        "p50": 144,
+        "p75": 201.6,
+        "p90": 288,
+        "max": 432
+      },
+      "resources": 2,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "issue-formal-binder",
+      "visits": 185,
+      "cases": 185,
+      "caseShare": 0.711538,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 185,
+        "mean": 51.75,
+        "min": 13.5,
+        "p10": 22.5,
+        "p25": 33.75,
+        "p50": 45,
+        "p75": 63,
+        "p90": 90,
+        "max": 135
+      },
+      "wait": {
+        "n": 185,
+        "mean": 31.05,
+        "min": 8.1,
+        "p10": 13.5,
+        "p25": 20.25,
+        "p50": 27,
+        "p75": 37.8,
+        "p90": 54,
+        "max": 81
+      },
+      "sojourn": {
+        "n": 185,
+        "mean": 82.8,
+        "min": 21.6,
+        "p10": 36,
+        "p25": 54,
+        "p50": 72,
+        "p75": 100.8,
+        "p90": 144,
+        "max": 216
+      },
+      "resources": 5,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "assemble-dec-sheet-forms-endorsements",
+      "visits": 185,
+      "cases": 185,
+      "caseShare": 0.711538,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 185,
+        "mean": 207,
+        "min": 54,
+        "p10": 90,
+        "p25": 135,
+        "p50": 180,
+        "p75": 252,
+        "p90": 360,
+        "max": 540
+      },
+      "wait": {
+        "n": 185,
+        "mean": 124.2,
+        "min": 32.4,
+        "p10": 54,
+        "p25": 81,
+        "p50": 108,
+        "p75": 151.2,
+        "p90": 216,
+        "max": 324
+      },
+      "sojourn": {
+        "n": 185,
+        "mean": 331.2,
+        "min": 86.4,
+        "p10": 144,
+        "p25": 216,
+        "p50": 288,
+        "p75": 403.2,
+        "p90": 576,
+        "max": 864
+      },
+      "resources": 3,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "qa-reinsurance-reconciliation",
+      "visits": 185,
+      "cases": 185,
+      "caseShare": 0.711538,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 185,
+        "mean": 138,
+        "min": 36,
+        "p10": 60,
+        "p25": 90,
+        "p50": 120,
+        "p75": 168,
+        "p90": 240,
+        "max": 360
+      },
+      "wait": {
+        "n": 185,
+        "mean": 82.8,
+        "min": 21.6,
+        "p10": 36,
+        "p25": 54,
+        "p50": 72,
+        "p75": 100.8,
+        "p90": 144,
+        "max": 216
+      },
+      "sojourn": {
+        "n": 185,
+        "mean": 220.8,
+        "min": 57.6,
+        "p10": 96,
+        "p25": 144,
+        "p50": 192,
+        "p75": 268.8,
+        "p90": 384,
+        "max": 576
+      },
+      "resources": 3,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "book-premium-in-pas-gl",
+      "visits": 185,
+      "cases": 185,
+      "caseShare": 0.711538,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 185,
+        "mean": 51.75,
+        "min": 13.5,
+        "p10": 22.5,
+        "p25": 33.75,
+        "p50": 45,
+        "p75": 63,
+        "p90": 90,
+        "max": 135
+      },
+      "wait": {
+        "n": 185,
+        "mean": 31.05,
+        "min": 8.1,
+        "p10": 13.5,
+        "p25": 20.25,
+        "p50": 27,
+        "p75": 37.8,
+        "p90": 54,
+        "max": 81
+      },
+      "sojourn": {
+        "n": 185,
+        "mean": 82.8,
+        "min": 21.6,
+        "p10": 36,
+        "p25": 54,
+        "p50": 72,
+        "p75": 100.8,
+        "p90": 144,
+        "max": 216
+      },
+      "resources": 4,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "deliver-policy-package-to-broker",
+      "visits": 185,
+      "cases": 185,
+      "caseShare": 0.711538,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 185,
+        "mean": 34.5,
+        "min": 9,
+        "p10": 15,
+        "p25": 22.5,
+        "p50": 30,
+        "p75": 42,
+        "p90": 60,
+        "max": 90
+      },
+      "wait": {
+        "n": 185,
+        "mean": 20.7,
+        "min": 5.4,
+        "p10": 9,
+        "p25": 13.5,
+        "p50": 18,
+        "p75": 25.2,
+        "p90": 36,
+        "max": 54
+      },
+      "sojourn": {
+        "n": 185,
+        "mean": 55.2,
+        "min": 14.4,
+        "p10": 24,
+        "p25": 36,
+        "p50": 48,
+        "p75": 67.2,
+        "p90": 96,
+        "max": 144
+      },
+      "resources": 2,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "policy-in-force-serviced",
+      "visits": 185,
+      "cases": 185,
+      "caseShare": 0.711538,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": null,
+      "wait": null,
+      "sojourn": null,
+      "resources": null,
+      "handoffRate": null
+    },
+    {
+      "nodeId": "structure-fac-placement-slip",
+      "visits": 40,
+      "cases": 40,
+      "caseShare": 0.153846,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 40,
+        "mean": 276,
+        "min": 72,
+        "p10": 120,
+        "p25": 180,
+        "p50": 240,
+        "p75": 336,
+        "p90": 480,
+        "max": 720
+      },
+      "wait": {
+        "n": 40,
+        "mean": 165.6,
+        "min": 43.2,
+        "p10": 72,
+        "p25": 108,
+        "p50": 144,
+        "p75": 201.6,
+        "p90": 288,
+        "max": 432
+      },
+      "sojourn": {
+        "n": 40,
+        "mean": 441.6,
+        "min": 115.2,
+        "p10": 192,
+        "p25": 288,
+        "p50": 384,
+        "p75": 537.6,
+        "p90": 768,
+        "max": 1152
+      },
+      "resources": 2,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "obtain-fac-binder-from-market",
+      "visits": 40,
+      "cases": 40,
+      "caseShare": 0.153846,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 40,
+        "mean": 1656,
+        "min": 432,
+        "p10": 720,
+        "p25": 1080,
+        "p50": 1440,
+        "p75": 2016,
+        "p90": 2880,
+        "max": 4320
+      },
+      "wait": {
+        "n": 40,
+        "mean": 993.6,
+        "min": 259.2,
+        "p10": 432,
+        "p25": 648,
+        "p50": 864,
+        "p75": 1209.6,
+        "p90": 1728,
+        "max": 2592
+      },
+      "sojourn": {
+        "n": 40,
+        "mean": 2649.6,
+        "min": 691.2,
+        "p10": 1152,
+        "p25": 1728,
+        "p50": 2304,
+        "p75": 3225.6,
+        "p90": 4608,
+        "max": 6912
+      },
+      "resources": 3,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "perform-on-site-loss-prevention-survey",
+      "visits": 25,
+      "cases": 25,
+      "caseShare": 0.09615399999999999,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 25,
+        "mean": 1104,
+        "min": 288,
+        "p10": 480,
+        "p25": 720,
+        "p50": 960,
+        "p75": 1344,
+        "p90": 1920,
+        "max": 2880
+      },
+      "wait": {
+        "n": 25,
+        "mean": 662.4,
+        "min": 172.8,
+        "p10": 288,
+        "p25": 432,
+        "p50": 576,
+        "p75": 806.4,
+        "p90": 1152,
+        "max": 1728
+      },
+      "sojourn": {
+        "n": 25,
+        "mean": 1766.4,
+        "min": 460.8,
+        "p10": 768,
+        "p25": 1152,
+        "p50": 1536,
+        "p75": 2150.4,
+        "p90": 3072,
+        "max": 4608
+      },
+      "resources": 4,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "send-decline-letter",
+      "visits": 30,
+      "cases": 30,
+      "caseShare": 0.11538499999999999,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": {
+        "n": 30,
+        "mean": 23,
+        "min": 6,
+        "p10": 10,
+        "p25": 15,
+        "p50": 20,
+        "p75": 28,
+        "p90": 40,
+        "max": 60
+      },
+      "wait": {
+        "n": 30,
+        "mean": 13.8,
+        "min": 3.6,
+        "p10": 6,
+        "p25": 9,
+        "p50": 12,
+        "p75": 16.8,
+        "p90": 24,
+        "max": 36
+      },
+      "sojourn": {
+        "n": 30,
+        "mean": 36.8,
+        "min": 9.6,
+        "p10": 16,
+        "p25": 24,
+        "p50": 32,
+        "p75": 44.8,
+        "p90": 64,
+        "max": 96
+      },
+      "resources": 5,
+      "handoffRate": 0.25
+    },
+    {
+      "nodeId": "rejected-clearance-appetite",
+      "visits": 30,
+      "cases": 30,
+      "caseShare": 0.11538499999999999,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": null,
+      "wait": null,
+      "sojourn": null,
+      "resources": null,
+      "handoffRate": null
+    },
+    {
+      "nodeId": "submission-lost",
+      "visits": 35,
+      "cases": 35,
+      "caseShare": 0.134615,
+      "reworkCases": 0,
+      "reworkRate": 0,
+      "duration": null,
+      "wait": null,
+      "sojourn": null,
+      "resources": null,
+      "handoffRate": null
+    }
+  ],
+  "transitions": [
+    {
+      "fromNodeId": "submission-received",
+      "toNodeId": "check-clearance-dedup",
+      "count": 250,
+      "edgeIds": [
+        "e-submission-received-check-clearance-dedup"
+      ]
+    },
+    {
+      "fromNodeId": "check-clearance-dedup",
+      "toNodeId": "scrub-sov-geocode",
+      "count": 220,
+      "edgeIds": [
+        "e-check-clearance-dedup-clearance-approved",
+        "e-clearance-approved-scrub-sov-geocode"
+      ]
+    },
+    {
+      "fromNodeId": "scrub-sov-geocode",
+      "toNodeId": "appetite-capacity-triage",
+      "count": 220,
+      "edgeIds": [
+        "e-scrub-sov-geocode-appetite-capacity-triage"
+      ]
+    },
+    {
+      "fromNodeId": "appetite-capacity-triage",
+      "toNodeId": "assign-to-underwriter",
+      "count": 220,
+      "edgeIds": [
+        "e-appetite-capacity-triage-within-appetite",
+        "e-within-appetite-assign-to-underwriter"
+      ]
+    },
+    {
+      "fromNodeId": "assign-to-underwriter",
+      "toNodeId": "review-cope-exposure-loss-runs",
+      "count": 220,
+      "edgeIds": [
+        "e-assign-to-underwriter-review-cope-exposure-loss-runs"
+      ]
+    },
+    {
+      "fromNodeId": "review-cope-exposure-loss-runs",
+      "toNodeId": "desk-review-cope-protections",
+      "count": 220,
+      "edgeIds": [
+        "e-review-cope-exposure-loss-runs-initiate-parallel-analysis",
+        "e-initiate-parallel-analysis-desk-review-cope-protections"
+      ]
+    },
+    {
+      "fromNodeId": "desk-review-cope-protections",
+      "toNodeId": "publish-risk-report-pml-mfl-recs",
+      "count": 195,
+      "edgeIds": [
+        "e-desk-review-cope-protections-on-site-survey-needed",
+        "e-on-site-survey-needed-publish-risk-report-pml-mfl-recs"
+      ]
+    },
+    {
+      "fromNodeId": "publish-risk-report-pml-mfl-recs",
+      "toNodeId": "ingest-sov-into-cat-platform",
+      "count": 220,
+      "edgeIds": []
+    },
+    {
+      "fromNodeId": "ingest-sov-into-cat-platform",
+      "toNodeId": "run-wind-flood-quake-aal-pml",
+      "count": 220,
+      "edgeIds": [
+        "e-ingest-sov-into-cat-platform-run-wind-flood-quake-aal-pml"
+      ]
+    },
+    {
+      "fromNodeId": "run-wind-flood-quake-aal-pml",
+      "toNodeId": "determine-layering-participation",
+      "count": 220,
+      "edgeIds": [
+        "e-run-wind-flood-quake-aal-pml-risk-insights-reunited",
+        "e-risk-insights-reunited-determine-layering-participation"
+      ]
+    },
+    {
+      "fromNodeId": "determine-layering-participation",
+      "toNodeId": "technical-pricing-rating",
+      "count": 220,
+      "edgeIds": [
+        "e-determine-layering-participation-technical-pricing-rating"
+      ]
+    },
+    {
+      "fromNodeId": "technical-pricing-rating",
+      "toNodeId": "select-forms-endorsements",
+      "count": 220,
+      "edgeIds": [
+        "e-technical-pricing-rating-select-forms-endorsements"
+      ]
+    },
+    {
+      "fromNodeId": "select-forms-endorsements",
+      "toNodeId": "assemble-multi-option-quote",
+      "count": 180,
+      "edgeIds": [
+        "e-select-forms-endorsements-fac-reinsurance-required",
+        "e-fac-reinsurance-required-exceeds-uw-authority",
+        "e-exceeds-uw-authority-assemble-multi-option-quote"
+      ]
+    },
+    {
+      "fromNodeId": "assemble-multi-option-quote",
+      "toNodeId": "deliver-quote-to-broker",
+      "count": 220,
+      "edgeIds": [
+        "e-assemble-multi-option-quote-deliver-quote-to-broker"
+      ]
+    },
+    {
+      "fromNodeId": "deliver-quote-to-broker",
+      "toNodeId": "process-bind-order",
+      "count": 185,
+      "edgeIds": [
+        "e-deliver-quote-to-broker-broker-response",
+        "e-broker-response-process-bind-order"
+      ]
+    },
+    {
+      "fromNodeId": "process-bind-order",
+      "toNodeId": "validate-subjectivities-ofac",
+      "count": 185,
+      "edgeIds": [
+        "e-process-bind-order-validate-subjectivities-ofac"
+      ]
+    },
+    {
+      "fromNodeId": "validate-subjectivities-ofac",
+      "toNodeId": "issue-formal-binder",
+      "count": 185,
+      "edgeIds": [
+        "e-validate-subjectivities-ofac-issue-formal-binder"
+      ]
+    },
+    {
+      "fromNodeId": "issue-formal-binder",
+      "toNodeId": "assemble-dec-sheet-forms-endorsements",
+      "count": 185,
+      "edgeIds": [
+        "e-issue-formal-binder-assemble-dec-sheet-forms-endorsements"
+      ]
+    },
+    {
+      "fromNodeId": "assemble-dec-sheet-forms-endorsements",
+      "toNodeId": "qa-reinsurance-reconciliation",
+      "count": 185,
+      "edgeIds": [
+        "e-assemble-dec-sheet-forms-endorsements-qa-reinsurance-reconciliation"
+      ]
+    },
+    {
+      "fromNodeId": "qa-reinsurance-reconciliation",
+      "toNodeId": "book-premium-in-pas-gl",
+      "count": 185,
+      "edgeIds": [
+        "e-qa-reinsurance-reconciliation-book-premium-in-pas-gl"
+      ]
+    },
+    {
+      "fromNodeId": "book-premium-in-pas-gl",
+      "toNodeId": "deliver-policy-package-to-broker",
+      "count": 185,
+      "edgeIds": [
+        "e-book-premium-in-pas-gl-deliver-policy-package-to-broker"
+      ]
+    },
+    {
+      "fromNodeId": "deliver-policy-package-to-broker",
+      "toNodeId": "policy-in-force-serviced",
+      "count": 185,
+      "edgeIds": [
+        "e-deliver-policy-package-to-broker-policy-in-force-serviced"
+      ]
+    },
+    {
+      "fromNodeId": "select-forms-endorsements",
+      "toNodeId": "structure-fac-placement-slip",
+      "count": 40,
+      "edgeIds": [
+        "e-select-forms-endorsements-fac-reinsurance-required",
+        "e-fac-reinsurance-required-structure-fac-placement-slip"
+      ]
+    },
+    {
+      "fromNodeId": "structure-fac-placement-slip",
+      "toNodeId": "obtain-fac-binder-from-market",
+      "count": 40,
+      "edgeIds": [
+        "e-structure-fac-placement-slip-obtain-fac-binder-from-market"
+      ]
+    },
+    {
+      "fromNodeId": "obtain-fac-binder-from-market",
+      "toNodeId": "assemble-multi-option-quote",
+      "count": 40,
+      "edgeIds": [
+        "e-obtain-fac-binder-from-market-exceeds-uw-authority",
+        "e-exceeds-uw-authority-assemble-multi-option-quote"
+      ]
+    },
+    {
+      "fromNodeId": "desk-review-cope-protections",
+      "toNodeId": "perform-on-site-loss-prevention-survey",
+      "count": 25,
+      "edgeIds": [
+        "e-desk-review-cope-protections-on-site-survey-needed",
+        "e-on-site-survey-needed-perform-on-site-loss-prevention-survey"
+      ]
+    },
+    {
+      "fromNodeId": "perform-on-site-loss-prevention-survey",
+      "toNodeId": "publish-risk-report-pml-mfl-recs",
+      "count": 25,
+      "edgeIds": [
+        "e-perform-on-site-loss-prevention-survey-publish-risk-report-pml-mfl-recs"
+      ]
+    },
+    {
+      "fromNodeId": "check-clearance-dedup",
+      "toNodeId": "send-decline-letter",
+      "count": 30,
+      "edgeIds": [
+        "e-check-clearance-dedup-clearance-approved",
+        "e-clearance-approved-send-decline-letter"
+      ]
+    },
+    {
+      "fromNodeId": "send-decline-letter",
+      "toNodeId": "rejected-clearance-appetite",
+      "count": 30,
+      "edgeIds": [
+        "e-send-decline-letter-rejected-clearance-appetite"
+      ]
+    },
+    {
+      "fromNodeId": "deliver-quote-to-broker",
+      "toNodeId": "submission-lost",
+      "count": 35,
+      "edgeIds": [
+        "e-deliver-quote-to-broker-broker-response",
+        "e-broker-response-submission-lost"
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "v1",
+      "nodeIds": [
+        "submission-received",
+        "check-clearance-dedup",
+        "scrub-sov-geocode",
+        "appetite-capacity-triage",
+        "assign-to-underwriter",
+        "review-cope-exposure-loss-runs",
+        "desk-review-cope-protections",
+        "publish-risk-report-pml-mfl-recs",
+        "ingest-sov-into-cat-platform",
+        "run-wind-flood-quake-aal-pml",
+        "determine-layering-participation",
+        "technical-pricing-rating",
+        "select-forms-endorsements",
+        "assemble-multi-option-quote",
+        "deliver-quote-to-broker",
+        "process-bind-order",
+        "validate-subjectivities-ofac",
+        "issue-formal-binder",
+        "assemble-dec-sheet-forms-endorsements",
+        "qa-reinsurance-reconciliation",
+        "book-premium-in-pas-gl",
+        "deliver-policy-package-to-broker",
+        "policy-in-force-serviced"
+      ],
+      "cases": 120,
+      "share": 0.461538,
+      "cycleTime": {
+        "n": 120,
+        "mean": 5170.4,
+        "min": 1348.8,
+        "p10": 2248,
+        "p25": 3372,
+        "p50": 4496,
+        "p75": 6294.4,
+        "p90": 8992,
+        "max": 13488
+      }
+    },
+    {
+      "id": "v2",
+      "nodeIds": [
+        "submission-received",
+        "check-clearance-dedup",
+        "scrub-sov-geocode",
+        "appetite-capacity-triage",
+        "assign-to-underwriter",
+        "review-cope-exposure-loss-runs",
+        "desk-review-cope-protections",
+        "publish-risk-report-pml-mfl-recs",
+        "ingest-sov-into-cat-platform",
+        "run-wind-flood-quake-aal-pml",
+        "determine-layering-participation",
+        "technical-pricing-rating",
+        "select-forms-endorsements",
+        "structure-fac-placement-slip",
+        "obtain-fac-binder-from-market",
+        "assemble-multi-option-quote",
+        "deliver-quote-to-broker",
+        "process-bind-order",
+        "validate-subjectivities-ofac",
+        "issue-formal-binder",
+        "assemble-dec-sheet-forms-endorsements",
+        "qa-reinsurance-reconciliation",
+        "book-premium-in-pas-gl",
+        "deliver-policy-package-to-broker",
+        "policy-in-force-serviced"
+      ],
+      "cases": 40,
+      "share": 0.153846,
+      "cycleTime": {
+        "n": 40,
+        "mean": 8261.6,
+        "min": 2155.2,
+        "p10": 3592,
+        "p25": 5388,
+        "p50": 7184,
+        "p75": 10057.6,
+        "p90": 14368,
+        "max": 21552
+      }
+    },
+    {
+      "id": "v3",
+      "nodeIds": [
+        "submission-received",
+        "check-clearance-dedup",
+        "scrub-sov-geocode",
+        "appetite-capacity-triage",
+        "assign-to-underwriter",
+        "review-cope-exposure-loss-runs",
+        "desk-review-cope-protections",
+        "perform-on-site-loss-prevention-survey",
+        "publish-risk-report-pml-mfl-recs",
+        "ingest-sov-into-cat-platform",
+        "run-wind-flood-quake-aal-pml",
+        "determine-layering-participation",
+        "technical-pricing-rating",
+        "select-forms-endorsements",
+        "assemble-multi-option-quote",
+        "deliver-quote-to-broker",
+        "process-bind-order",
+        "validate-subjectivities-ofac",
+        "issue-formal-binder",
+        "assemble-dec-sheet-forms-endorsements",
+        "qa-reinsurance-reconciliation",
+        "book-premium-in-pas-gl",
+        "deliver-policy-package-to-broker",
+        "policy-in-force-serviced"
+      ],
+      "cases": 25,
+      "share": 0.09615399999999999,
+      "cycleTime": {
+        "n": 25,
+        "mean": 6936.8,
+        "min": 1809.6,
+        "p10": 3016,
+        "p25": 4524,
+        "p50": 6032,
+        "p75": 8444.8,
+        "p90": 12064,
+        "max": 18096
+      }
+    },
+    {
+      "id": "v4",
+      "nodeIds": [
+        "submission-received",
+        "check-clearance-dedup",
+        "send-decline-letter",
+        "rejected-clearance-appetite"
+      ],
+      "cases": 30,
+      "share": 0.11538499999999999,
+      "cycleTime": {
+        "n": 30,
+        "mean": 92,
+        "min": 24,
+        "p10": 40,
+        "p25": 60,
+        "p50": 80,
+        "p75": 112,
+        "p90": 160,
+        "max": 240
+      }
+    },
+    {
+      "id": "v5",
+      "nodeIds": [
+        "submission-received",
+        "check-clearance-dedup",
+        "scrub-sov-geocode",
+        "appetite-capacity-triage",
+        "assign-to-underwriter",
+        "review-cope-exposure-loss-runs",
+        "desk-review-cope-protections",
+        "publish-risk-report-pml-mfl-recs",
+        "ingest-sov-into-cat-platform",
+        "run-wind-flood-quake-aal-pml",
+        "determine-layering-participation",
+        "technical-pricing-rating",
+        "select-forms-endorsements",
+        "assemble-multi-option-quote",
+        "deliver-quote-to-broker",
+        "submission-lost"
+      ],
+      "cases": 35,
+      "share": 0.134615,
+      "cycleTime": {
+        "n": 35,
+        "mean": 4121.6,
+        "min": 1075.2,
+        "p10": 1792,
+        "p25": 2688,
+        "p50": 3584,
+        "p75": 5017.6,
+        "p90": 7168,
+        "max": 10752
+      }
+    }
+  ],
+  "otherVariants": {
+    "variants": 6,
+    "cases": 10
+  },
+  "scenarioIds": [],
+  "notes": "Synthetic demonstration data for tests. Not from a real engagement."
+}

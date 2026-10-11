@@ -1,0 +1,9 @@
+Case ID;Activity;Timestamp
+A1;Antrag erfassen;05.01.2026 09:00
+A1;Prüfung;05.01.2026 10:00
+A1;Bescheid erstellen;05.01.2026 11:00
+A2;Antrag erfassen;06.01.2026 09:00
+A2;Prüfung;06.01.2026 09:30
+A2;Rückfrage an Kunden;06.01.2026 10:00
+A2;Prüfung;07.01.2026 09:00
+A2;Bescheid erstellen;07.01.2026 10:00

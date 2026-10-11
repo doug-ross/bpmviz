@@ -1,0 +1,684 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aixray.local/schema/ai-result.schema.json",
+  "title": "AIxRay AI result",
+  "description": "Output of one AI task (extract, opportunities, future-state, summary or log-mapping), schema version 1. The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "task",
+    "payload"
+  ],
+  "properties": {
+    "schema": {
+      "const": "aixray.ai-result"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "task": {
+      "enum": [
+        "extract",
+        "opportunities",
+        "future-state",
+        "summary",
+        "log-mapping"
+      ]
+    },
+    "engagementId": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/id"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The engagement the task read. Null for extract."
+    },
+    "engagementRevision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "baselineModelId": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/id"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The current-state model a future-state change set applies to, or the model a log mapping maps activities to."
+    },
+    "generated": {
+      "type": "object",
+      "properties": {
+        "tool": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "provider": {
+          "enum": [
+            "claude",
+            "codex",
+            "other"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "surface": {
+          "enum": [
+            "cli",
+            "skill",
+            "app"
+          ]
+        },
+        "at": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "jobId": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "plan": {
+          "enum": [
+            "unknown",
+            "commercial",
+            "consumer"
+          ]
+        }
+      }
+    },
+    "dataHandling": {
+      "type": "object",
+      "properties": {
+        "confidentiality": {
+          "enum": [
+            "internal",
+            "client-confidential",
+            "restricted",
+            "public"
+          ]
+        },
+        "dataStatus": {
+          "enum": [
+            "demonstration",
+            "supplied",
+            "observed"
+          ]
+        },
+        "approvalConfirmed": {
+          "type": "boolean"
+        },
+        "trainingOptOutConfirmed": {
+          "type": "boolean"
+        },
+        "writtenApproval": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "sensitiveIncluded": {
+          "type": "boolean"
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 260
+          },
+          "kind": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "pages": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      }
+    },
+    "payload": {
+      "description": "extract: { engagement } (see engagement.schema.json). The other tasks use the schemas in $defs.",
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "engagement"
+          ],
+          "properties": {
+            "engagement": {
+              "$ref": "engagement.schema.json"
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/opportunities"
+        },
+        {
+          "$ref": "#/$defs/futureState"
+        },
+        {
+          "$ref": "#/$defs/summary"
+        },
+        {
+          "$ref": "#/$defs/logMapping"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
+    },
+    "opportunities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suggestions"
+      ],
+      "properties": {
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ref",
+              "kind",
+              "title",
+              "description",
+              "linkedModelId",
+              "linkedNodeIds",
+              "basedOnRecordIds",
+              "priority",
+              "opportunity",
+              "confidence",
+              "rationale"
+            ],
+            "properties": {
+              "ref": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "opportunity",
+                  "pain",
+                  "question"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "linkedModelId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "linkedNodeIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "basedOnRecordIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "",
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              },
+              "opportunity": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "intervention",
+                      "simplerAlternative",
+                      "expectedBenefit",
+                      "affectedVolume",
+                      "effort",
+                      "risk",
+                      "dependencies",
+                      "validationAction"
+                    ],
+                    "properties": {
+                      "intervention": {
+                        "type": "string",
+                        "enum": [
+                          "",
+                          "eliminate",
+                          "simplify",
+                          "standardize",
+                          "integrate",
+                          "orchestrate",
+                          "deterministic-automation",
+                          "self-service",
+                          "ai-assist",
+                          "ai-agent",
+                          "control-data"
+                        ]
+                      },
+                      "simplerAlternative": {
+                        "type": "string"
+                      },
+                      "expectedBenefit": {
+                        "type": "string"
+                      },
+                      "affectedVolume": {
+                        "type": "string"
+                      },
+                      "effort": {
+                        "type": "string",
+                        "enum": [
+                          "",
+                          "S",
+                          "M",
+                          "L"
+                        ]
+                      },
+                      "risk": {
+                        "type": "string"
+                      },
+                      "dependencies": {
+                        "type": "string"
+                      },
+                      "validationAction": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "rationale": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "futureState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "summary",
+        "lanes",
+        "operations"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "lanes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ref",
+              "name",
+              "role",
+              "type"
+            ],
+            "properties": {
+              "ref": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "human",
+                  "agent",
+                  "external"
+                ]
+              }
+            }
+          }
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "op",
+              "nodeId",
+              "edgeId",
+              "label",
+              "laneRef",
+              "semanticType",
+              "details",
+              "tags",
+              "touchEffortMinutes",
+              "typicalDurationMinutes",
+              "rationale",
+              "addressesRecordIds"
+            ],
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "modify",
+                  "insert",
+                  "remove"
+                ]
+              },
+              "nodeId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "edgeId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "laneRef": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "semanticType": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "task",
+                  "userTask",
+                  "manualTask",
+                  "serviceTask",
+                  "scriptTask",
+                  "businessRuleTask",
+                  "sendTask",
+                  "receiveTask",
+                  null
+                ]
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "value"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "enum": [
+                        "desc",
+                        "who",
+                        "owner",
+                        "authority",
+                        "systems",
+                        "inputs",
+                        "outputs",
+                        "activities",
+                        "pain",
+                        "controls",
+                        "risks",
+                        "exceptions",
+                        "escalation",
+                        "decisionRules",
+                        "audit",
+                        "kpis",
+                        "volume",
+                        "sla",
+                        "effort",
+                        "handoff",
+                        "dependencies",
+                        "note",
+                        "evidence",
+                        "assumptions",
+                        "confidence",
+                        "dataQuality"
+                      ]
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "tags": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "bottleneck",
+                      "agent",
+                      "humanReview"
+                    ],
+                    "properties": {
+                      "bottleneck": {
+                        "type": "boolean"
+                      },
+                      "agent": {
+                        "type": "boolean"
+                      },
+                      "humanReview": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "touchEffortMinutes": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "typicalDurationMinutes": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rationale": {
+                "type": "string"
+              },
+              "addressesRecordIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "text",
+        "keyPoints",
+        "caveats"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "keyPoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "text",
+              "supportingRecordIds",
+              "supportingFigures"
+            ],
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "supportingRecordIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "supportingFigures": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "caveats": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "logMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mappings"
+      ],
+      "properties": {
+        "mappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "activity",
+              "nodeId",
+              "confidence",
+              "rationale"
+            ],
+            "properties": {
+              "activity": {
+                "type": "string"
+              },
+              "nodeId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "rationale": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

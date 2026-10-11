@@ -1,0 +1,2778 @@
+{
+  "schema": "aixray.engagement",
+  "schemaVersion": 1,
+  "id": "eng-rpa-delivery",
+  "revision": 0,
+  "createdAt": "2026-09-25T00:00:00.000Z",
+  "updatedAt": "2026-09-25T00:00:00.000Z",
+  "meta": {
+    "clientDisplayName": "Automation Center of Excellence (sample)",
+    "engagementName": "Intelligent automation delivery",
+    "processName": "AI-assisted RPA delivery",
+    "confidentiality": "internal",
+    "dataStatus": "demonstration",
+    "timeBasis": {
+      "unit": "minute",
+      "calendar": "calendar",
+      "businessMinutesPerDay": 480
+    },
+    "currency": "USD",
+    "disclosure": "Demonstration data. Sample automation requests with illustrative durations; no live telemetry.",
+    "summary": "Automation requests move from intake through AI-assisted scoping, a parallel governance fan-out, build, QA and UAT. Samples include QA and UAT rework loops.",
+    "credits": "Sample from the original AIxRay explorer by Doug Ross (MIT License)."
+  },
+  "milestones": [],
+  "models": [
+    {
+      "id": "m-current",
+      "role": "current",
+      "name": "Current state",
+      "version": 1,
+      "status": "baseline",
+      "locked": false,
+      "basedOn": null,
+      "sourceRefs": [
+        "ev-futurestate-bpmn"
+      ],
+      "notes": "",
+      "lanes": [
+        {
+          "id": "business",
+          "name": "Business",
+          "role": "",
+          "type": "human"
+        },
+        {
+          "id": "intake",
+          "name": "Intake / CoE",
+          "role": "",
+          "type": "human"
+        },
+        {
+          "id": "ai",
+          "name": "AI Assist",
+          "role": "",
+          "type": "agent"
+        },
+        {
+          "id": "ba",
+          "name": "Business Analyst",
+          "role": "",
+          "type": "human"
+        },
+        {
+          "id": "gov",
+          "name": "Governance",
+          "role": "",
+          "type": "human"
+        },
+        {
+          "id": "dev",
+          "name": "Developer",
+          "role": "",
+          "type": "human"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "label": "Request",
+          "sub": "",
+          "semanticType": "startEvent",
+          "laneId": "business",
+          "sourceIds": [],
+          "details": {
+            "desc": "A business unit raises a request for a new RPA automation. This is the entry point into the Center of Excellence intake funnel."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "workshop",
+          "label": "Conduct Workshops",
+          "sub": "",
+          "semanticType": "userTask",
+          "laneId": "intake",
+          "sourceIds": [],
+          "details": {
+            "desc": "The CoE intake team runs discovery workshops with the requesting business to understand the candidate process and confirm automation feasibility."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 110,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 480,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "useCase",
+          "label": "Create Use Case",
+          "sub": "",
+          "semanticType": "userTask",
+          "laneId": "intake",
+          "sourceIds": [],
+          "details": {
+            "desc": "A formal use case is captured in the automation pipeline manager (APM), logging scope, expected benefits and the process owner."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 55,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 240,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "reuseEngine",
+          "label": "AI Reuse Engine",
+          "sub": "",
+          "semanticType": "serviceTask",
+          "laneId": "ai",
+          "sourceIds": [],
+          "details": {
+            "desc": "An AI similarity-match engine scans the existing component and bot library to surface reusable assets relevant to the new use case."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": true,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 4,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 15,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "effortEst",
+          "label": "AI Effort Estimation",
+          "sub": "",
+          "semanticType": "serviceTask",
+          "laneId": "ai",
+          "sourceIds": [],
+          "details": {
+            "desc": "AI generates a build effort estimate based on process complexity and the reuse opportunities identified by the similarity match."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": true,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 5,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 15,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "gatherReqs",
+          "label": "Gather Requirements",
+          "sub": "",
+          "semanticType": "userTask",
+          "laneId": "ba",
+          "sourceIds": [],
+          "details": {
+            "desc": "The business analyst elicits detailed functional requirements, capturing process steps, exceptions and data inputs for the automation."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 220,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 960,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "draftPdd",
+          "label": "Draft PDD (AI)",
+          "sub": "",
+          "semanticType": "serviceTask",
+          "laneId": "ai",
+          "sourceIds": [],
+          "details": {
+            "desc": "AI generates a first-draft Process Definition Document from the gathered requirements, accelerating documentation effort."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": true,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 9,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 30,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "finalPdd",
+          "label": "Finalize PDD",
+          "sub": "",
+          "semanticType": "userTask",
+          "laneId": "ba",
+          "sourceIds": [],
+          "details": {
+            "desc": "The business analyst reviews, corrects and finalizes the AI-drafted PDD, signing it off as the build specification."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 170,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 720,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "fork1",
+          "label": "Fork",
+          "sub": "",
+          "semanticType": "parallelGateway",
+          "laneId": "intake",
+          "sourceIds": [],
+          "details": {
+            "desc": "Parallel split kicking off the governance and environment preparation activities concurrently."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "provAccess",
+          "label": "Provision Access",
+          "sub": "",
+          "semanticType": "serviceTask",
+          "laneId": "gov",
+          "sourceIds": [],
+          "details": {
+            "desc": "Service accounts, credentials and system access required by the bot are provisioned across target applications."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 420,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 1440,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "dataClass",
+          "label": "Data Classification",
+          "sub": "",
+          "semanticType": "scriptTask",
+          "laneId": "gov",
+          "sourceIds": [],
+          "details": {
+            "desc": "The data handled by the automation is classified against information-security policy to determine handling and storage controls."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 110,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 480,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "preApprovals",
+          "label": "Pre-Approvals",
+          "sub": "",
+          "semanticType": "userTask",
+          "laneId": "gov",
+          "sourceIds": [],
+          "details": {
+            "desc": "Governance and security pre-approvals are obtained from the relevant control owners before the build can proceed."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 900,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 2880,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "join1",
+          "label": "Join",
+          "sub": "",
+          "semanticType": "parallelGateway",
+          "laneId": "intake",
+          "sourceIds": [],
+          "details": {
+            "desc": "Parallel join synchronizing access provisioning, data classification and pre-approvals before development begins."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "developBot",
+          "label": "Develop Bot",
+          "sub": "",
+          "semanticType": "userTask",
+          "laneId": "dev",
+          "sourceIds": [],
+          "details": {
+            "desc": "The developer builds the automation against the finalized PDD, reusing matched components where possible."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 2300,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 4800,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "qa",
+          "label": "QA",
+          "sub": "",
+          "semanticType": "userTask",
+          "laneId": "dev",
+          "sourceIds": [],
+          "details": {
+            "desc": "Quality assurance executes test cases against the built bot to verify it meets the documented requirements."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 460,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 1440,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "qaGate",
+          "label": "QA Passed?",
+          "sub": "",
+          "semanticType": "exclusiveGateway",
+          "laneId": "dev",
+          "sourceIds": [],
+          "details": {
+            "desc": "Exclusive decision: if QA passes the bot proceeds to UAT, otherwise it is returned to development for defect fixes."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "uat",
+          "label": "UAT",
+          "sub": "",
+          "semanticType": "userTask",
+          "laneId": "business",
+          "sourceIds": [],
+          "details": {
+            "desc": "The business performs user acceptance testing to confirm the automation works correctly against real-world scenarios."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 900,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 2880,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "uatGate",
+          "label": "UAT Accepted?",
+          "sub": "",
+          "semanticType": "exclusiveGateway",
+          "laneId": "business",
+          "sourceIds": [],
+          "details": {
+            "desc": "Exclusive decision: if the business accepts, the bot is deployed; if not, it is sent back to development for rework."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "deploy",
+          "label": "Deploy",
+          "sub": "",
+          "semanticType": "serviceTask",
+          "laneId": "dev",
+          "sourceIds": [],
+          "details": {
+            "desc": "The accepted bot is promoted and deployed into the production automation environment."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": {
+              "value": 110,
+              "unit": "minute"
+            },
+            "slaTarget": {
+              "value": 480,
+              "unit": "minute"
+            },
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "end",
+          "label": "Live",
+          "sub": "",
+          "semanticType": "endEvent",
+          "laneId": "dev",
+          "sourceIds": [],
+          "details": {
+            "desc": "The automation is live in production and actively executing in the RPA estate."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "generated",
+            "validation": "unvalidated",
+            "evidenceRefs": [
+              "ev-futurestate-bpmn"
+            ],
+            "note": "Generated sample. Descriptions and durations were written for the demonstration."
+          },
+          "lineage": null,
+          "removed": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "e-start-workshop",
+          "from": "start",
+          "to": "workshop",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-workshop-useCase",
+          "from": "workshop",
+          "to": "useCase",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-useCase-reuseEngine",
+          "from": "useCase",
+          "to": "reuseEngine",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-reuseEngine-effortEst",
+          "from": "reuseEngine",
+          "to": "effortEst",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-effortEst-gatherReqs",
+          "from": "effortEst",
+          "to": "gatherReqs",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-gatherReqs-draftPdd",
+          "from": "gatherReqs",
+          "to": "draftPdd",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-draftPdd-finalPdd",
+          "from": "draftPdd",
+          "to": "finalPdd",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-finalPdd-fork1",
+          "from": "finalPdd",
+          "to": "fork1",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-fork1-provAccess",
+          "from": "fork1",
+          "to": "provAccess",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-fork1-dataClass",
+          "from": "fork1",
+          "to": "dataClass",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-fork1-preApprovals",
+          "from": "fork1",
+          "to": "preApprovals",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-provAccess-join1",
+          "from": "provAccess",
+          "to": "join1",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-dataClass-join1",
+          "from": "dataClass",
+          "to": "join1",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-preApprovals-join1",
+          "from": "preApprovals",
+          "to": "join1",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-join1-developBot",
+          "from": "join1",
+          "to": "developBot",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-developBot-qa",
+          "from": "developBot",
+          "to": "qa",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-qa-qaGate",
+          "from": "qa",
+          "to": "qaGate",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-qaGate-developBot",
+          "from": "qaGate",
+          "to": "developBot",
+          "label": "Defects",
+          "semanticType": "loop",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-qaGate-uat",
+          "from": "qaGate",
+          "to": "uat",
+          "label": "Passed",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-uat-uatGate",
+          "from": "uat",
+          "to": "uatGate",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-uatGate-developBot",
+          "from": "uatGate",
+          "to": "developBot",
+          "label": "Rework",
+          "semanticType": "loop",
+          "dashed": true,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-uatGate-deploy",
+          "from": "uatGate",
+          "to": "deploy",
+          "label": "Accepted",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "e-deploy-end",
+          "from": "deploy",
+          "to": "end",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        }
+      ],
+      "presentation": {
+        "laneHeight": null,
+        "nodes": {
+          "start": {
+            "x": 0
+          },
+          "workshop": {
+            "x": 1
+          },
+          "useCase": {
+            "x": 2
+          },
+          "reuseEngine": {
+            "x": 3
+          },
+          "effortEst": {
+            "x": 4
+          },
+          "gatherReqs": {
+            "x": 5
+          },
+          "draftPdd": {
+            "x": 6
+          },
+          "finalPdd": {
+            "x": 7
+          },
+          "fork1": {
+            "x": 8
+          },
+          "provAccess": {
+            "x": 9
+          },
+          "dataClass": {
+            "x": 9
+          },
+          "preApprovals": {
+            "x": 9
+          },
+          "join1": {
+            "x": 10
+          },
+          "developBot": {
+            "x": 11
+          },
+          "qa": {
+            "x": 12
+          },
+          "qaGate": {
+            "x": 13
+          },
+          "uat": {
+            "x": 14
+          },
+          "uatGate": {
+            "x": 15
+          },
+          "deploy": {
+            "x": 16
+          },
+          "end": {
+            "x": 17
+          }
+        }
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "sc-inv001",
+      "name": "Invoice Capture Bot",
+      "statusLabel": "Completed",
+      "statusTone": "done",
+      "provenance": "illustrative",
+      "summary": "Clean run end-to-end. Passed QA first time and was accepted in UAT without rework, now live and processing AP invoices in production.",
+      "attributes": [
+        {
+          "label": "Business area",
+          "value": "Accounts Payable"
+        },
+        {
+          "label": "Scope",
+          "value": "Document-extraction automation"
+        },
+        {
+          "label": "Volume",
+          "value": "~3,200 invoices / month"
+        },
+        {
+          "label": "Delivery lead",
+          "value": "Priya Nair"
+        },
+        {
+          "label": "Location",
+          "value": "Bengaluru"
+        },
+        {
+          "label": "Situation",
+          "value": "deployed to production"
+        }
+      ],
+      "timing": {
+        "method": "explicit-visits",
+        "note": "Sample path with illustrative durations in calendar minutes. The path lists the branch taken at each decision."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v1",
+              "nodeId": "start",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v2",
+              "nodeId": "workshop",
+              "start": 0,
+              "end": 110
+            },
+            {
+              "id": "v3",
+              "nodeId": "useCase",
+              "start": 110,
+              "end": 165
+            },
+            {
+              "id": "v4",
+              "nodeId": "reuseEngine",
+              "start": 165,
+              "end": 169
+            },
+            {
+              "id": "v5",
+              "nodeId": "effortEst",
+              "start": 169,
+              "end": 174
+            },
+            {
+              "id": "v6",
+              "nodeId": "gatherReqs",
+              "start": 174,
+              "end": 394
+            },
+            {
+              "id": "v7",
+              "nodeId": "draftPdd",
+              "start": 394,
+              "end": 403
+            },
+            {
+              "id": "v8",
+              "nodeId": "finalPdd",
+              "start": 403,
+              "end": 573
+            },
+            {
+              "id": "v9",
+              "nodeId": "fork1",
+              "start": 573,
+              "end": 573
+            },
+            {
+              "id": "v10",
+              "nodeId": "provAccess",
+              "start": 573,
+              "end": 993
+            },
+            {
+              "id": "v11",
+              "nodeId": "dataClass",
+              "start": 573,
+              "end": 683
+            },
+            {
+              "id": "v12",
+              "nodeId": "preApprovals",
+              "start": 573,
+              "end": 1473
+            },
+            {
+              "id": "v13",
+              "nodeId": "join1",
+              "start": 1473,
+              "end": 1473
+            },
+            {
+              "id": "v14",
+              "nodeId": "developBot",
+              "start": 1473,
+              "end": 3773
+            },
+            {
+              "id": "v15",
+              "nodeId": "qa",
+              "start": 3773,
+              "end": 4233
+            },
+            {
+              "id": "v16",
+              "nodeId": "qaGate",
+              "start": 4233,
+              "end": 4233
+            },
+            {
+              "id": "v17",
+              "nodeId": "uat",
+              "start": 4233,
+              "end": 5133
+            },
+            {
+              "id": "v18",
+              "nodeId": "uatGate",
+              "start": 5133,
+              "end": 5133
+            },
+            {
+              "id": "v19",
+              "nodeId": "deploy",
+              "start": 5133,
+              "end": 5243
+            },
+            {
+              "id": "v20",
+              "nodeId": "end",
+              "start": 5243,
+              "end": 5243
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-start-workshop",
+              "fromVisitId": "v1",
+              "toVisitId": "v2"
+            },
+            {
+              "edgeId": "e-workshop-useCase",
+              "fromVisitId": "v2",
+              "toVisitId": "v3"
+            },
+            {
+              "edgeId": "e-useCase-reuseEngine",
+              "fromVisitId": "v3",
+              "toVisitId": "v4"
+            },
+            {
+              "edgeId": "e-reuseEngine-effortEst",
+              "fromVisitId": "v4",
+              "toVisitId": "v5"
+            },
+            {
+              "edgeId": "e-effortEst-gatherReqs",
+              "fromVisitId": "v5",
+              "toVisitId": "v6"
+            },
+            {
+              "edgeId": "e-gatherReqs-draftPdd",
+              "fromVisitId": "v6",
+              "toVisitId": "v7"
+            },
+            {
+              "edgeId": "e-draftPdd-finalPdd",
+              "fromVisitId": "v7",
+              "toVisitId": "v8"
+            },
+            {
+              "edgeId": "e-finalPdd-fork1",
+              "fromVisitId": "v8",
+              "toVisitId": "v9"
+            },
+            {
+              "edgeId": "e-fork1-provAccess",
+              "fromVisitId": "v9",
+              "toVisitId": "v10"
+            },
+            {
+              "edgeId": "e-fork1-dataClass",
+              "fromVisitId": "v9",
+              "toVisitId": "v11"
+            },
+            {
+              "edgeId": "e-fork1-preApprovals",
+              "fromVisitId": "v9",
+              "toVisitId": "v12"
+            },
+            {
+              "edgeId": "e-provAccess-join1",
+              "fromVisitId": "v10",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-dataClass-join1",
+              "fromVisitId": "v11",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-preApprovals-join1",
+              "fromVisitId": "v12",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-join1-developBot",
+              "fromVisitId": "v13",
+              "toVisitId": "v14"
+            },
+            {
+              "edgeId": "e-developBot-qa",
+              "fromVisitId": "v14",
+              "toVisitId": "v15"
+            },
+            {
+              "edgeId": "e-qa-qaGate",
+              "fromVisitId": "v15",
+              "toVisitId": "v16"
+            },
+            {
+              "edgeId": "e-qaGate-uat",
+              "fromVisitId": "v16",
+              "toVisitId": "v17"
+            },
+            {
+              "edgeId": "e-uat-uatGate",
+              "fromVisitId": "v17",
+              "toVisitId": "v18"
+            },
+            {
+              "edgeId": "e-uatGate-deploy",
+              "fromVisitId": "v18",
+              "toVisitId": "v19"
+            },
+            {
+              "edgeId": "e-deploy-end",
+              "fromVisitId": "v19",
+              "toVisitId": "v20"
+            }
+          ],
+          "membership": {
+            "start": "included",
+            "workshop": "included",
+            "useCase": "included",
+            "reuseEngine": "included",
+            "effortEst": "included",
+            "gatherReqs": "included",
+            "draftPdd": "included",
+            "finalPdd": "included",
+            "fork1": "included",
+            "provAccess": "included",
+            "dataClass": "included",
+            "preApprovals": "included",
+            "join1": "included",
+            "developBot": "included",
+            "qa": "included",
+            "qaGate": "included",
+            "uat": "included",
+            "uatGate": "included",
+            "deploy": "included",
+            "end": "included"
+          },
+          "pauseAt": 5243,
+          "milestones": {}
+        }
+      },
+      "measures": [],
+      "economics": null
+    },
+    {
+      "id": "sc-apr002",
+      "name": "AP Reconciliation Bot",
+      "statusLabel": "In progress",
+      "statusTone": "progress",
+      "provenance": "illustrative",
+      "summary": "Governance fan-out cleared and the developer is mid-build against the finalized PDD. On track for the QA and UAT gates downstream.",
+      "attributes": [
+        {
+          "label": "Business area",
+          "value": "Finance Shared Services"
+        },
+        {
+          "label": "Scope",
+          "value": "Ledger reconciliation automation"
+        },
+        {
+          "label": "Volume",
+          "value": "~1,800 statements / month"
+        },
+        {
+          "label": "Delivery lead",
+          "value": "Marcus Feld"
+        },
+        {
+          "label": "Location",
+          "value": "Frankfurt"
+        },
+        {
+          "label": "Situation",
+          "value": "in development"
+        }
+      ],
+      "timing": {
+        "method": "explicit-visits",
+        "note": "Sample path with illustrative durations in calendar minutes. The path lists the branch taken at each decision."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v1",
+              "nodeId": "start",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v2",
+              "nodeId": "workshop",
+              "start": 0,
+              "end": 105
+            },
+            {
+              "id": "v3",
+              "nodeId": "useCase",
+              "start": 105,
+              "end": 155
+            },
+            {
+              "id": "v4",
+              "nodeId": "reuseEngine",
+              "start": 155,
+              "end": 160
+            },
+            {
+              "id": "v5",
+              "nodeId": "effortEst",
+              "start": 160,
+              "end": 166
+            },
+            {
+              "id": "v6",
+              "nodeId": "gatherReqs",
+              "start": 166,
+              "end": 396
+            },
+            {
+              "id": "v7",
+              "nodeId": "draftPdd",
+              "start": 396,
+              "end": 406
+            },
+            {
+              "id": "v8",
+              "nodeId": "finalPdd",
+              "start": 406,
+              "end": 566
+            },
+            {
+              "id": "v9",
+              "nodeId": "fork1",
+              "start": 566,
+              "end": 566
+            },
+            {
+              "id": "v10",
+              "nodeId": "provAccess",
+              "start": 566,
+              "end": 966
+            },
+            {
+              "id": "v11",
+              "nodeId": "dataClass",
+              "start": 566,
+              "end": 686
+            },
+            {
+              "id": "v12",
+              "nodeId": "preApprovals",
+              "start": 566,
+              "end": 1416
+            },
+            {
+              "id": "v13",
+              "nodeId": "join1",
+              "start": 1416,
+              "end": 1416
+            },
+            {
+              "id": "v14",
+              "nodeId": "developBot",
+              "start": 1416,
+              "end": 3816
+            },
+            {
+              "id": "v15",
+              "nodeId": "qa",
+              "start": 3816,
+              "end": 4276
+            },
+            {
+              "id": "v16",
+              "nodeId": "qaGate",
+              "start": 4276,
+              "end": 4276
+            },
+            {
+              "id": "v17",
+              "nodeId": "uat",
+              "start": 4276,
+              "end": 5176
+            },
+            {
+              "id": "v18",
+              "nodeId": "uatGate",
+              "start": 5176,
+              "end": 5176
+            },
+            {
+              "id": "v19",
+              "nodeId": "deploy",
+              "start": 5176,
+              "end": 5286
+            },
+            {
+              "id": "v20",
+              "nodeId": "end",
+              "start": 5286,
+              "end": 5286
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-start-workshop",
+              "fromVisitId": "v1",
+              "toVisitId": "v2"
+            },
+            {
+              "edgeId": "e-workshop-useCase",
+              "fromVisitId": "v2",
+              "toVisitId": "v3"
+            },
+            {
+              "edgeId": "e-useCase-reuseEngine",
+              "fromVisitId": "v3",
+              "toVisitId": "v4"
+            },
+            {
+              "edgeId": "e-reuseEngine-effortEst",
+              "fromVisitId": "v4",
+              "toVisitId": "v5"
+            },
+            {
+              "edgeId": "e-effortEst-gatherReqs",
+              "fromVisitId": "v5",
+              "toVisitId": "v6"
+            },
+            {
+              "edgeId": "e-gatherReqs-draftPdd",
+              "fromVisitId": "v6",
+              "toVisitId": "v7"
+            },
+            {
+              "edgeId": "e-draftPdd-finalPdd",
+              "fromVisitId": "v7",
+              "toVisitId": "v8"
+            },
+            {
+              "edgeId": "e-finalPdd-fork1",
+              "fromVisitId": "v8",
+              "toVisitId": "v9"
+            },
+            {
+              "edgeId": "e-fork1-provAccess",
+              "fromVisitId": "v9",
+              "toVisitId": "v10"
+            },
+            {
+              "edgeId": "e-fork1-dataClass",
+              "fromVisitId": "v9",
+              "toVisitId": "v11"
+            },
+            {
+              "edgeId": "e-fork1-preApprovals",
+              "fromVisitId": "v9",
+              "toVisitId": "v12"
+            },
+            {
+              "edgeId": "e-provAccess-join1",
+              "fromVisitId": "v10",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-dataClass-join1",
+              "fromVisitId": "v11",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-preApprovals-join1",
+              "fromVisitId": "v12",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-join1-developBot",
+              "fromVisitId": "v13",
+              "toVisitId": "v14"
+            },
+            {
+              "edgeId": "e-developBot-qa",
+              "fromVisitId": "v14",
+              "toVisitId": "v15"
+            },
+            {
+              "edgeId": "e-qa-qaGate",
+              "fromVisitId": "v15",
+              "toVisitId": "v16"
+            },
+            {
+              "edgeId": "e-qaGate-uat",
+              "fromVisitId": "v16",
+              "toVisitId": "v17"
+            },
+            {
+              "edgeId": "e-uat-uatGate",
+              "fromVisitId": "v17",
+              "toVisitId": "v18"
+            },
+            {
+              "edgeId": "e-uatGate-deploy",
+              "fromVisitId": "v18",
+              "toVisitId": "v19"
+            },
+            {
+              "edgeId": "e-deploy-end",
+              "fromVisitId": "v19",
+              "toVisitId": "v20"
+            }
+          ],
+          "membership": {
+            "start": "included",
+            "workshop": "included",
+            "useCase": "included",
+            "reuseEngine": "included",
+            "effortEst": "included",
+            "gatherReqs": "included",
+            "draftPdd": "included",
+            "finalPdd": "included",
+            "fork1": "included",
+            "provAccess": "included",
+            "dataClass": "included",
+            "preApprovals": "included",
+            "join1": "included",
+            "developBot": "included",
+            "qa": "included",
+            "qaGate": "included",
+            "uat": "included",
+            "uatGate": "included",
+            "deploy": "included",
+            "end": "included"
+          },
+          "pauseAt": 2600,
+          "milestones": {}
+        }
+      },
+      "measures": [],
+      "economics": null
+    },
+    {
+      "id": "sc-hro003",
+      "name": "HR Onboarding Automation",
+      "statusLabel": "New",
+      "statusTone": "new",
+      "provenance": "illustrative",
+      "summary": "Freshly raised request. Discovery workshops are underway with People Ops to confirm scope and feasibility before a use case is logged.",
+      "attributes": [
+        {
+          "label": "Business area",
+          "value": "People Operations"
+        },
+        {
+          "label": "Scope",
+          "value": "New-hire provisioning automation"
+        },
+        {
+          "label": "Volume",
+          "value": "~450 hires / quarter"
+        },
+        {
+          "label": "Delivery lead",
+          "value": "Sofia Alvarez"
+        },
+        {
+          "label": "Location",
+          "value": "Madrid"
+        },
+        {
+          "label": "Situation",
+          "value": "intake started"
+        }
+      ],
+      "timing": {
+        "method": "explicit-visits",
+        "note": "Sample path with illustrative durations in calendar minutes. The path lists the branch taken at each decision."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v1",
+              "nodeId": "start",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v2",
+              "nodeId": "workshop",
+              "start": 0,
+              "end": 120
+            },
+            {
+              "id": "v3",
+              "nodeId": "useCase",
+              "start": 120,
+              "end": 175
+            },
+            {
+              "id": "v4",
+              "nodeId": "reuseEngine",
+              "start": 175,
+              "end": 179
+            },
+            {
+              "id": "v5",
+              "nodeId": "effortEst",
+              "start": 179,
+              "end": 184
+            },
+            {
+              "id": "v6",
+              "nodeId": "gatherReqs",
+              "start": 184,
+              "end": 404
+            },
+            {
+              "id": "v7",
+              "nodeId": "draftPdd",
+              "start": 404,
+              "end": 413
+            },
+            {
+              "id": "v8",
+              "nodeId": "finalPdd",
+              "start": 413,
+              "end": 583
+            },
+            {
+              "id": "v9",
+              "nodeId": "fork1",
+              "start": 583,
+              "end": 583
+            },
+            {
+              "id": "v10",
+              "nodeId": "provAccess",
+              "start": 583,
+              "end": 1003
+            },
+            {
+              "id": "v11",
+              "nodeId": "dataClass",
+              "start": 583,
+              "end": 693
+            },
+            {
+              "id": "v12",
+              "nodeId": "preApprovals",
+              "start": 583,
+              "end": 1483
+            },
+            {
+              "id": "v13",
+              "nodeId": "join1",
+              "start": 1483,
+              "end": 1483
+            },
+            {
+              "id": "v14",
+              "nodeId": "developBot",
+              "start": 1483,
+              "end": 3783
+            },
+            {
+              "id": "v15",
+              "nodeId": "qa",
+              "start": 3783,
+              "end": 4243
+            },
+            {
+              "id": "v16",
+              "nodeId": "qaGate",
+              "start": 4243,
+              "end": 4243
+            },
+            {
+              "id": "v17",
+              "nodeId": "uat",
+              "start": 4243,
+              "end": 5143
+            },
+            {
+              "id": "v18",
+              "nodeId": "uatGate",
+              "start": 5143,
+              "end": 5143
+            },
+            {
+              "id": "v19",
+              "nodeId": "deploy",
+              "start": 5143,
+              "end": 5253
+            },
+            {
+              "id": "v20",
+              "nodeId": "end",
+              "start": 5253,
+              "end": 5253
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-start-workshop",
+              "fromVisitId": "v1",
+              "toVisitId": "v2"
+            },
+            {
+              "edgeId": "e-workshop-useCase",
+              "fromVisitId": "v2",
+              "toVisitId": "v3"
+            },
+            {
+              "edgeId": "e-useCase-reuseEngine",
+              "fromVisitId": "v3",
+              "toVisitId": "v4"
+            },
+            {
+              "edgeId": "e-reuseEngine-effortEst",
+              "fromVisitId": "v4",
+              "toVisitId": "v5"
+            },
+            {
+              "edgeId": "e-effortEst-gatherReqs",
+              "fromVisitId": "v5",
+              "toVisitId": "v6"
+            },
+            {
+              "edgeId": "e-gatherReqs-draftPdd",
+              "fromVisitId": "v6",
+              "toVisitId": "v7"
+            },
+            {
+              "edgeId": "e-draftPdd-finalPdd",
+              "fromVisitId": "v7",
+              "toVisitId": "v8"
+            },
+            {
+              "edgeId": "e-finalPdd-fork1",
+              "fromVisitId": "v8",
+              "toVisitId": "v9"
+            },
+            {
+              "edgeId": "e-fork1-provAccess",
+              "fromVisitId": "v9",
+              "toVisitId": "v10"
+            },
+            {
+              "edgeId": "e-fork1-dataClass",
+              "fromVisitId": "v9",
+              "toVisitId": "v11"
+            },
+            {
+              "edgeId": "e-fork1-preApprovals",
+              "fromVisitId": "v9",
+              "toVisitId": "v12"
+            },
+            {
+              "edgeId": "e-provAccess-join1",
+              "fromVisitId": "v10",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-dataClass-join1",
+              "fromVisitId": "v11",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-preApprovals-join1",
+              "fromVisitId": "v12",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-join1-developBot",
+              "fromVisitId": "v13",
+              "toVisitId": "v14"
+            },
+            {
+              "edgeId": "e-developBot-qa",
+              "fromVisitId": "v14",
+              "toVisitId": "v15"
+            },
+            {
+              "edgeId": "e-qa-qaGate",
+              "fromVisitId": "v15",
+              "toVisitId": "v16"
+            },
+            {
+              "edgeId": "e-qaGate-uat",
+              "fromVisitId": "v16",
+              "toVisitId": "v17"
+            },
+            {
+              "edgeId": "e-uat-uatGate",
+              "fromVisitId": "v17",
+              "toVisitId": "v18"
+            },
+            {
+              "edgeId": "e-uatGate-deploy",
+              "fromVisitId": "v18",
+              "toVisitId": "v19"
+            },
+            {
+              "edgeId": "e-deploy-end",
+              "fromVisitId": "v19",
+              "toVisitId": "v20"
+            }
+          ],
+          "membership": {
+            "start": "included",
+            "workshop": "included",
+            "useCase": "included",
+            "reuseEngine": "included",
+            "effortEst": "included",
+            "gatherReqs": "included",
+            "draftPdd": "included",
+            "finalPdd": "included",
+            "fork1": "included",
+            "provAccess": "included",
+            "dataClass": "included",
+            "preApprovals": "included",
+            "join1": "included",
+            "developBot": "included",
+            "qa": "included",
+            "qaGate": "included",
+            "uat": "included",
+            "uatGate": "included",
+            "deploy": "included",
+            "end": "included"
+          },
+          "pauseAt": 55,
+          "milestones": {}
+        }
+      },
+      "measures": [],
+      "economics": null
+    },
+    {
+      "id": "sc-pay004",
+      "name": "Payroll Variance Bot",
+      "statusLabel": "Stuck past SLA",
+      "statusTone": "stuck",
+      "provenance": "illustrative",
+      "summary": "QA returned defects and the bot bounced back to development. The rework Develop Bot cycle has now blown past its SLA and is escalated.",
+      "attributes": [
+        {
+          "label": "Business area",
+          "value": "Payroll Operations"
+        },
+        {
+          "label": "Scope",
+          "value": "Variance-detection automation"
+        },
+        {
+          "label": "Volume",
+          "value": "~12,000 records / cycle"
+        },
+        {
+          "label": "Delivery lead",
+          "value": "Daniel Okoro"
+        },
+        {
+          "label": "Location",
+          "value": "London"
+        },
+        {
+          "label": "Situation",
+          "value": "stuck in rework"
+        }
+      ],
+      "timing": {
+        "method": "explicit-visits",
+        "note": "Sample path with illustrative durations in calendar minutes. The path lists the branch taken at each decision."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v1",
+              "nodeId": "start",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v2",
+              "nodeId": "workshop",
+              "start": 0,
+              "end": 115
+            },
+            {
+              "id": "v3",
+              "nodeId": "useCase",
+              "start": 115,
+              "end": 175
+            },
+            {
+              "id": "v4",
+              "nodeId": "reuseEngine",
+              "start": 175,
+              "end": 180
+            },
+            {
+              "id": "v5",
+              "nodeId": "effortEst",
+              "start": 180,
+              "end": 186
+            },
+            {
+              "id": "v6",
+              "nodeId": "gatherReqs",
+              "start": 186,
+              "end": 426
+            },
+            {
+              "id": "v7",
+              "nodeId": "draftPdd",
+              "start": 426,
+              "end": 436
+            },
+            {
+              "id": "v8",
+              "nodeId": "finalPdd",
+              "start": 436,
+              "end": 616
+            },
+            {
+              "id": "v9",
+              "nodeId": "fork1",
+              "start": 616,
+              "end": 616
+            },
+            {
+              "id": "v10",
+              "nodeId": "provAccess",
+              "start": 616,
+              "end": 1046
+            },
+            {
+              "id": "v11",
+              "nodeId": "dataClass",
+              "start": 616,
+              "end": 731
+            },
+            {
+              "id": "v12",
+              "nodeId": "preApprovals",
+              "start": 616,
+              "end": 1536
+            },
+            {
+              "id": "v13",
+              "nodeId": "join1",
+              "start": 1536,
+              "end": 1536
+            },
+            {
+              "id": "v14",
+              "nodeId": "developBot",
+              "start": 1536,
+              "end": 3836
+            },
+            {
+              "id": "v15",
+              "nodeId": "qa",
+              "start": 3836,
+              "end": 4296
+            },
+            {
+              "id": "v16",
+              "nodeId": "qaGate",
+              "start": 4296,
+              "end": 4296
+            },
+            {
+              "id": "v17",
+              "nodeId": "developBot",
+              "start": 4296,
+              "end": 9496
+            },
+            {
+              "id": "v18",
+              "nodeId": "qa",
+              "start": 9496,
+              "end": 9956
+            },
+            {
+              "id": "v19",
+              "nodeId": "qaGate",
+              "start": 9956,
+              "end": 9956
+            },
+            {
+              "id": "v20",
+              "nodeId": "uat",
+              "start": 9956,
+              "end": 10856
+            },
+            {
+              "id": "v21",
+              "nodeId": "uatGate",
+              "start": 10856,
+              "end": 10856
+            },
+            {
+              "id": "v22",
+              "nodeId": "deploy",
+              "start": 10856,
+              "end": 10966
+            },
+            {
+              "id": "v23",
+              "nodeId": "end",
+              "start": 10966,
+              "end": 10966
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-start-workshop",
+              "fromVisitId": "v1",
+              "toVisitId": "v2"
+            },
+            {
+              "edgeId": "e-workshop-useCase",
+              "fromVisitId": "v2",
+              "toVisitId": "v3"
+            },
+            {
+              "edgeId": "e-useCase-reuseEngine",
+              "fromVisitId": "v3",
+              "toVisitId": "v4"
+            },
+            {
+              "edgeId": "e-reuseEngine-effortEst",
+              "fromVisitId": "v4",
+              "toVisitId": "v5"
+            },
+            {
+              "edgeId": "e-effortEst-gatherReqs",
+              "fromVisitId": "v5",
+              "toVisitId": "v6"
+            },
+            {
+              "edgeId": "e-gatherReqs-draftPdd",
+              "fromVisitId": "v6",
+              "toVisitId": "v7"
+            },
+            {
+              "edgeId": "e-draftPdd-finalPdd",
+              "fromVisitId": "v7",
+              "toVisitId": "v8"
+            },
+            {
+              "edgeId": "e-finalPdd-fork1",
+              "fromVisitId": "v8",
+              "toVisitId": "v9"
+            },
+            {
+              "edgeId": "e-fork1-provAccess",
+              "fromVisitId": "v9",
+              "toVisitId": "v10"
+            },
+            {
+              "edgeId": "e-fork1-dataClass",
+              "fromVisitId": "v9",
+              "toVisitId": "v11"
+            },
+            {
+              "edgeId": "e-fork1-preApprovals",
+              "fromVisitId": "v9",
+              "toVisitId": "v12"
+            },
+            {
+              "edgeId": "e-provAccess-join1",
+              "fromVisitId": "v10",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-dataClass-join1",
+              "fromVisitId": "v11",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-preApprovals-join1",
+              "fromVisitId": "v12",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-join1-developBot",
+              "fromVisitId": "v13",
+              "toVisitId": "v14"
+            },
+            {
+              "edgeId": "e-developBot-qa",
+              "fromVisitId": "v14",
+              "toVisitId": "v15"
+            },
+            {
+              "edgeId": "e-qa-qaGate",
+              "fromVisitId": "v15",
+              "toVisitId": "v16"
+            },
+            {
+              "edgeId": "e-qaGate-developBot",
+              "fromVisitId": "v16",
+              "toVisitId": "v17"
+            },
+            {
+              "edgeId": "e-developBot-qa",
+              "fromVisitId": "v17",
+              "toVisitId": "v18"
+            },
+            {
+              "edgeId": "e-qa-qaGate",
+              "fromVisitId": "v18",
+              "toVisitId": "v19"
+            },
+            {
+              "edgeId": "e-qaGate-uat",
+              "fromVisitId": "v19",
+              "toVisitId": "v20"
+            },
+            {
+              "edgeId": "e-uat-uatGate",
+              "fromVisitId": "v20",
+              "toVisitId": "v21"
+            },
+            {
+              "edgeId": "e-uatGate-deploy",
+              "fromVisitId": "v21",
+              "toVisitId": "v22"
+            },
+            {
+              "edgeId": "e-deploy-end",
+              "fromVisitId": "v22",
+              "toVisitId": "v23"
+            }
+          ],
+          "membership": {
+            "start": "included",
+            "workshop": "included",
+            "useCase": "included",
+            "reuseEngine": "included",
+            "effortEst": "included",
+            "gatherReqs": "included",
+            "draftPdd": "included",
+            "finalPdd": "included",
+            "fork1": "included",
+            "provAccess": "included",
+            "dataClass": "included",
+            "preApprovals": "included",
+            "join1": "included",
+            "developBot": "included",
+            "qa": "included",
+            "qaGate": "included",
+            "uat": "included",
+            "uatGate": "included",
+            "deploy": "included",
+            "end": "included"
+          },
+          "pauseAt": 9100,
+          "milestones": {}
+        }
+      },
+      "measures": [],
+      "economics": null
+    },
+    {
+      "id": "sc-stm005",
+      "name": "Statement Recon Bot",
+      "statusLabel": "Rework after UAT",
+      "statusTone": "stuck",
+      "provenance": "illustrative",
+      "summary": "Passed QA and reached UAT, but the business rejected acceptance and sent it back for rework. Developer is reworking before re-testing.",
+      "attributes": [
+        {
+          "label": "Business area",
+          "value": "Treasury Operations"
+        },
+        {
+          "label": "Scope",
+          "value": "Bank-statement reconciliation"
+        },
+        {
+          "label": "Volume",
+          "value": "~6,500 lines / day"
+        },
+        {
+          "label": "Delivery lead",
+          "value": "Hannah Liu"
+        },
+        {
+          "label": "Location",
+          "value": "Singapore"
+        },
+        {
+          "label": "Situation",
+          "value": "UAT rework loop"
+        }
+      ],
+      "timing": {
+        "method": "explicit-visits",
+        "note": "Sample path with illustrative durations in calendar minutes. The path lists the branch taken at each decision."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v1",
+              "nodeId": "start",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v2",
+              "nodeId": "workshop",
+              "start": 0,
+              "end": 110
+            },
+            {
+              "id": "v3",
+              "nodeId": "useCase",
+              "start": 110,
+              "end": 165
+            },
+            {
+              "id": "v4",
+              "nodeId": "reuseEngine",
+              "start": 165,
+              "end": 169
+            },
+            {
+              "id": "v5",
+              "nodeId": "effortEst",
+              "start": 169,
+              "end": 174
+            },
+            {
+              "id": "v6",
+              "nodeId": "gatherReqs",
+              "start": 174,
+              "end": 399
+            },
+            {
+              "id": "v7",
+              "nodeId": "draftPdd",
+              "start": 399,
+              "end": 408
+            },
+            {
+              "id": "v8",
+              "nodeId": "finalPdd",
+              "start": 408,
+              "end": 573
+            },
+            {
+              "id": "v9",
+              "nodeId": "fork1",
+              "start": 573,
+              "end": 573
+            },
+            {
+              "id": "v10",
+              "nodeId": "provAccess",
+              "start": 573,
+              "end": 983
+            },
+            {
+              "id": "v11",
+              "nodeId": "dataClass",
+              "start": 573,
+              "end": 683
+            },
+            {
+              "id": "v12",
+              "nodeId": "preApprovals",
+              "start": 573,
+              "end": 1453
+            },
+            {
+              "id": "v13",
+              "nodeId": "join1",
+              "start": 1453,
+              "end": 1453
+            },
+            {
+              "id": "v14",
+              "nodeId": "developBot",
+              "start": 1453,
+              "end": 3803
+            },
+            {
+              "id": "v15",
+              "nodeId": "qa",
+              "start": 3803,
+              "end": 4258
+            },
+            {
+              "id": "v16",
+              "nodeId": "qaGate",
+              "start": 4258,
+              "end": 4258
+            },
+            {
+              "id": "v17",
+              "nodeId": "uat",
+              "start": 4258,
+              "end": 5158
+            },
+            {
+              "id": "v18",
+              "nodeId": "uatGate",
+              "start": 5158,
+              "end": 5158
+            },
+            {
+              "id": "v19",
+              "nodeId": "developBot",
+              "start": 5158,
+              "end": 7358
+            },
+            {
+              "id": "v20",
+              "nodeId": "qa",
+              "start": 7358,
+              "end": 7818
+            },
+            {
+              "id": "v21",
+              "nodeId": "qaGate",
+              "start": 7818,
+              "end": 7818
+            },
+            {
+              "id": "v22",
+              "nodeId": "uat",
+              "start": 7818,
+              "end": 8698
+            },
+            {
+              "id": "v23",
+              "nodeId": "uatGate",
+              "start": 8698,
+              "end": 8698
+            },
+            {
+              "id": "v24",
+              "nodeId": "deploy",
+              "start": 8698,
+              "end": 8808
+            },
+            {
+              "id": "v25",
+              "nodeId": "end",
+              "start": 8808,
+              "end": 8808
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "e-start-workshop",
+              "fromVisitId": "v1",
+              "toVisitId": "v2"
+            },
+            {
+              "edgeId": "e-workshop-useCase",
+              "fromVisitId": "v2",
+              "toVisitId": "v3"
+            },
+            {
+              "edgeId": "e-useCase-reuseEngine",
+              "fromVisitId": "v3",
+              "toVisitId": "v4"
+            },
+            {
+              "edgeId": "e-reuseEngine-effortEst",
+              "fromVisitId": "v4",
+              "toVisitId": "v5"
+            },
+            {
+              "edgeId": "e-effortEst-gatherReqs",
+              "fromVisitId": "v5",
+              "toVisitId": "v6"
+            },
+            {
+              "edgeId": "e-gatherReqs-draftPdd",
+              "fromVisitId": "v6",
+              "toVisitId": "v7"
+            },
+            {
+              "edgeId": "e-draftPdd-finalPdd",
+              "fromVisitId": "v7",
+              "toVisitId": "v8"
+            },
+            {
+              "edgeId": "e-finalPdd-fork1",
+              "fromVisitId": "v8",
+              "toVisitId": "v9"
+            },
+            {
+              "edgeId": "e-fork1-provAccess",
+              "fromVisitId": "v9",
+              "toVisitId": "v10"
+            },
+            {
+              "edgeId": "e-fork1-dataClass",
+              "fromVisitId": "v9",
+              "toVisitId": "v11"
+            },
+            {
+              "edgeId": "e-fork1-preApprovals",
+              "fromVisitId": "v9",
+              "toVisitId": "v12"
+            },
+            {
+              "edgeId": "e-provAccess-join1",
+              "fromVisitId": "v10",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-dataClass-join1",
+              "fromVisitId": "v11",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-preApprovals-join1",
+              "fromVisitId": "v12",
+              "toVisitId": "v13"
+            },
+            {
+              "edgeId": "e-join1-developBot",
+              "fromVisitId": "v13",
+              "toVisitId": "v14"
+            },
+            {
+              "edgeId": "e-developBot-qa",
+              "fromVisitId": "v14",
+              "toVisitId": "v15"
+            },
+            {
+              "edgeId": "e-qa-qaGate",
+              "fromVisitId": "v15",
+              "toVisitId": "v16"
+            },
+            {
+              "edgeId": "e-qaGate-uat",
+              "fromVisitId": "v16",
+              "toVisitId": "v17"
+            },
+            {
+              "edgeId": "e-uat-uatGate",
+              "fromVisitId": "v17",
+              "toVisitId": "v18"
+            },
+            {
+              "edgeId": "e-uatGate-developBot",
+              "fromVisitId": "v18",
+              "toVisitId": "v19"
+            },
+            {
+              "edgeId": "e-developBot-qa",
+              "fromVisitId": "v19",
+              "toVisitId": "v20"
+            },
+            {
+              "edgeId": "e-qa-qaGate",
+              "fromVisitId": "v20",
+              "toVisitId": "v21"
+            },
+            {
+              "edgeId": "e-qaGate-uat",
+              "fromVisitId": "v21",
+              "toVisitId": "v22"
+            },
+            {
+              "edgeId": "e-uat-uatGate",
+              "fromVisitId": "v22",
+              "toVisitId": "v23"
+            },
+            {
+              "edgeId": "e-uatGate-deploy",
+              "fromVisitId": "v23",
+              "toVisitId": "v24"
+            },
+            {
+              "edgeId": "e-deploy-end",
+              "fromVisitId": "v24",
+              "toVisitId": "v25"
+            }
+          ],
+          "membership": {
+            "start": "included",
+            "workshop": "included",
+            "useCase": "included",
+            "reuseEngine": "included",
+            "effortEst": "included",
+            "gatherReqs": "included",
+            "draftPdd": "included",
+            "finalPdd": "included",
+            "fork1": "included",
+            "provAccess": "included",
+            "dataClass": "included",
+            "preApprovals": "included",
+            "join1": "included",
+            "developBot": "included",
+            "qa": "included",
+            "qaGate": "included",
+            "uat": "included",
+            "uatGate": "included",
+            "deploy": "included",
+            "end": "included"
+          },
+          "pauseAt": 6200,
+          "milestones": {}
+        }
+      },
+      "measures": [],
+      "economics": null
+    }
+  ],
+  "records": [],
+  "evidence": [
+    {
+      "id": "ev-futurestate-bpmn",
+      "title": "futurestate.bpmn (AI-assisted RPA delivery)",
+      "locator": "Named in the original branding.js; the file is not in the repository.",
+      "extractedFact": "Lanes, steps and sequence flows of the sample process.",
+      "status": "unavailable",
+      "reviewer": "",
+      "reviewDate": "",
+      "link": null
+    }
+  ],
+  "assumptions": [],
+  "narratives": [],
+  "migration": {
+    "sourceFormat": "explorer-v1 (branding.js, process.js, samples.js)",
+    "sourceFiles": [
+      "archive/explorer-v1/js/branding.js",
+      "archive/explorer-v1/js/process.js",
+      "archive/explorer-v1/js/samples.js"
+    ],
+    "convertedAt": "2026-09-25T00:00:00.000Z",
+    "warnings": [
+      {
+        "code": "layout.collision",
+        "message": "Provision Access, Data Classification, Pre-Approvals shared one grid position in the original layout. They now sit side by side.",
+        "path": ""
+      },
+      {
+        "code": "membership.path",
+        "message": "Each sample path lists only the branch taken at each decision. Steps a sample never visits are marked Not in scenario.",
+        "path": ""
+      }
+    ]
+  },
+  "datasets": [],
+  "reviewPacks": [],
+  "reviews": []
+}
