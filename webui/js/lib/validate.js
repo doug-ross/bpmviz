@@ -9,12 +9,12 @@
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"),
-      require("./economics.js"), require("./migrate.js"), require("./replay.js"));
+      require("./economics.js"), require("./migrate.js"), require("./replay.js"), require("./workshop.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay);
+    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay, B.workshop);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay, workshop) {
   "use strict";
 
   const L = schema.LIMITS;
@@ -1094,7 +1094,7 @@
     const raw = migrated.engagement;
     knownKeys(c, raw, "", ["schema", "schemaVersion", "id", "revision", "createdAt", "updatedAt", "meta",
       "milestones", "models", "scenarios", "records", "evidence", "assumptions", "narratives", "datasets", "reviewPacks", "reviews",
-      "migration"]);
+      "migration", "workshop"]);
 
     const out = {
       schema: schema.SCHEMA_ID,
@@ -1204,6 +1204,8 @@
         })
       };
     }
+
+    if (raw.workshop !== undefined && raw.workshop !== null) out.workshop = workshop.sanitizeWorkshop(raw.workshop, out);
 
     noteIgnored(c);
 

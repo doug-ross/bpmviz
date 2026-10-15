@@ -682,8 +682,23 @@
     function dispatch(type, payload) {
       const handler = COMMANDS[type];
       if (!handler) throw new StoreError("unknown", "Unknown command " + type);
+      if (payload && payload.expectedRevision !== undefined && payload.expectedRevision !== state.revision) {
+        throw new StoreError("stale", "The project changed. Review the proposal against the current revision before applying it.");
+      }
       const draft = util.clone(state);
       const result = handler(draft, payload || {}) || {};
+      // The original drawer controls also change graph structure. Their old
+      // route timings cannot describe the new graph, even if IDs still exist.
+      if (payload && (type === "model/insertStep" || type === "model/removeStep" || type === "node/update")) {
+        const before = state.models.find(m => m.id === payload.modelId);
+        const after = draft.models.find(m => m.id === payload.modelId);
+        const topology = m => JSON.stringify([m.nodes.map(n => [n.id, n.semanticType, n.laneId, !!n.removed]),
+          m.edges.map(ed => [ed.id, ed.from, ed.to, ed.semanticType, !!ed.removed])]);
+        if (before && after && topology(before) !== topology(after)) {
+          const affected = invalidateModelRuns(draft, after.id);
+          if (affected.length) result.invalidatedScenarioIds = affected;
+        }
+      }
       undoStack.push(state);
       if (undoStack.length > MAX_UNDO) undoStack.shift();
       draft.revision = state.revision + 1;
@@ -733,7 +748,28 @@
     return names;
   }
 
-  const helpers = { findModel, findNode, editableModel, applyNodePatch, newRecord, cleanText, enumValue, StoreError };
+  /** Keep independently supplied measures, but discard figures authored from an invalidated route. */
+  function invalidateModelRuns(e, modelId) {
+    const affected = [];
+    e.scenarios.forEach(s => {
+      if (s.runs && Object.prototype.hasOwnProperty.call(s.runs, modelId)) {
+        delete s.runs[modelId];
+        affected.push(s.id);
+      }
+      s.measures = (s.measures || []).filter(m => {
+        if (m.key.startsWith("walkthroughEffort-") ||
+          (["humanTouch", "cycleTime"].includes(m.key) && m.note === "Entered in the scenario editor.")) {
+          delete m.values[modelId];
+          if (m.suppliedText) delete m.suppliedText[modelId];
+          return Object.keys(m.values).length > 0;
+        }
+        return true;
+      });
+    });
+    return affected;
+  }
+
+  const helpers = { findModel, findNode, editableModel, applyNodePatch, newRecord, cleanText, enumValue, StoreError, invalidateModelRuns };
 
   return { createStore, StoreError, COMMANDS, DETAIL_KEYS, registerCommands, helpers };
 });

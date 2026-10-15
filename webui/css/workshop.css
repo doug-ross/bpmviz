@@ -1,0 +1,23 @@
+/* Workshop uses the application's existing fields, cards and handoff typography. */
+.workshop { display: grid; gap: var(--space-4); }
+.workshop-section h3 { margin-bottom: var(--space-3); }
+.workshop-agenda { display: grid; gap: var(--space-3); }
+.workshop-agenda-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto auto; gap: var(--space-2); align-items: end; }
+.workshop-records li { margin-block: var(--space-2); overflow-wrap: anywhere; }
+.workshop-criteria { display: grid; gap: var(--space-3); margin-block: var(--space-3); }
+.workshop-criterion { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; gap: var(--space-3); align-items: end; }
+.workshop .check { margin-block: var(--space-2); }
+.workshop-checkpoint-status { font-weight: var(--fw-bold); }
+.workshop-checkpoint-status[data-status="stale"] { color: var(--status-warning); }
+.workshop-checkpoint-status[data-status="current"] { color: var(--status-success); }
+.workshop-design { margin-block: var(--space-3); }
+.workshop-brief { overflow-wrap: anywhere; }
+.workshop-brief .facts dd { white-space: pre-wrap; }
+.workshop-brief-design { margin-block: var(--space-4); }
+@media (max-width: 60rem) {
+  .workshop-agenda-row, .workshop-criterion { grid-template-columns: minmax(0, 1fr); }
+}
+@media print {
+  .workshop-brief-design { break-inside: avoid; }
+  .workshop-brief { max-width: none; }
+}
