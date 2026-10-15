@@ -75,7 +75,7 @@ test("registered tabs, views, columns, sections, modes and actions render", asyn
   });
   // Records tab, placed before Review, with the add and export buttons hidden.
   const tabs = await p.$$eval(".subtabs [role=tab]", els => els.map(e => e.id));
-  assert.deepEqual(tabs, ["rv-tab-records", "rv-tab-opportunities", "rv-tab-evidence", "rv-tab-demo", "rv-tab-review"]);
+  assert.deepEqual(tabs, ["rv-tab-records", "rv-tab-opportunities", "rv-tab-evidence", "rv-tab-workshop", "rv-tab-demo", "rv-tab-review"]);
   await p.click("#rv-tab-demo");
   assert.match(await p.textContent("#demo-tab-body"), /Demo tab for /);
   assert.equal(await p.isHidden("#rv-add"), true);
@@ -209,7 +209,7 @@ test("menu items, start actions, file handlers and JSON handlers see files first
   await p.click("#start-demo");
   const startOrder = await p.$$eval(".start-actions button", els => els.map(e => e.id));
   assert.deepEqual(startOrder.slice(0, 4), ["start-try", "start-open", "start-new", "start-bpmn"]);
-  assert.equal(startOrder[startOrder.length - 1], "start-demo", "registered start actions follow the built-in ones");
+  assert.ok(startOrder.indexOf("start-demo") > startOrder.indexOf("start-bpmn"), "registered start actions follow the built-in ones in registry order");
   await p.click("#btn-menu");
   const menu = await p.$$eval("#app-menu button", els => els.map(e => e.id || e.textContent));
   assert.equal(menu[menu.findIndex(x => /Import a BPMN file/.test(x)) + 1], "menu-demo-import");

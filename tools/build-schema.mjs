@@ -16,6 +16,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const schema = require("../webui/js/lib/schema.js");
 const units = require("../webui/js/lib/units.js");
 const aiResults = require("../webui/js/lib/ai-results.js");
+const workshop = require("../webui/js/lib/workshop.js");
 const E = schema.ENUMS;
 
 const en = name => ({ enum: E[name] });
@@ -66,6 +67,7 @@ const doc = {
     datasets: { type: "array", maxItems: L.datasets, items: { $ref: "#/$defs/dataset" }, description: "Aggregates of imported event logs. Optional." },
     reviewPacks: { type: "array", maxItems: L.reviewPacks, items: { $ref: "#/$defs/reviewPack" }, description: "Review packs sent to client stakeholders. Optional." },
     reviews: { type: "array", maxItems: L.reviews, items: { $ref: "#/$defs/review" }, description: "Client reviews received and applied. Optional." },
+    workshop: workshop.WORKSHOP_SCHEMA,
     migration: { anyOf: [{ type: "null" }, { $ref: "#/$defs/migration" }] }
   },
   $defs: {

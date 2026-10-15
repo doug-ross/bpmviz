@@ -112,6 +112,283 @@
       },
       "description": "Client reviews received and applied. Optional."
     },
+    "workshop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currentModelId",
+        "futureModelId",
+        "agenda",
+        "designs",
+        "checkpoint"
+      ],
+      "properties": {
+        "currentModelId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "futureModelId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agenda": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "owner",
+              "minutes",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+                "maxLength": 80
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "owner": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 480
+              },
+              "status": {
+                "enum": [
+                  "planned",
+                  "active",
+                  "done"
+                ]
+              }
+            }
+          },
+          "maxItems": 100
+        },
+        "designs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "modelId",
+              "nodeId",
+              "owner",
+              "responsibility",
+              "trigger",
+              "inputs",
+              "outputs",
+              "systems",
+              "rules",
+              "approval",
+              "fallback",
+              "testCriteria",
+              "sensitive",
+              "reviewed"
+            ],
+            "properties": {
+              "modelId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+                "maxLength": 80
+              },
+              "nodeId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+                "maxLength": 80
+              },
+              "owner": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "responsibility": {
+                "enum": [
+                  "human",
+                  "rules",
+                  "ai-assist",
+                  "agent"
+                ]
+              },
+              "trigger": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "inputs": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "outputs": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "systems": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "rules": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "approval": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "fallback": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "testCriteria": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "sensitive": {
+                "type": "boolean"
+              },
+              "reviewed": {
+                "type": "boolean"
+              }
+            }
+          },
+          "maxItems": 200
+        },
+        "checkpoint": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "fingerprint",
+                "reviewer",
+                "date",
+                "modelVersions",
+                "acceptedRecordIds",
+                "unresolvedRecordIds",
+                "criteria",
+                "sensitive",
+                "reviewed"
+              ],
+              "properties": {
+                "fingerprint": {
+                  "type": "string",
+                  "pattern": "^ws1-[a-f0-9]{16}$"
+                },
+                "reviewer": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "modelVersions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "modelId",
+                      "version"
+                    ],
+                    "properties": {
+                      "modelId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+                        "maxLength": 80
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000000
+                      }
+                    }
+                  },
+                  "maxItems": 2
+                },
+                "acceptedRecordIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+                    "maxLength": 80
+                  },
+                  "maxItems": 200
+                },
+                "unresolvedRecordIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+                    "maxLength": 80
+                  },
+                  "maxItems": 200
+                },
+                "criteria": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "id",
+                      "text",
+                      "owner"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+                        "maxLength": 80
+                      },
+                      "text": {
+                        "type": "string",
+                        "maxLength": 1000
+                      },
+                      "owner": {
+                        "type": "string",
+                        "maxLength": 200
+                      }
+                    }
+                  },
+                  "maxItems": 50
+                },
+                "sensitive": {
+                  "type": "boolean"
+                },
+                "reviewed": {
+                  "type": "boolean"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
     "migration": {
       "anyOf": [
         {

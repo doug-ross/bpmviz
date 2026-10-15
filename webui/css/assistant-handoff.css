@@ -1,0 +1,20 @@
+.assistant-handoff .ah-policy,
+.assistant-handoff .ah-import {
+  display: grid;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  border-block-start: 1px solid var(--border);
+}
+
+.assistant-handoff .ah-preview {
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.assistant-handoff .check {
+  align-items: start;
+}

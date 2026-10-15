@@ -54,7 +54,7 @@ test("a CSV log is mapped, measured and added in one step, shows everywhere, and
   if (!s) return;
   const p = s.page;
   await p.waitForSelector(".node");
-  const tabsBefore = await p.evaluate(() => window.AIxRay.ext.list("recordsTab").map(x => x.id));
+  const tabsBefore = await p.evaluate(() => window.AIxRay.ext.list("recordsTab").filter(x => x.id === "event-logs").map(x => x.id));
   assert.deepEqual(tabsBefore, [], "the Event logs tab appears only with event logs");
   await p.setInputFiles("#file-input", { name: "underwriting.csv", mimeType: "text/csv", buffer: fs.readFileSync(LOG) });
   await p.waitForSelector("dialog[open] #li-preview");
@@ -170,7 +170,7 @@ test("a CSV log is mapped, measured and added in one step, shows everywhere, and
   await undo(p);
   await undo(p);
   await p.waitForFunction(() => !(window.AIxRay.app.store.get().datasets || []).length);
-  const back = await p.evaluate(() => ({ scenarios: window.AIxRay.app.store.get().scenarios.length, tabs: window.AIxRay.ext.list("recordsTab").map(x => x.id) }));
+  const back = await p.evaluate(() => ({ scenarios: window.AIxRay.app.store.get().scenarios.length, tabs: window.AIxRay.ext.list("recordsTab").filter(x => x.id === "event-logs").map(x => x.id) }));
   assert.deepEqual(back, { scenarios: 1, tabs: [] });
   clean(s.problems);
 });
@@ -188,7 +188,7 @@ test("an Excel log from the menu takes an AI mapping result, and original case I
 
   await p.click("#btn-menu");
   const menu = await p.$$eval("#app-menu button", els => els.map(e => e.id || e.textContent));
-  assert.equal(menu[menu.findIndex(x => /Import a BPMN file/.test(x)) + 1], "menu-event-log");
+  assert.ok(menu.indexOf("menu-event-log") > menu.findIndex(x => /Import a BPMN file/.test(x)), "event-log import follows built-in imports in registry order");
   await p.click("#menu-event-log");
   await p.waitForSelector("dialog[open] #li-choose");
   const [chooser] = await Promise.all([p.waitForEvent("filechooser"), p.click("#li-choose")]);
