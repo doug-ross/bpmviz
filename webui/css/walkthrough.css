@@ -1,0 +1,19 @@
+/* Uses the shared controls, surfaces and spacing tokens. */
+.walkthrough { min-width: 0; }
+.walkthrough-current { padding-block: var(--space-3); border-block: 1px solid var(--border-strong); }
+.walkthrough-current h4 { margin-bottom: var(--space-3); }
+.walkthrough-facts { display: grid; grid-template-columns: auto 1fr; gap: var(--space-2) var(--space-3); margin-block: var(--space-3); }
+.walkthrough-facts dt { font-weight: var(--fw-medium); }
+.walkthrough-facts dd { margin: 0; overflow-wrap: anywhere; }
+.walkthrough-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.walkthrough-history { max-height: 18rem; overflow-y: auto; padding-left: var(--space-5); }
+.walkthrough-history .btn { white-space: normal; text-align: left; justify-content: flex-start; margin-block: var(--space-1); }
+.walkthrough-scroll { overflow-x: auto; max-width: 100%; }
+.walkthrough-visits { min-width: 880px; }
+.walkthrough-visits td:first-child { min-width: 180px; }
+.walkthrough-visits .input { min-width: 80px; }
+.walkthrough-assumption-table { min-width: 760px; }
+.walkthrough-assumptions, .walkthrough-compare { border-top: 1px solid var(--border-strong); padding-top: var(--space-3); }
+.walkthrough-assumptions summary, .walkthrough-compare summary { cursor: pointer; font-weight: var(--fw-medium); margin-bottom: var(--space-3); }
+.walkthrough-editor caption { text-align: left; color: var(--ink); font-weight: var(--fw-medium); padding-block: var(--space-3); }
+.walkthrough-editor th, .walkthrough-editor td { vertical-align: top; }

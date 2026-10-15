@@ -4,6 +4,19 @@ This page is for people adding a feature to AIxRay. Features plug into the app t
 
 ## Who owns which files
 
+The workshop workflows use four additional vertical slices. Their libraries load before their UI modules; `workshop.js` loads before validation and depends only on `util` and `schema`.
+
+| Workflow | Library, UI and stylesheet | Store commands and extension points |
+| --- | --- | --- |
+| Process authoring | `process-builder.js`, `ui/process-builder.js`, `process-builder.css` | `builder/`, start action, import menu and compact drawer launchers |
+| Walkthrough and scenarios | `walkthrough.js`, `ui/walkthrough.js`, `walkthrough.css` | `walkthrough/`, process drawer, scenario dialog and Present mode |
+| Workshop and pilot closure | `workshop.js`, `ui/workshop.js`, `workshop.css` | `workshop/`, Findings subtab, step designs, printable Pilot brief and handoff |
+| External assistants | `assistant-handoff.js`, `ui/assistant-handoff.js`, `assistant-handoff.css` | AI menu; packets use existing AI result schemas and the existing review flow |
+
+`engagement.workshop` is optional and sanitized on open through `workshop.sanitizeWorkshop`. Its JSON Schema is exported as `WORKSHOP_SCHEMA` and included by `tools/build-schema.mjs`. The schema version remains 1. Agenda, designs and checkpoint references live there; routes remain standard scenarios. Saving a project preserves both.
+
+Graph authoring uses `store.helpers.invalidateModelRuns` to discard obsolete runs and figures derived from authored routes while retaining independent supplied measures and event-log evidence. Undo restores the graph and its runs together. Proposal commands may carry `expectedRevision`; the store refuses them when that revision no longer matches. The AI review also checks the live project immediately before applying and requires explicit review when the result's original revision differs.
+
 The client-value build adds five features in parallel. Each feature owns its files; the shared files are frozen while they are built.
 
 | Feature | Owns |

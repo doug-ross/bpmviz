@@ -167,6 +167,12 @@
     const selected = new Set(single ? usable.map(it => it.key) : []);
     const count = h("span", { class: "small muted", "aria-live": "polite" });
     const err = h("p", { class: "error-text", role: "alert", hidden: true });
+    const reviewedRevision = e.revision;
+    const needsRevisionReview = result.engagementRevision !== reviewedRevision;
+    const revisionReviewed = h("input", { type: "checkbox", id: "ai-revision-reviewed" });
+    revisionReviewed.addEventListener("change", sync);
+    const revisionCheck = needsRevisionReview ? h("label", { class: "check" }, revisionReviewed,
+      "I checked this draft against revision " + reviewedRevision + " of the open project.") : null;
     const list = h("ul", { class: "ai-items" }, review.items.map(it => itemView(task, it, !single, (key, on) => {
       if (on) selected.add(key); else selected.delete(key);
       sync();
@@ -176,7 +182,7 @@
       count.textContent = selected.size + " of " + usable.length + " selected";
       list.querySelectorAll("input[type=checkbox]").forEach(b => { b.checked = selected.has(b.dataset.key); });
       if (applyBtn) {
-        applyBtn.disabled = !selected.size;
+        applyBtn.disabled = !selected.size || (needsRevisionReview && !revisionReviewed.checked);
         const verb = task === "log-mapping" ? "Use " : "Apply ";
         applyBtn.textContent = single ? "Add as a draft summary" : selected.size ? verb + selected.size + " selected" : verb + "selected";
       }
@@ -196,6 +202,7 @@
     const body = h("div", { class: "ai-review" },
       intro,
       warningsBlock(result, warnings, review),
+      revisionCheck,
       tools,
       review.items.length ? list : h("p", { class: "empty" }, "This draft has nothing to apply."),
       h("p", { class: "note" }, single ? "Undo removes the summary." : task === "log-mapping" ?
@@ -209,8 +216,16 @@
       actions: saveAction(app, result, info).concat([
         { label: "Cancel" },
         { label: "Apply selected", variant: "btn-primary", keepOpen: true, onClick: dlg => {
+          const live = app.store && app.store.get();
+          if (!live || live.id !== e.id || live.revision !== reviewedRevision) {
+            err.hidden = false;
+            err.textContent = "The project changed while this review was open. Cancel and open the draft again to review the current revision.";
+            return false;
+          }
+          if (needsRevisionReview && !revisionReviewed.checked) return false;
           const cmd = aiResults.applyCommand(result, review, [...selected]);
           if (!cmd) return false;
+          cmd.payload.expectedRevision = reviewedRevision;
           if (cmd.type === "log-mapping/proposals") {
             dlg.close();
             if (info.onProposals) info.onProposals(cmd.payload);

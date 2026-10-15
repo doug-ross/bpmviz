@@ -10,9 +10,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const claudeSkills = path.join(root, ".claude", "skills");
-const aixraySkills = fs.existsSync(claudeSkills) ? fs.readdirSync(claudeSkills).filter(n => n.startsWith("aixray-")).map(n => ".claude/skills/" + n) : [];
-const TARGETS = ["README.md", "AGENTS.md", "CLAUDE.md", "docs", "tools/prompts", "archive/README.md", "webui", ".agents/skills"].concat(aixraySkills);
+// Check the app's client-facing skills, rather than third-party skill references.
+const aixraySkills = [".claude/skills", ".agents/skills"].flatMap(dir => {
+  const full = path.join(root, dir);
+  return fs.existsSync(full) ? fs.readdirSync(full).filter(n => n.startsWith("aixray-")).map(n => dir + "/" + n) : [];
+});
+const TARGETS = ["README.md", "AGENTS.md", "CLAUDE.md", "docs", "tools/prompts", "archive/README.md", "webui"].concat(aixraySkills);
 const SKIP = new Set(["audit", "node_modules", "fonts", "screenshots"]);
 const EXT = new Set([".md", ".js", ".css", ".htm", ".html", ".json", ".txt"]);
 const DASH = /[\u2014\u2015]/;
