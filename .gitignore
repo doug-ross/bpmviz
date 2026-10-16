@@ -16,3 +16,8 @@ Thumbs.db
 aixray-*.draft.json
 *.with-ai.engagement.json
 !tests/fixtures/ai/*.ai-result.json
+
+# Local-only skills and the audit package stay on your machine.
+.agents/skills/ai-tell-remover/
+.agents/skills/sogeti-design/
+*_Audit_Package.zip
