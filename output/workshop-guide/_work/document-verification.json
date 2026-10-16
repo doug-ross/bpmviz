@@ -1,0 +1,226 @@
+{
+  "pages": 20,
+  "embedded_screenshots": 20,
+  "page_summary": [
+    {
+      "page": 1,
+      "characters": 1215,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  1 ",
+        "AIxRay process workshop guide ",
+        "Facilitator edition  |  15 October 2026 ",
+        "Use this guide to build and review a process with the people who run it. AIxRay is a local-file workbench "
+      ]
+    },
+    {
+      "page": 2,
+      "characters": 738,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  2 ",
+        "1 Name the roles and lanes ",
+        "In Build a process, expand Lanes. Use clear role names for the teams and external parties who perform ",
+        "the work. Lane type distinguishes People, Automation or AI agent, and External party. Enter a New lane "
+      ]
+    },
+    {
+      "page": 3,
+      "characters": 948,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  3 ",
+        "1 Add lanes and steps ",
+        "In the Build a process editor, add lanes and steps, choose each step's type and lane, and connect steps. ",
+        "Use Exclusive gateway for decisions with conditional branches; label each condition and provide a default "
+      ]
+    },
+    {
+      "page": 4,
+      "characters": 1077,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  4 ",
+        "1 Connect decisions and loops ",
+        "Add Documents complete as an Exclusive gateway after the review. Connect a Complete default route to ",
+        "Approve application and then End. Add a Missing documents conditional route to Provide missing "
+      ]
+    },
+    {
+      "page": 5,
+      "characters": 642,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  5 ",
+        "1 Check the current process ",
+        "Read the finished map with the people who do the work. Confirm the normal route, each handoff, and the ",
+        "exception route. In this example the customer resubmits missing documents and the case team reviews "
+      ]
+    },
+    {
+      "page": 6,
+      "characters": 891,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  6 ",
+        "2 Walk normal and exception routes ",
+        "In Present, choose Walkthrough, or use the walkthrough controls in the process drawer. Choose a ",
+        "process and start step, then select Start walkthrough. At each decision, select Which branch? and "
+      ]
+    },
+    {
+      "page": 7,
+      "characters": 884,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  7 ",
+        "2 Capture a finding at the step ",
+        "Choose Capture finding at this step while the relevant step is selected. Enter a clear title, choose the ",
+        "appropriate finding type and name an owner. The form keeps the model and step link. Select Add finding to "
+      ]
+    },
+    {
+      "page": 8,
+      "characters": 969,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  8 ",
+        "3 Record a timed scenario ",
+        "Choose Edit scenarios from More actions or the walkthrough panel. Create and name a scenario, select ",
+        "a process under Process for this run, add ordered visits, select incoming branches, and enter wait, "
+      ]
+    },
+    {
+      "page": 9,
+      "characters": 1164,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  9 ",
+        "3 Compare explicit assumptions ",
+        "Under Compare processes and enter assumptions, select the before and future processes and enter ",
+        "any scenario-specific economics overrides. The controls include three explicit variants: Conservative, "
+      ]
+    },
+    {
+      "page": 10,
+      "characters": 930,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  10 ",
+        "4 Create a future alternative ",
+        "In Build a process, open Future alternatives, name an alternative, and choose Create future ",
+        "alternative. AIxRay copies the current process and locks that baseline. Select the future process in "
+      ]
+    },
+    {
+      "page": 11,
+      "characters": 680,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  11 ",
+        "4 Compare the process designs ",
+        "In Process, select the Side by side view for the future alternative. The current process is the locked ",
+        "baseline; changed, added and removed steps are marked in the future model. Check each handoff and "
+      ]
+    },
+    {
+      "page": 12,
+      "characters": 804,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  12 ",
+        "5 Describe the automation work ",
+        "Open the process drawer for a step and expand Automation design, or go to Findings, Workshop and ",
+        "use Step automation designs to select a process and step. Record a Design owner and Responsibility: "
+      ]
+    },
+    {
+      "page": 13,
+      "characters": 867,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  13 ",
+        "5 Define approval fallback and tests ",
+        "Ask who owns the outcome, which decisions require human approval, what happens when inputs are ",
+        "missing or the automation fails, and how the team will test normal and exception cases. Mark a design "
+      ]
+    },
+    {
+      "page": 14,
+      "characters": 748,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  14 ",
+        "6 Run the agenda and parking lot ",
+        "In Findings, open the Workshop subtab. Under Agenda, add items with an owner, minutes, and status; ",
+        "use Save agenda to keep changes. Under Parking lot and actions, use Park a question, Add a note, "
+      ]
+    },
+    {
+      "page": 15,
+      "characters": 1161,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  15 ",
+        "6 Capture a workshop checkpoint ",
+        "Under Agreed processes, select the current and future processes and choose Agree processes. Under ",
+        "Checkpoint and pilot acceptance, record a reviewer and date, select accepted changes and unresolved "
+      ]
+    },
+    {
+      "page": 16,
+      "characters": 979,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  16 ",
+        "7 Review and share the pilot brief ",
+        "From Workshop, choose Open pilot brief to go to Present and select Pilot brief. Review the agreed ",
+        "processes, checkpoint status, acceptance criteria, accepted changes, unresolved issues, reviewed "
+      ]
+    },
+    {
+      "page": 17,
+      "characters": 768,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  17 ",
+        "7 Save and reopen the project ",
+        "Return to the project and choose Save a copy. Save the project file in the agreed location. Reopen that ",
+        "saved file with Open and check that the process, routes, findings, Workshop agenda, designs, and "
+      ]
+    },
+    {
+      "page": 18,
+      "characters": 1218,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  18 ",
+        "8 Prepare an assistant packet ",
+        "Choose Work with an assistant from More actions. Select an assistant label, task, reviewed model ",
+        "baseline, packet format, and account plan. For activity mapping, supply approved activity names. Review "
+      ]
+    },
+    {
+      "page": 19,
+      "characters": 723,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  19 ",
+        "8 Export and return the result ",
+        "Review exported packet shows exactly what will be handed to the assistant. Confirm the account plan and ",
+        "organizational policy, review the packet, then select Export packet. Give the downloaded packet to Codex, "
+      ]
+    },
+    {
+      "page": 20,
+      "characters": 1337,
+      "first_lines": [
+        "AIxRay  |  Process workshop ",
+        "AIxRay workshop guide  |  20 ",
+        "8 Review the returned proposal ",
+        "Back in AIxRay, choose Import completed result in the handoff screen and select the returned file. ",
+        "Review proposals in the existing AI review flow and apply only what a person accepts. A result for a "
+      ]
+    }
+  ]
+}

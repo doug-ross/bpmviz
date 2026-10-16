@@ -192,7 +192,7 @@ Tie each change to a named current-state step or bottleneck. For every AI-enable
 
 Keep delegated authority limits, human authorization for material commitments, compliance escalation, external confirmation, segregation of duties, pre-commit QA and evidence records where they apply. A step tagged `humanReview` describes a review; it is not an enforced control. AI does not remove physical work, market response time, customer decisions or specialist accountability. If one of these gets faster in the future state, state the operational assumption that makes it faster.
 
-## 7. Keep the timing honest
+## 7. Keep the timing accurate
 
 - Use one time basis for the whole file.
 - For every visit, `0 <= start <= end`.

@@ -16,7 +16,17 @@ To serve the app over HTTP instead, run `npm run serve` and open `http://127.0.0
 
 ## What you can do
 
+<<<<<<< Updated upstream
 ### Play the process honestly
+=======
+### Build and run a Jumpstart workshop
+
+Choose **Build a process** to start with a blank current state. Add lanes, steps, gateways and labeled flows, then use **Walkthrough** in Present to discuss normal cases and exceptions without entering timings. **Edit scenarios** records timed routes and explicit economic alternatives. Create named future alternatives in the process builder and compare them against their locked baseline.
+
+In Findings, **Workshop** holds the agenda, parking lot, automation designs and checkpoint. Record who approves AI work, what happens on failure and how the pilot will be tested. **Pilot brief** in Present shares reviewed designs, acceptance criteria and owned actions. **Work with an assistant** exports reviewed task packets for Codex, Claude Code or GitHub Copilot and imports their proposals for review. See [the workshop guide](docs/workshops.md) for the full facilitator workflow.
+
+### Play the process
+>>>>>>> Stashed changes
 
 Choose a scenario and play it, or drag the time slider. Each step shows its state with a symbol as well as a color: not started, in progress, complete, not in this scenario, or route not confirmed. A step that is visited twice (rework) shows the visit in progress, not the earlier one. A connector lights up only when the scenario actually used it. Lenses overlay elapsed time, human effort, waits, handovers between lanes, SLA status, suspected bottlenecks or sources, and each lens says how many steps have data.
 
