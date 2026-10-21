@@ -70,7 +70,7 @@ test("opening a screening keeps only bounded, known data", () => {
   assert.deepEqual(screening.criteria.map(c => [c.id, c.group, c.weight, c.gateAtOrBelow]), [["a", "value", 10, null]]);
   const c = screening.candidates[0];
   assert.equal(screening.candidates.length, 1);
-  assert.deepEqual(c.scores, { a: { value: null, basis: "illustrative", note: "" } });
+  assert.deepEqual(c.scores, { a: { value: null, basis: "illustrative", note: "", aiDraft: false } });
   assert.deepEqual(c.facts.annualVolume, { value: null, basis: "illustrative", note: "" });
   assert.equal("unknown" in c.facts, false);
   assert.equal(c.sensitive, false);
@@ -95,7 +95,7 @@ test("changes return a new screening and leave the old one as it was", () => {
   assert.equal(again.screening.candidates[0].scores.v1, undefined);
   assert.equal(scored.candidates[0].scores.v1.value, 4);
   const noted = S.setScore(scored, added.candidateId, "v1", { note: "From the ops lead" }).screening;
-  assert.deepEqual(noted.candidates[0].scores.v1, { value: 4, basis: "illustrative", note: "From the ops lead" });
+  assert.deepEqual(noted.candidates[0].scores.v1, { value: 4, basis: "illustrative", note: "From the ops lead", aiDraft: false });
   const removed = S.removeCandidate(noted, "c-invoice-matching-2").screening;
   assert.deepEqual(removed.candidates.map(c => c.id), ["c-invoice-matching"]);
 });
@@ -362,7 +362,7 @@ test("the summary names the first choice, its flags, and what was left out", () 
   assert.equal(sum.title, "Test screening");
   assert.equal(sum.dataStatus, "Provided data");
   assert.equal(sum.preparedAt, "2026-10-21T00:00:00.000Z");
-  assert.deepEqual(sum.counts, { candidates: 4, shown: 3, complete: 2, excluded: 1 });
+  assert.deepEqual(sum.counts, { candidates: 4, shown: 3, complete: 2, excluded: 1, aiDrafts: 0, aiDraftsLeftOut: 0 });
   assert.equal(sum.recommendation.kind, "first");
   assert.deepEqual(sum.recommendation.candidateIds, [a.id]);
   assert.match(sum.recommendation.text, /^Claims scores 66 of 100 \(Worth it, harder to start\)\./);

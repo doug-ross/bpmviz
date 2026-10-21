@@ -23,7 +23,7 @@
   function fresh(screening, info) {
     const i = info || {};
     return { screening, past: [], savedRevision: screening.revision, fileName: i.fileName || null, fileHandle: null,
-      tab: "candidates", includeSensitive: false, status: "" };
+      tab: "candidates", includeSensitive: false, includeUnreviewedAi: false, status: "" };
   }
   const dirty = () => !!state && state.screening.revision !== state.savedRevision;
   const ctxOf = sc => ({ currency: sc.meta.currency });
@@ -158,6 +158,79 @@
     addEngagement(result.engagement, file.name);
   }
 
+  /* ---------- Drafted scores from an AI task ---------- */
+
+  async function loadAiScoresFile() {
+    const file = await B.files.pickFile(".json,application/json");
+    if (!file) return;
+    let validation;
+    try { validation = B.aiResults.parseAiResultText(await readText(file)); } catch (err) { messageDialog("File not opened", err.message); return; }
+    reviewAiScores(validation, file.name);
+  }
+
+  /*
+   * Lists the drafted scores, each with a tick, and applies the ticked ones in
+   * one change. Applied scores stay marked as AI drafts until someone reviews them.
+   */
+  function reviewAiScores(validation, fileName) {
+    if (!validation.ok) {
+      messageDialog("These AI scores didn't open", h("div", null, h("p", null, (fileName || "The file") + " has " + validation.errors.length + " problem" +
+        (validation.errors.length === 1 ? "" : "s") + ". Nothing was changed."), issueList(validation.errors)));
+      return;
+    }
+    const result = validation.result;
+    if (result.task !== "screen") {
+      messageDialog("Not screening scores", (fileName || "This file") + " holds a different AI task. Open it from the main window, with the project it was made for.");
+      return;
+    }
+    const review = S.prepareAiScores(result, state.screening);
+    if (review.errors.length) { messageDialog("These AI scores didn't open", h("div", null, issueList(review.errors))); return; }
+    const g = result.generated;
+    const usable = review.items.filter(it => !it.problems.length);
+    const ticks = new Map();
+    const byCandidate = new Map();
+    review.items.forEach(it => { if (!byCandidate.has(it.candidateId)) byCandidate.set(it.candidateId, []); byCandidate.get(it.candidateId).push(it); });
+    const warnings = validation.warnings.concat(result.warnings, review.warnings).filter(w => w.level !== "info" && w.code !== "fields.ignored");
+    const body = h("div", { class: "form-grid" },
+      h("p", { class: "small" }, "Drafted with " + schema.label("aiProvider", g.provider) + (g.at ? " on " + B.dom.formatDate(g.at) : "") + ". " +
+        usable.length + " of " + review.items.length + " score" + (review.items.length === 1 ? " can" : "s can") + " be applied. Applied scores stay marked as AI drafts, and the printed summary leaves them out, until someone reviews them."),
+      result.notes ? h("p", { class: "small muted" }, result.notes) : null,
+      warnings.length ? h("ul", { class: "plain-list" }, warnings.map(w => h("li", { class: "warn-line" }, icon("alert"), w.message))) : null,
+      [...byCandidate.entries()].map(([candidateId, items]) => {
+        const c = state.screening.candidates.find(x => x.id === candidateId);
+        return h("section", { class: "scr-ai-group" }, h("h3", { class: "section-title" }, c ? c.name : "A process not in this screening"),
+          h("ul", { class: "plain-list scr-ai-items" }, items.map(it => {
+            const box = h("input", { type: "checkbox", id: "scr-ai-" + it.index, checked: !it.problems.length, disabled: !!it.problems.length });
+            ticks.set(it.key, box);
+            const k = state.screening.criteria.find(x => x.id === it.criterionId);
+            return h("li", null, h("label", { class: "check" }, box, h("span", null,
+              h("strong", null, (k ? k.label : "Unknown criterion") + (it.value !== null ? ": " + it.value : "")), " (" + it.confidence + " confidence)")),
+              it.rationale ? h("p", { class: "small" }, it.rationale) : null,
+              it.problems.length ? h("p", { class: "small muted" }, it.problems.join(" ")) : null);
+          })));
+      }));
+    const dlg = openDialog({ title: "Review AI scores", eyebrow: fileName || "AI result", wide: true, body, actions: [
+      { label: "Cancel" },
+      { label: "Apply ticked scores", variant: "btn-primary", onClick: () => {
+        const keys = [...ticks.entries()].filter(([, box]) => box.checked && !box.disabled).map(([key]) => key);
+        if (!keys.length) return undefined;
+        attempt(sc => S.applyAiScores(sc, review, keys), r => "Added " + r.applied + " AI-drafted score" + (r.applied === 1 ? "" : "s") + ". They stay marked as AI drafts until someone reviews them.");
+        return undefined;
+      } }] });
+    dlg.dialog.id = "scr-ai-dialog";
+  }
+
+  /* Called by the main window when Open picks up an AI result with screening scores. */
+  async function openAiResult(app, validation, info) {
+    const result = validation.ok ? validation.result : null;
+    if (result && (!state || state.screening.id !== result.screeningId)) {
+      messageDialog("Open the screening first", "These scores were drafted for a screening that is not open. Choose Screen processes, open that screening, then choose Load AI scores.");
+      return;
+    }
+    await open(app);
+    reviewAiScores(validation, info && info.fileName);
+  }
+
   /* ---------- Small controls ---------- */
 
   function field(label, control, hint) {
@@ -231,12 +304,16 @@
       const value = scoreSelect(current ? current.value : null, { id: "scr-c-score-" + k.id, "aria-label": k.label + ", score" });
       const basis = basisSelect(current ? current.basis : "illustrative", { id: "scr-c-basis-" + k.id, "aria-label": k.label + ", basis" });
       const note = h("input", { class: "input", id: "scr-c-note-" + k.id, value: current ? current.note : "", maxlength: "1000", "aria-label": k.label + ", note" });
+      const draft = current && current.aiDraft ? h("input", { type: "checkbox", id: "scr-c-ai-" + k.id, checked: true }) : null;
+      // Choosing a value yourself makes the score yours.
+      if (draft) value.addEventListener("change", () => { draft.checked = false; });
       const anchors = [1, 3, 5].filter(n => k.anchors[n]).map(n => n + ": " + k.anchors[n]).join(". ");
-      return { k, value, basis, note, row: h("tr", null,
+      return { k, value, basis, note, draft, row: h("tr", null,
         h("td", null, h("div", { class: "title-cell" }, k.label), h("div", { class: "desc" }, GROUP_LABEL[k.group] + (k.weight ? ", weight " + util.formatNumber(k.weight, 1) : ", not counted")),
           k.help ? h("div", { class: "desc" }, k.help) : null, anchors ? h("div", { class: "desc" }, anchors + ".") : null),
-        h("td", null, value), h("td", null, basis), h("td", null, note)) };
+        h("td", null, value, draft ? h("label", { class: "check scr-ai-check" }, draft, "AI draft, not reviewed") : null), h("td", null, basis), h("td", null, note)) };
     });
+    const drafts = scoreRows.filter(r => r.draft);
     const error = h("p", { class: "error-text", hidden: true, role: "alert", id: "scr-c-error" });
     const body = h("div", { class: "form-grid" },
       h("div", { class: "field-row" }, field("Process name", name), field("Owner", owner, "Who would sponsor or run the change.")),
@@ -248,6 +325,9 @@
       facts.map(f => f.el),
       h("h3", { class: "section-title" }, "Scores"),
       h("p", { class: "small muted" }, "1 is worst and 5 is best for every criterion. Leave a score blank until you know it; a blank is never counted as zero."),
+      drafts.length ? h("div", { class: "warn-line scr-ai-note" }, icon("agent"), h("span", { class: "grow" },
+        drafts.length + " score" + (drafts.length === 1 ? " was" : "s were") + " drafted with AI. Check each one; clear its tick, or choose a value yourself, once it is right."),
+        h("button", { type: "button", class: "btn btn-ghost", id: "scr-c-review-all", on: { click: () => drafts.forEach(r => { r.draft.checked = false; }) } }, icon("check"), "Clear all ticks")) : null,
       h("div", { class: "table-wrap" }, h("table", { class: "table scr-score-table" },
         h("thead", null, h("tr", null, ["Criterion", "Score", "Basis", "Note"].map(x => h("th", { scope: "col" }, x)))),
         h("tbody", null, scoreRows.map(r => r.row)))),
@@ -262,7 +342,8 @@
         if (id) next = S.updateCandidate(next, id, patch).screening;
         else { const added = S.addCandidate(next, patch); next = added.screening; id = added.candidateId; }
         scoreRows.forEach(r => {
-          next = S.setScore(next, id, r.k.id, { value: r.value.value === "" ? null : Number(r.value.value), basis: r.basis.value, note: r.note.value }).screening;
+          next = S.setScore(next, id, r.k.id, { value: r.value.value === "" ? null : Number(r.value.value), basis: r.basis.value, note: r.note.value,
+            aiDraft: !!(r.draft && r.draft.checked) }).screening;
         });
         commit({ screening: next }, (candidateId ? "Saved " : "Added ") + next.candidates.find(x => x.id === id).name + ".");
         return true;
@@ -352,13 +433,15 @@
       h("th", { scope: "row" }, h("button", { type: "button", class: "link-btn title-cell", id: "scr-edit-" + c.id, on: { click: () => candidateDialog(c.id) } }, c.name),
         c.owner ? h("div", { class: "desc" }, c.owner) : null,
         c.sensitive ? h("div", { class: "desc" }, "Sensitive") : null,
-        c.source ? h("div", { class: "desc" }, "From a project") : null),
+        c.source ? h("div", { class: "desc" }, "From a project") : null,
+        S.aiDraftCount(sc, c.id) ? h("div", { class: "desc scr-ai-text" }, S.aiDraftCount(sc, c.id) + " AI draft" + (S.aiDraftCount(sc, c.id) === 1 ? "" : "s") + " to review") : null),
       criteria.map(k => {
         const current = c.scores[k.id];
         const sel = scoreSelect(current ? current.value : null, { id: "scr-score-" + c.id + "-" + k.id, "aria-label": k.label + " for " + c.name });
         sel.addEventListener("change", () => attempt(x => S.setScore(x, c.id, k.id, { value: sel.value === "" ? null : Number(sel.value) }),
           k.label + " for " + c.name + (sel.value ? " scored " + sel.value + "." : " cleared.")));
-        return h("td", { class: "scr-cell" }, sel);
+        if (current && current.aiDraft) { sel.classList.add("scr-ai-select"); sel.title = "AI draft, not reviewed. Choose a value to make it yours."; sel.setAttribute("aria-description", "AI draft, not reviewed"); }
+        return h("td", { class: "scr-cell" + (current && current.aiDraft ? " scr-ai" : "") }, sel);
       }),
       h("td", { class: "num", id: "scr-total-" + c.id }, scoreText(rows.get(c.id))),
       h("td", { class: "actions" }, h("button", { type: "button", class: "btn btn-ghost btn-icon", title: "Details for " + c.name, on: { click: () => candidateDialog(c.id) } },
@@ -475,7 +558,9 @@
       h("tbody", null, rows.map(r => h("tr", { id: id + "-" + r.candidateId },
         h("td", { class: "num" }, String(r.rank)),
         h("td", null, h("div", { class: "title-cell" }, r.name), r.sensitive ? h("div", { class: "desc" }, "Sensitive") : null,
-          r.missing.length ? h("div", { class: "desc" }, "To score: " + r.missing.join(", ")) : null),
+          r.missing.length ? h("div", { class: "desc" }, "To score: " + r.missing.join(", ")) : null,
+          r.aiDrafts ? h("div", { class: "desc scr-ai-text" }, r.aiDrafts + " AI-drafted score" + (r.aiDrafts === 1 ? "" : "s") + ", not reviewed") : null,
+          r.aiDraftsLeftOut ? h("div", { class: "desc" }, r.aiDraftsLeftOut + " AI-drafted score" + (r.aiDraftsLeftOut === 1 ? "" : "s") + " left out") : null),
         h("td", { class: "num" }, scoreText(r)),
         h("td", { class: "num" }, r.groups.value.score !== null ? whole(r.groups.value.score) : muted("Incomplete")),
         h("td", { class: "num" }, r.ease !== null ? whole(r.ease) : muted("Incomplete")),
@@ -543,7 +628,9 @@
         h("dt", null, "File version"), h("dd", null, String(sum.revision)),
         h("dt", null, "Prepared"), h("dd", null, B.dom.formatDate(sum.preparedAt)),
         h("dt", null, "Processes"), h("dd", null, sum.counts.shown + " compared, " + sum.counts.complete + " fully scored" +
-          (sum.counts.excluded ? ". " + sum.counts.excluded + " sensitive left out" : ""))),
+          (sum.counts.excluded ? ". " + sum.counts.excluded + " sensitive left out" : "")),
+        sum.counts.aiDraftsLeftOut ? [h("dt", null, "AI drafts"), h("dd", null, sum.counts.aiDraftsLeftOut + " drafted score" + (sum.counts.aiDraftsLeftOut === 1 ? "" : "s") + " left out until reviewed")] : null),
+      sum.disclosure ? h("p", { class: "note", id: prefix + "-disclosure" }, sum.disclosure) : null,
       h("h2", null, "Recommendation"),
       h("p", { id: prefix + "-recommendation" }, sum.recommendation.text),
       sum.rows.some(r => r.quadrant) ? h("div", { class: "scr-chart" }, chart(sum.rows, prefix + "-chart")) : null,
@@ -562,12 +649,19 @@
       h("ul", { class: "plain-list" }, sum.notes.map(n => h("li", { class: "small" }, n))));
   }
 
+  const summaryOptions = () => ({ includeSensitive: state.includeSensitive, includeUnreviewedAi: state.includeUnreviewedAi });
+
   function summaryTab(host) {
     const sc = state.screening;
     sensitiveToggle(host);
     host.appendChild(h("div", { class: "form-actions scr-actions" },
       h("button", { type: "button", class: "btn btn-primary", id: "scr-print-btn", on: { click: printSummary } }, icon("printer"), "Print or save as PDF")));
-    host.appendChild(h("div", { class: "handoff scr-summary" }, summaryDoc(S.buildSummary(sc, { includeSensitive: state.includeSensitive }), sc, "scr-sum")));
+    if (S.aiDraftCount(sc)) {
+      const box = h("input", { type: "checkbox", id: "scr-include-ai", checked: state.includeUnreviewedAi });
+      box.addEventListener("change", () => { state.includeUnreviewedAi = box.checked; render(); });
+      host.appendChild(h("label", { class: "check" }, box, "Include " + S.aiDraftCount(sc) + " AI-drafted score" + (S.aiDraftCount(sc) === 1 ? "" : "s") + " that no one has reviewed"));
+    }
+    host.appendChild(h("div", { class: "handoff scr-summary" }, summaryDoc(S.buildSummary(sc, summaryOptions()), sc, "scr-sum")));
   }
 
   /* Prints the summary from a copy outside the window, since printing hides dialogs. */
@@ -575,7 +669,7 @@
     const sc = state.screening;
     const old = document.getElementById("scr-print");
     if (old) old.remove();
-    const holder = h("div", { class: "handoff", id: "scr-print" }, summaryDoc(S.buildSummary(sc, { includeSensitive: state.includeSensitive }), sc, "scr-print"));
+    const holder = h("div", { class: "handoff", id: "scr-print" }, summaryDoc(S.buildSummary(sc, summaryOptions()), sc, "scr-print"));
     document.body.appendChild(holder);
     document.body.classList.add("scr-printing");
     root.addEventListener("afterprint", () => {
@@ -646,6 +740,7 @@
       h("button", { type: "button", class: "btn btn-ghost", id: "scr-details", on: { click: detailsDialog } }, icon("settings"), "Details"),
       h("button", { type: "button", class: "btn btn-ghost", id: "scr-new", on: { click: () => replaceWith(S.blankScreening()) } }, icon("filePlus"), "New"),
       h("button", { type: "button", class: "btn btn-ghost", id: "scr-open", on: { click: openScreeningFile } }, icon("open"), "Open"),
+      h("button", { type: "button", class: "btn btn-ghost", id: "scr-load-ai", on: { click: loadAiScoresFile } }, icon("agent"), "Load AI scores"),
       h("button", { type: "button", class: "btn btn-primary", id: "scr-save", on: { click: save } }, icon("save"), "Save"));
   }
 
@@ -736,5 +831,5 @@
     return open(app, result.screening, { fileName: info && info.fileName, warnings: result.warnings });
   } });
 
-  B.screeningUi = { open, current: () => (state ? state.screening : null), isDirty: dirty };
+  B.screeningUi = { open, openAiResult, current: () => (state ? state.screening : null), isDirty: dirty };
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -361,6 +361,10 @@
                 "note": {
                   "type": "string",
                   "maxLength": 1000
+                },
+                "aiDraft": {
+                  "type": "boolean",
+                  "description": "True for a score drafted with AI that no one has reviewed yet."
                 }
               }
             }

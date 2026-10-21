@@ -84,7 +84,23 @@ export function payloadFor(task, prompt, mode) {
     return { title: "Summary", text: bad ? "" : "The process has one main bottleneck.", keyPoints: [{ text: "Clearance is manual.", supportingRecordIds: [], supportingFigures: [] }], caveats: ["Figures are illustrative."] };
   }
   if (task === "log-mapping") return logMappingFor(input, bad);
+  if (task === "screen") return screenFor(input, bad, mode);
   return null;
+}
+
+/*
+ * Screening: a 3 for every criterion still to score, and a blank for the
+ * client's priorities. In invalid mode the first score names a candidate that
+ * is not in the screening, so the runner has to repair it.
+ */
+function screenFor(input, bad, mode) {
+  const scores = [];
+  ((input && input.candidates) || []).forEach(c => c.toScore.forEach(k => scores.push({
+    candidateId: c.id, criterionId: k, value: k === "priority" ? null : 3, confidence: "low",
+    rationale: mode === "secret" ? "Use " + SECRET : k === "priority" ? "Ask the sponsor." : "Typical for this kind of process; an assumption."
+  })));
+  if (bad && scores.length) scores[0] = Object.assign({}, scores[0], { candidateId: "c-no-such-process" });
+  return { scores };
 }
 
 /*

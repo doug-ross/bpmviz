@@ -128,6 +128,7 @@ export function createBridge(options) {
     if (running) return { ok: false, code: "busy", message: "Another AI task is running. Wait for it to finish or cancel it." };
     const task = body.task;
     if (!TASKS.includes(task)) return { ok: false, code: "input.task", message: "Unknown task." };
+    if (task === "screen") return { ok: false, code: "input.task", message: "Draft screening scores from the command line (npm run ai -- screen) or the aixray-screen skill." };
     const provider = body.provider;
     if (!PROVIDERS[provider]) return { ok: false, code: "input.provider", message: "Unknown AI tool." };
     let engagement = null;

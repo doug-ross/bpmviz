@@ -68,7 +68,7 @@ The Present tab has two modes: **Present**, a low-chrome view for the room, and 
 
 ### Draft with AI on your Claude or ChatGPT plan
 
-Claude Code (Claude Pro, Max, Team or Enterprise) or Codex (ChatGPT Plus, Pro, Business or Enterprise) can draft four things: a current state extracted from PDF, Word, PowerPoint, diagram images, notes or BPMN; suggested pain points, opportunities and questions; a future state as changes to the current state; and the executive summary for the report. AIxRay runs the tool you already use, on the account you signed in with, so no API key is involved and AIxRay never handles a credential.
+Claude Code (Claude Pro, Max, Team or Enterprise) or Codex (ChatGPT Plus, Pro, Business or Enterprise) can draft a current state extracted from PDF, Word, PowerPoint, diagram images, notes or BPMN; suggested pain points, opportunities and questions; a future state as changes to the current state; the executive summary for the report; and scores for the processes in a screening. AIxRay runs the tool you already use, on the account you signed in with, so no API key is involved and AIxRay never handles a credential.
 
 ```
 npm run ai -- status

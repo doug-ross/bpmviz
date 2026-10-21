@@ -51,6 +51,18 @@ In the Criteria tab you can rename criteria, move them between groups, change we
 
 The figures in `lib/screening.js` follow the same rules as the rest of AIxRay: an unknown is never zero, and every result carries the weakest basis of its inputs.
 
+## Scores drafted with AI
+
+`npm run ai -- screen --in <file.screening.json>`, or the `/aixray-screen` skill in Claude Code (`$aixray-screen` in Codex), asks your Claude or ChatGPT assistant to draft a score from 1 to 5, with a rationale, for each criterion that nobody has scored yet. The same data-handling rules apply as for every AI task (see [ai.md](ai.md)); the screening is held to the strictest confidentiality among the screening and the processes sent. Process owners are never sent, and sensitive processes only with `--include-sensitive`.
+
+Choose **Load AI scores** in the screening window, or open the result file with Open while the screening is open. Each drafted score is listed with its rationale and a tick; scores the AI left blank and criteria a person already scored cannot be applied. Applied scores:
+
+- show with a dashed outline in the score table, and as "AI drafts to review" under the process name;
+- count in the Ranking tab, which says how many there are;
+- stay out of the Summary tab and the printed summary until someone reviews them, unless you tick to include them. Then the summary says it includes scores drafted with AI assistance that no one has reviewed.
+
+A score becomes a person's when someone chooses its value in the score table, or clears its "AI draft, not reviewed" tick in the process's details.
+
 ## Summary and next step
 
 The **Summary** tab is a one-page summary of the recommendation, the chart, the ranking, the criteria with their weights and how to read it. **Print or save as PDF** prints it on its own, without the app around it.
@@ -68,5 +80,6 @@ A screening file has the schema tag `aixray.screening`, version 1. The format is
 | `webui/js/lib/screening.js` | The file format, changes, scoring, the stability check, the summary and the starter project |
 | `webui/js/ui/screening.js` | The screening window, its tabs, printing and Start a project |
 | `webui/css/screening.css` | Styles for the window and the printed summary |
+| `tools/prompts/ai-screen.md`, `.claude/skills/aixray-screen/`, `.agents/skills/aixray-screen/` | The instructions and skills for drafting scores with AI |
 | `webui/examples/process-screening.screening.json` | The example screening, built by `npm run build:examples` from the bundled examples |
 | `tests/unit/screening.test.mjs`, `tests/browser/screening.test.mjs` | Unit and browser tests |

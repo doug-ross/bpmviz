@@ -272,3 +272,68 @@ for (const mode of ["file", "http"]) {
     clean(problems);
   });
 }
+
+test("load AI scores, review them, and keep them out of the summary until reviewed", { timeout: 90000 }, async t => {
+  const { page, problems } = await open(t, "file");
+  await page.click("#start-screening");
+  await addTyped(page, "Claims intake", { volume: 5 });
+  await addTyped(page, "Payroll changes");
+  const s = await current(page);
+  const [claims, payroll] = s.candidates;
+  const result = {
+    schema: "aixray.ai-result", schemaVersion: 1, task: "screen", engagementId: null, engagementRevision: null, baselineModelId: null,
+    screeningId: s.id, screeningRevision: s.revision,
+    generated: { tool: "aixray-ai", provider: "claude", model: "", surface: "cli", at: "2026-10-21T00:00:00.000Z", jobId: "", plan: "commercial" },
+    dataHandling: { confidentiality: "internal", dataStatus: "supplied", approvalConfirmed: true, trainingOptOutConfirmed: false, writtenApproval: "", sensitiveIncluded: false },
+    sources: [], notes: "Drafted from the descriptions.", warnings: [],
+    payload: { scores: [
+      { candidateId: claims.id, criterionId: "pain", value: 4, confidence: "medium", rationale: "<b>Backlog</b> is named." },
+      { candidateId: claims.id, criterionId: "volume", value: 2, confidence: "low", rationale: "Guess." },
+      { candidateId: payroll.id, criterionId: "rules", value: 3, confidence: "low", rationale: "Forms suggest rules." },
+      { candidateId: payroll.id, criterionId: "sponsor", value: null, confidence: "low", rationale: "Ask who owns it." }
+    ] }
+  };
+  const chooser = page.waitForEvent("filechooser");
+  await page.click("#scr-load-ai");
+  await (await chooser).setFiles({ name: "x.screen.ai-result.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(result)) });
+  await page.waitForSelector("#scr-ai-dialog");
+  assert.equal(await page.locator("#scr-ai-dialog input[type=checkbox]:not([disabled])").count(), 2);
+  assert.match(await page.textContent("#scr-ai-dialog"), /A person already scored this/);
+  assert.match(await page.textContent("#scr-ai-dialog"), /<b>Backlog<\/b> is named\./, "rationales show as text");
+  assert.equal(await page.locator("#scr-ai-dialog b").count(), 0);
+  await page.click("#scr-ai-dialog .dlg-foot .btn-primary");
+  await page.waitForSelector("#scr-ai-dialog", { state: "detached" });
+  assert.match(await page.textContent("#scr-status"), /Added 2 AI-drafted scores/);
+  let after = await current(page);
+  assert.equal(after.candidates[0].scores.volume.value, 5, "the person's score stays");
+  assert.equal(after.candidates[0].scores.pain.aiDraft, true);
+  assert.equal(await page.locator("#scr-grid td.scr-ai").count(), 2);
+
+  await page.click("#scr-tab-summary");
+  assert.equal(await page.locator("#scr-sum-disclosure").count(), 0);
+  assert.match(await page.textContent("#scr-sum-doc"), /2 drafted scores left out until reviewed/);
+  await page.check("#scr-include-ai");
+  assert.match(await page.textContent("#scr-sum-disclosure"), /drafted with AI assistance that no one has reviewed/);
+
+  await page.click("#scr-tab-candidates");
+  await page.click("#scr-edit-" + claims.id);
+  assert.equal(await page.isChecked("#scr-c-ai-pain"), true);
+  await page.uncheck("#scr-c-ai-pain");
+  await page.click("#scr-candidate-dialog .dlg-foot .btn-primary");
+  await page.selectOption("#scr-score-" + payroll.id + "-rules", "4");
+  after = await current(page);
+  assert.equal(after.candidates[0].scores.pain.aiDraft, false, "clearing the tick reviews the score");
+  assert.equal(after.candidates[1].scores.rules.aiDraft, false, "choosing a value makes the score a person's");
+  assert.equal(await page.locator("#scr-grid td.scr-ai").count(), 0);
+
+  await page.click("#scr-close");
+  const other = Object.assign({}, result, { screeningId: "scr-somewhere-else" });
+  await page.setInputFiles("#file-input", { name: "other.screen.ai-result.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(other)) });
+  await page.waitForSelector("dialog.dlg");
+  assert.match(await page.textContent("dialog.dlg"), /Open the screening first/);
+  await page.keyboard.press("Escape");
+  await page.setInputFiles("#file-input", { name: "x.screen.ai-result.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(result)) });
+  await page.waitForSelector("#scr-ai-dialog");
+  assert.match(await page.textContent("#scr-ai-dialog"), /The screening changed after these scores were drafted/);
+  clean(problems);
+});

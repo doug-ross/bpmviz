@@ -175,52 +175,62 @@
         "volume": {
           "value": 4,
           "basis": "illustrative",
-          "note": "Several analysts spend most of the day on triage."
+          "note": "Several analysts spend most of the day on triage.",
+          "aiDraft": false
         },
         "pain": {
           "value": 4,
           "basis": "illustrative",
-          "note": "Late breaks delay fund postings."
+          "note": "Late breaks delay fund postings.",
+          "aiDraft": false
         },
         "priority": {
           "value": 3,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "rules": {
           "value": 5,
           "basis": "illustrative",
-          "note": "The matching rules are written down in the engine configuration."
+          "note": "The matching rules are written down in the engine configuration.",
+          "aiDraft": false
         },
         "inputs": {
           "value": 5,
           "basis": "illustrative",
-          "note": "Transaction feeds and fund records are structured."
+          "note": "Transaction feeds and fund records are structured.",
+          "aiDraft": false
         },
         "systems": {
           "value": 4,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "exceptions": {
           "value": 3,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "sponsor": {
           "value": 4,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "risk": {
           "value": 4,
           "basis": "illustrative",
-          "note": "A reviewer approves every posting."
+          "note": "A reviewer approves every posting.",
+          "aiDraft": false
         },
         "measurable": {
           "value": 5,
           "basis": "illustrative",
-          "note": "The matching engine logs every break."
+          "note": "The matching engine logs every break.",
+          "aiDraft": false
         }
       },
       "source": {
@@ -266,52 +276,62 @@
         "volume": {
           "value": 4,
           "basis": "illustrative",
-          "note": "Few cases, but each takes days of specialist work."
+          "note": "Few cases, but each takes days of specialist work.",
+          "aiDraft": false
         },
         "pain": {
           "value": 4,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "priority": {
           "value": 5,
           "basis": "illustrative",
-          "note": "Growth in this line is a named priority."
+          "note": "Growth in this line is a named priority.",
+          "aiDraft": false
         },
         "rules": {
           "value": 2,
           "basis": "illustrative",
-          "note": "Pricing and acceptance rely on underwriter judgment."
+          "note": "Pricing and acceptance rely on underwriter judgment.",
+          "aiDraft": false
         },
         "inputs": {
           "value": 2,
           "basis": "illustrative",
-          "note": "Schedules of values and loss runs arrive as spreadsheets and PDFs."
+          "note": "Schedules of values and loss runs arrive as spreadsheets and PDFs.",
+          "aiDraft": false
         },
         "systems": {
           "value": 3,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "exceptions": {
           "value": 2,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "sponsor": {
           "value": 4,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "risk": {
           "value": 2,
           "basis": "illustrative",
-          "note": "A wrong price or acceptance is a large financial loss."
+          "note": "A wrong price or acceptance is a large financial loss.",
+          "aiDraft": false
         },
         "measurable": {
           "value": 3,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         }
       },
       "source": {
@@ -357,52 +377,62 @@
         "volume": {
           "value": 2,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "pain": {
           "value": 3,
           "basis": "illustrative",
-          "note": "QA and UAT rework stretch delivery."
+          "note": "QA and UAT rework stretch delivery.",
+          "aiDraft": false
         },
         "priority": {
           "value": 3,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "rules": {
           "value": 3,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "inputs": {
           "value": 4,
           "basis": "illustrative",
-          "note": "Requests and design documents follow templates."
+          "note": "Requests and design documents follow templates.",
+          "aiDraft": false
         },
         "systems": {
           "value": 4,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "exceptions": {
           "value": 2,
           "basis": "illustrative",
-          "note": "Most requests loop back through rework at least once."
+          "note": "Most requests loop back through rework at least once.",
+          "aiDraft": false
         },
         "sponsor": {
           "value": 5,
           "basis": "illustrative",
-          "note": "The team that runs the process owns the change."
+          "note": "The team that runs the process owns the change.",
+          "aiDraft": false
         },
         "risk": {
           "value": 4,
           "basis": "illustrative",
-          "note": "Internal work, checked before deployment."
+          "note": "Internal work, checked before deployment.",
+          "aiDraft": false
         },
         "measurable": {
           "value": 4,
           "basis": "illustrative",
-          "note": "The request tracker records every stage."
+          "note": "The request tracker records every stage.",
+          "aiDraft": false
         }
       },
       "source": {
@@ -440,27 +470,32 @@
         "volume": {
           "value": 4,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "pain": {
           "value": 3,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "rules": {
           "value": 4,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "inputs": {
           "value": 3,
           "basis": "illustrative",
-          "note": ""
+          "note": "",
+          "aiDraft": false
         },
         "sponsor": {
           "value": 1,
           "basis": "illustrative",
-          "note": "No owner in finance yet."
+          "note": "No owner in finance yet.",
+          "aiDraft": false
         }
       },
       "source": null

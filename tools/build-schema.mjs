@@ -369,7 +369,7 @@ const resultDoc = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://aixray.local/schema/ai-result.schema.json",
   title: "AIxRay AI result",
-  description: "Output of one AI task (extract, opportunities, future-state, summary or log-mapping), schema version 1. " +
+  description: "Output of one AI task (extract, opportunities, future-state, summary, log-mapping or screen), schema version 1. " +
     "The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. " +
     "webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
   type: "object",
@@ -381,6 +381,8 @@ const resultDoc = {
     engagementId: { anyOf: [id, { type: "null" }], description: "The engagement the task read. Null for extract." },
     engagementRevision: { type: ["integer", "null"], minimum: 0 },
     baselineModelId: { anyOf: [id, { type: "null" }], description: "The current-state model a future-state change set applies to, or the model a log mapping maps activities to." },
+    screeningId: { anyOf: [id, { type: "null" }], description: "screen: the screening the scores were drafted for (see screening.schema.json)." },
+    screeningRevision: { type: ["integer", "null"], minimum: 0 },
     generated: {
       type: "object",
       properties: { tool: text(80), provider: en("aiProvider"), model: text(120), surface: en("aiSurface"), at: text(40), jobId: text(80), plan: en("aiPlan") }
@@ -399,7 +401,7 @@ const resultDoc = {
       description: "extract: { engagement } (see engagement.schema.json). The other tasks use the schemas in $defs.",
       anyOf: [
         { type: "object", required: ["engagement"], properties: { engagement: { $ref: "engagement.schema.json" } } },
-        { $ref: "#/$defs/opportunities" }, { $ref: "#/$defs/futureState" }, { $ref: "#/$defs/summary" }, { $ref: "#/$defs/logMapping" }
+        { $ref: "#/$defs/opportunities" }, { $ref: "#/$defs/futureState" }, { $ref: "#/$defs/summary" }, { $ref: "#/$defs/logMapping" }, { $ref: "#/$defs/screen" }
       ]
     }
   },
@@ -408,7 +410,8 @@ const resultDoc = {
     opportunities: T.opportunities,
     futureState: T["future-state"],
     summary: T.summary,
-    logMapping: T["log-mapping"]
+    logMapping: T["log-mapping"],
+    screen: T.screen
   }
 };
 const resultOut = path.join(root, "webui", "schema", "ai-result.schema.json");

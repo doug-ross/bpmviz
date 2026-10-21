@@ -137,7 +137,8 @@
         sensitive: { type: "boolean" },
         facts: factsSchema,
         scores: { type: "object", description: "Score per criterion ID.", additionalProperties: { type: "object", additionalProperties: false, required: ["value"], properties: {
-          value: { type: ["integer", "null"], minimum: SCALE.min, maximum: SCALE.max }, basis: basisSchema, note: str(1000)
+          value: { type: ["integer", "null"], minimum: SCALE.min, maximum: SCALE.max }, basis: basisSchema, note: str(1000),
+          aiDraft: { type: "boolean", description: "True for a score drafted with AI that no one has reviewed yet." }
         } } },
         source: { anyOf: [{ type: "null" }, { type: "object", additionalProperties: false, required: ["engagementId"],
           description: "Figures copied from a project file when the candidate was added from it. The project itself is not stored.",
@@ -193,7 +194,7 @@
     const f = plain(c.facts), s = plain(c.scores), scores = {};
     Object.keys(s).forEach(key => {
       if (!criterionIds.has(key) || !util.isPlainObject(s[key])) return;
-      scores[key] = { value: scoreValue(s[key].value), basis: basisOf(s[key].basis), note: text(s[key].note, 1000) };
+      scores[key] = { value: scoreValue(s[key].value), basis: basisOf(s[key].basis), note: text(s[key].note, 1000), aiDraft: s[key].aiDraft === true };
     });
     return {
       id: c.id, name: text(c.name, 200), owner: text(c.owner, 200), description: text(c.description),
@@ -335,7 +336,11 @@
     return change(s, next => { next.candidates = next.candidates.filter(c => c.id !== id); });
   }
 
-  /** Sets one score. score: { value (1 to 5, or null to clear), basis, note }. */
+  /**
+   * Sets one score. score: { value (1 to 5, or null to clear), basis, note,
+   * aiDraft }. A score a person sets is theirs: it is no longer an AI draft
+   * unless aiDraft is passed as true.
+   */
   function setScore(s, candidateId, criterionId, score) {
     candidateIn(s, candidateId); criterionIn(s, criterionId);
     const p = plain(score);
@@ -343,8 +348,29 @@
     return change(s, next => {
       const c = candidateIn(next, candidateId), old = c.scores[criterionId] || { value: null, basis: "illustrative", note: "" };
       const merged = { value: p.value === undefined ? old.value : p.value, basis: p.basis === undefined ? old.basis : p.basis, note: p.note === undefined ? old.note : p.note };
-      c.scores[criterionId] = { value: scoreValue(merged.value), basis: basisOf(merged.basis), note: text(merged.note, 1000) };
+      c.scores[criterionId] = { value: scoreValue(merged.value), basis: basisOf(merged.basis), note: text(merged.note, 1000), aiDraft: p.aiDraft === true };
     });
+  }
+
+  /** Marks AI-drafted scores as reviewed: one score, one candidate's, or (with no candidateId) all of them. */
+  function reviewAiScores(s, candidateId, criterionId) {
+    if (candidateId) candidateIn(s, candidateId);
+    if (criterionId) criterionIn(s, criterionId);
+    return change(s, next => {
+      let reviewed = 0;
+      next.candidates.filter(c => !candidateId || c.id === candidateId).forEach(c => {
+        Object.keys(c.scores).filter(k => !criterionId || k === criterionId).forEach(k => {
+          if (c.scores[k].aiDraft) { c.scores[k].aiDraft = false; reviewed++; }
+        });
+      });
+      return { reviewed };
+    });
+  }
+
+  /** How many scores are unreviewed AI drafts, in one candidate or in the whole screening. */
+  function aiDraftCount(s, candidateId) {
+    return s.candidates.filter(c => !candidateId || c.id === candidateId)
+      .reduce((n, c) => n + Object.values(c.scores).filter(x => x.aiDraft && x.value !== null).length, 0);
   }
 
   /** Changes a criterion's label, group, weight, gate, help or anchors. */
@@ -549,11 +575,19 @@
     return rows;
   }
 
+  /* The candidate with its unreviewed AI scores left out. */
+  function withoutAiDrafts(c) {
+    return Object.assign({}, c, { scores: Object.fromEntries(Object.entries(c.scores).filter(([, x]) => !x.aiDraft)) });
+  }
+
   function score(s, opts) {
     const o = opts || {};
     const weights = weightsOf(s, o.weights);
     const ease = s.criteria.filter(c => c.group !== "value");
-    return order(s.candidates.filter(c => o.includeSensitive || !c.sensitive).map(c => {
+    const dropAi = o.includeUnreviewedAi === false;
+    return order(s.candidates.filter(c => o.includeSensitive || !c.sensitive).map(original => {
+      const c = dropAi ? withoutAiDrafts(original) : original;
+      const aiDrafts = aiDraftCount({ candidates: [original] });
       const overall = combine(s.criteria, c, weights);
       const groups = Object.fromEntries(GROUP_IDS.map(g => [g, combine(s.criteria.filter(k => k.group === g), c, weights)]));
       const easeResult = combine(ease, c, weights);
@@ -561,7 +595,8 @@
         candidateId: c.id, name: c.name, rank: 0,
         score: overall.score, provisional: overall.provisional, coverage: overall.coverage, missing: overall.missing, basis: overall.basis,
         groups, ease: easeResult.score, quadrant: quadrantOf(groups.value.score, easeResult.score),
-        figures: figures(s, c), flags: flagsOf(s, c), sensitive: c.sensitive, source: c.source
+        figures: figures(s, c), flags: flagsOf(s, c), sensitive: c.sensitive, source: c.source,
+        aiDrafts: dropAi ? 0 : aiDrafts, aiDraftsLeftOut: dropAi ? aiDrafts : 0
       };
     }));
   }
@@ -604,7 +639,8 @@
   /**
    * The ranked candidates with their stability check:
    * { rows, stability, notes }. Sensitive candidates are left out unless
-   * opts.includeSensitive. opts: { includeSensitive, weights }.
+   * opts.includeSensitive. Unreviewed AI scores count unless
+   * opts.includeUnreviewedAi is false. opts: { includeSensitive, includeUnreviewedAi, weights }.
    */
   function evaluate(s, opts) {
     const rows = score(s, opts);
@@ -612,6 +648,9 @@
     const partial = rows.filter(r => r.score === null && r.provisional !== null).length;
     if (partial) notes.push(partial + " candidate" + (partial === 1 ? " is" : "s are") + " not fully scored and rank" + (partial === 1 ? "s" : "") + " after the fully scored ones, on a provisional score.");
     if (rows.some(r => r.flags.length)) notes.push("Flagged candidates stay in the ranking. Read the flags before choosing.");
+    const used = rows.reduce((n, r) => n + r.aiDrafts, 0), left = rows.reduce((n, r) => n + r.aiDraftsLeftOut, 0);
+    if (used) notes.push(used + " score" + (used === 1 ? " was" : "s were") + " drafted with AI and no one has reviewed " + (used === 1 ? "it" : "them") + " yet.");
+    if (left) notes.push(left + " score" + (left === 1 ? "" : "s") + " drafted with AI " + (left === 1 ? "is" : "are") + " left out until someone reviews " + (left === 1 ? "it" : "them") + ".");
     return { rows, stability: stability(s, opts), notes };
   }
 
@@ -622,10 +661,13 @@
    * confidentiality, revision, preparedAt, recommendation, rows, criteria,
    * stability, notes, counts }. Sensitive candidates are left out unless
    * opts.includeSensitive; counts.excluded says how many were left out.
-   * opts: { includeSensitive, now }.
+   * Unreviewed AI scores are left out unless opts.includeUnreviewedAi, as
+   * AI drafts are everywhere else in AIxRay; then disclosure says so.
+   * opts: { includeSensitive, includeUnreviewedAi, now }.
    */
   function buildSummary(s, opts) {
-    const o = opts || {};
+    const o = Object.assign({}, opts || {});
+    o.includeUnreviewedAi = o.includeUnreviewedAi === true;
     const result = evaluate(s, o);
     const total = s.criteria.reduce((a, k) => a + k.weight, 0);
     const complete = result.rows.filter(r => r.score !== null);
@@ -652,10 +694,113 @@
       dataStatus: schema.label("dataStatus", s.meta.dataStatus), confidentiality: schema.label("confidentiality", s.meta.confidentiality),
       revision: s.revision, preparedAt: o.now || util.nowIso(), currency: s.meta.currency,
       recommendation, rows: result.rows, stability: st, notes,
+      disclosure: result.rows.some(r => r.aiDrafts) ? "This summary includes scores drafted with AI assistance that no one has reviewed yet." : "",
       criteria: s.criteria.map(k => ({ id: k.id, label: k.label, group: k.group, groupLabel: GROUPS.find(g => g[0] === k.group)[1], weight: k.weight,
         share: total > 0 ? k.weight / total : null, gateAtOrBelow: k.gateAtOrBelow, help: k.help })),
-      counts: { candidates: s.candidates.length, shown: result.rows.length, complete: complete.length, excluded: s.candidates.length - result.rows.length }
+      counts: { candidates: s.candidates.length, shown: result.rows.length, complete: complete.length, excluded: s.candidates.length - result.rows.length,
+        aiDrafts: result.rows.reduce((n, r) => n + r.aiDrafts, 0), aiDraftsLeftOut: result.rows.reduce((n, r) => n + r.aiDraftsLeftOut, 0) }
     };
+  }
+
+  /* ---------- The AI task: draft screening scores ---------- */
+
+  const CONFIDENTIALITY_ORDER = ["public", "internal", "client-confidential", "restricted"];
+
+  function sentCandidates(s, o) {
+    return s.candidates.filter(c => o.includeSensitive || !c.sensitive);
+  }
+
+  /**
+   * The data-handling facts for sending a screening to an AI tool: its data
+   * status, and the strictest confidentiality among the screening and the
+   * candidates that would be sent. opts: { includeSensitive }.
+   */
+  function dataHandlingOf(s, opts) {
+    const o = opts || {};
+    const levels = [s.meta.confidentiality].concat(sentCandidates(s, o).map(c => c.confidentiality).filter(Boolean));
+    const strictest = levels.reduce((a, b) => (CONFIDENTIALITY_ORDER.indexOf(b) > CONFIDENTIALITY_ORDER.indexOf(a) ? b : a), "public");
+    return { confidentiality: strictest, dataStatus: s.meta.dataStatus };
+  }
+
+  /**
+   * What the AI is given to draft scores: the criteria with what 1, 3 and 5
+   * mean, and for each candidate its name, description, yearly figures, the
+   * figures copied from its project, the scores people gave and the criteria
+   * still to score. Owners are left out because they can name people.
+   * Sensitive candidates are left out unless opts.includeSensitive.
+   */
+  function aiTaskInput(s, opts) {
+    const o = opts || {};
+    const sent = sentCandidates(s, o);
+    const value = f => (f && f.value !== null ? { value: f.value, basis: f.basis } : null);
+    return {
+      task: "screen", screeningId: s.id, screeningRevision: s.revision,
+      screening: { title: s.meta.title, client: s.meta.clientDisplayName, currency: s.meta.currency },
+      criteria: s.criteria.map(k => ({ id: k.id, label: k.label, group: k.group, weight: k.weight, help: k.help,
+        anchors: Object.fromEntries([1, 3, 5].filter(n => k.anchors[n]).map(n => [n, k.anchors[n]])) })),
+      candidates: sent.map(c => {
+        const src = c.source;
+        return {
+          id: c.id, name: c.name, description: c.description,
+          facts: Object.fromEntries(FACT_KEYS.map(k => [k, value(c.facts[k])])),
+          fromProject: src ? { processName: src.processName, steps: src.steps, stepsWithEffort: src.stepsWithEffort, opportunities: src.opportunities,
+            hasEventLog: src.hasEventLog, topOpportunity: src.topOpportunity ? src.topOpportunity.title : null } : null,
+          scores: Object.fromEntries(Object.entries(c.scores).filter(([, x]) => x.value !== null)
+            .map(([k, x]) => [k, { value: x.value, note: x.note, origin: x.aiDraft ? "ai-draft" : "person" }])),
+          toScore: s.criteria.filter(k => !(c.scores[k.id] && c.scores[k.id].value !== null && !c.scores[k.id].aiDraft)).map(k => k.id)
+        };
+      }),
+      excluded: { sensitiveCandidates: s.candidates.length - sent.length }
+    };
+  }
+
+  /**
+   * Checks drafted scores against the screening: { task, errors, warnings,
+   * items }. Each item is { key, index, candidateId, criterionId, title,
+   * value, confidence, rationale, problems }. An item with problems cannot be
+   * applied: the candidate or criterion is not in the screening, a person
+   * already scored it, or the AI left it blank.
+   */
+  function prepareAiScores(result, s) {
+    const out = { task: "screen", errors: [], warnings: [], items: [] };
+    if (!result || result.task !== "screen") { out.errors.push({ path: "task", message: "This AI result does not hold screening scores." }); return out; }
+    if (result.screeningId !== s.id) { out.errors.push({ path: "screeningId", message: "This AI result was made for another screening, so nothing was changed." }); return out; }
+    if (result.screeningRevision !== null && result.screeningRevision !== s.revision) {
+      out.warnings.push({ code: "result.stale", message: "The screening changed after these scores were drafted. Check each one before you apply it.", path: "" });
+    }
+    out.items = result.payload.scores.map((x, i) => {
+      const c = s.candidates.find(y => y.id === x.candidateId);
+      const k = s.criteria.find(y => y.id === x.criterionId);
+      const problems = [];
+      if (!c) problems.push("The process is not in the screening.");
+      if (!k) problems.push("The criterion is not in the screening.");
+      const current = c && k ? c.scores[k.id] : null;
+      if (current && current.value !== null && !current.aiDraft) problems.push("A person already scored this, and that score stays.");
+      if (x.value === null) problems.push("The AI could not score this from the material.");
+      return {
+        key: x.candidateId + "|" + x.criterionId, index: i, candidateId: x.candidateId, criterionId: x.criterionId,
+        title: (c ? c.name : "Unknown process") + ": " + (k ? k.label : "unknown criterion") + (x.value !== null ? ", " + x.value : ""),
+        value: x.value, confidence: x.confidence, rationale: x.rationale, problems
+      };
+    });
+    return out;
+  }
+
+  /**
+   * Applies the chosen drafted scores as unreviewed AI drafts, in one change:
+   * { screening, applied }. Items with problems are skipped.
+   */
+  function applyAiScores(s, review, keys) {
+    const chosen = new Set(keys || []);
+    const items = review.items.filter(it => chosen.has(it.key) && !it.problems.length);
+    return change(s, next => {
+      items.forEach(it => {
+        const c = candidateIn(next, it.candidateId);
+        const rationale = it.rationale ? ": " + it.rationale : ".";
+        c.scores[it.criterionId] = { value: it.value, basis: "illustrative", note: text("AI draft, " + it.confidence + " confidence" + rationale, 1000), aiDraft: true };
+      });
+      return { applied: items.length };
+    });
   }
 
   /* ---------- To a project ---------- */
@@ -695,7 +840,8 @@
   return {
     SCREENING_ID, SCREENING_VERSION, SCREENING_SCHEMA, LIMITS, SCALE, WEIGHT_MAX, GROUPS, FACTS, QUADRANTS, DEFAULT_CRITERIA, ScreeningError,
     blankScreening, sanitizeScreening, parseScreening,
-    addCandidate, updateCandidate, removeCandidate, setScore, addCriterion, updateCriterion, removeCriterion, updateMeta,
+    addCandidate, updateCandidate, removeCandidate, setScore, reviewAiScores, aiDraftCount, addCriterion, updateCriterion, removeCriterion, updateMeta,
+    dataHandlingOf, aiTaskInput, prepareAiScores, applyAiScores,
     fromEngagement, addFromEngagement, evaluate, stability, buildSummary, toStarterEngagement
   };
 });

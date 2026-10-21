@@ -74,7 +74,7 @@
     aiTask: [
       ["extract", "Create a process from documents"], ["opportunities", "Suggest findings"],
       ["future-state", "Draft a future state"], ["summary", "Draft the summary"],
-      ["log-mapping", "Match event log activities to steps"]
+      ["log-mapping", "Match event log activities to steps"], ["screen", "Draft screening scores"]
     ],
     aiProvider: [["claude", "Claude (Claude Code)"], ["codex", "ChatGPT (Codex)"], ["other", "Other assistant"]],
     aiSurface: [["cli", "Command line"], ["skill", "Agent skill"], ["app", "In-app helper"]],

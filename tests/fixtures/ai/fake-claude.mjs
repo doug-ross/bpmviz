@@ -17,7 +17,7 @@ if (args[0] === "--version") {
   const task = taskOf(prompt);
   const toolsArg = args[args.indexOf("--tools") + 1];
   log({ provider: "claude", mode, task, args, cwd: process.cwd(), env: envSeen(), promptLength: prompt.length, repair: /Repair round/.test(prompt),
-    input: task === "log-mapping" ? inputOf(prompt) : undefined });
+    input: task === "log-mapping" || task === "screen" ? inputOf(prompt) : undefined });
   const tools = (toolsArg ? toolsArg.split(",") : []).concat(["StructuredOutput"]);
   if (mode === "unexpected-tool") tools.push("Bash");
   out({ type: "system", subtype: "init", tools, mcp_servers: [], model: "fake-model", permissionMode: "dontAsk" });

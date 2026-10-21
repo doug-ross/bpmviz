@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aixray.local/schema/ai-result.schema.json",
   "title": "AIxRay AI result",
-  "description": "Output of one AI task (extract, opportunities, future-state, summary or log-mapping), schema version 1. The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
+  "description": "Output of one AI task (extract, opportunities, future-state, summary, log-mapping or screen), schema version 1. The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
   "type": "object",
   "required": [
     "schema",
@@ -23,7 +23,8 @@
         "opportunities",
         "future-state",
         "summary",
-        "log-mapping"
+        "log-mapping",
+        "screen"
       ]
     },
     "engagementId": {
@@ -54,6 +55,24 @@
         }
       ],
       "description": "The current-state model a future-state change set applies to, or the model a log mapping maps activities to."
+    },
+    "screeningId": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/id"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "screen: the screening the scores were drafted for (see screening.schema.json)."
+    },
+    "screeningRevision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
     },
     "generated": {
       "type": "object",
@@ -205,6 +224,9 @@
         },
         {
           "$ref": "#/$defs/logMapping"
+        },
+        {
+          "$ref": "#/$defs/screen"
         }
       ]
     }
@@ -661,6 +683,54 @@
               "nodeId": {
                 "type": [
                   "string",
+                  "null"
+                ]
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "rationale": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "screen": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scores"
+      ],
+      "properties": {
+        "scores": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "candidateId",
+              "criterionId",
+              "value",
+              "confidence",
+              "rationale"
+            ],
+            "properties": {
+              "candidateId": {
+                "type": "string"
+              },
+              "criterionId": {
+                "type": "string"
+              },
+              "value": {
+                "type": [
+                  "integer",
                   "null"
                 ]
               },

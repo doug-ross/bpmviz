@@ -42,6 +42,14 @@ dialog.dlg.screening-dlg { width: min(1360px, calc(100vw - 32px)); }
 .scr-summary { border: 1px solid var(--border); border-radius: var(--radius-md); }
 .scr-doc .scr-chart { margin-top: var(--space-4); }
 
+.scr-grid td.scr-ai .select { border-style: dashed; border-color: var(--badge-purple-ink); }
+.scr-ai-text { color: var(--badge-purple-ink); }
+.scr-ai-check { display: flex; margin-top: 4px; font-size: var(--fs-caption); }
+.scr-ai-note { padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.scr-ai-items li { padding: var(--space-2) 0; border-bottom: 1px solid var(--border); }
+.scr-ai-items li:last-child { border-bottom: 0; }
+.scr-ai-items p { margin: 2px 0 0 24px; }
+
 #scr-print { display: none; }
 @media print {
   body.scr-printing .app { display: none !important; }

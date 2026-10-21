@@ -1,6 +1,6 @@
 # AI tasks on your Claude or ChatGPT subscription
 
-AIxRay can ask an AI assistant to draft five things for a project:
+AIxRay can ask an AI assistant to draft six things, five for a project and one for a screening:
 
 | Task | What you get | Command |
 |---|---|---|
@@ -9,12 +9,15 @@ AIxRay can ask an AI assistant to draft five things for a project:
 | Draft a future state | Changes to the current state: steps changed, added and removed, new lanes | `npm run ai -- future-state --in <file>` |
 | Draft the summary | The executive summary that opens the printed report | `npm run ai -- summary --in <file>` |
 | Match event log activities to steps | A suggested step for each activity name in an event log, for the event log import | `npm run ai -- log-mapping --in <file> --activities <file>` |
+| Draft screening scores | A 1 to 5 score, with a rationale, for each criterion that people have not scored yet, for each process in a screening | `npm run ai -- screen --in <file.screening.json>` |
 
 The assistant is **Claude Code** (on a Claude Pro, Max, Team or Enterprise plan) or **Codex** (on a ChatGPT Plus, Pro, Business or Enterprise plan). AIxRay runs the tool you have installed, on the account you signed in with, so the work counts against your subscription's usage and not against an API key. AIxRay never asks for, sees or stores a password, token or key.
 
 Every task produces an **AI result file**. You open it in AIxRay with Open, look at each proposed item, tick the ones you want and apply them in one step that Undo reverses. Applied items stay marked **AI draft, not reviewed**, and the report, the Present view and exports leave them out until someone marks them reviewed.
 
 A log-mapping result is the exception: it changes nothing in the project. You load it in the event log import, in the Match activities step, and each match you take still needs its own tick there before the log is added. See [event-logs.md](event-logs.md).
+
+Drafted screening scores go into a screening, not a project. Open the screening (Screen processes, then Open), choose **Load AI scores**, tick the scores you want and apply them. They stay marked as AI drafts until someone reviews each one, and the printed summary leaves them out until then unless you include them. See [screening.md](screening.md).
 
 There are three ways to start a task:
 
@@ -57,7 +60,7 @@ If `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `OPENAI_API_KEY` or `CODEX_API_K
 
 Commercial plans do not use your conversations to train models by default. Consumer plans may, unless you turn it off: in Claude, Settings, Privacy, "Help improve Claude"; in ChatGPT, Settings, Data controls, "Improve the model for everyone". Your organization's own rules come first: if it has not approved an assistant for client material, do not use one.
 
-AIxRay applies this table before anything is sent, in all three routes. Claude Code reports its plan, so AIxRay uses that; for Codex it uses the plan you declare. An extraction has no project yet, so its confidentiality is Client confidential unless you say otherwise with `--confidentiality`. Findings marked sensitive are never sent unless you add `--include-sensitive`. The result file records the plan and the confirmations you gave.
+AIxRay applies this table before anything is sent, in all three routes. Claude Code reports its plan, so AIxRay uses that; for Codex it uses the plan you declare. An extraction has no project yet, so its confidentiality is Client confidential unless you say otherwise with `--confidentiality`. A screening is held to the strictest confidentiality among the screening and the processes that would be sent. Findings and screening processes marked sensitive are never sent unless you add `--include-sensitive`. The result file records the plan and the confirmations you gave.
 
 Check a case without running anything:
 
@@ -73,6 +76,7 @@ npm run ai -- opportunities --in claims.engagement.json --yes
 npm run ai -- future-state --in claims.engagement.json --yes
 npm run ai -- summary --in claims.engagement.json --yes
 npm run ai -- log-mapping --in claims.engagement.json --activities claims-log.csv --yes
+npm run ai -- screen --in shortlist.screening.json --yes
 npm run ai -- check claims.opportunities.ai-result.json --in claims.engagement.json
 ```
 
@@ -97,14 +101,16 @@ Exit codes: 0 done, 1 failed, 2 wrong usage, 3 stopped by the data-handling rule
 
 `npm run ai -- text <file>` prints the text AIxRay reads from a document, which is a quick way to see what an assistant will get from a PDF or a slide deck. `npm run ai -- input <task> --in <file>` prints exactly what a task sends; for log-mapping add `--activities <file>`.
 
+For screening scores the assistant sees the criteria with what 1, 3 and 5 mean, and for each process its name, description, yearly figures, the figures copied from its project, the scores people gave and the criteria still to score. It never sees process owners, because they can name people, or processes marked sensitive unless you add `--include-sensitive`. It drafts only the criteria nobody has scored; a score a person gave cannot be replaced. `--apply` writes `<name>.with-ai.screening.json` with every drafted score applied as an unreviewed AI draft. The app's Draft with AI buttons do not run this task; use the command line or a skill.
+
 For log mapping the assistant sees the steps of one model (ID, label, lane and description, without gateways) and the activity names, most frequent first, up to 500 of them. It never sees events, times, case IDs, counts or people. Activity names that look like a key or token are left out before anything is sent, and the result says how many. A suggested match to a step that is not in the model, to a gateway, or for a name that was not sent cannot be used.
 
 ## Agent skills
 
 The repository includes one skill per task for each tool:
 
-- Claude Code: open Claude Code in the repository folder and type `/aixray-extract`, `/aixray-opportunities`, `/aixray-future-state`, `/aixray-summary` or `/aixray-log-mapping`, followed by the file names. The skills run only when you type them.
-- Codex: open Codex in the repository folder and ask for `$aixray-extract`, `$aixray-opportunities`, `$aixray-future-state`, `$aixray-summary` or `$aixray-log-mapping`.
+- Claude Code: open Claude Code in the repository folder and type `/aixray-extract`, `/aixray-opportunities`, `/aixray-future-state`, `/aixray-summary`, `/aixray-log-mapping` or `/aixray-screen`, followed by the file names. The skills run only when you type them.
+- Codex: open Codex in the repository folder and ask for `$aixray-extract`, `$aixray-opportunities`, `$aixray-future-state`, `$aixray-summary`, `$aixray-log-mapping` or `$aixray-screen`.
 
 A skill checks the data-handling rules with `npm run ai -- gate` before it reads anything, asks you for the confirmations it needs, drafts the result, checks it with `npm run ai -- wrap` and tells you which file to open.
 

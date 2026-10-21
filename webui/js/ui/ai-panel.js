@@ -302,6 +302,10 @@
     }
     const result = validation.result;
     if (result.task === "extract") return reviewExtraction(app, result, validation.warnings, meta);
+    if (result.task === "screen") {
+      if (B.screeningUi) B.screeningUi.openAiResult(app, validation, meta);
+      return null;
+    }
     if (result.task === "log-mapping" && !meta.onProposals) {
       messageDialog("Open this mapping from the event-log import", h("div", null,
         h("p", null, (meta.fileName || "This file") + " suggests a step for each activity in an event log. You use it while you import the log, so nothing was changed."),

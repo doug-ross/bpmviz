@@ -41,7 +41,7 @@ test("new enumerations list their default first and keep existing values", () =>
   assert.deepEqual(E.reviewVerdict, ["confirm", "dispute", "unsure"]);
   assert.deepEqual(E.reviewFormat, ["html", "xlsx"]);
   assert.deepEqual(E.assumptionStatus, ["illustrative", "supplied", "observed", "validated"]);
-  assert.equal(E.aiTask[E.aiTask.length - 1], "log-mapping");
+  assert.ok(E.aiTask.includes("log-mapping"));
   assert.equal(schema.label("aiTask", "log-mapping"), "Match event log activities to steps");
   assert.equal(schema.REVIEW_RESPONSE_ID, "aixray.review-response");
   assert.equal(schema.REVIEW_PACK_ID, "aixray.review-pack");

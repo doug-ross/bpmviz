@@ -23,6 +23,8 @@
   const MAX_OPERATIONS = 200;
   const MAX_NEW_LANES = 10;
   const MAX_MINUTES = 525600;
+  /* A screening holds at most 50 candidates and 30 criteria. */
+  const MAX_SCREEN_SCORES = 1500;
 
   const SUGGESTION_KINDS = ["opportunity", "pain", "question"];
   const WARNING_CODES = ["source.instruction", "source.unreadable", "source.conflict", "source.gap", "assumption", "other"];
@@ -101,6 +103,17 @@
         type: "array",
         items: strict({
           activity: S, nodeId: NULLABLE_S,
+          confidence: { type: "string", enum: CONFIDENCE },
+          rationale: S
+        })
+      }
+    }),
+    screen: strict({
+      scores: {
+        type: "array",
+        items: strict({
+          candidateId: S, criterionId: S,
+          value: { type: ["integer", "null"] },
           confidence: { type: "string", enum: CONFIDENCE },
           rationale: S
         })
@@ -459,6 +472,36 @@
     return { mappings };
   }
 
+  /*
+   * Drafted screening scores. IDs are checked for their form here; whether the
+   * candidate and the criterion exist is checked against the screening when
+   * the scores are reviewed (screening.prepareAiScores).
+   */
+  function sanitizeScreen(p, errors, warnings) {
+    if (p.scores.length > MAX_SCREEN_SCORES) warnings.push({ code: "payload.truncated", message: "Only the first " + MAX_SCREEN_SCORES + " scores are kept.", path: "payload.scores" });
+    const seen = new Set();
+    const scores = [];
+    p.scores.slice(0, MAX_SCREEN_SCORES).forEach((x, i) => {
+      const path = "payload.scores[" + i + "]";
+      if (!util.isValidId(x.candidateId) || !util.isValidId(x.criterionId)) {
+        errors.push({ path, message: "Each score needs the candidate and criterion IDs exactly as given." });
+        return;
+      }
+      if (x.value !== null && !(x.value >= 1 && x.value <= 5)) {
+        errors.push({ path: path + ".value", message: "A score is a whole number from 1 to 5, or null when the material does not say enough." });
+        return;
+      }
+      const key = x.candidateId + "|" + x.criterionId;
+      if (seen.has(key)) {
+        warnings.push({ code: "payload.duplicate", message: "A criterion is scored twice for the same candidate; the first score is kept.", path });
+        return;
+      }
+      seen.add(key);
+      scores.push({ candidateId: x.candidateId, criterionId: x.criterionId, value: x.value, confidence: x.confidence, rationale: text(x.rationale, 2000) });
+    });
+    return { scores };
+  }
+
   /* ---------- The result file ---------- */
 
   function isAiResult(data) {
@@ -497,6 +540,8 @@
       engagementId: util.isValidId(input.engagementId) ? input.engagementId : null,
       engagementRevision: Number.isInteger(input.engagementRevision) && input.engagementRevision >= 0 ? input.engagementRevision : null,
       baselineModelId: util.isValidId(input.baselineModelId) ? input.baselineModelId : null,
+      screeningId: util.isValidId(input.screeningId) ? input.screeningId : null,
+      screeningRevision: Number.isInteger(input.screeningRevision) && input.screeningRevision >= 0 ? input.screeningRevision : null,
       generated: sanitizeGenerated(input.generated),
       dataHandling: sanitizeDataHandling(input.dataHandling),
       sources: sanitizeSources(input.sources),
@@ -504,13 +549,15 @@
       warnings: sanitizeWarnings(input.warnings),
       payload: null
     };
-    if (task !== "extract" && !result.engagementId) errors.push({ path: "engagementId", message: "The result does not say which project it was made for." });
+    if (task === "screen" && !result.screeningId) errors.push({ path: "screeningId", message: "The result does not say which screening it was made for." });
+    if (task !== "extract" && task !== "screen" && !result.engagementId) errors.push({ path: "engagementId", message: "The result does not say which project it was made for." });
     if (task === "future-state" && !result.baselineModelId) errors.push({ path: "baselineModelId", message: "A future-state result needs the baseline model ID." });
     if (task === "log-mapping" && !result.baselineModelId) errors.push({ path: "baselineModelId", message: "A log-mapping result needs the ID of the model the activities are mapped to." });
 
     scanSecrets({ payload: input.payload, notes: input.notes, warnings: input.warnings }).forEach(hit => {
       errors.push({ path: hit.path, code: "output.secret", message: "This looks like " + hit.kind + ". The result was not loaded. " +
-        (task === "log-mapping" ? "Check the activity names and the model steps" : task === "extract" ? "Remove it from the sources" : "Remove it from the project") + " and run the task again." });
+        (task === "log-mapping" ? "Check the activity names and the model steps" : task === "extract" ? "Remove it from the sources" :
+          task === "screen" ? "Remove it from the screening" : "Remove it from the project") + " and run the task again." });
     });
 
     const payload = input.payload;
@@ -538,6 +585,7 @@
     if (task === "opportunities") result.payload = sanitizeOpportunities(payload, errors, warnings);
     else if (task === "future-state") result.payload = sanitizeFutureState(payload, errors, warnings);
     else if (task === "log-mapping") result.payload = sanitizeLogMapping(payload, errors, warnings);
+    else if (task === "screen") result.payload = sanitizeScreen(payload, errors, warnings);
     else result.payload = sanitizeSummary(payload, errors, warnings);
     return done(result);
   }
@@ -562,6 +610,8 @@
       engagementId: x.engagementId || null,
       engagementRevision: Number.isInteger(x.engagementRevision) ? x.engagementRevision : null,
       baselineModelId: x.baselineModelId || null,
+      screeningId: x.screeningId || null,
+      screeningRevision: Number.isInteger(x.screeningRevision) ? x.screeningRevision : null,
       generated: Object.assign({ tool: "aixray-ai", provider: "other", model: "", surface: "cli", at: util.nowIso(), jobId: "", plan: "unknown" }, x.generated || {}),
       dataHandling: sanitizeDataHandling(x.dataHandling),
       sources: x.sources || [],
@@ -971,6 +1021,10 @@
    */
   function prepareReview(result, engagement, context) {
     const out = { task: result.task, errors: [], warnings: [], items: [], baseline: null, engagementSummary: null };
+    if (result.task === "screen") {
+      out.errors.push({ path: "task", message: "These are drafted screening scores. Open them in the screening they were made for." });
+      return out;
+    }
     const st = staleCheck(result, engagement);
     if (st.error) { out.errors.push({ path: "engagementId", message: st.error }); return out; }
     if (st.warning) out.warnings.push({ code: "result.stale", message: st.warning, path: "" });

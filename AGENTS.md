@@ -26,4 +26,4 @@ Run `npm test` and `npm run check` before you finish a change. Run `npm run test
 
 ## AI tasks
 
-The skills in `.agents/skills/` (Codex) and `.claude/skills/` (Claude Code) draft AIxRay material and save it as an AI result file that a person reviews in the app. Claude Code skills: `/aixray-extract`, `/aixray-log-mapping`, `/aixray-opportunities`, `/aixray-future-state` and `/aixray-summary`. Each one checks the data-handling rules with `npm run ai -- gate` before it reads any material. Use them only when the user asks for one.
+The skills in `.agents/skills/` (Codex) and `.claude/skills/` (Claude Code) draft AIxRay material and save it as an AI result file that a person reviews in the app. Claude Code skills: `/aixray-extract`, `/aixray-log-mapping`, `/aixray-opportunities`, `/aixray-future-state`, `/aixray-summary` and `/aixray-screen`. Each one checks the data-handling rules with `npm run ai -- gate` before it reads any material. Use them only when the user asks for one.

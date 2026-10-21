@@ -1598,7 +1598,8 @@
             "opportunities",
             "future-state",
             "summary",
-            "log-mapping"
+            "log-mapping",
+            "screen"
           ]
         },
         "provider": {
