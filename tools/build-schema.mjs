@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /*
- * Writes webui/schema/engagement.schema.json, ai-result.schema.json and
- * review-response.schema.json from the enumerations in webui/js/lib/schema.js
- * and the task schemas in ai-results.js, so the published contracts and the
+ * Writes webui/schema/engagement.schema.json, ai-result.schema.json,
+ * review-response.schema.json and screening.schema.json from the enumerations
+ * in webui/js/lib/schema.js, the task schemas in ai-results.js and the
+ * screening schema in screening.js, so the published contracts and the
  * validators agree.
  *   node tools/build-schema.mjs
  */
@@ -446,3 +447,8 @@ const responseDoc = {
 const responseOut = path.join(root, "webui", "schema", "review-response.schema.json");
 fs.writeFileSync(responseOut, JSON.stringify(responseDoc, null, 2) + "\n");
 console.log("Wrote " + path.relative(root, responseOut));
+
+const screening = require("../webui/js/lib/screening.js");
+const screeningOut = path.join(root, "webui", "schema", "screening.schema.json");
+fs.writeFileSync(screeningOut, JSON.stringify(screening.SCREENING_SCHEMA, null, 2) + "\n");
+console.log("Wrote " + path.relative(root, screeningOut));

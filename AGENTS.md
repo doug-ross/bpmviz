@@ -21,7 +21,7 @@ Run `npm test` and `npm run check` before you finish a change. Run `npm run test
 - Client-visible text (README, docs, prompts, UI copy, examples) has no em dashes and no marketing filler. `npm run check` enforces this.
 - Engagement data is shown as text, never as HTML.
 - The app opened from disk makes no network requests. Its content security policy says `connect-src 'none'`; keep it that way.
-- After changing `webui/js/lib/schema.js` or `webui/js/lib/ai-results.js`, run `node tools/build-schema.mjs`. After changing the archived samples or the converter, run `npm run build:examples`.
+- After changing `webui/js/lib/schema.js`, `webui/js/lib/ai-results.js`, `webui/js/lib/workshop.js` or `webui/js/lib/screening.js`, run `node tools/build-schema.mjs`. After changing the archived samples or the converter, run `npm run build:examples`.
 - Do not commit engagement files, AI result files or source documents from real engagements.
 
 ## AI tasks
