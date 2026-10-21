@@ -16,6 +16,10 @@ To serve the app over HTTP instead, run `npm run serve` and open `http://127.0.0
 
 ## What you can do
 
+### Choose which process to start with
+
+Choose **Screen processes** to compare several candidate processes before you pick one. Score each from 1 to 5 against weighted criteria for value, feasibility, and readiness and risk; type a process in, or add a project file you already have. The Ranking tab shows each process's score, where it falls on a chart of value against ease, its yearly hands-on hours and labor cost, any flags, and whether the first choice holds when a weight moves by 20 percent. The Summary tab prints a one-page summary, and **Start a project** turns the chosen process into a new project. A screening is its own file and never changes a project. See [the screening guide](docs/screening.md).
+
 ### Build and run a Jumpstart workshop
 
 Choose **Build a process** to start with a blank current state. Add lanes, steps, gateways and labeled flows, then use **Walkthrough** in Present to discuss normal cases and exceptions without entering timings. **Edit scenarios** records timed routes and explicit economic alternatives. Create named future alternatives in the process builder and compare them against their locked baseline.
@@ -136,6 +140,7 @@ The deck covers scope, pain points, opportunities with their modeled value, the 
 - Every screen and export shows whether the content is demonstration data, provided data or measured data.
 - **An imported event log keeps only aggregates.** The project never holds the log's individual events, case IDs or the names of people in it, only counts and times per step. Case IDs are hashed by default, and people are counted only if you choose to, with no names stored either way. See `docs/event-logs.md`.
 - **A review form carries only what you chose for it.** Steps, the findings you included, and the project's title, client name, data status, confidentiality and disclosure; no figures, other findings, sources or notes. Sensitive findings and unreviewed AI drafts stay out unless included on purpose. The web page form stores nothing in the browser and sends nothing anywhere. See `docs/client-review.md`.
+- **A screening is its own file.** It holds the scores and the figures you typed or copied from a project, never the project itself. Processes marked sensitive stay out of the ranking and the summary unless you include them. See `docs/screening.md`.
 - **Export to other tools never changes the project.** The PowerPoint deck, BPMN file and backlog it builds respect the same sensitive-finding and AI-draft settings as the report. See `docs/exports.md`.
 
 ## Bring your own process
@@ -192,8 +197,8 @@ The app has no build step. Every file under `webui/js/lib/` works both as a brow
 | Path | Contents |
 |---|---|
 | `webui/index.htm` | The app |
-| `webui/js/lib/` | Model and logic: schema, validation, replay, layout, lenses, economics, store, persistence, exports, BPMN import, AI result files, event-log mining, business case figures, benefits comparison, review forms |
-| `webui/js/ui/` | Interface: diagram, Process tab, side panel, forms, findings, value and present views, AI review and tasks, event-log import wizard, opportunity value and the business case, the benefits section, reviews and exports to other tools |
+| `webui/js/lib/` | Model and logic: schema, validation, replay, layout, lenses, economics, store, persistence, exports, BPMN import, AI result files, event-log mining, business case figures, benefits comparison, review forms, process screening |
+| `webui/js/ui/` | Interface: diagram, Process tab, side panel, forms, findings, value and present views, AI review and tasks, event-log import wizard, opportunity value and the business case, the benefits section, reviews and exports to other tools, the screening window |
 | `webui/css/` | Design tokens (Sogeti palette and Ubuntu type) and app styles |
 | `webui/examples/` | Bundled example projects, generated from `archive/` |
 | `webui/schema/` | JSON Schemas for project files and AI result files |
@@ -201,7 +206,7 @@ The app has no build step. Every file under `webui/js/lib/` works both as a brow
 | `tools/ai/` | The AI runner, command line and local helper: Claude Code and Codex commands, document text, prompts, checks |
 | `.claude/skills/`, `.agents/skills/` | The AIxRay agent skills for Claude Code and Codex |
 | `tests/` | Unit tests, browser tests and fixtures |
-| `docs/` | AI guide, event logs, the business case, benefits tracking, review forms, exports, audit tracker, the September 2026 audit, sample event logs and screenshots |
+| `docs/` | AI guide, event logs, the business case, benefits tracking, review forms, exports, process screening, audit tracker, the September 2026 audit, sample event logs and screenshots |
 | `archive/` | The earlier prototypes and prompts, kept for reference |
 
 ## Audit

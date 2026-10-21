@@ -71,7 +71,7 @@ for (const mode of ["file", "http"]) {
     await page.click("#scr-tab-ranking");
     assert.equal(await page.textContent("#scr-first-choice"), "<img src=x onerror=alert(1)> Claims intake");
     assert.equal(await page.locator("#scr-chart .bc-dot-group").count(), 2);
-    assert.match(await page.textContent("#scr-rank-" + claims.id), /^1/);
+    assert.match(await page.textContent("#scr-ranking-" + claims.id), /^1/);
     assert.equal(await page.textContent("#scr-stability-headline"), "Yes");
 
     await page.click("#scr-tab-criteria");
@@ -150,8 +150,8 @@ test("add processes from project files, refresh one, and add the open project", 
   await page.fill("#scr-c-effortHoursPerCase-value", "6");
   await page.click("#scr-candidate-dialog .dlg-foot .btn-primary");
   await page.click("#scr-tab-ranking");
-  assert.match(await page.textContent("#scr-rank-" + underwriting.id), /2,400 hours per year/);
-  assert.match(await page.textContent("#scr-rank-" + underwriting.id), /\$360,000/);
+  assert.match(await page.textContent("#scr-ranking-" + underwriting.id), /2,400 hours per year/);
+  assert.match(await page.textContent("#scr-ranking-" + underwriting.id), /\$360,000/);
 
   await page.keyboard.press("Escape");
   assert.equal(await page.evaluate(() => JSON.stringify(window.AIxRay.app.store.get())), before, "the open project is not changed");
@@ -174,7 +174,7 @@ test("flags and sensitive processes, and files that are refused", { timeout: 900
 
   await page.click("#scr-tab-ranking");
   assert.equal(await page.locator("#scr-ranking tbody tr").count(), 1);
-  assert.match(await page.textContent("#scr-rank-" + openOne.id), /Sponsor and process experts scored 1/);
+  assert.match(await page.textContent("#scr-ranking-" + openOne.id), /Sponsor and process experts scored 1/);
   assert.equal(await page.locator("#scr-chart .scr-dot-flagged").count(), 1);
   await page.check("#scr-include-sensitive");
   assert.equal(await page.locator("#scr-ranking tbody tr").count(), 2);
@@ -188,5 +188,67 @@ test("flags and sensitive processes, and files that are refused", { timeout: 900
   await page.keyboard.press("Escape");
   s = await current(page);
   assert.equal(s.candidates.length, 2, "a refused file leaves the screening in the tab as it was");
+  clean(problems);
+});
+
+test("print the summary, then start a project for the first choice", { timeout: 90000 }, async t => {
+  const { page, problems } = await open(t, "file");
+  await page.click("#start-screening");
+  await addTyped(page, "Claims intake");
+  await addTyped(page, "Payroll changes");
+  let s = await current(page);
+  const [claims, payroll] = s.candidates;
+  await scoreAll(page, claims.id, 4);
+  await scoreAll(page, payroll.id, 2);
+  await page.click("#scr-edit-" + claims.id);
+  await page.fill("#scr-c-annualVolume-value", "12000");
+  await page.selectOption("#scr-c-annualVolume-basis", "supplied");
+  await page.click("#scr-candidate-dialog .dlg-foot .btn-primary");
+  await page.click("#scr-details");
+  await page.fill("#scr-m-client", "Northwind");
+  await page.fill("#scr-m-rate-value", "70");
+  await page.click("#scr-details-dialog .dlg-foot .btn-primary");
+
+  await page.click("#scr-tab-summary");
+  assert.match(await page.textContent("#scr-sum-recommendation"), /^Claims intake scores 75 of 100 \(Start here\)\./);
+  assert.equal(await page.locator("#scr-sum-ranking tbody tr").count(), 2);
+  assert.equal(await page.locator("#scr-sum-ranking button").count(), 0, "the summary has no buttons");
+  await page.evaluate(() => {
+    window.__printed = null;
+    window.print = () => {
+      const copy = document.getElementById("scr-print");
+      window.__printed = { text: copy && copy.textContent, printing: document.body.classList.contains("scr-printing"), outside: !!copy && !copy.closest("dialog") };
+      window.dispatchEvent(new Event("afterprint"));
+    };
+  });
+  await page.click("#scr-print-btn");
+  await page.waitForFunction(() => window.__printed !== null);
+  const printed = await page.evaluate(() => window.__printed);
+  assert.equal(printed.printing, true);
+  assert.equal(printed.outside, true, "the print copy sits outside the window, which printing hides");
+  assert.match(printed.text, /Northwind \u00b7 Process screening/);
+  assert.match(printed.text, /Criteria and weights/);
+  assert.equal(await page.locator("#scr-print").count(), 0, "the print copy is removed afterwards");
+  assert.equal(await page.evaluate(() => document.body.classList.contains("scr-printing")), false);
+
+  await page.click("#scr-tab-ranking");
+  await page.click("#scr-start-" + payroll.id);
+  assert.match(await page.textContent("dialog.dlg:not(#screening-dialog)"), /ranks 2 of 2/);
+  await page.click("dialog.dlg:not(#screening-dialog) .dlg-foot .btn:not(.btn-primary)");
+  await page.click("#scr-start-first");
+  await page.click("dialog.dlg:not(#screening-dialog) .dlg-foot .btn-primary");
+  await page.waitForSelector("#builder-dialog");
+  assert.equal(await page.locator("#screening-dialog").count(), 0);
+  const e = await page.evaluate(() => window.AIxRay.app.store.get());
+  assert.equal(e.meta.processName, "Claims intake");
+  assert.equal(e.meta.clientDisplayName, "Northwind");
+  assert.deepEqual(e.assumptions.map(a => [a.key, a.value, a.status]), [["annualVolume", 12000, "supplied"], ["hourlyRate", 70, "illustrative"]]);
+  assert.match(e.models[0].notes, /Screening score: 75 of 100/);
+
+  await page.keyboard.press("Escape");
+  await page.click("#btn-menu");
+  await page.click("#menu-screening");
+  assert.equal(await page.textContent("#scr-title"), "Process screening", "the screening is still in the tab");
+  assert.equal((await current(page)).candidates.length, 2);
   clean(problems);
 });

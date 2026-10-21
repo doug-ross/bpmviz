@@ -37,3 +37,14 @@ dialog.dlg.screening-dlg { width: min(1360px, calc(100vw - 32px)); }
 .scr-stability { margin-top: var(--space-4); }
 .scr-stability h3 { font-size: var(--fs-h3); margin-bottom: var(--space-2); }
 .scr-notes { margin-top: var(--space-3); }
+
+.scr-start-first { align-self: flex-start; margin-top: var(--space-2); }
+.scr-summary { border: 1px solid var(--border); border-radius: var(--radius-md); }
+.scr-doc .scr-chart { margin-top: var(--space-4); }
+
+#scr-print { display: none; }
+@media print {
+  body.scr-printing .app { display: none !important; }
+  body.scr-printing #scr-print { display: block !important; }
+  .scr-doc .scr-chart { break-inside: avoid; }
+}

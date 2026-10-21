@@ -11,13 +11,14 @@
   const { openDialog, confirmDialog, messageDialog, issueList } = B.dialogs;
   const S = B.screening, schema = B.schema, units = B.units, util = B.util;
 
-  const TABS = [["candidates", "Candidates"], ["criteria", "Criteria"], ["ranking", "Ranking"]];
+  const TABS = [["candidates", "Candidates"], ["criteria", "Criteria"], ["ranking", "Ranking"], ["summary", "Summary"]];
   const HISTORY = 50;
   const GROUP_LABEL = Object.fromEntries(S.GROUPS);
 
   /* One screening per browser tab. It stays here when the window closes, until the page reloads. */
   let state = null;
   let view = null;
+  let appRef = null;
 
   function fresh(screening, info) {
     const i = info || {};
@@ -413,10 +414,10 @@
 
   const QUADRANT_GRID = { "larger-effort": [0, 0], "start-here": [1, 0], "not-now": [0, 1], "easy-small": [1, 1] };
 
-  function chart(rows) {
+  function chart(rows, id) {
     const width = 640, height = 440, left = 40, top = 16, plotW = width - left - 16, plotH = height - top - 48;
     const x = v => left + v / 100 * plotW, y = v => top + (1 - v / 100) * plotH;
-    const svg = s("svg", { viewBox: "0 0 " + width + " " + height, width: "100%", role: "img", id: "scr-chart",
+    const svg = s("svg", { viewBox: "0 0 " + width + " " + height, width: "100%", role: "img", id: id || "scr-chart",
       "aria-label": "Processes placed by value against ease. The table below lists the same processes with their scores." });
     Object.entries(QUADRANT_GRID).forEach(([id, [cx, cy]]) => {
       svg.appendChild(s("rect", { x: left + cx * plotW / 2 + 2, y: top + cy * plotH / 2 + 2, width: plotW / 2 - 4, height: plotH / 2 - 4, class: "bc-quadrant" + (id === "start-here" ? " scr-quadrant-start" : "") }));
@@ -443,14 +444,49 @@
     return svg;
   }
 
+  function flagCell(r) {
+    return r.flags.length ? h("ul", { class: "plain-list scr-flags" }, r.flags.map(f => h("li", { class: "warn-line" }, icon("alert"), f.message))) : muted("None");
+  }
+
+  function figure(o, sc) {
+    return o.value !== null ? fmt(o.value, o.unit, sc)
+      : h("span", { class: "muted", title: "Missing: " + o.missing.join(", ") }, o.missing.length + " figure" + (o.missing.length === 1 ? "" : "s") + " missing");
+  }
+
+  /* The ranking as a table. withActions adds Start a project to each row. */
+  function rankingTable(rows, sc, id, withActions) {
+    const cols = ["Rank", "Process", "Score", "Value", "Ease", "Where it falls", "Hands-on hours a year", "Labor cost a year", "Basis", "Flags"];
+    return h("div", { class: "table-wrap" }, h("table", { class: "table", id },
+      h("caption", { class: "sr-only" }, "Processes in rank order, the same information as the chart"),
+      h("thead", null, h("tr", null, cols.map((x, i) => h("th", { scope: "col", class: [0, 2, 3, 4, 6, 7].includes(i) ? "num" : null }, x)),
+        withActions ? h("th", { scope: "col" }, h("span", { class: "sr-only" }, "Actions")) : null)),
+      h("tbody", null, rows.map(r => h("tr", { id: id + "-" + r.candidateId },
+        h("td", { class: "num" }, String(r.rank)),
+        h("td", null, h("div", { class: "title-cell" }, r.name), r.sensitive ? h("div", { class: "desc" }, "Sensitive") : null,
+          r.missing.length ? h("div", { class: "desc" }, "To score: " + r.missing.join(", ")) : null),
+        h("td", { class: "num" }, scoreText(r)),
+        h("td", { class: "num" }, r.groups.value.score !== null ? whole(r.groups.value.score) : muted("Incomplete")),
+        h("td", { class: "num" }, r.ease !== null ? whole(r.ease) : muted("Incomplete")),
+        h("td", null, r.quadrant ? S.QUADRANTS[r.quadrant] : muted("Not placed")),
+        h("td", { class: "num" }, figure(r.figures.annualEffortHours, sc)),
+        h("td", { class: "num" }, figure(r.figures.annualEffortCost, sc)),
+        h("td", null, r.basis ? basisLabel(r.basis) : muted("None")),
+        h("td", null, flagCell(r)),
+        withActions ? h("td", { class: "actions" }, h("button", { type: "button", class: "btn btn-ghost", id: "scr-start-" + r.candidateId,
+          on: { click: () => startProject(r.candidateId) } }, icon("filePlus"), "Start a project", h("span", { class: "sr-only" }, " for " + r.name))) : null)))));
+  }
+
+  function sensitiveToggle(host) {
+    const count = state.screening.candidates.filter(c => c.sensitive).length;
+    if (!count) return;
+    const box = h("input", { type: "checkbox", id: "scr-include-sensitive", checked: state.includeSensitive });
+    box.addEventListener("change", () => { state.includeSensitive = box.checked; render(); });
+    host.appendChild(h("label", { class: "check" }, box, "Include " + count + " sensitive process" + (count === 1 ? "" : "es")));
+  }
+
   function rankingTab(host) {
     const sc = state.screening;
-    const sensitiveCount = sc.candidates.filter(c => c.sensitive).length;
-    if (sensitiveCount) {
-      const box = h("input", { type: "checkbox", id: "scr-include-sensitive", checked: state.includeSensitive });
-      box.addEventListener("change", () => { state.includeSensitive = box.checked; render(); });
-      host.appendChild(h("label", { class: "check" }, box, "Include " + sensitiveCount + " sensitive process" + (sensitiveCount === 1 ? "" : "es")));
-    }
+    sensitiveToggle(host);
     const result = S.evaluate(sc, { includeSensitive: state.includeSensitive });
     if (!result.rows.length) { host.appendChild(h("div", { class: "empty" }, sc.candidates.length ? "Every process is marked sensitive. Include them to rank them." : "Add processes and score them to see the ranking.")); return; }
     const placed = result.rows.filter(r => r.quadrant);
@@ -461,31 +497,15 @@
       : [h("span", { class: "scr-first", id: "scr-first-choice" }, top.score !== null ? top.name : "Not yet"),
         h("span", { class: "s" }, top.score !== null ? "Score " + whole(top.score) + " of 100" + (top.quadrant ? ", " + S.QUADRANTS[top.quadrant].toLowerCase() : "") : "No process is fully scored.")];
     host.appendChild(h("div", { class: "stat-row", id: "scr-summary" },
-      h("div", { class: "stat" }, h("span", { class: "l" }, "First choice"), firstChoice),
+      h("div", { class: "stat" }, h("span", { class: "l" }, "First choice"), firstChoice,
+        tied.length <= 1 && top.score !== null ? h("button", { type: "button", class: "btn scr-start-first", id: "scr-start-first", on: { click: () => startProject(top.candidateId) } },
+          icon("filePlus"), "Start a project for it") : null),
       h("div", { class: "stat" }, h("span", { class: "l" }, "Does the choice hold?"),
         h("span", { class: "scr-first", id: "scr-stability-headline" }, result.stability.stable === null ? "Not tested yet" : result.stability.stable ? "Yes" : "Not yet"),
         h("span", { class: "s" }, tied.length > 1 ? "The best score is shared." : result.stability.margin !== null ? util.formatNumber(result.stability.margin, 1) + " points ahead of the next process" : "Needs two fully scored processes."))));
     if (placed.length) host.appendChild(h("div", { class: "scr-chart" }, chart(result.rows)));
     else host.appendChild(h("p", { class: "note" }, "A process appears on the chart once every value criterion and every other criterion is scored."));
-    const flagCell = r => r.flags.length ? h("ul", { class: "plain-list scr-flags" }, r.flags.map(f => h("li", { class: "warn-line" }, icon("alert"), f.message))) : muted("None");
-    const figure = o => o.value !== null ? fmt(o.value, o.unit, sc)
-      : h("span", { class: "muted", title: "Missing: " + o.missing.join(", ") }, o.missing.length + " figure" + (o.missing.length === 1 ? "" : "s") + " missing");
-    host.appendChild(h("div", { class: "table-wrap" }, h("table", { class: "table", id: "scr-ranking" },
-      h("caption", { class: "sr-only" }, "Processes in rank order, the same information as the chart above"),
-      h("thead", null, h("tr", null, ["Rank", "Process", "Score", "Value", "Ease", "Where it falls", "Hands-on hours a year", "Labor cost a year", "Basis", "Flags"]
-        .map((x, i) => h("th", { scope: "col", class: [0, 2, 3, 4, 6, 7].includes(i) ? "num" : null }, x)))),
-      h("tbody", null, result.rows.map(r => h("tr", { id: "scr-rank-" + r.candidateId },
-        h("td", { class: "num" }, String(r.rank)),
-        h("td", null, h("div", { class: "title-cell" }, r.name), r.sensitive ? h("div", { class: "desc" }, "Sensitive") : null,
-          r.missing.length ? h("div", { class: "desc" }, "To score: " + r.missing.join(", ")) : null),
-        h("td", { class: "num" }, scoreText(r)),
-        h("td", { class: "num" }, r.groups.value.score !== null ? whole(r.groups.value.score) : muted("Incomplete")),
-        h("td", { class: "num" }, r.ease !== null ? whole(r.ease) : muted("Incomplete")),
-        h("td", null, r.quadrant ? S.QUADRANTS[r.quadrant] : muted("Not placed")),
-        h("td", { class: "num" }, figure(r.figures.annualEffortHours)),
-        h("td", { class: "num" }, figure(r.figures.annualEffortCost)),
-        h("td", null, r.basis ? basisLabel(r.basis) : muted("None")),
-        h("td", null, flagCell(r))))))));
+    host.appendChild(rankingTable(result.rows, sc, "scr-ranking", true));
     const st = result.stability;
     host.appendChild(h("section", { class: "card scr-stability", id: "scr-stability", "aria-labelledby": "scr-stability-h" },
       h("h3", { id: "scr-stability-h" }, "Does the first choice hold?"),
@@ -493,6 +513,93 @@
       st.changes.length ? h("ul", { class: "plain-list" }, st.changes.map(c => h("li", { class: "small" },
         (c.change === "up" ? "More" : "Less") + " weight on " + c.label + ": " + c.topName + " comes first."))) : null));
     host.appendChild(h("ul", { class: "plain-list scr-notes" }, result.notes.map(n => h("li", { class: "note" }, n))));
+  }
+
+  /* ---------- Summary and printing ---------- */
+
+  /* The one-page summary. prefix keeps element IDs apart when the page and the print copy both exist. */
+  function summaryDoc(sum, sc, prefix) {
+    const pct = v => (v === null ? "" : util.formatNumber(v * 100, 1) + "%");
+    return h("article", { class: "handoff-doc scr-doc", id: prefix + "-doc" },
+      h("div", { class: "handoff-sail", "aria-hidden": "true" }),
+      h("p", { class: "eyebrow", style: { marginTop: "var(--space-4)" } }, [sum.client, "Process screening"].filter(Boolean).join(" \u00b7 ")),
+      h("h1", null, sum.title),
+      h("p", { class: "lede" }, "Candidate processes scored against the same criteria, to choose where to start."),
+      h("dl", { class: "facts" },
+        h("dt", null, "Data status"), h("dd", null, sum.dataStatus),
+        h("dt", null, "Confidentiality"), h("dd", null, sum.confidentiality),
+        h("dt", null, "File version"), h("dd", null, String(sum.revision)),
+        h("dt", null, "Prepared"), h("dd", null, B.dom.formatDate(sum.preparedAt)),
+        h("dt", null, "Processes"), h("dd", null, sum.counts.shown + " compared, " + sum.counts.complete + " fully scored" +
+          (sum.counts.excluded ? ". " + sum.counts.excluded + " sensitive left out" : ""))),
+      h("h2", null, "Recommendation"),
+      h("p", { id: prefix + "-recommendation" }, sum.recommendation.text),
+      sum.rows.some(r => r.quadrant) ? h("div", { class: "scr-chart" }, chart(sum.rows, prefix + "-chart")) : null,
+      h("h2", null, "Ranking"),
+      sum.rows.length ? rankingTable(sum.rows, sc, prefix + "-ranking", false) : h("p", null, "No processes to rank."),
+      h("h2", null, "Criteria and weights"),
+      h("div", { class: "table-wrap" }, h("table", { class: "table" },
+        h("thead", null, h("tr", null, ["Criterion", "Group", "Weight", "Share", "Flag"].map((x, i) => h("th", { scope: "col", class: i === 2 || i === 3 ? "num" : null }, x)))),
+        h("tbody", null, sum.criteria.map(k => h("tr", null,
+          h("td", null, h("div", { class: "title-cell" }, k.label), k.help ? h("div", { class: "desc" }, k.help) : null),
+          h("td", null, k.groupLabel),
+          h("td", { class: "num" }, util.formatNumber(k.weight, 1)),
+          h("td", { class: "num" }, k.weight ? pct(k.share) : muted("Not counted")),
+          h("td", null, k.gateAtOrBelow === null ? muted("None") : "At " + k.gateAtOrBelow + (k.gateAtOrBelow > 1 ? " or below" : ""))))))),
+      h("h2", null, "How to read this"),
+      h("ul", { class: "plain-list" }, sum.notes.map(n => h("li", { class: "small" }, n))));
+  }
+
+  function summaryTab(host) {
+    const sc = state.screening;
+    sensitiveToggle(host);
+    host.appendChild(h("div", { class: "form-actions scr-actions" },
+      h("button", { type: "button", class: "btn btn-primary", id: "scr-print-btn", on: { click: printSummary } }, icon("printer"), "Print or save as PDF")));
+    host.appendChild(h("div", { class: "handoff scr-summary" }, summaryDoc(S.buildSummary(sc, { includeSensitive: state.includeSensitive }), sc, "scr-sum")));
+  }
+
+  /* Prints the summary from a copy outside the window, since printing hides dialogs. */
+  function printSummary() {
+    const sc = state.screening;
+    const old = document.getElementById("scr-print");
+    if (old) old.remove();
+    const holder = h("div", { class: "handoff", id: "scr-print" }, summaryDoc(S.buildSummary(sc, { includeSensitive: state.includeSensitive }), sc, "scr-print"));
+    document.body.appendChild(holder);
+    document.body.classList.add("scr-printing");
+    root.addEventListener("afterprint", () => {
+      document.body.classList.remove("scr-printing");
+      holder.remove();
+    }, { once: true });
+    setTimeout(() => root.print(), 50);
+  }
+
+  /* ---------- To a project ---------- */
+
+  async function startProject(candidateId) {
+    const sc = state.screening;
+    const c = sc.candidates.find(x => x.id === candidateId);
+    if (!c) return;
+    const result = S.evaluate(sc, { includeSensitive: true });
+    const row = result.rows.find(r => r.candidateId === c.id);
+    const tied = result.stability.tiedIds;
+    const body = h("div", null,
+      h("p", null, "The new project gets the process name, the client, the confidentiality and data status, and the yearly volume and hourly rate as assumptions. The process itself starts blank, with a start and an end, for you to build with the people who run it."),
+      c.source ? h("p", null, c.name + " was added from " + (c.source.fileName || "a project file") + ". To keep working on that project, open that file with Open instead.") : null,
+      row.score === null ? h("p", null, "This process is not fully scored yet.")
+        : tied.length > 1 && tied.includes(c.id) ? h("p", null, "This process shares the best score with another one.")
+          : row.rank !== 1 ? h("p", null, "This process ranks " + row.rank + " of " + result.rows.length + ".") : null,
+      row.flags.length ? h("ul", { class: "plain-list" }, row.flags.map(f => h("li", { class: "warn-line" }, icon("alert"), f.message))) : null,
+      dirty() ? h("p", { class: "small muted" }, "The screening stays open in this tab, but it is not saved to a file yet. Save it to keep it.") : null);
+    if (!await confirmDialog("Start a project for " + c.name + "?", body, "Start the project")) return;
+    let e;
+    try { e = S.toStarterEngagement(sc, c.id); } catch (err) { messageDialog("Project not started", err.message); return; }
+    const app = appRef || B.app;
+    if (app.guardUnsaved && !await app.guardUnsaved("start a project for " + c.name)) return;
+    if (view) view.dialog.close();
+    app.loadEngagement(e, { savedRevision: -1, source: "screening" });
+    app.view.panelOpen = true;
+    if (B.processBuilderUi) B.processBuilderUi.open(app);
+    announce("Started a project for " + c.name + ".");
   }
 
   /* ---------- The window ---------- */
@@ -558,6 +665,7 @@
     view.body.appendChild(panel);
     if (state.tab === "criteria") criteriaTab(panel);
     else if (state.tab === "ranking") rankingTab(panel);
+    else if (state.tab === "summary") summaryTab(panel);
     else candidatesTab(panel);
     view.body.scrollTop = scroll;
     const again = active && document.getElementById(active);
@@ -597,6 +705,7 @@
    * shows the screening held in this tab or a new one.
    */
   async function open(app, screening, info) {
+    if (app) appRef = app;
     if (screening && state && !await replaceWith(screening, info)) return;
     if (screening && !state) state = fresh(screening, info);
     if (!state) state = fresh(S.blankScreening());

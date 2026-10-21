@@ -615,6 +615,49 @@
     return { rows, stability: stability(s, opts), notes };
   }
 
+  /* ---------- The printed summary ---------- */
+
+  /**
+   * What the printed one-page summary shows: { title, client, dataStatus,
+   * confidentiality, revision, preparedAt, recommendation, rows, criteria,
+   * stability, notes, counts }. Sensitive candidates are left out unless
+   * opts.includeSensitive; counts.excluded says how many were left out.
+   * opts: { includeSensitive, now }.
+   */
+  function buildSummary(s, opts) {
+    const o = opts || {};
+    const result = evaluate(s, o);
+    const total = s.criteria.reduce((a, k) => a + k.weight, 0);
+    const complete = result.rows.filter(r => r.score !== null);
+    const st = result.stability;
+    const top = complete[0] || null;
+    let recommendation;
+    if (st.tiedIds.length > 1) {
+      recommendation = { kind: "tie", candidateIds: st.tiedIds, text: st.note };
+    } else if (top) {
+      const parts = [top.name + " scores " + util.formatNumber(top.score, 0) + " of 100" + (top.quadrant ? " (" + QUADRANTS[top.quadrant] + ")" : "") + "."];
+      if (st.stable !== null) parts.push(st.note);
+      if (top.flags.length) parts.push("Before choosing it: " + top.flags.map(f => f.message).join(" "));
+      recommendation = { kind: "first", candidateIds: [top.candidateId], text: parts.join(" ") };
+    } else {
+      recommendation = { kind: "none", candidateIds: [], text: "No process is fully scored yet, so there is no first choice." };
+    }
+    const notes = result.notes.concat([
+      "Each score carries the basis of its evidence: illustrative, provided, measured or confirmed. A result shows the weakest basis among its scores.",
+      "Hands-on hours and labor cost are modeled from typed figures. They describe today's effort, not savings."
+    ]);
+    if (s.meta.note) notes.push(s.meta.note);
+    return {
+      title: s.meta.title, client: s.meta.clientDisplayName,
+      dataStatus: schema.label("dataStatus", s.meta.dataStatus), confidentiality: schema.label("confidentiality", s.meta.confidentiality),
+      revision: s.revision, preparedAt: o.now || util.nowIso(), currency: s.meta.currency,
+      recommendation, rows: result.rows, stability: st, notes,
+      criteria: s.criteria.map(k => ({ id: k.id, label: k.label, group: k.group, groupLabel: GROUPS.find(g => g[0] === k.group)[1], weight: k.weight,
+        share: total > 0 ? k.weight / total : null, gateAtOrBelow: k.gateAtOrBelow, help: k.help })),
+      counts: { candidates: s.candidates.length, shown: result.rows.length, complete: complete.length, excluded: s.candidates.length - result.rows.length }
+    };
+  }
+
   /* ---------- To a project ---------- */
 
   /**
@@ -653,6 +696,6 @@
     SCREENING_ID, SCREENING_VERSION, SCREENING_SCHEMA, LIMITS, SCALE, WEIGHT_MAX, GROUPS, FACTS, QUADRANTS, DEFAULT_CRITERIA, ScreeningError,
     blankScreening, sanitizeScreening, parseScreening,
     addCandidate, updateCandidate, removeCandidate, setScore, addCriterion, updateCriterion, removeCriterion, updateMeta,
-    fromEngagement, addFromEngagement, evaluate, stability, toStarterEngagement
+    fromEngagement, addFromEngagement, evaluate, stability, buildSummary, toStarterEngagement
   };
 });

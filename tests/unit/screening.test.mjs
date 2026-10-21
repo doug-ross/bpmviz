@@ -351,3 +351,37 @@ test("equal best scores are a tie, not a first choice", () => {
   assert.deepEqual(S.stability(broken).tiedIds, []);
   assert.equal(S.stability(broken).topId, a.id);
 });
+
+test("the summary names the first choice, its flags, and what was left out", () => {
+  const a = withCandidate(small(), "Claims", { v1: 5, v2: 4, f1: 4, r1: 1 });
+  const b = withCandidate(a.screening, "Payroll", { v1: 2, v2: 2, f1: 3, r1: 3 });
+  const c = withCandidate(b.screening, "Secret", { v1: 5, v2: 5, f1: 5, r1: 5 }, { sensitive: true });
+  const d = withCandidate(c.screening, "Partial", { v1: 5 });
+  const s = S.updateMeta(d.screening, { note: "Scored in the kickoff workshop." }).screening;
+  const sum = S.buildSummary(s, { now: "2026-10-21T00:00:00.000Z" });
+  assert.equal(sum.title, "Test screening");
+  assert.equal(sum.dataStatus, "Provided data");
+  assert.equal(sum.preparedAt, "2026-10-21T00:00:00.000Z");
+  assert.deepEqual(sum.counts, { candidates: 4, shown: 3, complete: 2, excluded: 1 });
+  assert.equal(sum.recommendation.kind, "first");
+  assert.deepEqual(sum.recommendation.candidateIds, [a.id]);
+  assert.match(sum.recommendation.text, /^Claims scores 66 of 100 \(Worth it, harder to start\)\./);
+  assert.match(sum.recommendation.text, /Before choosing it: Sponsor scored 1/);
+  assert.equal(sum.rows.some(r => r.name === "Secret"), false);
+  assert.deepEqual(sum.criteria.map(k => [k.id, k.share]), [["v1", 3 / 8], ["v2", 1 / 8], ["f1", 2 / 8], ["r1", 2 / 8]]);
+  assert.ok(sum.notes.includes("Scored in the kickoff workshop."));
+  const all = S.buildSummary(s, { includeSensitive: true });
+  assert.equal(all.counts.excluded, 0);
+  assert.equal(all.recommendation.candidateIds[0], c.id);
+});
+
+test("the summary reports a tie, or no first choice when nothing is fully scored", () => {
+  const z = withCandidate(small(), "Zeta", { v1: 5, v2: 1, f1: 1, r1: 1 });
+  const a = withCandidate(z.screening, "Alpha", { v1: 1, v2: 1, f1: 4, r1: 4 });
+  const tie = S.buildSummary(a.screening);
+  assert.equal(tie.recommendation.kind, "tie");
+  assert.match(tie.recommendation.text, /Alpha and Zeta have the same score/);
+  const none = S.buildSummary(withCandidate(small(), "Only", { v1: 3 }).screening);
+  assert.equal(none.recommendation.kind, "none");
+  assert.equal(S.buildSummary(small()).recommendation.kind, "none");
+});
