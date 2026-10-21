@@ -385,3 +385,28 @@ test("the summary reports a tie, or no first choice when nothing is fully scored
   assert.equal(none.recommendation.kind, "none");
   assert.equal(S.buildSummary(small()).recommendation.kind, "none");
 });
+
+test("the bundled example screening opens cleanly and tells its story", () => {
+  const file = JSON.parse(fs.readFileSync(path.join(root, "webui", "examples", "process-screening.screening.json"), "utf8"));
+  const opened = S.parseScreening(file);
+  assert.equal(opened.ok, true);
+  assert.deepEqual(opened.warnings, []);
+  assert.deepEqual(opened.screening, file, "the file is already in its cleaned shape");
+  const bundle = fs.readFileSync(path.join(root, "webui", "examples", "examples.js"), "utf8");
+  const sandbox = {};
+  new Function("globalThis", bundle)(sandbox);
+  assert.deepEqual(sandbox.AIxRay.bundledScreening.screening, file, "examples.js carries the same screening");
+  assert.equal(file.meta.dataStatus, "demonstration");
+  assert.ok(file.candidates.every(c => Object.values(c.scores).every(x => x.basis === "illustrative")));
+  const { rows, stability } = S.evaluate(opened.screening);
+  assert.deepEqual(rows.map(r => [r.name, r.quadrant]), [
+    ["End-to-end cash transaction matching", "start-here"],
+    ["AI-assisted RPA delivery", "easy-small"],
+    ["Large commercial property underwriting and issuance", "larger-effort"],
+    ["Supplier invoice exceptions", null]
+  ]);
+  assert.equal(rows[3].score, null, "the typed-in process is only partly scored");
+  assert.deepEqual(rows[3].flags.map(f => f.code), ["gate"]);
+  assert.equal(stability.stable, true);
+  assert.deepEqual(rows.slice(0, 3).map(r => r.source.engagementId), ["eng-cash-matching", "eng-rpa-delivery", "eng-underwriting"]);
+});

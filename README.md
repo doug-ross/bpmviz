@@ -18,7 +18,7 @@ To serve the app over HTTP instead, run `npm run serve` and open `http://127.0.0
 
 ### Choose which process to start with
 
-Choose **Screen processes** to compare several candidate processes before you pick one. Score each from 1 to 5 against weighted criteria for value, feasibility, and readiness and risk; type a process in, or add a project file you already have. The Ranking tab shows each process's score, where it falls on a chart of value against ease, its yearly hands-on hours and labor cost, any flags, and whether the first choice holds when a weight moves by 20 percent. The Summary tab prints a one-page summary, and **Start a project** turns the chosen process into a new project. A screening is its own file and never changes a project. See [the screening guide](docs/screening.md).
+Choose **Screen processes** to compare several candidate processes before you pick one. Score each from 1 to 5 against weighted criteria for value, feasibility, and readiness and risk; type a process in, or add a project file you already have. The Ranking tab shows each process's score, where it falls on a chart of value against ease, its yearly hands-on hours and labor cost, any flags, and whether the first choice holds when a weight moves by 20 percent. The Summary tab prints a one-page summary, and **Start a project** turns the chosen process into a new project. A screening is its own file and never changes a project. **Open the example screening** in an empty screening shows a finished one. See [the screening guide](docs/screening.md).
 
 ### Build and run a Jumpstart workshop
 

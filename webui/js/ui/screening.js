@@ -118,6 +118,16 @@
     return true;
   }
 
+  /* The bundled example: three of the bundled processes and one typed in, all illustrative. */
+  async function openExample() {
+    const result = S.parseScreening(B.bundledScreening.screening);
+    if (!result.ok) { messageDialog("Example not opened", result.errors[0]); return; }
+    if (!await replaceWith(result.screening, {})) return;
+    state.status = "Opened the example screening. Every score and figure in it is illustrative.";
+    announce(state.status);
+    render();
+  }
+
   async function openScreeningFile() {
     const file = await B.files.pickFile(".json,application/json");
     if (!file) return;
@@ -326,7 +336,9 @@
       B.app && B.app.store ? h("button", { type: "button", class: "btn", id: "scr-add-open", on: { click: () => addEngagement(B.app.store.get(), B.app.fileName || "") } },
         icon("filePlus"), "Add the open project") : null));
     if (!sc.candidates.length) {
-      host.appendChild(h("div", { class: "empty" }, "No processes yet. Add the ones you are choosing between: type them in, or add a project file you already have."));
+      host.appendChild(h("div", { class: "empty" },
+        h("p", null, "No processes yet. Add the ones you are choosing between: type them in, or add a project file you already have."),
+        B.bundledScreening ? h("button", { type: "button", class: "btn", id: "scr-example", on: { click: openExample } }, icon("play"), "Open the example screening") : null));
       return;
     }
     const groups = S.GROUPS.map(([id, label]) => ({ id, label, criteria: sc.criteria.filter(k => k.group === id) })).filter(g => g.criteria.length);

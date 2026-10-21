@@ -4,6 +4,8 @@ A screening compares several candidate processes against the same criteria, so y
 
 Choose **Screen processes** on the start screen or in More actions. The screening opens in its own window over the app and never changes the open project. Close the window and it stays in the browser tab until the page reloads; save it to keep it.
 
+To see a finished one first, choose **Open the example screening** in an empty screening. It compares three of the bundled examples (cash transaction matching, automation delivery and property underwriting) with one process typed in and only partly scored. Every score and figure in it is illustrative. Cash transaction matching comes first, in Start here; underwriting has the highest labor cost but falls in Worth it, harder to start, because it rests on judgment and carries more risk.
+
 ## Candidates
 
 Add each process you are choosing between:
@@ -66,4 +68,5 @@ A screening file has the schema tag `aixray.screening`, version 1. The format is
 | `webui/js/lib/screening.js` | The file format, changes, scoring, the stability check, the summary and the starter project |
 | `webui/js/ui/screening.js` | The screening window, its tabs, printing and Start a project |
 | `webui/css/screening.css` | Styles for the window and the printed summary |
+| `webui/examples/process-screening.screening.json` | The example screening, built by `npm run build:examples` from the bundled examples |
 | `tests/unit/screening.test.mjs`, `tests/browser/screening.test.mjs` | Unit and browser tests |

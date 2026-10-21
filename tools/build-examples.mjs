@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /*
- * Builds the bundled example engagements from the archived legacy samples.
+ * Builds the bundled example engagements from the archived legacy samples,
+ * and the example screening from those engagements.
  *
  *   node tools/build-examples.mjs
  *
- * Writes webui/examples/*.engagement.json and webui/examples/examples.js
+ * Writes webui/examples/*.engagement.json, process-screening.screening.json
+ * and webui/examples/examples.js
  * (the same data wrapped for direct-file use, where the browser cannot fetch
  * local JSON). The build fails if an example does not validate or still
  * contains an em dash.
@@ -156,9 +158,84 @@ examples.push(build("rpa-delivery", legacy.fromExplorerV1(x1, {
   description: "Review five automation requests and their proposed solutions."
 }));
 
+// 5. A screening of the bundled processes, plus one typed in, to show how to choose where to start.
+const screeningLib = require("../webui/js/lib/screening.js");
+function buildScreening() {
+  const S = screeningLib;
+  const fact = (value, note) => ({ value, basis: "illustrative", note: note || "Demonstration figure." });
+  const note = text => ({ note: text });
+  let s = S.blankScreening({
+    id: "scr-example", title: "Where to start: four candidate processes", clientDisplayName: "Demonstration",
+    confidentiality: "internal", dataStatus: "demonstration", currency: "USD",
+    note: "Demonstration data. Three processes come from the bundled examples and one was typed in. Every score and figure is illustrative."
+  });
+  const score = (id, scores) => {
+    Object.entries(scores).forEach(([criterion, v]) => {
+      const value = typeof v === "number" ? v : v[0];
+      s = S.setScore(s, id, criterion, Object.assign({ value, basis: "illustrative" }, typeof v === "number" ? {} : note(v[1]))).screening;
+    });
+  };
+  const fromExample = (exampleId, fields, scores) => {
+    const e = examples.find(x => x.id === exampleId).engagement;
+    const added = S.addFromEngagement(s, e, { fileName: exampleId + ".engagement.json", now: TIMESTAMP });
+    s = S.updateCandidate(added.screening, added.candidateId, fields).screening;
+    score(added.candidateId, scores);
+  };
+  fromExample("cash-matching", {
+    owner: "Head of fund operations (illustrative)",
+    description: "Daily matching of cash transactions against fund records, with manual triage for the breaks the engine cannot match.",
+    facts: { annualVolume: fact(24000, "Breaks that need manual triage each year."), effortHoursPerCase: fact(0.5), hourlyRate: fact(85) }
+  }, {
+    volume: [4, "Several analysts spend most of the day on triage."], pain: [4, "Late breaks delay fund postings."], priority: 3,
+    rules: [5, "The matching rules are written down in the engine configuration."], inputs: [5, "Transaction feeds and fund records are structured."],
+    systems: 4, exceptions: 3, sponsor: 4, risk: [4, "A reviewer approves every posting."], measurable: [5, "The matching engine logs every break."]
+  });
+  fromExample("underwriting", {
+    owner: "Chief underwriting officer (illustrative)",
+    description: "From submission to bound policy for large commercial property risks.",
+    facts: { effortHoursPerCase: fact(30, "Hands-on hours across all lanes for one submission.") }
+  }, {
+    volume: [4, "Few cases, but each takes days of specialist work."], pain: 4, priority: [5, "Growth in this line is a named priority."],
+    rules: [2, "Pricing and acceptance rely on underwriter judgment."], inputs: [2, "Schedules of values and loss runs arrive as spreadsheets and PDFs."],
+    systems: 3, exceptions: 2, sponsor: 4, risk: [2, "A wrong price or acceptance is a large financial loss."], measurable: 3
+  });
+  fromExample("rpa-delivery", {
+    owner: "Automation lead (illustrative)",
+    facts: { annualVolume: fact(60, "Automation requests delivered each year."), effortHoursPerCase: fact(120), hourlyRate: fact(110) }
+  }, {
+    volume: 2, pain: [3, "QA and UAT rework stretch delivery."], priority: 3, rules: 3, inputs: [4, "Requests and design documents follow templates."],
+    systems: 4, exceptions: [2, "Most requests loop back through rework at least once."], sponsor: [5, "The team that runs the process owns the change."],
+    risk: [4, "Internal work, checked before deployment."], measurable: [4, "The request tracker records every stage."]
+  });
+  const typed = S.addCandidate(s, {
+    name: "Supplier invoice exceptions",
+    description: "Invoices that fail the three-way match and wait for a person to resolve them. Not yet discussed with the finance team.",
+    facts: { annualVolume: fact(18000), effortHoursPerCase: null, hourlyRate: null }
+  });
+  s = typed.screening;
+  score(typed.candidateId, { volume: 4, pain: 3, rules: 4, inputs: 3, sponsor: [1, "No owner in finance yet."] });
+  s = Object.assign({}, s, { revision: 0, createdAt: TIMESTAMP, updatedAt: TIMESTAMP });
+  const checked = S.parseScreening(JSON.parse(JSON.stringify(s)));
+  if (!checked.ok || checked.warnings.length) {
+    console.error("The example screening failed its checks: " + checked.errors.concat(checked.warnings.map(w => w.message)).join("; "));
+    process.exit(1);
+  }
+  const json = JSON.stringify(checked.screening, null, 2) + "\n";
+  if (/[\u2014\u2015]/.test(json)) {
+    console.error("The example screening contains an em dash.");
+    process.exit(1);
+  }
+  fs.writeFileSync(path.join(OUT, "process-screening.screening.json"), json);
+  const top = S.evaluate(checked.screening).rows[0];
+  console.log("process-screening: " + checked.screening.candidates.length + " candidates, first choice " + top.name);
+  return checked.screening;
+}
+const exampleScreening = buildScreening();
+
 const bundle = "/* Generated by tools/build-examples.mjs. Do not edit by hand. */\n" +
   "(function (root) {\n  \"use strict\";\n  const B = root.AIxRay = root.AIxRay || {};\n  B.bundledExamples = " +
   JSON.stringify(examples.map(e => ({ id: e.id, title: e.title, description: e.description, file: e.file, engagement: e.engagement }))) +
+  ";\n  B.bundledScreening = " + JSON.stringify({ file: "process-screening.screening.json", screening: exampleScreening }) +
   ";\n})(typeof globalThis !== \"undefined\" ? globalThis : this);\n";
 fs.writeFileSync(path.join(OUT, "examples.js"), bundle);
 console.log("Wrote " + examples.length + " examples (" + util.formatNumber(bundle.length / 1024, 0) + " KB bundle).");

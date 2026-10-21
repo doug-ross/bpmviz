@@ -1,0 +1,469 @@
+{
+  "schema": "aixray.screening",
+  "schemaVersion": 1,
+  "id": "scr-example",
+  "revision": 0,
+  "createdAt": "2026-09-25T00:00:00.000Z",
+  "updatedAt": "2026-09-25T00:00:00.000Z",
+  "meta": {
+    "title": "Where to start: four candidate processes",
+    "clientDisplayName": "Demonstration",
+    "confidentiality": "internal",
+    "dataStatus": "demonstration",
+    "currency": "USD",
+    "hourlyRate": null,
+    "note": "Demonstration data. Three processes come from the bundled examples and one was typed in. Every score and figure is illustrative."
+  },
+  "criteria": [
+    {
+      "id": "volume",
+      "label": "Volume and effort",
+      "group": "value",
+      "weight": 3,
+      "gateAtOrBelow": null,
+      "help": "How much work the process takes each year.",
+      "anchors": {
+        "1": "A few cases a month, minutes each",
+        "3": "Daily work for a small team",
+        "5": "Several people full time"
+      }
+    },
+    {
+      "id": "pain",
+      "label": "Pain today",
+      "group": "value",
+      "weight": 2,
+      "gateAtOrBelow": null,
+      "help": "How much delays, errors or rework cost the client and its customers.",
+      "anchors": {
+        "1": "Works well enough",
+        "3": "Known complaints or backlog",
+        "5": "Missed deadlines, penalties or lost customers"
+      }
+    },
+    {
+      "id": "priority",
+      "label": "Fit with the client's priorities",
+      "group": "value",
+      "weight": 1,
+      "gateAtOrBelow": null,
+      "help": "Whether leadership already wants this process improved.",
+      "anchors": {
+        "1": "Not on anyone's list",
+        "3": "Mentioned in plans",
+        "5": "A named priority this year"
+      }
+    },
+    {
+      "id": "rules",
+      "label": "Clear rules or patterns",
+      "group": "feasibility",
+      "weight": 2,
+      "gateAtOrBelow": null,
+      "help": "Whether people follow rules, checklists or recognisable patterns to do the work.",
+      "anchors": {
+        "1": "Mostly expert judgment",
+        "3": "Rules with frequent judgment calls",
+        "5": "Written rules cover most cases"
+      }
+    },
+    {
+      "id": "inputs",
+      "label": "Usable inputs",
+      "group": "feasibility",
+      "weight": 2,
+      "gateAtOrBelow": null,
+      "help": "Whether the documents and data the work starts from are digital and readable.",
+      "anchors": {
+        "1": "Paper, handwriting or calls",
+        "3": "Digital but unstructured, such as email and PDF",
+        "5": "Structured forms or system records"
+      }
+    },
+    {
+      "id": "systems",
+      "label": "Access to the systems",
+      "group": "feasibility",
+      "weight": 1,
+      "gateAtOrBelow": null,
+      "help": "Whether the systems involved can be read and updated by a tool.",
+      "anchors": {
+        "1": "No access in sight",
+        "3": "User access or file exports",
+        "5": "Documented interfaces"
+      }
+    },
+    {
+      "id": "exceptions",
+      "label": "Few exceptions",
+      "group": "feasibility",
+      "weight": 1,
+      "gateAtOrBelow": null,
+      "help": "How many cases follow the main path without special handling.",
+      "anchors": {
+        "1": "Most cases are special",
+        "3": "About a third need special handling",
+        "5": "Almost all follow the main path"
+      }
+    },
+    {
+      "id": "sponsor",
+      "label": "Sponsor and process experts",
+      "group": "readiness",
+      "weight": 2,
+      "gateAtOrBelow": 1,
+      "help": "Whether someone will own the change and the people who do the work can take part.",
+      "anchors": {
+        "1": "No sponsor",
+        "3": "A sponsor, experts hard to reach",
+        "5": "An engaged sponsor and available experts"
+      }
+    },
+    {
+      "id": "risk",
+      "label": "Low risk if it goes wrong",
+      "group": "readiness",
+      "weight": 2,
+      "gateAtOrBelow": null,
+      "help": "The harm when an automated or AI-assisted step makes a mistake.",
+      "anchors": {
+        "1": "Regulatory, safety or large financial harm",
+        "3": "Rework a person would catch",
+        "5": "Easy to spot and reverse"
+      }
+    },
+    {
+      "id": "measurable",
+      "label": "A baseline can be measured",
+      "group": "readiness",
+      "weight": 1,
+      "gateAtOrBelow": null,
+      "help": "Whether today's volumes and times can be measured, so a pilot can prove its effect.",
+      "anchors": {
+        "1": "No reliable figures",
+        "3": "Counts and estimates",
+        "5": "A system log of the process"
+      }
+    }
+  ],
+  "candidates": [
+    {
+      "id": "c-end-to-end-cash-transaction-matching",
+      "name": "End-to-end cash transaction matching",
+      "owner": "Head of fund operations (illustrative)",
+      "description": "Daily matching of cash transactions against fund records, with manual triage for the breaks the engine cannot match.",
+      "confidentiality": "internal",
+      "sensitive": false,
+      "facts": {
+        "annualVolume": {
+          "value": 24000,
+          "basis": "illustrative",
+          "note": "Breaks that need manual triage each year."
+        },
+        "effortHoursPerCase": {
+          "value": 0.5,
+          "basis": "illustrative",
+          "note": "Demonstration figure."
+        },
+        "hourlyRate": {
+          "value": 85,
+          "basis": "illustrative",
+          "note": "Demonstration figure."
+        }
+      },
+      "scores": {
+        "volume": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": "Several analysts spend most of the day on triage."
+        },
+        "pain": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": "Late breaks delay fund postings."
+        },
+        "priority": {
+          "value": 3,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "rules": {
+          "value": 5,
+          "basis": "illustrative",
+          "note": "The matching rules are written down in the engine configuration."
+        },
+        "inputs": {
+          "value": 5,
+          "basis": "illustrative",
+          "note": "Transaction feeds and fund records are structured."
+        },
+        "systems": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "exceptions": {
+          "value": 3,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "sponsor": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "risk": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": "A reviewer approves every posting."
+        },
+        "measurable": {
+          "value": 5,
+          "basis": "illustrative",
+          "note": "The matching engine logs every break."
+        }
+      },
+      "source": {
+        "engagementId": "eng-cash-matching",
+        "engagementRevision": 0,
+        "fileName": "cash-matching.engagement.json",
+        "takenAt": "2026-09-25T00:00:00.000Z",
+        "processName": "End-to-end cash transaction matching",
+        "dataStatus": "demonstration",
+        "confidentiality": "internal",
+        "steps": 7,
+        "stepsWithEffort": 0,
+        "opportunities": 0,
+        "hasEventLog": false,
+        "topOpportunity": null
+      }
+    },
+    {
+      "id": "c-large-commercial-property-underwriting",
+      "name": "Large commercial property underwriting and issuance",
+      "owner": "Chief underwriting officer (illustrative)",
+      "description": "From submission to bound policy for large commercial property risks.",
+      "confidentiality": "internal",
+      "sensitive": false,
+      "facts": {
+        "annualVolume": {
+          "value": 400,
+          "basis": "illustrative",
+          "note": "From the project's assumptions."
+        },
+        "effortHoursPerCase": {
+          "value": 30,
+          "basis": "illustrative",
+          "note": "Hands-on hours across all lanes for one submission."
+        },
+        "hourlyRate": {
+          "value": 150,
+          "basis": "illustrative",
+          "note": "From the project's assumptions."
+        }
+      },
+      "scores": {
+        "volume": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": "Few cases, but each takes days of specialist work."
+        },
+        "pain": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "priority": {
+          "value": 5,
+          "basis": "illustrative",
+          "note": "Growth in this line is a named priority."
+        },
+        "rules": {
+          "value": 2,
+          "basis": "illustrative",
+          "note": "Pricing and acceptance rely on underwriter judgment."
+        },
+        "inputs": {
+          "value": 2,
+          "basis": "illustrative",
+          "note": "Schedules of values and loss runs arrive as spreadsheets and PDFs."
+        },
+        "systems": {
+          "value": 3,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "exceptions": {
+          "value": 2,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "sponsor": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "risk": {
+          "value": 2,
+          "basis": "illustrative",
+          "note": "A wrong price or acceptance is a large financial loss."
+        },
+        "measurable": {
+          "value": 3,
+          "basis": "illustrative",
+          "note": ""
+        }
+      },
+      "source": {
+        "engagementId": "eng-underwriting",
+        "engagementRevision": 0,
+        "fileName": "underwriting.engagement.json",
+        "takenAt": "2026-09-25T00:00:00.000Z",
+        "processName": "Large commercial property underwriting and issuance",
+        "dataStatus": "demonstration",
+        "confidentiality": "internal",
+        "steps": 26,
+        "stepsWithEffort": 0,
+        "opportunities": 0,
+        "hasEventLog": false,
+        "topOpportunity": null
+      }
+    },
+    {
+      "id": "c-ai-assisted-rpa-delivery",
+      "name": "AI-assisted RPA delivery",
+      "owner": "Automation lead (illustrative)",
+      "description": "Automation requests move from intake through AI-assisted scoping, a parallel governance fan-out, build, QA and UAT. Samples include QA and UAT rework loops.",
+      "confidentiality": "internal",
+      "sensitive": false,
+      "facts": {
+        "annualVolume": {
+          "value": 60,
+          "basis": "illustrative",
+          "note": "Automation requests delivered each year."
+        },
+        "effortHoursPerCase": {
+          "value": 120,
+          "basis": "illustrative",
+          "note": "Demonstration figure."
+        },
+        "hourlyRate": {
+          "value": 110,
+          "basis": "illustrative",
+          "note": "Demonstration figure."
+        }
+      },
+      "scores": {
+        "volume": {
+          "value": 2,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "pain": {
+          "value": 3,
+          "basis": "illustrative",
+          "note": "QA and UAT rework stretch delivery."
+        },
+        "priority": {
+          "value": 3,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "rules": {
+          "value": 3,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "inputs": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": "Requests and design documents follow templates."
+        },
+        "systems": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "exceptions": {
+          "value": 2,
+          "basis": "illustrative",
+          "note": "Most requests loop back through rework at least once."
+        },
+        "sponsor": {
+          "value": 5,
+          "basis": "illustrative",
+          "note": "The team that runs the process owns the change."
+        },
+        "risk": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": "Internal work, checked before deployment."
+        },
+        "measurable": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": "The request tracker records every stage."
+        }
+      },
+      "source": {
+        "engagementId": "eng-rpa-delivery",
+        "engagementRevision": 0,
+        "fileName": "rpa-delivery.engagement.json",
+        "takenAt": "2026-09-25T00:00:00.000Z",
+        "processName": "AI-assisted RPA delivery",
+        "dataStatus": "demonstration",
+        "confidentiality": "internal",
+        "steps": 14,
+        "stepsWithEffort": 0,
+        "opportunities": 0,
+        "hasEventLog": false,
+        "topOpportunity": null
+      }
+    },
+    {
+      "id": "c-supplier-invoice-exceptions",
+      "name": "Supplier invoice exceptions",
+      "owner": "",
+      "description": "Invoices that fail the three-way match and wait for a person to resolve them. Not yet discussed with the finance team.",
+      "confidentiality": "",
+      "sensitive": false,
+      "facts": {
+        "annualVolume": {
+          "value": 18000,
+          "basis": "illustrative",
+          "note": "Demonstration figure."
+        },
+        "effortHoursPerCase": null,
+        "hourlyRate": null
+      },
+      "scores": {
+        "volume": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "pain": {
+          "value": 3,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "rules": {
+          "value": 4,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "inputs": {
+          "value": 3,
+          "basis": "illustrative",
+          "note": ""
+        },
+        "sponsor": {
+          "value": 1,
+          "basis": "illustrative",
+          "note": "No owner in finance yet."
+        }
+      },
+      "source": null
+    }
+  ]
+}

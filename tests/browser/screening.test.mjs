@@ -252,3 +252,23 @@ test("print the summary, then start a project for the first choice", { timeout: 
   assert.equal((await current(page)).candidates.length, 2);
   clean(problems);
 });
+
+for (const mode of ["file", "http"]) {
+  test("open the example screening from an empty screening (" + mode + ")", { timeout: 60000 }, async t => {
+    const { page, problems } = await open(t, mode);
+    await page.click("#start-screening");
+    await page.click("#scr-example");
+    assert.match(await page.textContent("#scr-status"), /Every score and figure in it is illustrative/);
+    assert.equal(await page.textContent("#scr-title"), "Where to start: four candidate processes");
+    assert.equal(await page.textContent("#scr-data-status"), "Demonstration data");
+    assert.equal(await page.locator("#scr-grid tbody tr").count(), 4);
+    await page.click("#scr-tab-ranking");
+    assert.equal(await page.textContent("#scr-first-choice"), "End-to-end cash transaction matching");
+    assert.equal(await page.textContent("#scr-stability-headline"), "Yes");
+    assert.equal(await page.locator("#scr-chart .bc-dot-group").count(), 3);
+    await page.click("#scr-tab-summary");
+    assert.match(await page.textContent("#scr-sum-recommendation"), /^End-to-end cash transaction matching scores 79 of 100 \(Start here\)\./);
+    assert.equal(await page.textContent("#scr-save-state"), "Not saved yet");
+    clean(problems);
+  });
+}
