@@ -15,6 +15,7 @@ dialog.dlg.screening-dlg { width: min(1360px, calc(100vw - 32px)); }
 .scr-grid td.scr-cell { padding: 4px 6px; }
 .scr-grid .select { min-width: 72px; min-height: 32px; }
 .scr-grid .desc { display: block; }
+#screening-dialog td.num .desc, #scr-print td.num .desc { display: block; }
 
 .scr-score-table td:nth-child(2) .select { min-width: 72px; }
 .scr-score-table td:nth-child(3) .select { min-width: 140px; }
