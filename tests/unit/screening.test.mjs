@@ -320,3 +320,34 @@ test("the published screening schema is the library's", () => {
   assert.deepEqual(JSON.parse(fs.readFileSync(file, "utf8")), JSON.parse(JSON.stringify(S.SCREENING_SCHEMA)));
   assert.deepEqual(S.SCREENING_SCHEMA.properties.criteria.items.properties.group.enum, S.GROUPS.map(g => g[0]));
 });
+
+test("the screening's details change through updateMeta", () => {
+  const s = small();
+  const next = S.updateMeta(s, { title: "Northwind screening", clientDisplayName: "Northwind", confidentiality: "client-confidential",
+    dataStatus: "demonstration", currency: "GBP", hourlyRate: { value: 65, basis: "supplied", note: "Finance" }, note: "Shortlist from the kickoff" }).screening;
+  assert.equal(s.meta.title, "Test screening");
+  assert.deepEqual(next.meta, { title: "Northwind screening", clientDisplayName: "Northwind", confidentiality: "client-confidential",
+    dataStatus: "demonstration", currency: "GBP", hourlyRate: { value: 65, basis: "supplied", note: "Finance" }, note: "Shortlist from the kickoff" });
+  assert.equal(S.updateMeta(next, { hourlyRate: null }).screening.meta.hourlyRate, null);
+  assert.throws(() => S.updateMeta(s, { title: "" }), /Give the screening a title/);
+  assert.throws(() => S.updateMeta(s, { currency: "usd" }), /three-letter currency/);
+  assert.throws(() => S.updateMeta(s, { confidentiality: "secret" }), /confidentiality level/);
+  assert.throws(() => S.updateMeta(s, { hourlyRate: { value: -1, basis: "supplied" } }), /zero or a positive/);
+});
+
+test("equal best scores are a tie, not a first choice", () => {
+  // Zeta: 3 x 100 / 8. Alpha: (2 x 75 + 2 x 75) / 8. Both 37.5, reached by different sums.
+  const z = withCandidate(small(), "Zeta", { v1: 5, v2: 1, f1: 1, r1: 1 });
+  const a = withCandidate(z.screening, "Alpha", { v1: 1, v2: 1, f1: 4, r1: 4 });
+  const third = withCandidate(a.screening, "Third", { v1: 1, v2: 1, f1: 1, r1: 2 });
+  const { rows, stability } = S.evaluate(third.screening);
+  assert.deepEqual(rows.map(r => [r.name, r.score]), [["Alpha", 37.5], ["Zeta", 37.5], ["Third", 6.25]]);
+  assert.equal(stability.topId, null);
+  assert.equal(stability.stable, false);
+  assert.equal(stability.margin, 0);
+  assert.deepEqual(stability.tiedIds.sort(), [a.id, z.id].sort());
+  assert.match(stability.note, /^Alpha and Zeta have the same score/);
+  const broken = S.setScore(third.screening, a.id, "v2", { value: 2 }).screening;
+  assert.deepEqual(S.stability(broken).tiedIds, []);
+  assert.equal(S.stability(broken).topId, a.id);
+});

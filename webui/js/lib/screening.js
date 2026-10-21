@@ -384,6 +384,21 @@
     });
   }
 
+  /** Changes the screening's title, client, confidentiality, data status, currency, hourly rate or note. */
+  function updateMeta(s, patch) {
+    const p = plain(patch);
+    if (p.title !== undefined && !text(p.title, 200)) fail("Give the screening a title.");
+    if (p.confidentiality !== undefined && !schema.ENUMS.confidentiality.includes(p.confidentiality)) fail("Choose a confidentiality level.");
+    if (p.dataStatus !== undefined && !schema.ENUMS.dataStatus.includes(p.dataStatus)) fail("Choose a data status.");
+    if (p.currency !== undefined && !(typeof p.currency === "string" && /^[A-Z]{3}$/.test(p.currency))) fail("Enter a three-letter currency code, such as USD.");
+    if (p.hourlyRate !== undefined && p.hourlyRate !== null &&
+      (!util.isPlainObject(p.hourlyRate) || (p.hourlyRate.value !== null && nonNegative(p.hourlyRate.value) === null))) fail("Enter zero or a positive number.");
+    return change(s, next => {
+      ["title", "clientDisplayName", "confidentiality", "dataStatus", "currency", "hourlyRate", "note"].forEach(k => { if (p[k] !== undefined) next.meta[k] = p[k]; });
+      next.meta = sanitizeScreening({ meta: next.meta, criteria: [], candidates: [] }).screening.meta;
+    });
+  }
+
   /* ---------- From a project ---------- */
 
   function hoursOf(measure) {
@@ -522,10 +537,14 @@
     return Object.assign(Object.fromEntries(s.criteria.map(c => [c.id, c.weight])), overrides || {});
   }
 
+  /* Scores this close are the same score: the gap is only rounding in the sums. */
+  const TIE = 1e-9;
+  const gap = (a, b) => (Math.abs(a - b) < TIE ? 0 : a - b);
+
   function order(rows) {
     const tier = r => (r.score !== null ? 0 : r.provisional !== null ? 1 : 2);
-    rows.sort((a, b) => tier(a) - tier(b) || ((b.score !== null ? b.score : b.provisional || 0) - (a.score !== null ? a.score : a.provisional || 0)) ||
-      String(a.name).localeCompare(String(b.name)));
+    const value = r => (r.score !== null ? r.score : r.provisional || 0);
+    rows.sort((a, b) => tier(a) - tier(b) || gap(value(b), value(a)) || String(a.name).localeCompare(String(b.name)));
     rows.forEach((r, i) => { r.rank = i + 1; });
     return rows;
   }
@@ -549,14 +568,15 @@
 
   /**
    * Whether the first choice holds when one weight at a time moves by 20
-   * percent up or down: { topId, stable, margin, changes, note }. Only
-   * candidates with every weighted criterion scored take part.
+   * percent up or down: { topId, stable, margin, tiedIds, changes, note }.
+   * Only candidates with every weighted criterion scored take part. When the
+   * best score is shared, topId is null and tiedIds names the candidates.
    */
   function stability(s, opts) {
     const o = opts || {};
     const complete = rows => rows.filter(r => r.score !== null);
     const base = complete(score(s, o));
-    if (base.length < 2) return { topId: base.length ? base[0].candidateId : null, stable: null, margin: null, changes: [],
+    if (base.length < 2) return { topId: base.length ? base[0].candidateId : null, stable: null, margin: null, tiedIds: [], changes: [],
       note: "Score every criterion for at least two candidates to test whether the first choice holds." };
     const changes = [];
     s.criteria.filter(c => c.weight > 0).forEach(c => {
@@ -567,8 +587,15 @@
         }
       });
     });
+    const margin = gap(base[0].score, base[1].score);
+    const tiedIds = base.filter(r => gap(base[0].score, r.score) === 0).map(r => r.candidateId);
+    if (tiedIds.length > 1) {
+      const names = base.filter(r => tiedIds.includes(r.candidateId)).map(r => r.name);
+      return { topId: null, stable: false, margin: 0, tiedIds, changes,
+        note: names.slice(0, -1).join(", ") + " and " + names[names.length - 1] + " have the same score. Agree the weights or scores that separate them before choosing." };
+    }
     return {
-      topId: base[0].candidateId, stable: changes.length === 0, margin: base[0].score - base[1].score, changes,
+      topId: base[0].candidateId, stable: changes.length === 0, margin, tiedIds: [], changes,
       note: changes.length ? "The first choice changes when some weights move by 20 percent. Agree those weights before choosing."
         : "The first choice holds when any one weight moves by 20 percent up or down."
     };
@@ -625,7 +652,7 @@
   return {
     SCREENING_ID, SCREENING_VERSION, SCREENING_SCHEMA, LIMITS, SCALE, WEIGHT_MAX, GROUPS, FACTS, QUADRANTS, DEFAULT_CRITERIA, ScreeningError,
     blankScreening, sanitizeScreening, parseScreening,
-    addCandidate, updateCandidate, removeCandidate, setScore, addCriterion, updateCriterion, removeCriterion,
+    addCandidate, updateCandidate, removeCandidate, setScore, addCriterion, updateCriterion, removeCriterion, updateMeta,
     fromEngagement, addFromEngagement, evaluate, stability, toStarterEngagement
   };
 });
