@@ -16,8 +16,8 @@
   "use strict";
 
   /* Figures shown on a one-pager, lead with the supporting figure and end with the headline. */
-  const ONE_PAGER_KEYS = ["hoursPerCase", "annualHoursSaved", "laborCostSaved", "netAnnualBenefit",
-    "fteReleased", "paybackMonths", "elapsedSavedPerCase"];
+  const ONE_PAGER_KEYS = ["hoursPerCase", "annualHoursSaved", "laborCostSaved", "grossAnnualValue", "netAnnualBenefit",
+    "realizableAnnualValue", "validatedAnnualValue", "fteReleased", "paybackMonths", "elapsedSavedPerCase"];
 
   function findRecord(e, recordId) {
     return (e && e.records || []).find(r => r.id === recordId) || null;
@@ -81,7 +81,8 @@
       note: vc ? vc.note : "",
       rank: ranked ? ranked.rank : null, quadrant: ranked ? ranked.quadrant : null,
       quadrantLabel: quadrantLabel(ranked ? ranked.quadrant : null),
-      suggestedWave: ranked ? ranked.suggestedWave : "", hasValueCase: !!vc,
+      suggestedWave: ranked ? ranked.suggestedWave : "", hasValueCase: !!vc || (op.valueLines || []).length > 0,
+      parts: result.parts || [], realizedBy: vc && vc.realizedBy ? vc.realizedBy : "", financeOwner: vc && vc.financeOwner ? vc.financeOwner : "",
       aiDraft: valueCase.hasDraftValueCase(rec),
       goals: goals.goalsFor(e, r, options).map(goalSummary),
       checkpoints: checkpointRows(e, r.id, options)

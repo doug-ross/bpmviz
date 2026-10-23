@@ -14,12 +14,13 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"), require("./economics.js"), require("./dataset-query.js"));
+    module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"), require("./economics.js"), require("./dataset-query.js"),
+      require("./value-lines.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.valueCase = factory(B.util, B.schema, B.units, B.economics, B.datasetQuery);
+    B.valueCase = factory(B.util, B.schema, B.units, B.economics, B.datasetQuery, B.valueLines);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, dq) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, dq, valueLines) {
   "use strict";
 
   const { output, inp, driverInput, weakest } = economics.helpers;
@@ -87,6 +88,7 @@
    */
   function compute(e, record, opts) {
     const vc = record && record.opportunity && record.opportunity.valueCase;
+    if (!vc && valueLines.linesOf(record).length) return linesOnly(e, record, opts);
     if (!vc) {
       const hidden = !!(record && record.opportunity && record.opportunity.valueCaseDraftHidden);
       return { recordId: record ? record.id : null, outputs: [], basis: null, confidence: "", missing: ["value case"],
@@ -230,22 +232,157 @@
       notes: ["Elapsed time only. It is not converted to money."]
     });
 
-    const outputs = [hoursPerCase, annualHours, labor, net, fte, payback, elapsed];
+    const outputs = combine(record, vc, [hoursPerCase, annualHours, labor, net, fte, payback, elapsed], drivers, notes);
     const head = headline({ outputs });
     return {
       recordId: record.id,
       outputs,
       basis: head ? head.basis : null,
       confidence: vc.confidence || "",
-      missing: [...new Set(outputs.filter(o => o.key !== "elapsedSavedPerCase" && o.key !== "paybackMonths").flatMap(o => o.missing))],
-      notes: [...new Set(notes)]
+      missing: [...new Set(outputs.filter(o => !NOT_REQUIRED.has(o.key)).flatMap(o => o.missing))],
+      notes: [...new Set(notes)],
+      parts: partsOf(outputs)
     };
   }
 
-  /** The figure an opportunity is ranked by: net annual benefit, else hours saved per year. */
+  /* Outputs whose missing inputs do not count as the business case being incomplete. */
+  const NOT_REQUIRED = new Set(["elapsedSavedPerCase", "paybackMonths", "realizableAnnualValue", "validatedAnnualValue"]);
+
+  /*
+   * ---------- Value lines: gross, realizable and validated figures ----------
+   * See docs/value-dimensions.md. With no value lines and no realization
+   * fields on the value case, combine() returns the labor outputs unchanged,
+   * so existing business cases compute exactly as before.
+   */
+
+  function hasRealizationFields(vc) {
+    return !!vc && ["realizationPct", "validatedAnnual"].some(k => util.isFiniteNumber(vc[k]));
+  }
+
+  const LABOR_LABEL = "Labor cost of the hours saved per year";
+  /* The template hints are shown in the editor, not repeated in every result's notes. */
+  const HINTS = new Set(Object.values(valueLines.DIMENSIONS).map(d => d.hint));
+  const lowerFirst = t => t.charAt(0).toLowerCase() + t.slice(1);
+
+  function num(v) {
+    return util.isFiniteNumber(v) ? v : null;
+  }
+
+  function combine(record, vc, base, drivers, notes) {
+    const lines = valueLines.linesOf(record);
+    if (!lines.length && !hasRealizationFields(vc)) return base;
+    const fallbacks = { annualVolume: driverInput(drivers, "annualVolume") };
+    const lineResults = lines.map(line => ({ line, dim: valueLines.DIMENSIONS[line.dimension], gross: valueLines.grossOf(line, fallbacks) }));
+    const labor = base.find(o => o.key === "laborCostSaved");
+    const fte = base.find(o => o.key === "fteReleased");
+
+    // Hires avoided is how the labor hours are realized; counting both would count the same capacity twice.
+    const hires = lineResults.filter(x => x.dim.pool === "labor");
+    const laborCounted = !!vc && !hires.length;
+    if (vc && hires.length) notes.push("Hires avoided is how the labor hours are realized, so the labor cost saved is shown for reference and not counted again.");
+    const avoided = hires.reduce((sum, x) => {
+      const i = x.line.inputs;
+      return sum + (util.isFiniteNumber(i.plannedHires) && util.isFiniteNumber(i.hiresStillNeeded) ? i.plannedHires - i.hiresStillNeeded : 0);
+    }, 0);
+    if (hires.length && fte && fte.value !== null && avoided > fte.value + 1e-9) {
+      notes.push("The hires avoided (" + util.formatNumber(avoided, 1) + ") are more than the time the labor estimate frees up (" +
+        util.formatNumber(fte.value, 1) + " FTE-equivalent). Check the staffing plan or the labor estimate.");
+    }
+
+    const parts = [];
+    if (laborCounted) {
+      parts.push({ id: "labor", label: LABOR_LABEL, treatment: "capacity", gross: labor, realizationPct: num(vc.realizationPct), validatedAnnual: num(vc.validatedAnnual),
+        realizedBy: vc.realizedBy || "", financeOwner: vc.financeOwner || "", validatedSource: vc.validatedSource || "" });
+    }
+    lineResults.forEach(x => {
+      parts.push({ id: x.line.id, label: x.dim.label, treatment: x.dim.treatment, gross: x.gross, realizationPct: x.line.realizationPct, validatedAnnual: x.line.validatedAnnual,
+        realizedBy: x.line.realizedBy, financeOwner: x.line.financeOwner, validatedSource: x.line.validatedSource });
+      x.gross.notes.forEach(n => { if (!HINTS.has(n)) notes.push(n); });
+    });
+
+    const running = vc ? vc.annualRunningCost : null;
+    const runningInput = inp("Annual running cost", running, "currency", vc ? vc.basis : null, false);
+    const gross = output({
+      key: "grossAnnualValue", label: "Gross annual value", unit: "currency",
+      formula: "labor cost of the hours saved + every other value line" + (vc && hires.length ? " (hires avoided stands in for labor)" : "")
+    }, {
+      inputs: parts.length ? parts.map(p => inp(p.label, p.gross.value, "currency", p.gross.basis)) : [inp("Value lines", null, "currency", null)],
+      compute: () => parts.reduce((sum, p) => sum + p.gross.value, 0),
+      notes: ["What the change is worth if it applies to all the work it touches."]
+    });
+    const net = output({ key: "netAnnualBenefit", label: "Modeled net annual benefit", unit: "currency", formula: "gross annual value \u2212 annual running cost" }, {
+      inputs: [inp("Gross annual value", gross.value, "currency", gross.basis), runningInput],
+      compute: () => gross.value - (running || 0),
+      notes: [running === null || running === undefined ? "Annual running cost not recorded, so this figure is before running costs." : "",
+        "A modeled benefit, not realized cash. Adoption and ramp-up are not included."]
+    });
+    const realizableInputs = parts.map(p => inp("Realizable part of " + lowerFirst(p.label),
+      p.gross.value === null || p.realizationPct === null ? null : p.gross.value * p.realizationPct / 100, "currency", p.gross.basis));
+    const realizable = output({
+      key: "realizableAnnualValue", label: "Realizable annual value", unit: "currency",
+      formula: "sum of (gross value \u00d7 share that can be realized) \u2212 annual running cost"
+    }, {
+      inputs: (realizableInputs.length ? realizableInputs : [inp("Value lines", null, "currency", null)]).concat([runningInput]),
+      compute: () => realizableInputs.reduce((sum, i) => sum + i.value, 0) - (running || 0),
+      notes: [parts.some(p => p.realizationPct === null) ? "Set the share that can be realized, and how, on every part of the business case to see this figure." : "",
+        "Only the share with a named way to become money counts."]
+    });
+
+    const added = [gross, net, realizable];
+    const validatedParts = parts.filter(p => p.validatedAnnual !== null);
+    if (validatedParts.length) {
+      added.push(output({ key: "validatedAnnualValue", label: "Validated annual value", unit: "currency", formula: "sum of the amounts Finance confirmed" }, {
+        inputs: validatedParts.map(p => inp("Confirmed amount for " + lowerFirst(p.label), p.validatedAnnual, "currency", "validated")),
+        compute: () => validatedParts.reduce((sum, p) => sum + p.validatedAnnual, 0),
+        notes: [validatedParts.length + " of " + parts.length + " part" + (parts.length === 1 ? "" : "s") + " of the business case confirmed by Finance."]
+      }));
+    }
+    const paybackOn = realizable.value !== null ? realizable : net;
+    const oneTime = vc ? vc.oneTimeCost : null;
+    added.push(output({
+      key: "paybackMonths", label: "Simple payback period", unit: "count",
+      formula: "one-time cost \u00f7 (" + (paybackOn === realizable ? "realizable annual value" : "modeled net annual benefit") + " \u00f7 12)"
+    }, {
+      inputs: [inp("One-time cost", oneTime, "currency", vc ? vc.basis : null), inp(paybackOn.label, paybackOn.value, "currency", paybackOn.basis)],
+      compute: () => (paybackOn.value > 0 ? oneTime / (paybackOn.value / 12) : null),
+      notes: ["Months. Shown only when the annual value is above zero."]
+    }));
+
+    const outputs = base.filter(o => o.key !== "netAnnualBenefit" && o.key !== "paybackMonths");
+    const at = Math.max(0, outputs.findIndex(o => o.key === "laborCostSaved") + 1);
+    outputs.splice(at, 0, ...added);
+    outputs.parts = parts;
+    return outputs;
+  }
+
+  /* An opportunity with value lines and no labor estimate. */
+  function linesOnly(e, record, opts) {
+    const notes = [];
+    const drivers = economics.driverMap(e, scenarioOf(e, opts));
+    const outputs = combine(record, null, [], drivers, notes);
+    const head = headline({ outputs });
+    return {
+      recordId: record.id, outputs, basis: head ? head.basis : null, confidence: "",
+      missing: [...new Set(outputs.filter(o => !NOT_REQUIRED.has(o.key)).flatMap(o => o.missing))],
+      notes: [...new Set(notes)], parts: partsOf(outputs)
+    };
+  }
+
+  /* Each counted part of the business case with its three figures, for the editor, the one-pager and the report. */
+  function partsOf(outputs) {
+    return (outputs.parts || []).map(p => ({
+      id: p.id, label: p.label, treatment: p.treatment, treatmentLabel: valueLines.TREATMENTS[p.treatment].label,
+      gross: p.gross.value, basis: p.gross.basis, missing: p.gross.missing,
+      realizationPct: p.realizationPct,
+      realizable: p.gross.value === null || p.realizationPct === null ? null : p.gross.value * p.realizationPct / 100,
+      validated: p.validatedAnnual, realizedBy: p.realizedBy, financeOwner: p.financeOwner, validatedSource: p.validatedSource
+    }));
+  }
+
+  /** The figure an opportunity is ranked by: realizable annual value, else net annual benefit, else hours saved per year. */
   function headline(result) {
     const pick = key => (result.outputs || []).find(o => o.key === key && o.value !== null);
-    const o = pick("netAnnualBenefit") || pick("annualHoursSaved");
+    const o = pick("realizableAnnualValue") || pick("netAnnualBenefit") || pick("annualHoursSaved");
     return o ? { key: o.key, value: o.value, unit: o.unit, basis: o.basis } : null;
   }
 

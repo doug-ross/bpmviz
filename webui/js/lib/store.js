@@ -145,7 +145,7 @@
   }
 
   /*
-   * wave, goalIds and valueCase are kept only when given, so records written before
+   * wave, goalIds, valueCase and valueLines are kept only when given, so records written before
    * they existed keep their shape. valueCase goes through the validator's
    * sanitizer, which removes references that do not resolve.
    */
@@ -174,6 +174,10 @@
       const r = validate.sanitizeValueCase(o.valueCase, e, record);
       if (r.errors.length) throw new StoreError("invalid", "Business case: " + r.errors[0].message);
       out.valueCase = r.value;
+    }
+    if (o.valueLines !== undefined && o.valueLines !== null) {
+      if (!Array.isArray(o.valueLines)) throw new StoreError("invalid", "Value lines must be a list.");
+      out.valueLines = validate.sanitizeValueLines(o.valueLines).lines;
     }
     return out;
   }

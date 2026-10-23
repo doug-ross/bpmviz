@@ -31,6 +31,19 @@ All figures are economics-shaped outputs: each one lists its formula, its inputs
 - **Simple payback period** = one-time cost divided by (modeled net annual benefit divided by 12), shown only when the net annual benefit is positive.
 - **Elapsed time saved per affected case** = sum of the affected steps' durations times duration reduction, in minutes. This is time only; it is never converted to money.
 
+## Other kinds of value, and how value becomes money
+
+Labor hours are one kind of value. Under **Other kinds of value** in the editor, add a value line for each other kind, worked out with its own formula: **Errors and rework**, **SLA penalties avoided**, **Hires avoided** and **Licenses and vendor fees**. Each line has its inputs, a basis and a note.
+
+Every part of the business case, the labor estimate included, also records how it becomes money: the **share that can be realized**, **how it becomes money** in words (such as overtime cut, planned hires not made, or seats dropped at renewal), the **finance owner**, and the **amount Finance confirmed per year** with where it comes from. When an opportunity uses any of this, its business case shows three figures:
+
+- **Gross annual value** = labor cost of the hours saved + every value line. A hires-avoided line is how the labor hours are realized, so when there is one, the labor cost is shown for reference and not counted again. If more hires are avoided than the labor estimate frees up, the case says so.
+- **Modeled net annual benefit** = gross annual value minus the annual running cost.
+- **Realizable annual value** = the sum of each part's gross value times its realizable share, minus the annual running cost. It stays blank until every part has a realizable share, and that does not make the business case incomplete.
+- **Validated annual value** = the sum of the amounts Finance confirmed, with how many parts are confirmed. Its basis is confirmed.
+
+An opportunity is ranked on its realizable annual value when it has one, otherwise on its modeled net annual benefit. Payback uses the realizable value when there is one. Opportunities without value lines or realization fields compute exactly as described above. The CFO one-pager lists each part under **Value by type**. The design, and the dimensions still to come, are in [value-dimensions.md](value-dimensions.md).
+
 ## Ranking, the Matrix and Waves views
 
 Every opportunity with an effort size is scored:
@@ -81,6 +94,7 @@ opportunity/setWaves { changes: [{ id, wave }] }
 
 | File | Holds |
 | --- | --- |
+| `webui/js/lib/value-lines.js` | The value line templates, their clean-up and each line's gross value |
 | `webui/js/lib/value-case.js` | `compute`, `rank` and `portfolio`: the formulas above (owned by this feature; its function signatures are frozen for the other features that read it) |
 | `webui/js/lib/business-case.js` | `buildOnePager`, `buildPortfolioPager` and `suggestWave`, which shape `value-case.js`'s output for the UI, and the `opportunity/setWaves` command body |
 | `webui/js/ui/opportunity-value.js` | The business case editor, the opportunity columns, the Matrix and Waves views, the Business case mode in Present and the report section |

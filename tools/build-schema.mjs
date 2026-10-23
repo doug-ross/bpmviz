@@ -18,6 +18,7 @@ const schema = require("../webui/js/lib/schema.js");
 const units = require("../webui/js/lib/units.js");
 const aiResults = require("../webui/js/lib/ai-results.js");
 const workshop = require("../webui/js/lib/workshop.js");
+const valueLines = require("../webui/js/lib/value-lines.js");
 const E = schema.ENUMS;
 
 const en = name => ({ enum: E[name] });
@@ -216,7 +217,10 @@ const doc = {
             properties: {
               intervention: en("intervention"), simplerAlternative: text(4000), expectedBenefit: text(4000), affectedVolume: text(500),
               effort: en("effortSize"), risk: text(4000), dependencies: text(4000), validationAction: text(4000),
-              wave: en("wave"), valueCase: { $ref: "#/$defs/valueCase" }, goalIds: Object.assign({ description: "The value goals this opportunity serves." }, ids),
+              wave: en("wave"), valueCase: { $ref: "#/$defs/valueCase" },
+              valueLines: { type: "array", maxItems: valueLines.LIMIT, items: { $ref: "#/$defs/valueLine" },
+                description: "Kinds of value besides labor hours, one line each. See docs/value-dimensions.md." },
+              goalIds: Object.assign({ description: "The value goals this opportunity serves." }, ids),
               aiAssessment: { type: "object", properties: Object.assign(Object.fromEntries(aiKeys.map(k => [k, text(2000)])), { mode: { enum: ["", "assist", "autonomous"] } }) }
             }
           }]
@@ -331,7 +335,26 @@ const doc = {
         sources: {
           type: "object", additionalProperties: false, description: "Where each AI-drafted figure comes from.",
           properties: Object.fromEntries(["shareOfCasesPct", "effortReductionPct", "durationReductionPct", "oneTimeCost", "annualRunningCost"].map(k => [k, text(500)]))
-        }
+        },
+        realizationPct: Object.assign({ description: "The share of the labor value that can become money." }, percent),
+        realizedBy: Object.assign({ description: "How the labor value becomes money, such as overtime cut or planned hires not made." }, text(valueLines.TEXT.realizedBy)),
+        financeOwner: text(valueLines.TEXT.financeOwner),
+        validatedAnnual: { type: ["number", "null"], description: "The yearly amount Finance confirmed." },
+        validatedSource: text(valueLines.TEXT.validatedSource)
+      }
+    },
+    valueLine: {
+      type: "object", required: ["id", "dimension"], additionalProperties: false,
+      description: "One kind of value besides labor hours, worked out with its template's formula.",
+      properties: {
+        id, dimension: { enum: valueLines.DIMENSION_IDS },
+        inputs: {
+          type: "object", additionalProperties: false, description: "The template's inputs. A blank input leaves the line's value blank.",
+          properties: Object.fromEntries([...new Set(Object.values(valueLines.DIMENSIONS).flatMap(d => d.inputs.map(i => i.key)))].map(k => [k, { type: ["number", "null"], minimum: 0 }]))
+        },
+        realizationPct: percent, realizedBy: text(valueLines.TEXT.realizedBy), financeOwner: text(valueLines.TEXT.financeOwner),
+        validatedAnnual: { type: ["number", "null"] }, validatedSource: text(valueLines.TEXT.validatedSource),
+        basis: en("assumptionStatus"), note: text(valueLines.TEXT.note)
       }
     },
     goal: {

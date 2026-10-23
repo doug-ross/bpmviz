@@ -1542,6 +1542,14 @@
                 "valueCase": {
                   "$ref": "#/$defs/valueCase"
                 },
+                "valueLines": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "$ref": "#/$defs/valueLine"
+                  },
+                  "description": "Kinds of value besides labor hours, one line each. See docs/value-dimensions.md."
+                },
                 "goalIds": {
                   "description": "The value goals this opportunity serves.",
                   "type": "array",
@@ -2441,6 +2449,193 @@
               "maxLength": 500
             }
           }
+        },
+        "realizationPct": {
+          "description": "The share of the labor value that can become money.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "realizedBy": {
+          "description": "How the labor value becomes money, such as overtime cut or planned hires not made.",
+          "type": "string",
+          "maxLength": 500
+        },
+        "financeOwner": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "validatedAnnual": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "The yearly amount Finance confirmed."
+        },
+        "validatedSource": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "valueLine": {
+      "type": "object",
+      "required": [
+        "id",
+        "dimension"
+      ],
+      "additionalProperties": false,
+      "description": "One kind of value besides labor hours, worked out with its template's formula.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "dimension": {
+          "enum": [
+            "rework",
+            "sla",
+            "hires",
+            "vendor"
+          ]
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "The template's inputs. A blank input leaves the line's value blank.",
+          "properties": {
+            "casesPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "errorRateBeforePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "errorRateAfterPct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "costPerError": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "breachesBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "breachesAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "penaltyPerBreach": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "plannedHires": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "hiresStillNeeded": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "annualCostPerHire": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "unitsBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "unitsAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "costPerUnitPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "realizationPct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "realizedBy": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "financeOwner": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "validatedAnnual": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "validatedSource": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "basis": {
+          "enum": [
+            "illustrative",
+            "supplied",
+            "observed",
+            "validated"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
         }
       }
     },

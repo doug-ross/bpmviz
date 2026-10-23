@@ -10,12 +10,12 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"),
       require("./economics.js"), require("./migrate.js"), require("./replay.js"), require("./workshop.js"),
-      require("./goals.js"), require("./checkpoints.js"));
+      require("./goals.js"), require("./checkpoints.js"), require("./value-lines.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay, B.workshop, B.goals, B.checkpoints);
+    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay, B.workshop, B.goals, B.checkpoints, B.valueLines);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay, workshop, goals, checkpoints) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay, workshop, goals, checkpoints, valueLines) {
   "use strict";
 
   const L = schema.LIMITS;
@@ -746,7 +746,8 @@
   }
 
   const VALUE_CASE_KEYS = ["modelId", "nodeIds", "effortReductionPct", "durationReductionPct", "shareOfCasesPct", "shareSource",
-    "effortSource", "datasetId", "oneTimeCost", "annualRunningCost", "confidence", "basis", "note", "aiDraft", "sources"];
+    "effortSource", "datasetId", "oneTimeCost", "annualRunningCost", "confidence", "basis", "note", "aiDraft", "sources",
+    "realizationPct", "realizedBy", "financeOwner", "validatedAnnual", "validatedSource"];
   /* The figures an AI draft cites a source for, one line of text each. */
   const VALUE_CASE_SOURCE_KEYS = ["shareOfCasesPct", "effortReductionPct", "durationReductionPct", "oneTimeCost", "annualRunningCost"];
 
@@ -779,6 +780,15 @@
     };
     // Kept only when set, so value cases written before AI drafting keep their shape.
     if (v.aiDraft === true) out.aiDraft = true;
+    // How the labor value is realized (docs/value-dimensions.md), also kept only when set.
+    const realization = num(c, v.realizationPct, path + ".realizationPct", { min: 0, max: 100 });
+    if (realization !== null) out.realizationPct = realization;
+    const validated = num(c, v.validatedAnnual, path + ".validatedAnnual", {});
+    if (validated !== null) out.validatedAnnual = validated;
+    [["realizedBy", valueLines.TEXT.realizedBy], ["financeOwner", valueLines.TEXT.financeOwner], ["validatedSource", valueLines.TEXT.validatedSource]].forEach(([k, max]) => {
+      const t = str(c, v[k], path + "." + k, { max }).trim();
+      if (t) out[k] = t;
+    });
     if (v.sources !== undefined && v.sources !== null) {
       const src = obj(c, v.sources, path + ".sources");
       knownKeys(c, src, path + ".sources", VALUE_CASE_SOURCE_KEYS);
@@ -903,6 +913,11 @@
   /** An opportunity's value case, checked against engagement e and the record it belongs to. */
   function sanitizeValueCase(raw, e, record) {
     return standalone(c => valueCaseOf(c, raw, "valueCase", refsOf(e), record || null));
+  }
+
+  /** An opportunity's value lines in shape: { lines, dropped }. */
+  function sanitizeValueLines(raw) {
+    return valueLines.sanitizeLines(raw);
   }
 
   /** A scenario that is not yet in engagement e, such as one generated from an event log. */
@@ -1042,6 +1057,11 @@
       }
       if (o.valueCase !== undefined && o.valueCase !== null) {
         record.opportunity.valueCase = valueCaseOf(c, o.valueCase, op + ".valueCase", refs || refsOf(null), record);
+      }
+      if (o.valueLines !== undefined && o.valueLines !== null) {
+        const v = valueLines.sanitizeLines(arr(c, o.valueLines, op + ".valueLines", valueLines.LIMIT));
+        record.opportunity.valueLines = v.lines;
+        if (v.dropped > 0) c.warn(op + ".valueLines", v.dropped + " value line" + (v.dropped === 1 ? "" : "s") + " without a valid ID or a known kind of value, or with a repeated ID, " + (v.dropped === 1 ? "was" : "were") + " left out.", "valueLines.dropped");
       }
     }
     const generated = sanitizeGenerated(c, r.generated, path + ".generated");
@@ -1284,7 +1304,7 @@
 
   return {
     validateEngagement, parseEngagementText,
-    sanitizeDataset, sanitizeValueCase, sanitizeScenarioFor, sanitizeReviewPack, sanitizeReview, validateReviewResponse,
+    sanitizeDataset, sanitizeValueCase, sanitizeValueLines, sanitizeScenarioFor, sanitizeReviewPack, sanitizeReview, validateReviewResponse,
     parseItemRef, refsOf
   };
 });

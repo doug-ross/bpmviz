@@ -11,7 +11,7 @@
   "use strict";
   const B = root.AIxRay = root.AIxRay || {};
   const { h, s } = B.dom;
-  const { schema, units, util, valueCase, businessCase, datasetQuery, exporting } = B;
+  const { schema, units, util, valueCase, businessCase, datasetQuery, exporting, valueLines } = B;
   const { field, textarea } = B.forms;
 
   function unitsCtxOf(e) {
@@ -65,6 +65,14 @@
     const basisSel = enumSelect("assumptionStatus", existing.basis || "");
     const note = textarea(existing.note, 2);
     const preview = h("p", { class: "note", role: "status", id: "bc-vc-preview" });
+    const textInput = (value, id, max) => h("input", { class: "input", id, value: value || "", maxlength: String(max) });
+    const realization = numberInput(existing.realizationPct, "Share of the labor value that can be realized, percent", { min: 0, max: 100, id: "bc-vc-realization" });
+    const realizedBy = textInput(existing.realizedBy, "bc-vc-realized-by", valueLines.TEXT.realizedBy);
+    const financeOwner = textInput(existing.financeOwner, "bc-vc-finance-owner", valueLines.TEXT.financeOwner);
+    const validated = numberInput(existing.validatedAnnual, "Amount Finance confirmed per year", { id: "bc-vc-validated" });
+    const validatedSource = textInput(existing.validatedSource, "bc-vc-validated-source", valueLines.TEXT.validatedSource);
+    const lineEditors = [];
+    const lineList = h("div", { class: "bc-vl-list", id: "bc-vl-list" });
     waveSel.id = "bc-vc-wave"; effortSourceSel.id = "bc-vc-effort-source"; shareSourceSel.id = "bc-vc-share-source";
     datasetSel.id = "bc-vc-dataset"; effortReduction.id = "bc-vc-effort-pct"; durationReduction.id = "bc-vc-duration-pct";
     shareOfCases.id = "bc-vc-share-pct"; oneTimeCost.id = "bc-vc-one-time"; runningCost.id = "bc-vc-running-cost";
@@ -96,9 +104,74 @@
         effortSource: effortSourceSel.value, datasetId: datasetSel.value || null,
         oneTimeCost: numberOf(oneTimeCost), annualRunningCost: numberOf(runningCost),
         confidence: confidenceSel.value, basis: basisSel.value, note: note.value,
-        aiDraft: !!(draftBox && draftBox.checked)
+        aiDraft: !!(draftBox && draftBox.checked),
+        realizationPct: numberOf(realization), realizedBy: realizedBy.value, financeOwner: financeOwner.value,
+        validatedAnnual: numberOf(validated), validatedSource: validatedSource.value
       });
     }
+
+    /* One value line's editor: its template's inputs, then how it becomes money. */
+    function lineEditor(line) {
+      const dim = valueLines.DIMENSIONS[line.dimension];
+      const pre = "bc-vl-" + line.id + "-";
+      const inputs = dim.inputs.map(d => {
+        const el = numberInput(line.inputs[d.key], d.label, { min: 0, max: d.kind === "percent" ? 100 : undefined, id: pre + d.key });
+        el.addEventListener("input", updatePreview);
+        return { d, el };
+      });
+      const lineBasis = enumSelect("assumptionStatus", line.basis || "illustrative", { id: pre + "basis" });
+      const lineRealization = numberInput(line.realizationPct, dim.label + ", share that can be realized, percent", { min: 0, max: 100, id: pre + "realization" });
+      const lineRealizedBy = textInput(line.realizedBy, pre + "realized-by", valueLines.TEXT.realizedBy);
+      const lineOwner = textInput(line.financeOwner, pre + "finance-owner", valueLines.TEXT.financeOwner);
+      const lineValidated = numberInput(line.validatedAnnual, dim.label + ", amount Finance confirmed per year", { id: pre + "validated" });
+      const lineSource = textInput(line.validatedSource, pre + "validated-source", valueLines.TEXT.validatedSource);
+      const lineNote = textInput(line.note, pre + "note", valueLines.TEXT.note);
+      [lineRealization, lineValidated].forEach(x => x.addEventListener("input", updatePreview));
+      lineBasis.addEventListener("change", updatePreview);
+      const remove = h("button", { type: "button", class: "btn btn-ghost", id: pre + "remove" }, "Remove");
+      const fallbackHint = d => d.fallback === "annualVolume" ? "Leave blank to use the project's annual volume." : undefined;
+      const box = h("fieldset", { class: "bc-vl", id: pre + "box" },
+        h("legend", null, dim.label, h("span", { class: "formula" }, " " + valueLines.TREATMENTS[dim.treatment].label)),
+        h("p", { class: "small muted" }, dim.hint),
+        h("div", { class: "field-row" }, inputs.map(x => field(x.d.label + (x.d.kind === "percent" ? " (%)" : ""), x.el, fallbackHint(x.d)))),
+        h("div", { class: "field-row" }, field("Basis", lineBasis), field("Share that can be realized (%)", lineRealization)),
+        h("div", { class: "field-row" }, field("How it becomes money", lineRealizedBy), field("Finance owner", lineOwner)),
+        h("div", { class: "field-row" }, field("Amount Finance confirmed per year", lineValidated), field("Where the confirmed amount comes from", lineSource)),
+        field("Note", lineNote),
+        h("div", { class: "form-actions" }, remove));
+      const ed = {
+        el: box,
+        value: () => ({
+          id: line.id, dimension: line.dimension, inputs: Object.fromEntries(inputs.map(x => [x.d.key, numberOf(x.el)])),
+          realizationPct: numberOf(lineRealization), realizedBy: lineRealizedBy.value, financeOwner: lineOwner.value,
+          validatedAnnual: numberOf(lineValidated), validatedSource: lineSource.value, basis: lineBasis.value, note: lineNote.value
+        })
+      };
+      remove.addEventListener("click", () => {
+        lineEditors.splice(lineEditors.indexOf(ed), 1);
+        box.remove();
+        updatePreview();
+      });
+      return ed;
+    }
+
+    function addLine(line) {
+      const ed = lineEditor(line);
+      lineEditors.push(ed);
+      lineList.appendChild(ed.el);
+      return ed;
+    }
+
+    const currentLines = () => lineEditors.map(ed => ed.value());
+    const addKind = h("select", { class: "select", id: "bc-vl-add-kind", "aria-label": "Kind of value to add" },
+      valueLines.DIMENSION_IDS.map(id => h("option", { value: id }, valueLines.DIMENSIONS[id].label)));
+    const addButton = h("button", { type: "button", class: "btn", id: "bc-vl-add" }, "Add");
+    addButton.addEventListener("click", () => {
+      const ed = addLine({ id: valueLines.newLineId(addKind.value, currentLines()), dimension: addKind.value, inputs: {}, basis: basisSel.value || "illustrative" });
+      const first = ed.el.querySelector("input");
+      if (first) first.focus();
+      updatePreview();
+    });
 
     function touchedFields(vc) {
       return vc.effortReductionPct !== null || vc.durationReductionPct !== null ||
@@ -109,17 +182,29 @@
       datasetField.hidden = !needsDataset();
       shareField.hidden = shareSourceSel.value === "dataset";
       const vc = currentValueCase();
-      if (!touchedFields(vc)) { preview.textContent = "Fill in the effort or duration reduction to see what this opportunity could be worth."; return; }
-      const draft = Object.assign({}, record, { opportunity: Object.assign({}, record.opportunity, { valueCase: vc }) });
+      const lines = currentLines();
+      if (!touchedFields(vc) && !lines.length) { preview.textContent = "Fill in the effort or duration reduction, or add another kind of value, to see what this opportunity could be worth."; return; }
+      const cleanLines = valueLines.sanitizeLines(lines).lines;
+      const draft = Object.assign({}, record, { opportunity: Object.assign({}, record.opportunity, touchedFields(vc) ? { valueCase: vc } : { valueCase: undefined }, { valueLines: cleanLines }) });
       let result;
       try { result = valueCase.compute(e, draft, { scenarioId: ctx.scenarioId }); } catch (err) { preview.textContent = "These figures don't give an estimate. Check the numbers you entered."; return; }
       const head = valueCase.headline(result);
       if (!head) { preview.textContent = "Not enough to estimate the value yet" + (result.missing.length ? ". Still needed: " + result.missing.join(", ").toLowerCase() + "." : "."); return; }
-      preview.textContent = "Estimated at " + units.formatMeasure(head.value, head.unit, unitsCtxOf(e)) + " a year, " + basisWord(head.basis) + " basis.";
+      const fig = key => result.outputs.find(o => o.key === key);
+      const gross = fig("grossAnnualValue"), realizable = fig("realizableAnnualValue"), confirmed = fig("validatedAnnualValue");
+      const money = o => units.formatMeasure(o.value, o.unit, unitsCtxOf(e));
+      if (gross) {
+        preview.textContent = (gross.value === null ? "Gross value not calculated yet" : "Gross " + money(gross) + " a year") +
+          (realizable && realizable.value !== null ? ", realizable " + money(realizable) : ", realizable not set") +
+          (confirmed && confirmed.value !== null ? ", confirmed " + money(confirmed) : "") + ". " + schema.label("assumptionStatus", head.basis) + " basis.";
+        return;
+      }
+      preview.textContent = "Estimated at " + money(head) + " a year, " + basisWord(head.basis) + " basis.";
     }
 
-    [effortReduction, durationReduction, shareOfCases, oneTimeCost, runningCost].forEach(el => el.addEventListener("input", updatePreview));
+    [effortReduction, durationReduction, shareOfCases, oneTimeCost, runningCost, realization, validated].forEach(el => el.addEventListener("input", updatePreview));
     [effortSourceSel, shareSourceSel, datasetSel, confidenceSel, basisSel].forEach(el => el.addEventListener("change", updatePreview));
+    ((record.opportunity && record.opportunity.valueLines) || []).forEach(addLine);
     updatePreview();
 
     const el = h("div", { class: "form-grid", style: { border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "var(--space-3)" } },
@@ -135,6 +220,15 @@
       shareField,
       h("div", { class: "field-row" }, field("One-time cost", oneTimeCost, hint("oneTimeCost")), field("Annual running cost", runningCost, hint("annualRunningCost"))),
       h("div", { class: "field-row" }, field("Confidence", confidenceSel), field("Basis", basisSel)),
+      h("p", { class: "field-label bc-sub" }, "How the labor value becomes money"),
+      h("p", { class: "small muted" }, "Hours saved count as money only through something Finance can see: overtime or contractors cut, planned hires not made, or more profitable work done."),
+      h("div", { class: "field-row" }, field("Share that can be realized (%)", realization), field("How it becomes money", realizedBy)),
+      h("div", { class: "field-row" }, field("Finance owner", financeOwner), field("Amount Finance confirmed per year", validated)),
+      field("Where the confirmed amount comes from", validatedSource),
+      h("p", { class: "field-label bc-sub" }, "Other kinds of value"),
+      h("p", { class: "small muted" }, "Value besides labor hours, each worked out with its own formula. A hires-avoided line is how the labor hours are realized, so labor is not counted twice."),
+      lineList,
+      h("div", { class: "bc-vl-add" }, addKind, addButton),
       field("Wave", waveSel, "The Matrix and Waves views suggest a wave from value and effort. The choice is yours."),
       field("Note", note),
       preview);
@@ -144,8 +238,12 @@
       collect: () => {
         const vc = currentValueCase();
         const hadValueCase = !!(record.opportunity && record.opportunity.valueCase);
-        if (!hadValueCase && !touchedFields(vc)) return { wave: waveSel.value };
-        return { wave: waveSel.value, valueCase: vc };
+        const hadLines = !!(record.opportunity && record.opportunity.valueLines);
+        const lines = currentLines();
+        const out = { wave: waveSel.value };
+        if (hadValueCase || touchedFields(vc)) out.valueCase = vc;
+        if (hadLines || lines.length) out.valueLines = lines;
+        return out;
       },
       check: () => (needsDataset() && !datasetSel.value ? "Choose an event log, or switch effort and share of cases to values you enter." : null)
     };
@@ -156,7 +254,7 @@
   /* ---------- Opportunity register columns ---------- */
 
   function annualValueCell(record, ctx) {
-    if (!record.opportunity || !record.opportunity.valueCase) return h("span", { class: "muted" }, "No estimate yet");
+    if (!record.opportunity || (!record.opportunity.valueCase && !(record.opportunity.valueLines || []).length)) return h("span", { class: "muted" }, "No estimate yet");
     let result;
     try { result = valueCase.compute(ctx.engagement, record, { scenarioId: ctx.scenarioId }); } catch (err) { return h("span", { class: "muted" }, "No estimate yet"); }
     const head = valueCase.headline(result);
@@ -352,6 +450,20 @@
         h("td", null, CHECKPOINT_STATUS[x.status] || x.status))))));
   }
 
+  /* Each part of a business case with its gross, realizable and confirmed figures. */
+  function partsTable(parts, c) {
+    const money = v => v === null ? h("span", { class: "muted" }, "Not set") : units.formatMeasure(v, "currency", c);
+    return h("div", { class: "table-wrap" }, h("table", { class: "table", id: "bc-parts" },
+      h("thead", null, h("tr", null, ["Value", "How it becomes money", "Gross a year", "Realizable a year", "Confirmed a year"].map((col, i) => h("th", { scope: "col", class: i > 1 ? "num" : null }, col)))),
+      h("tbody", null, parts.map(p => h("tr", null,
+        h("td", null, h("div", { class: "title-cell" }, p.label), h("div", { class: "desc" }, p.treatmentLabel + (p.gross !== null ? ", " + basisWord(p.basis) + " basis" : ""))),
+        h("td", null, p.realizedBy || h("span", { class: "muted" }, "Not described"), p.financeOwner ? h("div", { class: "desc" }, "Finance owner: " + p.financeOwner) : null),
+        h("td", { class: "num" }, p.gross === null ? h("span", { class: "muted" }, "Needs " + (p.missing[0] || "inputs").toLowerCase()) : money(p.gross)),
+        h("td", { class: "num" }, p.realizable === null ? h("span", { class: "muted" }, "Not set") : money(p.realizable),
+          p.realizationPct !== null ? h("div", { class: "desc" }, util.formatNumber(p.realizationPct, 1) + "% of gross") : null),
+        h("td", { class: "num" }, money(p.validated), p.validatedSource ? h("div", { class: "desc" }, p.validatedSource) : null))))));
+  }
+
   /* Client and project name above a page title, or the process name when neither is set. */
   function eyebrowOf(e) {
     const text = [e.meta.clientDisplayName, e.meta.engagementName].filter(Boolean).join(", ") || e.meta.processName || "";
@@ -375,6 +487,8 @@
         h("dt", null, "Confidence"), h("dd", null, page.confidenceLabel)),
       page.hasValueCase ? h("div", { class: "stat-row" }, page.outputs.map(stat)) :
         h("p", { class: "note" }, page.notes[0] || "This opportunity has no business case yet. Open it in Findings to add one."),
+      page.parts && page.parts.length ? [h("h2", null, "Value by type"), partsTable(page.parts, c),
+        h("p", { class: "note" }, "Gross is what the change is worth on all the work it touches. Realizable is the share with a named way to become money. Confirmed is what Finance validated.")] : null,
       page.goals.length ? [h("h2", null, "Value goals it serves"), goalsTable(page.goals, null)] : null,
       page.checkpoints.length ? [h("h2", null, "Results at checkpoints"), checkpointsTable(page.checkpoints, c),
         h("p", { class: "note" }, "Realized figures come from hours per case the delivery team recorded after the change.")] : null,
