@@ -10,11 +10,17 @@ It runs from local files. There is no server, account, install or network connec
 
 1. Download or clone this repository.
 2. Open `webui/index.htm` in Chrome, Edge, Firefox or Safari. Double-clicking the file is enough.
-3. Choose **Try an example** or another bundled example, or open a project file or a BPMN file.
+3. Choose **Take a tour** for a guided walk through the app, **Try an example** or another bundled example, or open a project file or a BPMN file.
+
+Select the AIxRay name in the header at any time to go back to the start page. The open project stays open, and the tabs take you back to it.
 
 To serve the app over HTTP instead, run `npm run serve` and open `http://127.0.0.1:8080/index.htm`. Both ways are tested.
 
 ## What you can do
+
+### Take a guided tour
+
+**Take a tour**, on the start screen and in More actions, walks through the real app on the bundled examples, so your own project and files stay as they are. Each step puts a ring around the control to use and explains it; click it, or choose Next and the tour does it for you. One tour analyzes a client's process and starts its future state; the other screens several processes to find the best first use case and turns the winner into a project. Where the tour adds sample data, such as three opportunities or sample AI scores, the step says so. A first visit offers the tour once. For a demo, open `index.htm#tour=analyze` or `index.htm#tour=screen` to start one straight away.
 
 ### Choose which process to start with
 

@@ -56,8 +56,11 @@
     el.btnMenu = iconButton("more", "More actions", { id: "btn-menu", "aria-haspopup": "menu", "aria-expanded": "false", "aria-controls": "app-menu" });
     el.menu = h("div", { class: "menu-list", id: "app-menu", role: "menu", hidden: true });
     el.context = h("div", { class: "context" }, el.ctxEyebrow, el.ctxTitle);
+    // The name and mark go back to the start page; an open project stays open, and the tabs return to it.
+    el.btnHome = h("button", { type: "button", class: "brand", id: "btn-home", title: "Go to the start page" },
+      sail("brand-mark"), h("span", { class: "brand-name" }, "AIxRay"), h("span", { class: "sr-only" }, ", go to the start page"));
     el.header = h("header", { class: "appbar" },
-      h("div", { class: "brand" }, sail("brand-mark"), h("span", { class: "brand-name" }, "AIxRay")),
+      el.btnHome,
       el.context,
       h("div", { class: "appbar-status" }, el.dataBadge, el.saveState),
       h("div", { class: "appbar-actions" }, el.btnNew, el.btnOpen, el.btnSave, h("div", { class: "menu" }, el.btnMenu, el.menu)));
@@ -88,6 +91,7 @@
     buildTabs();
     buildMenu();
 
+    el.btnHome.addEventListener("click", () => { closeMenu(); goto("start"); el.main.focus({ preventScroll: true }); });
     el.btnNew.addEventListener("click", newEngagementDialog);
     el.btnOpen.addEventListener("click", () => openPicker());
     el.btnSave.addEventListener("click", () => save(false));

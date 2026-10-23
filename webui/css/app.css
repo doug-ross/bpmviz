@@ -112,6 +112,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
   background: var(--appbar-bg); color: var(--appbar-ink); min-height: 56px;
 }
 .brand { display: flex; align-items: center; gap: var(--space-2); flex: none; color: var(--appbar-ink); }
+button.brand { font: inherit; background: none; border: 0; padding: 4px 6px; margin: -4px -6px; border-radius: var(--radius-sm); cursor: pointer; }
+button.brand:hover .brand-name { text-decoration: underline; text-underline-offset: 4px; }
+button.brand:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .brand-mark { width: 26px; height: 34px; flex: none; }
 .brand-name { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; letter-spacing: 0.02em; }
 .context { min-width: 0; flex: 1; border-left: 1px solid var(--sg-purple-600); padding-left: var(--space-4); }
