@@ -10,12 +10,12 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"),
       require("./economics.js"), require("./migrate.js"), require("./replay.js"), require("./workshop.js"),
-      require("./goals.js"), require("./checkpoints.js"), require("./value-lines.js"), require("./investment.js"));
+      require("./goals.js"), require("./checkpoints.js"), require("./value-lines.js"), require("./investment.js"), require("./ranges.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay, B.workshop, B.goals, B.checkpoints, B.valueLines, B.investment);
+    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay, B.workshop, B.goals, B.checkpoints, B.valueLines, B.investment, B.ranges);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay, workshop, goals, checkpoints, valueLines, investment) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay, workshop, goals, checkpoints, valueLines, investment, ranges) {
   "use strict";
 
   const L = schema.LIMITS;
@@ -936,6 +936,11 @@
     return standalone(c => valueCaseOf(c, raw, "valueCase", refsOf(e), record || null));
   }
 
+  /** An opportunity's low and high value per figure in shape (lib/ranges.js). */
+  function sanitizeRanges(raw) {
+    return ranges.sanitizeRanges(raw);
+  }
+
   /** An opportunity's investment settings in shape (lib/investment.js). */
   function sanitizeInvestment(raw) {
     return investment.sanitizeInvestment(raw);
@@ -1092,6 +1097,10 @@
       if (o.investment !== undefined && o.investment !== null) {
         if (!util.isPlainObject(o.investment)) c.warn(op + ".investment", "The investment settings were not an object and were left out.", "investment.dropped");
         else record.opportunity.investment = investment.sanitizeInvestment(o.investment);
+      }
+      if (o.ranges !== undefined && o.ranges !== null) {
+        if (!util.isPlainObject(o.ranges)) c.warn(op + ".ranges", "The low and high values were not an object and were left out.", "ranges.dropped");
+        else record.opportunity.ranges = ranges.sanitizeRanges(o.ranges);
       }
     }
     const generated = sanitizeGenerated(c, r.generated, path + ".generated");
@@ -1334,7 +1343,7 @@
 
   return {
     validateEngagement, parseEngagementText,
-    sanitizeDataset, sanitizeValueCase, sanitizeValueLines, sanitizeInvestment, sanitizeScenarioFor, sanitizeReviewPack, sanitizeReview, validateReviewResponse,
+    sanitizeDataset, sanitizeValueCase, sanitizeValueLines, sanitizeInvestment, sanitizeRanges, sanitizeScenarioFor, sanitizeReviewPack, sanitizeReview, validateReviewResponse,
     parseItemRef, refsOf
   };
 });

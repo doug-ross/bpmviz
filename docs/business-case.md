@@ -76,6 +76,16 @@ The **Suggest findings** AI task can also draft the figures of a business case: 
 - To review one, check each figure against its source, then clear the **AI draft, not reviewed** tick in the editor and save. The figures and their sources stay; the business case is now yours.
 - A business case a person entered is never replaced by an AI draft. The review lists such a proposal as one that cannot be applied.
 
+## Low and high for each figure
+
+Under **Low and high for each figure** in the editor, each figure the business case has (the labor estimate's inputs, each value line's inputs and realizable share, and the project's hourly rate and annual volume) can take the lowest and highest value you would believe. A blank end counts as today's value. The table follows the figures the business case has: clear one and its row goes, set it again and its range comes back.
+
+- **Which figures matter most**: each figure is moved to its low and its high with the others held, and the business case's headline figure (the realizable annual value, else the net annual benefit, else hours saved) is worked out again. The one-pager lists the figures widest first, with the value at each end and a bar.
+- **Low and high case**: every figure at the end of its range that lowers the value, then at the end that raises it. For most figures that is the low or the high end, but the case is decided by the result, so fewer licenses after the change counts as the better end.
+- With ranges, the investment case's low and high cases are these two cases, run through the same adoption ramp and discount rate, with their own one-time and running cost when those are ranged. Without ranges, the low and high cases are still a share of the expected benefit.
+
+Ranges are saved on the opportunity as `ranges`, keyed by figure (`vc.<key>`, `vl.<lineId>.<key>`, `as.<key>`), and kept only when set. A range for a figure that is no longer set is left out of the results, with a note. Error types inside an Errors and rework line do not take ranges yet.
+
 ## Investment over time
 
 Under **Investment over time** in the editor, an opportunity's business case can be spread over three, four or five years. Year 0 is the up-front cost; each later year's benefit is the yearly value at full adoption times that year's **adoption** percentage (**Use a typical ramp** fills 50%, 90%, then 100%), and its cost is the yearly cost.
@@ -83,7 +93,7 @@ Under **Investment over time** in the editor, an opportunity's business case can
 - The yearly value at full adoption is the realizable annual value before running costs. When nothing is marked realizable, the modeled gross value is used and the case says so.
 - **Costs** are cost lines by category, each with a one-time amount and an amount per year. With no cost lines, the business case's one-time cost and annual running cost are used.
 - **NPV** = the sum over years of (benefit − cost) ÷ (1 + discount rate)^year. **ROI** = (total benefit − total cost) ÷ total cost, undiscounted. **Payback** is the month the cumulative net turns positive, with benefits spread evenly within each year.
-- **Low** and **high** cases scale the benefit by a percentage of the expected case and give their own NPV, ROI and payback.
+- **Low** and **high** cases give their own NPV, ROI and payback. They come from the ranges above when the business case has any, and otherwise scale the benefit by a percentage of the expected case.
 - **Cost per successful workflow** = the yearly cost ÷ the workflows that complete correctly each year, so failed runs, retries and review are carried by the ones that succeed.
 - **Gain-share fee** = the validated annual value × months ÷ 12 × the share. It stays blank until Finance confirms an amount.
 
@@ -110,6 +120,7 @@ opportunity/setWaves { changes: [{ id, wave }] }
 | File | Holds |
 | --- | --- |
 | `webui/js/lib/value-lines.js` | The value line templates, their clean-up and each line's gross value |
+| `webui/js/lib/ranges.js` | Low and high values per figure: which figures matter most and the combined low and high cases |
 | `webui/js/lib/investment.js` | The investment case over time: adoption, costs by category, NPV, ROI, payback, low and high cases, cost per successful workflow and gain-share |
 | `webui/js/lib/value-case.js` | `compute`, `rank` and `portfolio`: the formulas above (owned by this feature; its function signatures are frozen for the other features that read it) |
 | `webui/js/lib/business-case.js` | `buildOnePager`, `buildPortfolioPager` and `suggestWave`, which shape `value-case.js`'s output for the UI, and the `opportunity/setWaves` command body |

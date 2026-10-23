@@ -8,12 +8,12 @@
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./value-case.js"), require("./goals.js"), () => require("./benefits.js"),
-      require("./investment.js"));
+      require("./investment.js"), require("./ranges.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.businessCase = factory(B.util, B.schema, B.valueCase, B.goals, () => B.benefits, B.investment);
+    B.businessCase = factory(B.util, B.schema, B.valueCase, B.goals, () => B.benefits, B.investment, B.ranges);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, valueCase, goals, benefits, investment) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, valueCase, goals, benefits, investment, ranges) {
   "use strict";
 
   /* Figures shown on a one-pager, lead with the supporting figure and end with the headline. */
@@ -68,6 +68,7 @@
     const scope = valueCase.affected(e, r);
     const ranked = valueCase.rank(e, opts).find(x => x.recordId === r.id) || null;
     const outputs = ONE_PAGER_KEYS.map(key => result.outputs.find(x => x.key === key)).filter(Boolean);
+    const spread = ranges.analyze(e, rec, opts);
     return {
       recordId: r.id, title: r.title, owner: r.owner || "", status: r.status,
       intervention: op.intervention ? schema.label("intervention", op.intervention) : "",
@@ -85,7 +86,8 @@
       suggestedWave: ranked ? ranked.suggestedWave : "", hasValueCase: !!vc || (op.valueLines || []).length > 0,
       parts: result.parts || [], realizedBy: vc && vc.realizedBy ? vc.realizedBy : "", financeOwner: vc && vc.financeOwner ? vc.financeOwner : "",
       aiDraft: valueCase.hasDraftValueCase(rec),
-      investment: investment.compute(rec, result),
+      investment: investment.compute(rec, result, spread && spread.low && spread.high ? { low: spread.low, high: spread.high } : null),
+      ranges: spread,
       goals: goals.goalsFor(e, r, options).map(goalSummary),
       checkpoints: checkpointRows(e, r.id, options)
     };

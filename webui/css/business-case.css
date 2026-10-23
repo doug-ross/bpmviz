@@ -45,3 +45,5 @@
 .bc-inv[open] > summary { margin-bottom: var(--space-1); }
 .bc-inv .form-actions { margin: 0; }
 .bc-inv-gap { margin-top: var(--space-3); }
+#bc-rng-onepager .sens-cell { width: 36%; }
+.bc-rng-table td:first-child { min-width: 200px; }

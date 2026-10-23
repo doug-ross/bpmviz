@@ -183,6 +183,10 @@
       if (typeof o.investment !== "object" || Array.isArray(o.investment)) throw new StoreError("invalid", "The investment settings must be an object.");
       out.investment = validate.sanitizeInvestment(o.investment);
     }
+    if (o.ranges !== undefined && o.ranges !== null) {
+      if (typeof o.ranges !== "object" || Array.isArray(o.ranges)) throw new StoreError("invalid", "The low and high values must be an object.");
+      out.ranges = validate.sanitizeRanges(o.ranges);
+    }
     return out;
   }
 

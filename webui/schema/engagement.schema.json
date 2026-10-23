@@ -1553,6 +1553,34 @@
                 "investment": {
                   "$ref": "#/$defs/investment"
                 },
+                "ranges": {
+                  "type": "object",
+                  "maxProperties": 60,
+                  "additionalProperties": false,
+                  "description": "A low and a high value for figures in the business case: vc.<key> for the labor estimate, vl.<lineId>.<key> for a value line, as.<key> for a project assumption.",
+                  "patternProperties": {
+                    "^(vc\\.[A-Za-z]{1,40}|as\\.[A-Za-z]{1,40}|vl\\.[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}\\.[A-Za-z]{1,40})$": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "low": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0
+                        },
+                        "high": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                },
                 "goalIds": {
                   "description": "The value goals this opportunity serves.",
                   "type": "array",

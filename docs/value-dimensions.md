@@ -1,6 +1,6 @@
 # Value dimensions: from a process change to money a CFO accepts
 
-This is the design for widening AIxRay's business case beyond labor savings. It is written for review by the business owner and the delivery team before each step is built. Steps 1 and 2 are built. Step 3 is built except for one refinement: low and high cases worked out from each input.
+This is the design for widening AIxRay's business case beyond labor savings. It is written for review by the business owner and the delivery team before each step is built. Steps 1, 2 and 3 are built.
 
 ## Why
 
@@ -163,7 +163,7 @@ Not yet in step 2: the templates do not fill themselves from the process. Prefil
 ## Step 3: investment economics and proof (built)
 
 - **Value by year with an adoption ramp**, over three, four or five years, with NPV at a discount rate, ROI and the payback month. Year 0 is the up-front cost. The yearly benefit at full adoption is the realizable value; when nothing is marked realizable yet, the case uses the modeled value and says so.
-- **Low, expected and high cases**, as a share of the expected benefit (for example 70% and 120%), each with its own NPV, ROI and payback.
+- **Low, expected and high cases**, each with its own NPV, ROI and payback. Each figure in the business case can take a low and a high value: moved one at a time, they show which figures matter most, and together they give the low and high case. Without ranges, the cases are a share of the expected benefit (for example 70% and 120%). See [business-case.md](business-case.md#low-and-high-for-each-figure).
 - **The full cost model**: cost lines by category (implementation, integration and data, model use, agent orchestration, human review and fallback, evaluation and monitoring, infrastructure, security and governance, training and change management, maintenance), each one-time and per year. With cost lines, they replace the business case's one-time and running cost in the investment case. Given the workflows that complete correctly each year, the case shows the **cost per successful workflow**.
 - **Gain-share**: an agreed share of the value Finance confirmed, for a set number of months. With no confirmed value there is no fee; it is never priced on a forecast.
 - **Attribution with a comparison group**: the before-and-after event-log comparison accepts two logs from a team that did not get the change, one per period, and reports the measured change net of that team's own change (the difference in differences). See [benefits.md](benefits.md#a-comparison-group).
@@ -171,8 +171,6 @@ Not yet in step 2: the templates do not fill themselves from the process. Prefil
 - **Portfolio dimensions in the screening**: reuse in other processes, cash tied up by the process, and what a pilot would teach, as optional value criteria. See [screening.md](screening.md#criteria).
 
 The investment settings live on the opportunity as `investment`, edited under **Investment over time** in the business case editor and shown on the one-pager. A blank adoption year or discount rate leaves NPV blank. As an example, a net cash flow of −250,000, 90,000, 330,000 and 370,000 at 10% gives an NPV of about 382,500, an ROI of 71% and payback at about 17.8 months; the unit tests check this.
-
-Not built yet: low and high cases worked out from each input (extending Which inputs matter most to every template), rather than from one share of the expected benefit.
 
 ## Open questions for the business owner
 

@@ -122,16 +122,26 @@
     };
   }
 
+  /* One-time and yearly cost: the cost lines, or else the business case's one-time and running cost. */
+  function costsOf(record, inv) {
+    const vc = (record.opportunity && record.opportunity.valueCase) || {};
+    if (inv.costs.length) return { oneTime: sum(inv.costs.map(c => c.oneTime || 0)), yearly: sum(inv.costs.map(c => c.yearly || 0)), lines: true };
+    return { oneTime: nonNegative(vc.oneTimeCost), yearly: nonNegative(vc.annualRunningCost) === null ? 0 : vc.annualRunningCost, lines: false };
+  }
+
   /**
    * The investment case for one opportunity. result is valueCase.compute()
-   * for the same record. Returns null when the opportunity has no
-   * investment settings. Otherwise:
+   * for the same record. cases, optional, is { low, high }, each { record,
+   * result } for the business case with every figure at the low or high end
+   * of its range (lib/ranges.js); the low and high cases then come from
+   * them instead of a share of the expected benefit. Returns null when the
+   * opportunity has no investment settings. Otherwise:
    * { base, horizonYears, discountRatePct, years, npv, roiPct, paybackMonths,
    *   totalBenefit, totalCost, oneTimeCost, yearlyCost, costsByCategory,
    *   scenarios: { low, expected, high }, costPerSuccessfulWorkflow,
    *   gainShare, missing, notes }.
    */
-  function compute(record, result) {
+  function compute(record, result, cases) {
     const inv = record && record.opportunity && record.opportunity.investment;
     if (!inv) return null;
     const vc = (record.opportunity && record.opportunity.valueCase) || {};
@@ -141,9 +151,7 @@
     if (base.kind === "missing") missing.push("Annual value");
 
     // Costs: the cost lines, or else the business case's one-time and running cost.
-    const useLines = inv.costs.length > 0;
-    const oneTime = useLines ? sum(inv.costs.map(c => c.oneTime || 0)) : nonNegative(vc.oneTimeCost);
-    const yearly = useLines ? sum(inv.costs.map(c => c.yearly || 0)) : (nonNegative(vc.annualRunningCost) === null ? 0 : vc.annualRunningCost);
+    const { oneTime, yearly, lines: useLines } = costsOf(record, inv);
     if (!useLines) notes.push("Costs are the business case's one-time and annual running cost. Add cost lines to break them down by category.");
     else if (util.isFiniteNumber(vc.oneTimeCost) || util.isFiniteNumber(vc.annualRunningCost)) notes.push("The cost lines replace the business case's one-time and annual running cost here.");
     if (oneTime === null) missing.push("One-time cost");
@@ -152,11 +160,16 @@
     ramp.forEach((p, i) => { if (p === null) missing.push("Adoption in year " + (i + 1)); });
     if (inv.discountRatePct === null) missing.push("Discount rate");
 
-    const yearsOf = factor => [0].concat(ramp.map(p => (base.value === null || p === null ? null : base.value * factor * p / 100)));
-    const costs = [oneTime].concat(ramp.map(() => yearly));
-    const expected = economicsOf(yearsOf(1), costs, inv.discountRatePct);
-    const scenario = pct => (pct === null ? null : economicsOf(yearsOf(pct / 100), costs, inv.discountRatePct));
-    const low = scenario(inv.lowPct), high = scenario(inv.highPct);
+    const yearsOf = (value, factor) => [0].concat(ramp.map(p => (value === null || p === null ? null : value * factor * p / 100)));
+    const costsFor = c => [c.oneTime].concat(ramp.map(() => c.yearly));
+    const costs = costsFor({ oneTime, yearly });
+    const expected = economicsOf(yearsOf(base.value, 1), costs, inv.discountRatePct);
+    const fromRanges = !!(cases && cases.low && cases.high);
+    // From the ranges: the case's own benefit and costs, both moved by its figures. Otherwise a share of the expected benefit.
+    const scenario = fromRanges ? c => economicsOf(yearsOf(benefitBase(c.result).value, 1), costsFor(costsOf(c.record, inv)), inv.discountRatePct) :
+      pct => (pct === null ? null : economicsOf(yearsOf(base.value, pct / 100), costs, inv.discountRatePct));
+    const low = scenario(fromRanges ? cases.low : inv.lowPct), high = scenario(fromRanges ? cases.high : inv.highPct);
+    if (fromRanges) notes.push("The low and high cases set every figure to the end of its range that lowers or raises the value, so the costs can move too.");
 
     const byCategory = CATEGORY_IDS.map(id => {
       const lines = inv.costs.filter(c => c.category === id);
@@ -180,9 +193,9 @@
       base, horizonYears: inv.horizonYears, discountRatePct: inv.discountRatePct, adoptionPct: ramp,
       oneTimeCost: oneTime, yearlyCost: yearly, costsByCategory: byCategory,
       scenarios: {
-        low: low ? { pct: inv.lowPct, npv: low.npv, roiPct: low.roiPct, paybackMonths: low.paybackMonths } : null,
-        expected: { pct: 100, npv: expected.npv, roiPct: expected.roiPct, paybackMonths: expected.paybackMonths },
-        high: high ? { pct: inv.highPct, npv: high.npv, roiPct: high.roiPct, paybackMonths: high.paybackMonths } : null
+        low: low ? { pct: fromRanges ? null : inv.lowPct, source: fromRanges ? "ranges" : "share", npv: low.npv, roiPct: low.roiPct, paybackMonths: low.paybackMonths } : null,
+        expected: { pct: 100, source: "expected", npv: expected.npv, roiPct: expected.roiPct, paybackMonths: expected.paybackMonths },
+        high: high ? { pct: fromRanges ? null : inv.highPct, source: fromRanges ? "ranges" : "share", npv: high.npv, roiPct: high.roiPct, paybackMonths: high.paybackMonths } : null
       },
       costPerSuccessfulWorkflow, gainShare, missing, notes
     }, expected);

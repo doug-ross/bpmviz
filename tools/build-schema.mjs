@@ -20,6 +20,7 @@ const aiResults = require("../webui/js/lib/ai-results.js");
 const workshop = require("../webui/js/lib/workshop.js");
 const valueLines = require("../webui/js/lib/value-lines.js");
 const investment = require("../webui/js/lib/investment.js");
+const ranges = require("../webui/js/lib/ranges.js");
 const E = schema.ENUMS;
 
 const en = name => ({ enum: E[name] });
@@ -222,6 +223,10 @@ const doc = {
               valueLines: { type: "array", maxItems: valueLines.LIMIT, items: { $ref: "#/$defs/valueLine" },
                 description: "Kinds of value besides labor hours, one line each. See docs/value-dimensions.md." },
               investment: { $ref: "#/$defs/investment" },
+              ranges: { type: "object", maxProperties: ranges.LIMIT, additionalProperties: false,
+                description: "A low and a high value for figures in the business case: vc.<key> for the labor estimate, vl.<lineId>.<key> for a value line, as.<key> for a project assumption.",
+                patternProperties: { [ranges.FIELD.source]: { type: "object", additionalProperties: false,
+                  properties: { low: { type: ["number", "null"], minimum: 0 }, high: { type: ["number", "null"], minimum: 0 } } } } },
               goalIds: Object.assign({ description: "The value goals this opportunity serves." }, ids),
               aiAssessment: { type: "object", properties: Object.assign(Object.fromEntries(aiKeys.map(k => [k, text(2000)])), { mode: { enum: ["", "assist", "autonomous"] } }) }
             }

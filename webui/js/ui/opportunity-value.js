@@ -349,25 +349,84 @@
         vc.shareOfCasesPct !== null || vc.oneTimeCost !== null || vc.datasetId !== null;
     }
 
+    /*
+     * A low and a high value for each figure (lib/ranges.js). The table lists
+     * the figures the business case has now, so it is rebuilt when a figure
+     * is set or cleared or a value line is added or removed; what was typed
+     * is kept by figure.
+     */
+    const rangeStored = (record.opportunity && record.opportunity.ranges) || null;
+    const rangeTyped = new Map(Object.entries(rangeStored || {}).map(([k, v]) => [k, { low: v.low, high: v.high }]));
+    const rangeBody = h("tbody", { id: "bc-rng-rows" });
+    const rangePreview = h("p", { class: "note", role: "status", id: "bc-rng-preview" });
+    let rangeKey = null, rangeFields = [];
+    const rangeId = field => "bc-rng-" + field.replace(/[^A-Za-z0-9_-]/g, "-");
+    function syncRanges(draft) {
+      rangeFields = B.ranges.fieldsOf(e, draft, { scenarioId: ctx.scenarioId });
+      const key = rangeFields.map(f => f.field).join("|");
+      const today = f => units.formatMeasure(f.value, f.unit, unitsCtxOf(e));
+      if (key === rangeKey) {
+        rangeFields.forEach(f => { const cell = document.getElementById(rangeId(f.field) + "-today"); if (cell) cell.textContent = today(f); });
+        return;
+      }
+      rangeKey = key;
+      rangeBody.replaceChildren(...rangeFields.map(f => {
+        const typed = rangeTyped.get(f.field) || { low: null, high: null };
+        const end = side => {
+          const el = numberInput(typed[side], f.label + ", " + side, { min: 0, max: f.max === null ? undefined : String(f.max), id: rangeId(f.field) + "-" + side });
+          el.addEventListener("input", () => {
+            const t = rangeTyped.get(f.field) || { low: null, high: null };
+            t[side] = numberOf(el);
+            rangeTyped.set(f.field, t);
+            updatePreview();
+          });
+          return el;
+        };
+        return h("tr", null, h("td", null, f.label), h("td", { class: "num", id: rangeId(f.field) + "-today" }, today(f)), h("td", null, end("low")), h("td", null, end("high")));
+      }));
+    }
+    /* The ranges typed for the figures the business case has now. */
+    function currentRanges() {
+      const out = {};
+      rangeFields.forEach(f => { const t = rangeTyped.get(f.field); if (t && (t.low !== null || t.high !== null)) out[f.field] = { low: t.low, high: t.high }; });
+      return out;
+    }
+
     /* The record as the editor has it now, for the previews. */
     function draftRecord() {
       const vc = currentValueCase();
       return Object.assign({}, record, { opportunity: Object.assign({}, record.opportunity,
-        touchedFields(vc) ? { valueCase: vc } : { valueCase: undefined }, { valueLines: valueLines.sanitizeLines(currentLines()).lines }) });
+        touchedFields(vc) ? { valueCase: vc } : { valueCase: undefined }, { valueLines: valueLines.sanitizeLines(currentLines()).lines }, { ranges: currentRanges() }) });
     }
 
     function updatePreview() {
       updateValuePreview();
-      updateInvestmentPreview();
+      syncRanges(draftRecord());
+      updateInvestmentPreview(updateRangePreview());
     }
 
-    function updateInvestmentPreview() {
+    function updateRangePreview() {
+      const draft = draftRecord();
+      if (!Object.keys(draft.opportunity.ranges).length) {
+        rangePreview.textContent = "Give a low and a high for the figures you are least sure of, to see the low and high case and which figure matters most.";
+        return null;
+      }
+      let r;
+      try { r = B.ranges.analyze(e, draft, { scenarioId: ctx.scenarioId }); } catch (err) { rangePreview.textContent = "These ranges don't give a low and high case. Check the numbers you entered."; return null; }
+      if (!r || !r.figure) { rangePreview.textContent = r ? r.notes[0] : ""; return null; }
+      const fmt = v => v === null ? "not calculated" : units.formatMeasure(v, r.figure.unit, unitsCtxOf(e));
+      rangePreview.textContent = "Low case " + fmt(r.low.value) + " and high case " + fmt(r.high.value) + ", against " + fmt(r.figure.value) + " (" + lowerFirst(r.figure.label) + ")." +
+        (r.rows.length && r.rows[0].spread > 0 ? " Matters most: " + lowerFirst(r.rows[0].label) + "." : "");
+      return r;
+    }
+
+    function updateInvestmentPreview(spread) {
       const v = invValue();
       if (!invTouched(v)) { invPreview.textContent = "Fill in adoption by year and a discount rate to see NPV, ROI and payback over " + v.horizonYears + " years."; return; }
       const draft = draftRecord();
       draft.opportunity.investment = inv.sanitizeInvestment(v);
       let r;
-      try { r = inv.compute(draft, valueCase.compute(e, draft, { scenarioId: ctx.scenarioId })); } catch (err) { invPreview.textContent = "These figures don't give an investment case. Check the numbers you entered."; return; }
+      try { r = inv.compute(draft, valueCase.compute(e, draft, { scenarioId: ctx.scenarioId }), spread && spread.low && spread.high ? { low: spread.low, high: spread.high } : null); } catch (err) { invPreview.textContent = "These figures don't give an investment case. Check the numbers you entered."; return; }
       const fmt = x => units.formatMeasure(x, "currency", unitsCtxOf(e));
       const complete = r.totalCost !== null;
       const said = [
@@ -432,6 +491,13 @@
       h("p", { class: "small muted" }, "Value besides labor hours, each worked out with its own formula. A hires-avoided line is how the labor hours are realized, so labor is not counted twice."),
       lineList,
       h("div", { class: "bc-vl-add" }, addKind, addButton),
+      h("details", { class: "bc-inv", id: "bc-rng", open: !!(rangeStored && Object.keys(rangeStored).length) },
+        h("summary", { class: "field-label" }, "Low and high for each figure"),
+        h("p", { class: "small muted" }, "Optional. For the figures you are least sure of, give the lowest and highest you would believe. Each one is moved on its own to show which matters most, and together they give a low and a high case. With ranges, the investment case uses these instead of a share of the expected benefit."),
+        h("div", { class: "table-wrap" }, h("table", { class: "table bc-rng-table", id: "bc-rng-table" },
+          h("thead", null, h("tr", null, h("th", { scope: "col" }, "Figure"), h("th", { scope: "col", class: "num" }, "Now"), h("th", { scope: "col" }, "Low"), h("th", { scope: "col" }, "High"))),
+          rangeBody)),
+        rangePreview),
       h("details", { class: "bc-inv", id: "bc-inv", open: !!invStored },
         h("summary", { class: "field-label" }, "Investment over time"),
         h("p", { class: "small muted" }, "Optional. Spread the yearly value over the years as the change is adopted, count every cost, and see NPV, ROI and payback. Year 0 is the up-front cost."),
@@ -463,6 +529,8 @@
         if (hadLines || lines.length) out.valueLines = lines;
         const iv = invValue();
         if (invStored || invTouched(iv)) out.investment = iv;
+        const rv = currentRanges();
+        if (rangeStored || Object.keys(rv).length) out.ranges = rv;
         return out;
       },
       check: () => (needsDataset() && !datasetSel.value ? "Choose an event log, or switch effort and share of cases to values you enter." : null)
@@ -690,6 +758,34 @@
     ];
   }
 
+  /* Which figures matter most: each moved to its low and high on its own, then all together. */
+  function rangesSection(r, c) {
+    const none = text => h("span", { class: "muted" }, text);
+    const money = v => v === null ? none("Not calculated") : units.formatMeasure(v, r.figure.unit, c);
+    const values = r.rows.flatMap(x => [x.atLow, x.atHigh]).concat([r.figure.value, r.low.value, r.high.value]).filter(v => v !== null);
+    const lo = Math.min(...values), span = (Math.max(...values) - lo) || 1;
+    const pos = v => ((v - lo) / span * 100) + "%";
+    return [
+      h("h2", null, "Which figures matter most"),
+      h("p", null, "Against " + money(r.figure.value) + " (" + lowerFirst(r.figure.label) + "), the low case is " + money(r.low.value) + " and the high case is " + money(r.high.value) + "."),
+      h("div", { class: "table-wrap" }, h("table", { class: "table sens-table", id: "bc-rng-onepager" },
+        h("thead", null, h("tr", null, ["Figure", "Value at low", "Value at high", "Range"].map((col, i) => h("th", { scope: "col", class: i > 0 && i < 3 ? "num" : null }, col)))),
+        h("tbody", null, r.rows.map(x => {
+          const ends = [x.atLow, x.atHigh, r.figure.value].filter(v => v !== null);
+          const a = Math.min(...ends), b = Math.max(...ends);
+          const tip = x.label + ": " + (x.atLow === null ? "" : money(x.atLow) + " at the low end") + (x.atLow !== null && x.atHigh !== null ? ", " : "") + (x.atHigh === null ? "" : money(x.atHigh) + " at the high end");
+          const words = v => v === null ? "not given" : units.formatMeasure(v, x.unit, c);
+          return h("tr", null, h("td", null, h("div", { class: "title-cell" }, x.label),
+              h("div", { class: "desc" }, "Now " + words(x.value) + ". Low " + words(x.low) + ", high " + words(x.high) + ".")),
+            h("td", { class: "num" }, x.low === null ? none("Not given") : money(x.atLow)), h("td", { class: "num" }, x.high === null ? none("Not given") : money(x.atHigh)),
+            h("td", { class: "sens-cell" }, h("div", { class: "sens-track", title: tip, role: "img", "aria-label": tip },
+              h("span", { class: "sens-bar", style: { left: pos(a), width: "calc(" + pos(b) + " - " + pos(a) + ")" } }),
+              h("span", { class: "sens-base", style: { left: pos(r.figure.value) } }))));
+        })))),
+      h("ul", { class: "plain-list small" }, r.notes.map(n => h("li", null, n)))
+    ];
+  }
+
   /* The business case over time: cash flows by year, the low and high cases, costs by category and the gain-share fee. */
   function investmentSection(r, c) {
     const none = text => h("span", { class: "muted" }, text);
@@ -720,7 +816,7 @@
           h("td", { class: "num" }, money(y.discounted)), h("td", { class: "num" }, money(y.cumulative))))))),
       cases.length > 1 ? h("div", { class: "table-wrap bc-inv-gap" }, h("table", { class: "table", id: "bc-inv-cases" },
         th(["Case", "Benefit, share of expected", "NPV", "ROI", "Payback"], 1),
-        h("tbody", null, cases.map(([l, x]) => h("tr", null, h("td", null, l), h("td", { class: "num" }, util.formatNumber(x.pct, 0) + "%"),
+        h("tbody", null, cases.map(([l, x]) => h("tr", null, h("td", null, l), h("td", { class: "num" }, x.pct === null ? "From the ranges" : util.formatNumber(x.pct, 0) + "%"),
           h("td", { class: "num" }, money(x.npv)), h("td", { class: "num" }, pct(x.roiPct)), h("td", { class: "num" }, months(x.paybackMonths))))))) : null,
       r.costsByCategory.length ? h("div", { class: "table-wrap bc-inv-gap" }, h("table", { class: "table", id: "bc-inv-costs-table" },
         th(["Cost", "One-time", "Per year"], 1),
@@ -774,6 +870,7 @@
       page.parts && page.parts.length ? [h("h2", null, "Value by type"), partsTable(page.parts, c),
         page.parts.filter(p => p.costOfErrors).map(p => errorsTable(p, c)),
         h("p", { class: "note" }, "Gross is what the change is worth on all the work it touches. Realizable is the share with a named way to become money. Confirmed is what Finance validated.")] : null,
+      page.ranges && page.ranges.figure ? rangesSection(page.ranges, c) : null,
       page.investment ? investmentSection(page.investment, c) : null,
       page.goals.length ? [h("h2", null, "Value goals it serves"), goalsTable(page.goals, null)] : null,
       page.checkpoints.length ? [h("h2", null, "Results at checkpoints"), checkpointsTable(page.checkpoints, c),
