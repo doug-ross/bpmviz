@@ -16,13 +16,14 @@ const ai = require(path.join(root, "webui", "js", "lib", "ai-results.js"));
 const screeningLib = require(path.join(root, "webui", "js", "lib", "screening.js"));
 
 export const MAX_REPAIRS = 2;
-export const TASKS = ["extract", "opportunities", "future-state", "summary", "log-mapping", "screen"];
+export const TASKS = ["extract", "opportunities", "future-state", "summary", "log-mapping", "screen", "goals"];
 const SECRET_ADVICE = {
   extract: "Remove credentials from the sources", opportunities: "Remove credentials from the project",
   "future-state": "Remove credentials from the project", summary: "Remove credentials from the project",
-  "log-mapping": "Check the activity names and the model steps", screen: "Remove credentials from the screening"
+  "log-mapping": "Check the activity names and the model steps", screen: "Remove credentials from the screening",
+  goals: "Remove credentials from the sources and the project"
 };
-const TIMEOUT_MS = { extract: 20 * 60000, opportunities: 8 * 60000, "future-state": 10 * 60000, summary: 6 * 60000, "log-mapping": 6 * 60000, screen: 8 * 60000 };
+const TIMEOUT_MS = { extract: 20 * 60000, opportunities: 8 * 60000, "future-state": 10 * 60000, summary: 6 * 60000, "log-mapping": 6 * 60000, screen: 8 * 60000, goals: 10 * 60000 };
 
 /*
  * Task options passed through to the task input. Log mapping takes
@@ -135,6 +136,7 @@ export async function runTask(o) {
       if (info.warning) warnings.push({ code: "source.unreadable", path: info.name, message: info.name + ": " + info.warning });
     }
     if (task === "extract" && !job.sources.length) throw new AiFailure("input.missing", "Add at least one document to create the process from.");
+    if (task === "goals" && !job.sources.length) throw new AiFailure("input.missing", "Add at least one document, such as meeting notes or a transcript, to draft goals from.");
 
     const input = sc ? screeningLib.aiTaskInput(sc, { includeSensitive: o.includeSensitive }) :
       e ? ai.buildTaskInput(e, task, Object.assign({ includeSensitive: o.includeSensitive, baselineModelId: o.baselineModelId }, taskOptions)) : null;

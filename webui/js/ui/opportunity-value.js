@@ -70,8 +70,17 @@
     shareOfCases.id = "bc-vc-share-pct"; oneTimeCost.id = "bc-vc-one-time"; runningCost.id = "bc-vc-running-cost";
     confidenceSel.id = "bc-vc-confidence"; basisSel.id = "bc-vc-basis"; note.id = "bc-vc-note";
 
+    // Figures drafted with AI carry their source as a hint and a dashed outline until a person clears the tick.
+    const sources = existing.sources || {};
+    const hint = key => sources[key] ? "AI source: " + sources[key] : undefined;
+    const draftBox = existing.aiDraft ? h("input", { type: "checkbox", id: "bc-vc-ai-draft", checked: true }) : null;
+    const drafted = [[effortReduction, "effortReductionPct"], [durationReduction, "durationReductionPct"], [shareOfCases, "shareOfCasesPct"],
+      [oneTimeCost, "oneTimeCost"], [runningCost, "annualRunningCost"]];
+    function markDrafts() { drafted.forEach(([el]) => el.classList.toggle("bc-ai", !!(draftBox && draftBox.checked))); }
+    if (draftBox) { draftBox.addEventListener("change", markDrafts); markDrafts(); }
+
     const datasetField = field("Event log", datasetSel);
-    const shareField = field("Share of cases affected (%)", shareOfCases);
+    const shareField = field("Share of cases affected (%)", shareOfCases, hint("shareOfCasesPct"));
 
     function needsDataset() {
       return effortSourceSel.value === "dataset" || shareSourceSel.value === "dataset";
@@ -86,7 +95,8 @@
         shareOfCasesPct: numberOf(shareOfCases), shareSource: shareSourceSel.value,
         effortSource: effortSourceSel.value, datasetId: datasetSel.value || null,
         oneTimeCost: numberOf(oneTimeCost), annualRunningCost: numberOf(runningCost),
-        confidence: confidenceSel.value, basis: basisSel.value, note: note.value
+        confidence: confidenceSel.value, basis: basisSel.value, note: note.value,
+        aiDraft: !!(draftBox && draftBox.checked)
       });
     }
 
@@ -115,11 +125,15 @@
     const el = h("div", { class: "form-grid", style: { border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "var(--space-3)" } },
       h("p", { class: "field-label" }, "Business case"),
       h("p", { class: "small muted" }, "What this opportunity could be worth each year, worked out with the same formulas as the Value tab."),
+      draftBox ? h("div", { class: "bc-ai-banner", id: "bc-vc-ai-banner" },
+        h("strong", null, "AI draft, not reviewed"),
+        h("p", { class: "small" }, "These figures were drafted with AI from the project's own figures. Reports leave them out until someone reviews them. Check each one against its source, then clear the tick to make them yours."),
+        h("label", { class: "check" }, draftBox, "AI draft, not reviewed")) : null,
       h("div", { class: "field-row" }, field("Effort comes from", effortSourceSel), field("Share of cases comes from", shareSourceSel)),
       datasetField,
-      h("div", { class: "field-row" }, field("Effort reduction (%)", effortReduction), field("Duration reduction (%)", durationReduction)),
+      h("div", { class: "field-row" }, field("Effort reduction (%)", effortReduction, hint("effortReductionPct")), field("Duration reduction (%)", durationReduction, hint("durationReductionPct"))),
       shareField,
-      h("div", { class: "field-row" }, field("One-time cost", oneTimeCost), field("Annual running cost", runningCost)),
+      h("div", { class: "field-row" }, field("One-time cost", oneTimeCost, hint("oneTimeCost")), field("Annual running cost", runningCost, hint("annualRunningCost"))),
       h("div", { class: "field-row" }, field("Confidence", confidenceSel), field("Basis", basisSel)),
       field("Wave", waveSel, "The Matrix and Waves views suggest a wave from value and effort. The choice is yours."),
       field("Note", note),
@@ -146,8 +160,9 @@
     let result;
     try { result = valueCase.compute(ctx.engagement, record, { scenarioId: ctx.scenarioId }); } catch (err) { return h("span", { class: "muted" }, "No estimate yet"); }
     const head = valueCase.headline(result);
-    if (!head) return h("span", { class: "muted" }, result.missing.length ? "Needs " + result.missing[0].toLowerCase() : "No estimate yet");
-    return h("span", null, units.formatMeasure(head.value, head.unit, unitsCtxOf(ctx.engagement)) + " a year", h("span", { class: "formula" }, " " + basisWord(head.basis) + " basis"));
+    const draft = valueCase.hasDraftValueCase(record) ? h("span", { class: "formula bc-ai-text" }, " AI draft to review") : null;
+    if (!head) return h("span", { class: "muted" }, result.missing.length ? "Needs " + result.missing[0].toLowerCase() : "No estimate yet", draft);
+    return h("span", null, units.formatMeasure(head.value, head.unit, unitsCtxOf(ctx.engagement)) + " a year", h("span", { class: "formula" }, " " + basisWord(head.basis) + " basis"), draft);
   }
 
   function waveCell(record) {
@@ -284,15 +299,17 @@
         stat(page.total.fteReleased === null ? "No estimate yet" : util.formatNumber(page.total.fteReleased, 1) + " FTE",
           "Time freed up, all planned waves", "Time for other work, not a headcount cut"),
         stat(page.total.oneTimeCost === null ? "Not entered yet" : units.formatMeasure(page.total.oneTimeCost, "currency", c), "One-time cost, all planned waves", "")),
+      page.goals.length ? [h("h2", null, "Value goals"), goalsTable(page.goals, page.rows)] : null,
       h("h2", null, "Ranked opportunities"),
       h("div", { class: "table-wrap" }, h("table", { class: "table" },
-        h("thead", null, h("tr", null, ["Rank", "Opportunity", "Value", "Basis", "Quadrant", "Wave"].map(col => h("th", { scope: "col" }, col)))),
+        h("thead", null, h("tr", null, ["Rank", "Opportunity", "Value", "Basis", "Quadrant", "Wave"].concat(page.goals.length ? ["Goals served"] : []).map(col => h("th", { scope: "col" }, col)))),
         h("tbody", null, page.rows.map(r => h("tr", null,
           h("td", { class: "num" }, String(r.rank)), h("td", null, r.title),
           h("td", { class: "num" }, r.value === null ? h("span", { class: "muted" }, "No estimate yet") : units.formatMeasure(r.value, r.unit, c) + " a year"),
           h("td", null, r.basis ? basisLabel(r.basis) : h("span", { class: "muted" }, "None")),
           h("td", null, r.quadrantLabel || h("span", { class: "muted" }, "Not placed")),
-          h("td", null, r.waveLabel)))))),
+          h("td", null, r.waveLabel),
+          page.goals.length ? h("td", null, goalNames(page.goals, r.goalIds)) : null))))),
       h("h2", null, "Wave totals"),
       h("div", { class: "table-wrap" }, h("table", { class: "table" },
         h("thead", null, h("tr", null, ["Wave", "Opportunities", "Net annual benefit", "One-time cost", "Time freed up"].map(col => h("th", { scope: "col" }, col)))),
@@ -302,6 +319,37 @@
           h("td", { class: "num" }, w.oneTimeCost === null ? h("span", { class: "muted" }, "Not entered") : units.formatMeasure(w.oneTimeCost, "currency", c)),
           h("td", { class: "num" }, w.fteReleased === null ? h("span", { class: "muted" }, "No estimate yet") : util.formatNumber(w.fteReleased, 1) + " FTE")))))),
       page.notes.map(n => h("p", { class: "note" }, n)));
+  }
+
+  function goalNames(goals, ids) {
+    const names = goals.filter(g => (ids || []).includes(g.id)).map(g => g.title);
+    return names.length ? names.join("; ") : h("span", { class: "muted" }, "None linked");
+  }
+
+  /* The client's value goals with what each is measured by and the opportunities that serve it. */
+  function goalsTable(goals, rows) {
+    const titleOf = id => ((rows || []).find(r => r.recordId === id) || {}).title || id;
+    return h("div", { class: "table-wrap" }, h("table", { class: "table", id: "bc-goals" },
+      h("thead", null, h("tr", null, ["Goal", "Kind", "Measure", "Target", "By", "Basis"].concat(rows ? ["Served by"] : []).map(col => h("th", { scope: "col" }, col)))),
+      h("tbody", null, goals.map(g => h("tr", null,
+        h("td", null, g.title), h("td", null, g.kindLabel),
+        h("td", null, g.metric || h("span", { class: "muted" }, "Not set")),
+        h("td", null, g.target || h("span", { class: "muted" }, "Not set")),
+        h("td", null, g.by || h("span", { class: "muted" }, "Not set")),
+        h("td", null, basisLabel(g.basis)),
+        rows ? h("td", null, g.recordIds.length ? g.recordIds.map(titleOf).join("; ") : h("span", { class: "muted" }, "No opportunity yet")) : null)))));
+  }
+
+  const CHECKPOINT_STATUS = { met: "Met", partial: "Partially met", "not-yet": "Not yet", worse: "Worse", "not-measurable": "Not measurable" };
+
+  function checkpointsTable(rows, c) {
+    const fig = f => f ? units.formatMeasure(f.value, f.unit, c) + " (" + basisWord(f.basis) + ")" : h("span", { class: "muted" }, "Not calculated");
+    return h("div", { class: "table-wrap" }, h("table", { class: "table", id: "bc-checkpoints" },
+      h("thead", null, h("tr", null, ["Checkpoint", "Date", "Realized hours a year", "Realized net benefit", "Status"].map(col => h("th", { scope: "col" }, col)))),
+      h("tbody", null, rows.map(x => h("tr", null,
+        h("td", null, x.label), h("td", null, x.date || h("span", { class: "muted" }, "No date")),
+        h("td", { class: "num" }, fig(x.realized)), h("td", { class: "num" }, fig(x.realizedMoney)),
+        h("td", null, CHECKPOINT_STATUS[x.status] || x.status))))));
   }
 
   /* Client and project name above a page title, or the process name when neither is set. */
@@ -326,7 +374,10 @@
         h("dt", null, "Wave"), h("dd", null, page.waveLabel + (page.suggestedWave ? " (suggested: " + schema.label("wave", page.suggestedWave) + ")" : "")),
         h("dt", null, "Confidence"), h("dd", null, page.confidenceLabel)),
       page.hasValueCase ? h("div", { class: "stat-row" }, page.outputs.map(stat)) :
-        h("p", { class: "note" }, "This opportunity has no business case yet. Open it in Findings to add one."),
+        h("p", { class: "note" }, page.notes[0] || "This opportunity has no business case yet. Open it in Findings to add one."),
+      page.goals.length ? [h("h2", null, "Value goals it serves"), goalsTable(page.goals, null)] : null,
+      page.checkpoints.length ? [h("h2", null, "Results at checkpoints"), checkpointsTable(page.checkpoints, c),
+        h("p", { class: "note" }, "Realized figures come from hours per case the delivery team recorded after the change.")] : null,
       page.affectedSteps.length ? [h("h2", null, "Affected steps"), h("p", null, page.affectedSteps.join(", "))] : null,
       page.skippedSteps.length ? h("p", { class: "note" }, "Not counted as work steps: " + page.skippedSteps.join(", ") + ".") : null,
       page.note ? [h("h2", null, "Note"), h("p", null, page.note)] : null,

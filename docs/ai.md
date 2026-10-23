@@ -1,11 +1,12 @@
 # AI tasks on your Claude or ChatGPT subscription
 
-AIxRay can ask an AI assistant to draft six things, five for a project and one for a screening:
+AIxRay can ask an AI assistant to draft seven things, six for a project and one for a screening:
 
 | Task | What you get | Command |
 |---|---|---|
 | Create a process from documents | A new project drafted from PDF, Word, PowerPoint, diagram images, notes or BPMN | `npm run ai -- extract <files...>` |
-| Suggest findings | Pain points, opportunities and open questions linked to steps | `npm run ai -- opportunities --in <file>` |
+| Suggest findings | Pain points, opportunities and open questions linked to steps, with drafted business case figures for opportunities | `npm run ai -- opportunities --in <file>` |
+| Suggest value goals | What the client counts as value (revenue, cost, capability, risk, experience), drafted from meeting notes, transcripts or documents | `npm run ai -- goals --in <file> <files...>` |
 | Draft a future state | Changes to the current state: steps changed, added and removed, new lanes | `npm run ai -- future-state --in <file>` |
 | Draft the summary | The executive summary that opens the printed report | `npm run ai -- summary --in <file>` |
 | Match event log activities to steps | A suggested step for each activity name in an event log, for the event log import | `npm run ai -- log-mapping --in <file> --activities <file>` |
@@ -77,6 +78,7 @@ npm run ai -- future-state --in claims.engagement.json --yes
 npm run ai -- summary --in claims.engagement.json --yes
 npm run ai -- log-mapping --in claims.engagement.json --activities claims-log.csv --yes
 npm run ai -- screen --in shortlist.screening.json --yes
+npm run ai -- goals --in claims.engagement.json kickoff-transcript.txt workshop-notes.docx --yes
 npm run ai -- check claims.opportunities.ai-result.json --in claims.engagement.json
 ```
 
@@ -103,14 +105,18 @@ Exit codes: 0 done, 1 failed, 2 wrong usage, 3 stopped by the data-handling rule
 
 For screening scores the assistant sees the criteria with what 1, 3 and 5 mean, and for each process its name, description, yearly figures, the figures copied from its project, the scores people gave and the criteria still to score. It never sees process owners, because they can name people, or processes marked sensitive unless you add `--include-sensitive`. It drafts only the criteria nobody has scored; a score a person gave cannot be replaced. `--apply` writes `<name>.with-ai.screening.json` with every drafted score applied as an unreviewed AI draft. The app's Draft with AI buttons do not run this task; use the command line or a skill.
 
+For suggested findings the assistant also drafts business case figures: the share of cases affected, the effort and duration reduction, and the one-time and running costs. It drafts them for the opportunities it suggests and for opportunities already in the project that have no business case, from the figures in the project only, with a source for each figure. A figure without a source, or out of range, is left blank. A drafted business case stays marked as an AI draft, with an illustrative basis, and stays out of the ranking and the reports until someone reviews it in the business case editor. A business case a person entered cannot be replaced. See [business-case.md](business-case.md).
+
+For value goals the assistant sees the project, as for suggested findings, and the documents you give it. It drafts only goals the client stated, each with a source and the client's own words, and leaves a target blank unless someone in the documents gave the number. A drafted goal has the basis Provided and stays out of reports until someone checks it with the client and marks it reviewed. See [goals.md](goals.md).
+
 For log mapping the assistant sees the steps of one model (ID, label, lane and description, without gateways) and the activity names, most frequent first, up to 500 of them. It never sees events, times, case IDs, counts or people. Activity names that look like a key or token are left out before anything is sent, and the result says how many. A suggested match to a step that is not in the model, to a gateway, or for a name that was not sent cannot be used.
 
 ## Agent skills
 
 The repository includes one skill per task for each tool:
 
-- Claude Code: open Claude Code in the repository folder and type `/aixray-extract`, `/aixray-opportunities`, `/aixray-future-state`, `/aixray-summary`, `/aixray-log-mapping` or `/aixray-screen`, followed by the file names. The skills run only when you type them.
-- Codex: open Codex in the repository folder and ask for `$aixray-extract`, `$aixray-opportunities`, `$aixray-future-state`, `$aixray-summary`, `$aixray-log-mapping` or `$aixray-screen`.
+- Claude Code: open Claude Code in the repository folder and type `/aixray-extract`, `/aixray-opportunities`, `/aixray-future-state`, `/aixray-summary`, `/aixray-log-mapping`, `/aixray-screen` or `/aixray-goals`, followed by the file names. The skills run only when you type them.
+- Codex: open Codex in the repository folder and ask for `$aixray-extract`, `$aixray-opportunities`, `$aixray-future-state`, `$aixray-summary`, `$aixray-log-mapping`, `$aixray-screen` or `$aixray-goals`.
 
 A skill checks the data-handling rules with `npm run ai -- gate` before it reads anything, asks you for the confirmations it needs, drafts the result, checks it with `npm run ai -- wrap` and tells you which file to open.
 
@@ -129,8 +135,9 @@ This starts AIxRay at `http://127.0.0.1:8080` with a local AI helper and prints 
 - **Create from documents with AI** on the start screen.
 - **Suggest findings with AI** in the Findings tab, and in the Process tab's side panel.
 - **Draft a future state with AI** in the Process tab's side panel.
+- **Suggest goals from documents with AI** in the Value goals card of the Value tab.
 - **Draft with AI** next to the executive summary in Present, Report.
-- **Draft with AI** in More actions, for any of the first four.
+- **Draft with AI** in More actions, for any of the tasks above.
 - **Ask AI for the rest** in the Match activities step of the event log import, for the activity names that are not matched yet.
 
 The task dialog shows the tool and plan, the data-handling check and what will be sent, then runs the task and shows its progress. Cancel stops the tool. When it finishes, the review dialog opens as it does for a result file.

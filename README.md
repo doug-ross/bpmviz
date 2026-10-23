@@ -74,7 +74,7 @@ The Present tab has two modes: **Present**, a low-chrome view for the room, and 
 
 ### Draft with AI on your Claude or ChatGPT plan
 
-Claude Code (Claude Pro, Max, Team or Enterprise) or Codex (ChatGPT Plus, Pro, Business or Enterprise) can draft a current state extracted from PDF, Word, PowerPoint, diagram images, notes or BPMN; suggested pain points, opportunities and questions; a future state as changes to the current state; the executive summary for the report; and scores for the processes in a screening. AIxRay runs the tool you already use, on the account you signed in with, so no API key is involved and AIxRay never handles a credential.
+Claude Code (Claude Pro, Max, Team or Enterprise) or Codex (ChatGPT Plus, Pro, Business or Enterprise) can draft a current state extracted from PDF, Word, PowerPoint, diagram images, notes or BPMN; suggested pain points, opportunities and questions; a future state as changes to the current state; the executive summary for the report; value goals from meeting notes; business case figures for opportunities; and scores for the processes in a screening. AIxRay runs the tool you already use, on the account you signed in with, so no API key is involved and AIxRay never handles a credential.
 
 ```
 npm run ai -- status
@@ -102,6 +102,10 @@ Open the project, then choose **More actions, Import an event log**, or just ope
 
 Only aggregates are kept: counts and times per step, never the individual events, case IDs or the names of people in the log. `docs/event-logs.md` covers the file formats, the timestamp rules, how activities are matched to steps, and what is and is not stored.
 
+### Agree what value means to the client
+
+What counts as success for IT is not always what counts for the business. The **Value goals** card in the Value tab records what the client counts as value: more revenue, a lower cost, a new capability, less risk or a better experience, each with what it is measured by, a target and its basis. Link each opportunity to the goals it serves, then read the goals back to the client and ask: is this what value means to you? The goals carry through to the report, the deck, the CFO one-pager and the pilot brief. The **Suggest value goals** AI task drafts them from meeting notes or transcripts, each with the client's own words. See [the value goals guide](docs/goals.md).
+
 ### Build the business case for an opportunity
 
 Every opportunity can carry a business case: typed or measured inputs for how much effort it saves, how many cases it affects, and what it costs to deliver. As you fill it in, AIxRay estimates the opportunity's annual value right away, using the same formula everywhere it shows up.
@@ -110,7 +114,7 @@ The **Matrix** view in Findings, Opportunities charts every scored opportunity b
 
 ![Opportunities charted by value and effort in the Matrix view](docs/screenshots/16-business-case-matrix.png)
 
-A missing input leaves a result blank rather than assuming zero, and every figure carries the basis of its weakest input (illustrative, provided, measured or confirmed). See `docs/business-case.md` for the formulas and how ranking and the quadrants work.
+A missing input leaves a result blank rather than assuming zero, and every figure carries the basis of its weakest input (illustrative, provided, measured or confirmed). The **Suggest findings** AI task can draft the business case figures from the project's own figures, with a source for each one; drafted figures stay out of the ranking and the reports until you review them. See `docs/business-case.md` for the formulas and how ranking and the quadrants work.
 
 ### Check whether a change actually worked
 
@@ -118,7 +122,7 @@ Once you have an event log from before a change and another from after it, the *
 
 ![A step-by-step comparison of a baseline and an after event log](docs/screenshots/19-benefits.png)
 
-Start it from the Value tab once the project has two event logs. See `docs/benefits.md` for how the comparison is built and what each status (Met, Partially met, Not yet, Worse, Not measurable) means.
+Start it from the Value tab once the project has two event logs. Without an event log, the delivery team records **checkpoints** at 30, 60 or 90 days: the hands-on hours per case after the change, with its basis and source. AIxRay works out the realized hours and money with the business case's own formula and compares them with what was modeled. See `docs/benefits.md` for how the comparison is built and what each status (Met, Partially met, Not yet, Worse, Not measurable) means.
 
 ### Ask a client stakeholder to check the process
 

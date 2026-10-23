@@ -22,7 +22,7 @@
     "log-mapping": "Suggest activity mappings"
   });
   const TASK_INSTRUCTIONS = {
-    opportunities: "Suggest opportunities, pain points and questions grounded in the supplied steps and findings. Use existing IDs. Do not repeat findings. Prefer simpler process changes before automation. Explain your rationale and a practical validation action. Benefits are qualitative unless supplied figures support them.",
+    opportunities: "Suggest opportunities, pain points and questions grounded in the supplied steps and findings. Use existing IDs. Do not repeat findings. Prefer simpler process changes before automation. Explain your rationale and a practical validation action. Benefits are qualitative unless supplied figures support them. This packet carries no assumptions or scenario figures, so set valueCase to null and valueCases to an empty list. Use goalIds only for the supplied goals.",
     "future-state": "Propose a change set against baselineModelId. Use existing node and connector IDs. Keep start events, end events and gateways. Use new lane refs only for proposed lanes. Explain each change and the supplied finding it addresses. Do not invent timing or cost figures.",
     summary: "Write a short executive summary grounded only in supplied findings and models. List caveats and evidence gaps. Use supportingRecordIds from the input. Copy supportingFigures exactly from supplied figures, or use an empty list. No scenario economics, assumptions or source documents are exported in this packet; do not invent them.",
     "log-mapping": "Map only the supplied activity names to task steps in the baseline. Preserve activity names exactly. Use null for nodeId when uncertain; never map to gateways or invented nodes. Give confidence and rationale. No event rows or resource identities are supplied."
@@ -86,7 +86,8 @@
     });
     const snapshot = Object.assign({}, clean, {
       meta: pick(clean.meta, ["processName", "confidentiality", "dataStatus", "currency", "timeBasis"]),
-      models: [safeModel], records, evidence: [], assumptions: [], scenarios: [], narratives: [], datasets: []
+      models: [safeModel], records, evidence: [], assumptions: [], scenarios: [], narratives: [], datasets: [], checkpoints: [],
+      goals: (clean.goals || []).filter(g => !g.sensitive && !(g.generated && g.generated.reviewed !== true))
     });
     const input = ai.buildTaskInput(snapshot, task, {
       baselineModelId, modelId: baselineModelId, activities: o.activities || [], includeSensitive: false, includeUnreviewedAi: false

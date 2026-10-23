@@ -28,7 +28,9 @@ This prints the engagement without sensitive records, visit lists or links. Do n
 
 Read `tools/prompts/ai-common.md` and `tools/prompts/ai-opportunities.md` and follow them. The payload shape is `$defs.opportunities` in `webui/schema/ai-result.schema.json`: every field is required, with `null` or an empty list when there is nothing to say. Write one JSON object to `aixray-opportunities.draft.json`:
 
-    { "payload": { "suggestions": [ ... ] }, "notes": "...", "warnings": [ ... ] }
+    { "payload": { "suggestions": [ ... ], "valueCases": [ ... ] }, "notes": "...", "warnings": [ ... ] }
+
+Draft business case figures only from figures in the engagement, each with its source, as the prompt says. A figure without a source is left blank.
 
 ## 4. Check and save
 
@@ -38,4 +40,4 @@ Fix any problems it lists and run it again, at most three times. Once the result
 
 ## 5. Hand over
 
-Tell the user the result file name, how many suggestions it holds and the warnings it printed. They open the engagement in AIxRay, then open the result file with Open, tick the suggestions they want and apply them. Applied suggestions stay marked as AI drafts until someone reviews them.
+Tell the user the result file name, how many suggestions and drafted business cases it holds and the warnings it printed. They open the engagement in AIxRay, then open the result file with Open, tick the suggestions they want and apply them. Applied suggestions and business cases stay marked as AI drafts, and out of reports, until someone reviews them.

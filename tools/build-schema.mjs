@@ -68,6 +68,8 @@ const doc = {
     datasets: { type: "array", maxItems: L.datasets, items: { $ref: "#/$defs/dataset" }, description: "Aggregates of imported event logs. Optional." },
     reviewPacks: { type: "array", maxItems: L.reviewPacks, items: { $ref: "#/$defs/reviewPack" }, description: "Review packs sent to client stakeholders. Optional." },
     reviews: { type: "array", maxItems: L.reviews, items: { $ref: "#/$defs/review" }, description: "Client reviews received and applied. Optional." },
+    goals: { type: "array", maxItems: L.goals, items: { $ref: "#/$defs/goal" }, description: "What value means to the client. Opportunities link to them with opportunity.goalIds. Optional." },
+    checkpoints: { type: "array", maxItems: L.checkpoints, items: { $ref: "#/$defs/checkpoint" }, description: "Figures recorded by hand after a change, per opportunity. Optional." },
     workshop: workshop.WORKSHOP_SCHEMA,
     migration: { anyOf: [{ type: "null" }, { $ref: "#/$defs/migration" }] }
   },
@@ -214,7 +216,7 @@ const doc = {
             properties: {
               intervention: en("intervention"), simplerAlternative: text(4000), expectedBenefit: text(4000), affectedVolume: text(500),
               effort: en("effortSize"), risk: text(4000), dependencies: text(4000), validationAction: text(4000),
-              wave: en("wave"), valueCase: { $ref: "#/$defs/valueCase" },
+              wave: en("wave"), valueCase: { $ref: "#/$defs/valueCase" }, goalIds: Object.assign({ description: "The value goals this opportunity serves." }, ids),
               aiAssessment: { type: "object", properties: Object.assign(Object.fromEntries(aiKeys.map(k => [k, text(2000)])), { mode: { enum: ["", "assist", "autonomous"] } }) }
             }
           }]
@@ -324,7 +326,33 @@ const doc = {
         effortReductionPct: percent, durationReductionPct: percent, shareOfCasesPct: percent,
         shareSource: en("valueInputSource"), effortSource: { enum: ["node", "dataset"] }, datasetId: nullableId,
         oneTimeCost: { type: ["number", "null"], minimum: 0 }, annualRunningCost: { type: ["number", "null"], minimum: 0 },
-        confidence: en("confidence"), basis: en("assumptionStatus"), note: text(2000)
+        confidence: en("confidence"), basis: en("assumptionStatus"), note: text(2000),
+        aiDraft: { type: "boolean", description: "True for figures drafted with AI that no one has reviewed yet. Reports leave them out until then." },
+        sources: {
+          type: "object", additionalProperties: false, description: "Where each AI-drafted figure comes from.",
+          properties: Object.fromEntries(["shareOfCasesPct", "effortReductionPct", "durationReductionPct", "oneTimeCost", "annualRunningCost"].map(k => [k, text(500)]))
+        }
+      }
+    },
+    goal: {
+      type: "object", required: ["id", "title"], additionalProperties: false,
+      description: "One thing the client counts as value, such as more revenue, a lower cost per case or a new capability.",
+      properties: {
+        id, kind: en("goalKind"), title: text(300), metric: text(300),
+        baseline: { type: ["number", "null"], description: "Today's figure." }, target: { type: ["number", "null"] }, unit: text(40),
+        by: { type: "string", pattern: "^(\\d{4}-\\d{2}-\\d{2})?$" }, owner: text(200), basis: en("assumptionStatus"),
+        source: text(500), quote: text(300), note: text(2000), sensitive: { type: "boolean" }, generated: { $ref: "#/$defs/generated" }
+      }
+    },
+    checkpoint: {
+      type: "object", required: ["id", "recordId", "hoursPerCaseAfter"], additionalProperties: false,
+      description: "Figures a delivery team recorded by hand after the change for one opportunity.",
+      properties: {
+        id, recordId: id, label: text(60), date: { type: "string", pattern: "^(\\d{4}-\\d{2}-\\d{2})?$" },
+        hoursPerCaseAfter: { type: ["number", "null"], minimum: 0, description: "Measured hands-on hours per affected case after the change." },
+        shareOfCasesPct: percent, annualVolume: { type: ["number", "null"], minimum: 0 },
+        cycleTimeAfterMinutes: { type: ["number", "null"], minimum: 0 }, oneTimeCostActual: { type: ["number", "null"], minimum: 0 },
+        basis: { enum: ["supplied", "observed", "validated"] }, source: text(500), note: text(2000)
       }
     },
     person: { type: "object", additionalProperties: false, properties: { name: text(200), role: text(200), organization: text(200) } },
@@ -369,7 +397,7 @@ const resultDoc = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://aixray.local/schema/ai-result.schema.json",
   title: "AIxRay AI result",
-  description: "Output of one AI task (extract, opportunities, future-state, summary, log-mapping or screen), schema version 1. " +
+  description: "Output of one AI task (extract, opportunities, future-state, summary, log-mapping, screen or goals), schema version 1. " +
     "The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. " +
     "webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
   type: "object",
@@ -401,7 +429,7 @@ const resultDoc = {
       description: "extract: { engagement } (see engagement.schema.json). The other tasks use the schemas in $defs.",
       anyOf: [
         { type: "object", required: ["engagement"], properties: { engagement: { $ref: "engagement.schema.json" } } },
-        { $ref: "#/$defs/opportunities" }, { $ref: "#/$defs/futureState" }, { $ref: "#/$defs/summary" }, { $ref: "#/$defs/logMapping" }, { $ref: "#/$defs/screen" }
+        { $ref: "#/$defs/opportunities" }, { $ref: "#/$defs/futureState" }, { $ref: "#/$defs/summary" }, { $ref: "#/$defs/logMapping" }, { $ref: "#/$defs/screen" }, { $ref: "#/$defs/goals" }
       ]
     }
   },
@@ -411,7 +439,8 @@ const resultDoc = {
     futureState: T["future-state"],
     summary: T.summary,
     logMapping: T["log-mapping"],
-    screen: T.screen
+    screen: T.screen,
+    goals: T.goals
   }
 };
 const resultOut = path.join(root, "webui", "schema", "ai-result.schema.json");

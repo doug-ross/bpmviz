@@ -43,7 +43,8 @@ export function systemPrompt(task, provider) {
     .replace("{{MAX_SUGGESTIONS}}", String(Math.min(20, aiResults.MAX_SUGGESTIONS)))
     .replace("{{INTERVENTIONS}}", schema.ENUMS.intervention.filter(Boolean).map(v => "`" + v + "`").join(", "))
     .replace("{{TASK_TYPES}}", aiResults.TASK_TYPES.map(v => "`" + v + "`").join(", "))
-    .replace("{{DETAIL_KEYS}}", store.DETAIL_KEYS.map(v => "`" + v + "`").join(", "));
+    .replace("{{DETAIL_KEYS}}", store.DETAIL_KEYS.map(v => "`" + v + "`").join(", "))
+    .replace("{{GOAL_KINDS}}", schema.ENUMS.goalKind.map(v => "`" + v + "`").join(", "));
   if (task === "extract") body = body.replace("{{OUTPUT}}", OUTPUT[provider]).replace("{{GENERATOR_RULES}}", generatorRules());
   return common.trim() + "\n\n" + body.trim() + "\n";
 }

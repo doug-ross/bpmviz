@@ -7,12 +7,12 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./util.js"), require("./schema.js"), require("./value-case.js"));
+    module.exports = factory(require("./util.js"), require("./schema.js"), require("./value-case.js"), require("./goals.js"), () => require("./benefits.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.businessCase = factory(B.util, B.schema, B.valueCase);
+    B.businessCase = factory(B.util, B.schema, B.valueCase, B.goals, () => B.benefits);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, valueCase) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, valueCase, goals, benefits) {
   "use strict";
 
   /* Figures shown on a one-pager, lead with the supporting figure and end with the headline. */
@@ -21,6 +21,21 @@
 
   function findRecord(e, recordId) {
     return (e && e.records || []).find(r => r.id === recordId) || null;
+  }
+
+  /* A goal as reports show it: { id, kind, kindLabel, title, metric, target, by, basis, aiDraft }. */
+  function goalSummary(g) {
+    return {
+      id: g.id, kind: g.kind, kindLabel: schema.label("goalKind", g.kind), title: g.title, metric: g.metric,
+      target: goals.targetText(g), by: g.by, owner: g.owner, basis: g.basis, aiDraft: goals.isUnreviewedAi(g)
+    };
+  }
+
+  /* Checkpoints recorded by hand for one opportunity, from benefits.js (loaded after this file in the browser). */
+  function checkpointRows(e, recordId, opts) {
+    const lib = benefits();
+    const row = lib ? lib.expectedVsCheckpoints(e, opts).find(x => x.recordId === recordId) : null;
+    return row ? row.checkpoints : [];
   }
 
   function quadrantLabel(quadrant) {
@@ -45,9 +60,10 @@
     const options = opts || {};
     if (r.sensitive && !options.includeSensitive) return null;
     if (r.generated && !r.generated.reviewed && !options.includeUnreviewedAi) return null;
-    const op = r.opportunity || {};
+    const rec = valueCase.forReport(r, options);
+    const op = rec.opportunity || {};
     const vc = op.valueCase || null;
-    const result = valueCase.compute(e, r, opts);
+    const result = valueCase.compute(e, rec, opts);
     const scope = valueCase.affected(e, r);
     const ranked = valueCase.rank(e, opts).find(x => x.recordId === r.id) || null;
     const outputs = ONE_PAGER_KEYS.map(key => result.outputs.find(x => x.key === key)).filter(Boolean);
@@ -65,7 +81,10 @@
       note: vc ? vc.note : "",
       rank: ranked ? ranked.rank : null, quadrant: ranked ? ranked.quadrant : null,
       quadrantLabel: quadrantLabel(ranked ? ranked.quadrant : null),
-      suggestedWave: ranked ? ranked.suggestedWave : "", hasValueCase: !!vc
+      suggestedWave: ranked ? ranked.suggestedWave : "", hasValueCase: !!vc,
+      aiDraft: valueCase.hasDraftValueCase(rec),
+      goals: goals.goalsFor(e, r, options).map(goalSummary),
+      checkpoints: checkpointRows(e, r.id, options)
     };
   }
 
@@ -79,11 +98,18 @@
     const ranked = valueCase.rank(e, opts);
     const portfolio = valueCase.portfolio(e, opts);
     const byId = new Map((e.records || []).map(r => [r.id, r]));
+    const visible = goals.visibleGoals(e, opts);
+    const goalIdsOf = r => {
+      const ids = new Set(r && r.opportunity && Array.isArray(r.opportunity.goalIds) ? r.opportunity.goalIds : []);
+      return visible.filter(g => ids.has(g.id)).map(g => g.id);
+    };
     const rows = ranked.map(x => Object.assign({
       title: (byId.get(x.recordId) || {}).title || x.recordId,
-      quadrantLabel: quadrantLabel(x.quadrant), waveLabel: schema.label("wave", x.wave)
+      quadrantLabel: quadrantLabel(x.quadrant), waveLabel: schema.label("wave", x.wave),
+      goalIds: goalIdsOf(byId.get(x.recordId))
     }, x));
-    return { rows, waves: portfolio.waves, total: portfolio.total, overlaps: portfolio.overlaps, notes: portfolio.notes };
+    const goalRows = visible.map(g => Object.assign(goalSummary(g), { recordIds: rows.filter(x => x.goalIds.includes(g.id)).map(x => x.recordId) }));
+    return { rows, goals: goalRows, waves: portfolio.waves, total: portfolio.total, overlaps: portfolio.overlaps, notes: portfolio.notes };
   }
 
   /**
@@ -116,5 +142,5 @@
     return { ids };
   }
 
-  return { buildOnePager, buildPortfolioPager, suggestWave, applySetWaves, ONE_PAGER_KEYS };
+  return { buildOnePager, buildPortfolioPager, goalSummary, suggestWave, applySetWaves, ONE_PAGER_KEYS };
 });

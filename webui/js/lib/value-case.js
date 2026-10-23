@@ -88,9 +88,12 @@
   function compute(e, record, opts) {
     const vc = record && record.opportunity && record.opportunity.valueCase;
     if (!vc) {
-      return { recordId: record ? record.id : null, outputs: [], basis: null, confidence: "", missing: ["value case"], notes: ["This opportunity has no business case yet."] };
+      const hidden = !!(record && record.opportunity && record.opportunity.valueCaseDraftHidden);
+      return { recordId: record ? record.id : null, outputs: [], basis: null, confidence: "", missing: ["value case"],
+        notes: [hidden ? DRAFT_HIDDEN_NOTE : "This opportunity has no business case yet."] };
     }
     const notes = [];
+    if (vc.aiDraft) notes.push(DRAFT_NOTE);
     const drivers = economics.driverMap(e, scenarioOf(e, opts));
     const val = key => (drivers[key] && util.isFiniteNumber(drivers[key].value) ? drivers[key].value : null);
     const tb = e.meta && e.meta.timeBasis;
@@ -246,11 +249,30 @@
     return o ? { key: o.key, value: o.value, unit: o.unit, basis: o.basis } : null;
   }
 
+  const DRAFT_NOTE = "These figures were drafted with AI and no one has reviewed them yet.";
+  const DRAFT_HIDDEN_NOTE = "The business case was drafted with AI and no one has reviewed it yet, so it is left out.";
+
+  /** True when the opportunity's value case holds AI-drafted figures no one has reviewed. */
+  function hasDraftValueCase(r) {
+    return !!(r && r.opportunity && r.opportunity.valueCase && r.opportunity.valueCase.aiDraft === true);
+  }
+
+  /**
+   * The record as a report may use it: an unreviewed AI value case is left
+   * out (the record stays) unless opts.includeUnreviewedAi is set.
+   */
+  function forReport(r, opts) {
+    if (!hasDraftValueCase(r) || (opts && opts.includeUnreviewedAi)) return r;
+    const opportunity = Object.assign({}, r.opportunity, { valueCaseDraftHidden: true });
+    delete opportunity.valueCase;
+    return Object.assign({}, r, { opportunity });
+  }
+
   function opportunities(e, opts) {
     const o = opts || {};
     return (e.records || []).filter(r => r.kind === "opportunity" && r.status !== "dropped" &&
       (o.includeSensitive || !r.sensitive) && (o.includeUnreviewedAi || !(r.generated && !r.generated.reviewed)) &&
-      (!o.ids || o.ids.includes(r.id)));
+      (!o.ids || o.ids.includes(r.id))).map(r => forReport(r, o));
   }
 
   function median(values) {
@@ -377,5 +399,5 @@
     return { waves, total, overlaps, notes };
   }
 
-  return { compute, rank, portfolio, headline, affected, CONFIDENCE_FACTOR, EFFORT_SCORE, QUADRANT_LABEL, SUGGESTED_WAVE: SUGGESTED };
+  return { compute, rank, portfolio, headline, affected, hasDraftValueCase, forReport, DRAFT_NOTE, CONFIDENCE_FACTOR, EFFORT_SCORE, QUADRANT_LABEL, SUGGESTED_WAVE: SUGGESTED };
 });

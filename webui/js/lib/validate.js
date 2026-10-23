@@ -9,12 +9,13 @@
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"),
-      require("./economics.js"), require("./migrate.js"), require("./replay.js"), require("./workshop.js"));
+      require("./economics.js"), require("./migrate.js"), require("./replay.js"), require("./workshop.js"),
+      require("./goals.js"), require("./checkpoints.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay, B.workshop);
+    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay, B.workshop, B.goals, B.checkpoints);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay, workshop) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay, workshop, goals, checkpoints) {
   "use strict";
 
   const L = schema.LIMITS;
@@ -555,7 +556,8 @@
       datasetIds: new Set(list("datasets").map(d => d.id)),
       recordIds: new Set(list("records").map(r => r.id)),
       evidenceIds: new Set(list("evidence").map(x => x.id)),
-      packIds: new Set(list("reviewPacks").map(p => p.id))
+      packIds: new Set(list("reviewPacks").map(p => p.id)),
+      goalIds: new Set(list("goals").map(g => g.id))
     };
   }
 
@@ -744,7 +746,9 @@
   }
 
   const VALUE_CASE_KEYS = ["modelId", "nodeIds", "effortReductionPct", "durationReductionPct", "shareOfCasesPct", "shareSource",
-    "effortSource", "datasetId", "oneTimeCost", "annualRunningCost", "confidence", "basis", "note"];
+    "effortSource", "datasetId", "oneTimeCost", "annualRunningCost", "confidence", "basis", "note", "aiDraft", "sources"];
+  /* The figures an AI draft cites a source for, one line of text each. */
+  const VALUE_CASE_SOURCE_KEYS = ["shareOfCasesPct", "effortReductionPct", "durationReductionPct", "oneTimeCost", "annualRunningCost"];
 
   /* The figures behind an opportunity's value. Empty nodeIds means the record's linked steps. */
   function valueCaseOf(c, raw, path, refs, record) {
@@ -759,7 +763,7 @@
     });
     const pct = key => num(c, v[key], path + "." + key, { min: 0, max: 100 });
     const money = key => num(c, v[key], path + "." + key, { min: 0 });
-    return {
+    const out = {
       modelId, nodeIds: [...new Set(nodeIds)],
       effortReductionPct: pct("effortReductionPct"),
       durationReductionPct: pct("durationReductionPct"),
@@ -773,6 +777,16 @@
       basis: en(c, v.basis, "assumptionStatus", path + ".basis"),
       note: str(c, v.note, path + ".note", { max: 2000 })
     };
+    // Kept only when set, so value cases written before AI drafting keep their shape.
+    if (v.aiDraft === true) out.aiDraft = true;
+    if (v.sources !== undefined && v.sources !== null) {
+      const src = obj(c, v.sources, path + ".sources");
+      knownKeys(c, src, path + ".sources", VALUE_CASE_SOURCE_KEYS);
+      const sources = {};
+      VALUE_CASE_SOURCE_KEYS.forEach(k => { const t = str(c, src[k], path + ".sources." + k, { max: 500 }).trim(); if (t) sources[k] = t; });
+      if (Object.keys(sources).length) out.sources = sources;
+    }
+    return out;
   }
 
   /**
@@ -1018,6 +1032,14 @@
           { mode: ["assist", "autonomous", ""].includes(ai.mode) ? ai.mode : "" })
       };
       if (o.wave !== undefined) record.opportunity.wave = en(c, o.wave, "wave", op + ".wave", { fallback: "" });
+      if (o.goalIds !== undefined && o.goalIds !== null) {
+        const known = (refs || refsOf(null)).goalIds;
+        record.opportunity.goalIds = [...new Set(idList(c, o.goalIds, op + ".goalIds"))].filter(id => {
+          if (known.has(id)) return true;
+          c.warn(op + ".goalIds", "Goal \"" + id + "\" not found; link removed.", "ref.dangling");
+          return false;
+        });
+      }
       if (o.valueCase !== undefined && o.valueCase !== null) {
         record.opportunity.valueCase = valueCaseOf(c, o.valueCase, op + ".valueCase", refs || refsOf(null), record);
       }
@@ -1094,7 +1116,7 @@
     const raw = migrated.engagement;
     knownKeys(c, raw, "", ["schema", "schemaVersion", "id", "revision", "createdAt", "updatedAt", "meta",
       "milestones", "models", "scenarios", "records", "evidence", "assumptions", "narratives", "datasets", "reviewPacks", "reviews",
-      "migration", "workshop"]);
+      "migration", "workshop", "goals", "checkpoints"]);
 
     const out = {
       schema: schema.SCHEMA_ID,
@@ -1154,6 +1176,14 @@
     const evidenceIds = new Set();
     arr(c, raw.evidence, "evidence", L.evidence).forEach((e, i) => out.evidence.push(sanitizeEvidence(c, e, i, evidenceIds)));
 
+    if (raw.goals !== undefined && raw.goals !== null) {
+      const rawGoals = arr(c, raw.goals, "goals", L.goals);
+      out.goals = goals.sanitizeGoals(rawGoals);
+      goals.ignoredKeys(rawGoals).forEach(k => c.ignored.push(k));
+      const lost = rawGoals.length - out.goals.length;
+      if (lost > 0) c.warn("goals", lost + " goal" + (lost === 1 ? "" : "s") + " without a valid ID or title, or with a repeated ID, " + (lost === 1 ? "was" : "were") + " left out.", "goals.dropped");
+    }
+
     const nodeIndex = new Map(out.models.map(m => [m.id, new Set(m.nodes.map(n => n.id))]));
     const recordIds = new Set();
     const recordRefs = refsOf(out);
@@ -1164,6 +1194,12 @@
 
     const narrativeKinds = new Set();
     arr(c, raw.narratives, "narratives", L.narratives).forEach((n, i) => out.narratives.push(sanitizeNarrative(c, n, i, narrativeKinds)));
+
+    if (raw.checkpoints !== undefined && raw.checkpoints !== null) {
+      const rawCheckpoints = arr(c, raw.checkpoints, "checkpoints", L.checkpoints);
+      out.checkpoints = checkpoints.sanitizeCheckpoints(rawCheckpoints, out);
+      checkpoints.dropped(rawCheckpoints, out).forEach(p => c.warn(p, "A checkpoint without a valid ID, or for an opportunity that is not in the file, was left out.", "ref.dangling"));
+    }
 
     if (raw.reviewPacks !== undefined && raw.reviewPacks !== null) {
       const refs = refsOf(out);

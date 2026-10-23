@@ -139,6 +139,8 @@
     const recordList = xs => xs.length ? h("ul", null, xs.map(x => h("li", null, x.title + " | Owner: " + (x.owner || "Unassigned") + " | " + x.status))) : h("p", null, "None recorded for sharing.");
     return h("article", { class: "handoff-doc workshop-brief" }, h("h2", null, b.title), h("p", { class: "workshop-brief-status" }, b.message), h("p", { class: "small" }, b.exclusions),
       h("h3", null, "Agreed processes"), b.models.length ? h("ul", null, b.models.map(m => h("li", null, m.role + ": " + m.name + " (" + m.id + ")"))) : h("p", null, "No reviewed process agreed for sharing."),
+      b.goals.length ? [h("h3", null, "Value goals"), h("ul", { class: "workshop-brief-goals" }, b.goals.map(g => h("li", null,
+        [g.title, g.kind, g.metric, W.goalTarget(g), g.by ? "By " + g.by : "", "Basis: " + g.basis].filter(Boolean).join(" | "))))] : null,
       c ? [h("h3", null, "Checkpoint"), h("p", null, c.reviewer + " | " + c.date + " | " + c.fingerprint),
         h("p", { class: "small" }, c.modelVersions.map(m => m.modelId + " v" + m.version).join(", ")),
         h("h3", null, "Pilot acceptance criteria"), h("ul", null, c.criteria.map(x => h("li", null, x.text + " | Owner: " + x.owner))),

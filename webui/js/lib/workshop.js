@@ -110,18 +110,36 @@
     const c = w.checkpoint;
     // A stale checkpoint may contain copied text from a now-excluded item. Hide all its fields.
     const canExport = c && status.status === "current" && models.length === [w.currentModelId, w.futureModelId].filter(Boolean).length;
+    // Value goals the pilot serves: those linked to the accepted changes, or to any exported opportunity before a checkpoint.
+    const serving = records.filter(r => r.kind === "opportunity" && (!canExport || c.acceptedRecordIds.includes(r.id)));
+    const servedIds = new Set(serving.flatMap(r => (r.opportunity && Array.isArray(r.opportunity.goalIds)) ? r.opportunity.goalIds : []));
+    const goals = (Array.isArray(e.goals) ? e.goals : []).filter(g => safe(g) && servedIds.has(g.id)).map(g => ({
+      id: g.id, title: g.title, kind: schema.label("goalKind", g.kind), metric: g.metric || "", baseline: g.baseline, target: g.target,
+      unit: g.unit || "", by: g.by || "", basis: schema.label("assumptionStatus", g.basis)
+    }));
     return {
-      title: "Pilot brief", status: status.status, message: status.message, models: exportedModels, designs,
+      title: "Pilot brief", status: status.status, message: status.message, models: exportedModels, designs, goals,
       checkpoint: canExport ? { reviewer: c.reviewer, date: c.date, fingerprint: c.fingerprint, modelVersions: c.modelVersions, criteria: c.criteria,
         accepted: records.filter(r => c.acceptedRecordIds.includes(r.id)).map(recordOf), unresolved: records.filter(r => c.unresolvedRecordIds.includes(r.id)).map(recordOf) } : null,
       actions: records.filter(r => r.kind === "action").map(recordOf),
       exclusions: "Sensitive items and unreviewed drafts are excluded. Checkpoint details appear only after review while the checkpoint is current."
     };
   }
+  /** "From 12 to 8 days", "Target $50,000", or "" when neither figure is set (the same wording as goals.targetText). */
+  function goalTarget(g) {
+    const f = v => g.unit === "$" ? "$" + util.formatNumber(v, 2) : util.formatNumber(v, 2) + (g.unit ? " " + g.unit : "");
+    if (g.baseline !== null && g.baseline !== undefined && g.target !== null && g.target !== undefined) return "From " + f(g.baseline) + " to " + f(g.target);
+    if (g.target !== null && g.target !== undefined) return "Target " + f(g.target);
+    return "";
+  }
   function pilotBriefText(e) {
     const b = buildPilotBrief(e), c = b.checkpoint;
     const lines = [b.title, "", b.message, b.exclusions, "", "Agreed process"];
     b.models.forEach(m => lines.push(m.role + ": " + m.name + " (" + m.id + ")"));
+    if (b.goals.length) {
+      lines.push("", "Value goals");
+      b.goals.forEach(g => lines.push("- " + [g.title, g.kind, g.metric, goalTarget(g), g.by ? "By " + g.by : "", "Basis: " + g.basis].filter(Boolean).join(" | ")));
+    }
     if (c) {
       lines.push("", "Checkpoint", "Reviewer: " + c.reviewer, "Date: " + c.date, "Fingerprint: " + c.fingerprint);
       c.modelVersions.forEach(m => lines.push("Version: " + m.modelId + " v" + m.version));
@@ -177,5 +195,5 @@
       "workshop/clearCheckpoint"(e) { const w = state(e); w.checkpoint = null; return save(e, w); }
     });
   }
-  return { LIMITS, DESIGN_FIELDS, RESPONSIBILITIES, WORKSHOP_SCHEMA, sanitizeWorkshop, fingerprint, checkpointStatus, buildPilotBrief, pilotBriefText, registerStoreCommands };
+  return { LIMITS, DESIGN_FIELDS, RESPONSIBILITIES, WORKSHOP_SCHEMA, sanitizeWorkshop, fingerprint, checkpointStatus, buildPilotBrief, pilotBriefText, goalTarget, registerStoreCommands };
 });

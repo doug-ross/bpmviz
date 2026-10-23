@@ -2,11 +2,13 @@
 
 Once a project has an event log from before a change and another event log from after it, the Benefits section in the Value tab compares the two: what each measured step actually took, and whether an opportunity's modeled business case was borne out. It never reports a figure as "savings realized". A measured change is just that, a change the two logs recorded, and it can be confounded by seasonality, a different volume mix, or a change in how activities were matched between the two periods. The section lists those caveats in the notes under every comparison.
 
-This page is for someone reading the section, and for a developer extending it. Importing an event log itself is a separate feature (see `docs/event-logs.md`); this page assumes two event logs are already in the project.
+Many clients have no clean event log. For them, the delivery team records **checkpoints** by hand: what the change achieved at 30, 60 or 90 days, or any other date. The same section compares each checkpoint with the opportunity's business case. See [Checkpoints recorded by hand](#checkpoints-recorded-by-hand).
+
+This page is for someone reading the section, and for a developer extending it. Importing an event log itself is a separate feature (see `docs/event-logs.md`).
 
 ## Recording a comparison
 
-The Benefits section appears once the project has at least one event log. With two or more logs, it shows a small form, **Record a comparison**: choose the **Event log after the change** and the **Baseline log** it compares to, and choose **Record this comparison**. This sets the "after" log's role to **After the change** and its comparison to the baseline you chose, through the same `dataset/update` command the event log list itself uses, so it is undoable and keeps the project's history.
+The Benefits section appears once the project has an event log, an opportunity with a business case, or a checkpoint. With two or more logs, it shows a small form, **Record a comparison**: choose the **Event log after the change** and the **Baseline log** it compares to, and choose **Record this comparison**. This sets the "after" log's role to **After the change** and its comparison to the baseline you chose, through the same `dataset/update` command the event log list itself uses, so it is undoable and keeps the project's history.
 
 A comparison already recorded (an "after" log with its comparison set) shows automatically, with a **Remove this comparison** button that clears the link without deleting either event log.
 
@@ -47,6 +49,27 @@ With a baseline and an after log recorded for the model on screen, the Process t
 - **Different time bases.** Two logs imported with different time bases (calendar time in one, business time in the other, or a different working day) cannot be compared step by step; the comparison says so and the measured figure is left out.
 - **Demonstration data.** Figures built from demonstration data describe the shape of the measurement, not a real result.
 
+## Checkpoints recorded by hand
+
+Under **Results at checkpoints**, choose an opportunity with a business case and **Add a checkpoint**. Record:
+
+- **Checkpoint**: 30 days, 60 days, 90 days, or a name of your own, and the date.
+- **Hands-on hours per affected case after the change**: measured by the delivery team or the client, for example from a time study of a sample of cases. The form shows the business case's own figure before the change, for comparison.
+- **Share of cases affected** and **Cases per year**: optional. Leave them blank to use the business case's figures.
+- **Cycle time after** and **Actual one-time cost**: optional, for the record.
+- **Basis**: Provided, Measured or Confirmed, and the **Source** of the figure.
+
+AIxRay works out the result with the business case's own formula:
+
+- **Realized human hours saved per year** = annual volume x share of cases affected x (hours per affected case before - hours per affected case after). The hours before are the business case's hours per affected case.
+- **Realized net annual benefit** = realized hours saved per year x hourly rate - annual running cost. Like the modeled figure, this is the value of freed time, not cash, unless the freed time is used or the cost is removed.
+- **Status** compares the realized hours with the modeled hours saved per year, with the same thresholds as the event-log comparison: Met at 80% or more, Partially met from 20%, Not yet below that, and Worse when the hours went up.
+- **Basis** is the weakest among the inputs, so a checkpoint measured against an illustrative "before" figure is illustrative too.
+
+The notes under each checkpoint say when the hours before are only illustrative, when no hourly rate is set, and when the checkpoint uses a different share of cases or volume than the business case.
+
+Checkpoints appear in the report under Benefits measured, on the opportunity's one-page business case, and on a **Results at checkpoints** slide in the deck. Sensitive opportunities and unreviewed AI drafts stay out unless included. Deleting an opportunity deletes its checkpoints; Undo restores both.
+
 ## Sample data
 
 `node tools/make-sample-logs.mjs` writes `docs/samples/underwriting-baseline.csv` and `docs/samples/underwriting-after.csv`: two demonstration event logs, columns `case, activity, start, end, resource`, generated by a seeded random walk of the bundled underwriting-current-state example's own process graph, with every step placed in working hours (Monday to Friday, 9:00 to 17:00 UTC) so that durations read correctly in the example's business time basis. Each gateway is weighted with the same share of cases the test fixtures in `tests/fixtures/datasets/` record for it, and the after log reflects a plausible improvement on three steps (scrubbing the SOV and geocoding it, the appetite and capacity triage, and technical pricing and rating), with every other step unchanged. Running the script again writes byte-identical files; it is demonstration data, not from a real project, meant for trying the event log import wizard and for screenshots.
@@ -59,4 +82,6 @@ With a baseline and an after log recorded for the model on screen, the Process t
 - `expectedVsRealized(e, baselineId, afterId)` returns one row per opportunity record with a value case: `{ recordId, title, expected, realized, ratio, status, notes }`. `expected` and `realized` are `{ value, unit: "hour", basis, label }` or null; `ratio` is `realized.value / expected.value` or null; `notes` explains anything left out of the figures.
 - `observedChangeLens(ctx)` is a plain function with the shape `AIxRay.lenses.registerLens`'s `compute` expects (`ctx` is `{ model, engagement, ... }`); `ui/benefits-view.js` registers it as the lens `observed-change`. It has no data, with a note saying why, when the model has no baseline log or no after log compared to it.
 
-`ui/benefits-view.js` registers the value section `benefits` (`AIxRay.ext.registerValueSection`), a Benefits measured section in the report after `value` (`AIxRay.ext.registerHandoffSection`), and the lens above. It renders nothing when the project has no event logs at all, so a project that never used the feature sees no empty card for it. Linking two datasets goes through the foundation's `dataset/update` command (`{ patch: { role: "after", comparesToDatasetId } }`); the feature adds no commands of its own.
+- `expectedVsCheckpoints(e, opts)` returns one row per opportunity with checkpoints: `{ recordId, title, expected, notes, checkpoints }`, each checkpoint `{ id, label, date, realized, realizedMoney, outputs, ratio, status, basis, source, note, cycleTimeAfterMinutes, oneTimeCostActual, notes }`. `outputs` are the two figures above in the economics output shape, with their formula and inputs. `opts` is `{ scenarioId, includeSensitive, includeUnreviewedAi }`.
+
+`ui/benefits-view.js` registers the value section `benefits` (`AIxRay.ext.registerValueSection`), a Benefits measured section in the report after `value` (`AIxRay.ext.registerHandoffSection`), and the lens above. It renders nothing when the project has no event log, business case or checkpoint, so a project that never used the feature sees no empty card for it. Linking two datasets goes through the foundation's `dataset/update` command (`{ patch: { role: "after", comparesToDatasetId } }`). Checkpoints live in the optional `engagement.checkpoints` list; `lib/checkpoints.js` holds their sanitizer and the commands `checkpoint/save` and `checkpoint/delete`, which the store adds to its own commands.

@@ -46,6 +46,7 @@ Commands
   log-mapping --in <file> --activities <file>
                                   Match each event log activity to a step
   screen --in <file>              Draft scores for the processes in a screening that people have not scored yet
+  goals --in <file> <files...>    Draft value goals (revenue, cost, capability) from meeting notes, transcripts or documents
   check <result> [--in <file>]    Check an AI result file, and what it would change in the project or screening
   gate [--in <file>]              Say whether this project or screening may go to this AI account, and what you must confirm
   text <file>                     Print the text AIxRay reads from a document
@@ -207,12 +208,13 @@ function describeReview(review, result) {
   if (result.task === "extract") {
     const e = result.payload.engagement;
     lines.push("  " + e.models.map(m => m.name + ": " + m.nodes.length + " steps in " + m.lanes.length + " lanes").join("; "));
-    lines.push("  " + e.records.length + " findings, " + e.evidence.length + " sources, " + e.scenarios.length + " scenarios");
+    lines.push("  " + e.records.length + " findings, " + e.evidence.length + " sources, " + e.scenarios.length + " scenarios" +
+      (Array.isArray(e.goals) && e.goals.length ? ", " + e.goals.length + " value goal" + (e.goals.length === 1 ? "" : "s") : ""));
     return lines;
   }
   const items = review ? review.items : [];
   const blocked = items.filter(it => it.problems.length).length;
-  const noun = { opportunities: "suggestion", "future-state": "change", summary: "summary", "log-mapping": "mapping", screen: "score" }[result.task];
+  const noun = { opportunities: "item", "future-state": "change", summary: "summary", "log-mapping": "mapping", screen: "score", goals: "goal" }[result.task];
   lines.push("  " + items.length + " " + noun + (items.length === 1 ? "" : "s") + (blocked ? ", " + blocked + " cannot be applied" : ""));
   items.slice(0, 20).forEach(it => lines.push("   - " + it.title + (it.problems.length ? "  [cannot be applied: " + it.problems.join(" ") + "]" : "")));
   if (items.length > 20) lines.push("   ... and " + (items.length - 20) + " more");
@@ -343,7 +345,7 @@ async function cmdCheck(opts) {
 /* Agent skills write a payload; wrap adds the envelope, checks it and writes the result file. */
 async function cmdWrap(opts) {
   const task = opts._[1];
-  if (!schema.ENUMS.aiTask.includes(task)) throw new UsageError("Give a task: extract, opportunities, future-state, summary, log-mapping or screen.");
+  if (!schema.ENUMS.aiTask.includes(task)) throw new UsageError("Give a task: extract, opportunities, future-state, summary, log-mapping, screen or goals.");
   if (!opts.payload) throw new UsageError("Give the skill's output with --payload <file>.");
   let raw;
   try { raw = JSON.parse(fs.readFileSync(opts.payload, "utf8")); } catch (err) { throw new UsageError(opts.payload + " is not valid JSON: " + err.message); }
@@ -388,9 +390,10 @@ async function cmdTask(opts) {
   const provider = opts.with || "claude";
   const screening = task === "screen" ? readScreening(opts.in) : null;
   const engagement = task === "extract" || task === "screen" ? null : readEngagement(opts.in);
-  const files = task === "extract" ? opts._.slice(1) : [];
+  const files = task === "extract" || task === "goals" ? opts._.slice(1) : [];
   const taskOptions = task === "log-mapping" ? await logMappingOptions(opts, engagement) : undefined;
   if (task === "extract" && !files.length) throw new UsageError("Give the source files: npm run ai -- extract <files...>");
+  if (task === "goals" && !files.length) throw new UsageError("Give the meeting notes or documents: npm run ai -- goals --in <project> <files...>");
   const sources = files.map(f => {
     if (!fs.existsSync(f) || !fs.statSync(f).isFile()) throw new UsageError("Source not found: " + f);
     return { name: path.basename(f), buffer: fs.readFileSync(f) };

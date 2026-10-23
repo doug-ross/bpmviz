@@ -68,6 +68,7 @@ Top level:
   "records": [ ],
   "evidence": [ ],
   "assumptions": [ ],
+  "goals": [ ],
   "migration": { "sourceFormat": "Generated from <source>", "sourceFiles": ["<file name>"], "warnings": [ ] }
 }
 ```
@@ -181,6 +182,22 @@ Economic drivers, each `{ "id", "key", "label", "value", "unit", "status", "sour
 ### evidence
 
 One entry per source: `{ "id", "title", "locator", "extractedFact", "status": "unreviewed" }`. Reference it from steps (`provenance.evidenceRefs`) and from the model (`sourceRefs`).
+
+### goals
+
+Optional. What the client counts as value for this work, when the sources say so. Opportunities list the goals they serve in `opportunity.goalIds`.
+
+```json
+{
+  "id": "goal-cost-per-claim", "kind": "cost", "title": "Cut the cost of handling a claim",
+  "metric": "Cost per claim", "baseline": 42, "target": 30, "unit": "$", "by": "",
+  "owner": "Head of claims", "basis": "supplied",
+  "source": "Workshop notes [p2], head of claims", "quote": "We need to get the cost per claim down to about thirty dollars.",
+  "note": ""
+}
+```
+
+`kind` is `revenue`, `cost`, `capability`, `risk`, `experience` or `other`. Set `baseline` and `target` only when a person in the sources gave the number; otherwise use `null`. `basis` is `supplied` for what the client said, never `observed` or `validated`.
 
 ## 5. Choose and disclose the representative route
 

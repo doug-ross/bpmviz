@@ -7,12 +7,12 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./util.js"), require("./schema.js"), require("./validate.js"));
+    module.exports = factory(require("./util.js"), require("./schema.js"), require("./validate.js"), require("./goals.js"), require("./checkpoints.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.store = factory(B.util, B.schema, B.validate);
+    B.store = factory(B.util, B.schema, B.validate, B.goals, B.checkpoints);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, validate) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, validate, goals, checkpoints) {
   "use strict";
 
   class StoreError extends Error {
@@ -145,7 +145,7 @@
   }
 
   /*
-   * wave and valueCase are kept only when given, so records written before
+   * wave, goalIds and valueCase are kept only when given, so records written before
    * they existed keep their shape. valueCase goes through the validator's
    * sanitizer, which removes references that do not resolve.
    */
@@ -169,6 +169,7 @@
       }
     };
     if (o.wave !== undefined && o.wave !== null) out.wave = enumValue("wave", o.wave, "");
+    if (o.goalIds !== undefined && o.goalIds !== null) out.goalIds = goals.cleanGoalIds(o.goalIds, e);
     if (o.valueCase !== undefined && o.valueCase !== null) {
       const r = validate.sanitizeValueCase(o.valueCase, e, record);
       if (r.errors.length) throw new StoreError("invalid", "Business case: " + r.errors[0].message);
@@ -246,6 +247,7 @@
       e.records = e.records.filter(r => r.id !== p.id);
       if (e.records.length === before) throw new StoreError("not-found", "That finding no longer exists.");
       pruneReviewRefs(e, ref => ref === "record/" + p.id);
+      if (Array.isArray(e.checkpoints)) e.checkpoints = e.checkpoints.filter(c => c.recordId !== p.id);
       return { id: p.id };
     },
 
@@ -595,10 +597,15 @@
       return { id: d.id, scenariosRemoved: removed };
     },
 
-    /* AI suggestions become records in one step, each marked as an AI draft. */
+    /*
+     * AI suggestions become records in one step, each marked as an AI draft.
+     * Value cases drafted for existing opportunities are added in the same
+     * step, marked aiDraft, and never replace a value case a person entered.
+     */
     "ai/applySuggestions"(e, p) {
       const records = Array.isArray(p.records) ? p.records : [];
-      if (!records.length) throw new StoreError("invalid", "Select at least one suggestion to add.");
+      const valueCases = Array.isArray(p.valueCases) ? p.valueCases : [];
+      if (!records.length && !valueCases.length) throw new StoreError("invalid", "Select at least one suggestion to add.");
       const ids = [];
       records.forEach(input => {
         const record = newRecord(e, input);
@@ -606,7 +613,18 @@
         e.records.push(record);
         ids.push(record.id);
       });
-      return { ids };
+      const sized = [];
+      valueCases.forEach(item => {
+        const r = e.records.find(x => x.id === (item && item.recordId) && x.kind === "opportunity");
+        if (!r || !r.opportunity) throw new StoreError("not-found", "An opportunity in this proposal no longer exists.");
+        if (r.opportunity.valueCase && r.opportunity.valueCase.aiDraft !== true) throw new StoreError("invalid", "\"" + r.title + "\" already has a business case a person entered, and it stays.");
+        const v = validate.sanitizeValueCase(Object.assign({}, item.valueCase, { aiDraft: true, basis: "illustrative" }), e, r);
+        if (v.errors.length) throw new StoreError("invalid", "Business case: " + v.errors[0].message);
+        r.opportunity.valueCase = v.value;
+        r.updatedAt = util.nowIso();
+        sized.push(r.id);
+      });
+      return { ids, sized };
     },
 
     /*
@@ -731,6 +749,8 @@
       subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
     };
   }
+
+  Object.assign(COMMANDS, goals.commands(StoreError), checkpoints.commands(StoreError));
 
   /**
    * Adds commands from a feature module: { "area/verb"(draft, payload) { ... } }.

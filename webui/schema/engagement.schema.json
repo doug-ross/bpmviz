@@ -112,6 +112,22 @@
       },
       "description": "Client reviews received and applied. Optional."
     },
+    "goals": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "$ref": "#/$defs/goal"
+      },
+      "description": "What value means to the client. Opportunities link to them with opportunity.goalIds. Optional."
+    },
+    "checkpoints": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "$ref": "#/$defs/checkpoint"
+      },
+      "description": "Figures recorded by hand after a change, per opportunity. Optional."
+    },
     "workshop": {
       "type": "object",
       "additionalProperties": false,
@@ -1526,6 +1542,13 @@
                 "valueCase": {
                   "$ref": "#/$defs/valueCase"
                 },
+                "goalIds": {
+                  "description": "The value goals this opportunity serves.",
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/id"
+                  }
+                },
                 "aiAssessment": {
                   "type": "object",
                   "properties": {
@@ -1599,7 +1622,8 @@
             "future-state",
             "summary",
             "log-mapping",
-            "screen"
+            "screen",
+            "goals"
           ]
         },
         "provider": {
@@ -2382,6 +2406,198 @@
             "observed",
             "validated"
           ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "aiDraft": {
+          "type": "boolean",
+          "description": "True for figures drafted with AI that no one has reviewed yet. Reports leave them out until then."
+        },
+        "sources": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Where each AI-drafted figure comes from.",
+          "properties": {
+            "shareOfCasesPct": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "effortReductionPct": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "durationReductionPct": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "oneTimeCost": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "annualRunningCost": {
+              "type": "string",
+              "maxLength": 500
+            }
+          }
+        }
+      }
+    },
+    "goal": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "additionalProperties": false,
+      "description": "One thing the client counts as value, such as more revenue, a lower cost per case or a new capability.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "revenue",
+            "cost",
+            "capability",
+            "risk",
+            "experience",
+            "other"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "metric": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "baseline": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Today's figure."
+        },
+        "target": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "by": {
+          "type": "string",
+          "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$"
+        },
+        "owner": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "basis": {
+          "enum": [
+            "illustrative",
+            "supplied",
+            "observed",
+            "validated"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "quote": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "sensitive": {
+          "type": "boolean"
+        },
+        "generated": {
+          "$ref": "#/$defs/generated"
+        }
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "required": [
+        "id",
+        "recordId",
+        "hoursPerCaseAfter"
+      ],
+      "additionalProperties": false,
+      "description": "Figures a delivery team recorded by hand after the change for one opportunity.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "recordId": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$"
+        },
+        "hoursPerCaseAfter": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Measured hands-on hours per affected case after the change."
+        },
+        "shareOfCasesPct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "annualVolume": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cycleTimeAfterMinutes": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "oneTimeCostActual": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "basis": {
+          "enum": [
+            "supplied",
+            "observed",
+            "validated"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 500
         },
         "note": {
           "type": "string",

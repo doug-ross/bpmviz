@@ -74,7 +74,8 @@
     aiTask: [
       ["extract", "Create a process from documents"], ["opportunities", "Suggest findings"],
       ["future-state", "Draft a future state"], ["summary", "Draft the summary"],
-      ["log-mapping", "Match event log activities to steps"], ["screen", "Draft screening scores"]
+      ["log-mapping", "Match event log activities to steps"], ["screen", "Draft screening scores"],
+      ["goals", "Suggest value goals"]
     ],
     aiProvider: [["claude", "Claude (Claude Code)"], ["codex", "ChatGPT (Codex)"], ["other", "Other assistant"]],
     aiSurface: [["cli", "Command line"], ["skill", "Agent skill"], ["app", "In-app helper"]],
@@ -96,6 +97,10 @@
     wave: [["", "Not set"], ["now", "Now"], ["next", "Next"], ["later", "Later"]],
     confidence: [["", "Not set"], ["low", "Low"], ["medium", "Medium"], ["high", "High"]],
     valueInputSource: [["manual", "Entered by hand"], ["dataset", "From an event log"]],
+    goalKind: [
+      ["revenue", "Grow revenue"], ["cost", "Reduce cost"], ["capability", "New capability"],
+      ["risk", "Reduce risk"], ["experience", "Customer or employee experience"], ["other", "Other"]
+    ],
     reviewVerdict: [["confirm", "Confirm"], ["dispute", "Dispute"], ["unsure", "Not sure"]],
     reviewFormat: [["html", "Web page"], ["xlsx", "Excel workbook"]]
   };
@@ -182,7 +187,9 @@
     reviewPacks: 100,
     reviews: 200,
     reviewEntries: 5000,
-    reviewResponseBytes: 2 * 1024 * 1024
+    reviewResponseBytes: 2 * 1024 * 1024,
+    goals: 50,
+    checkpoints: 500
   };
 
   /* Files exchanged with client reviewers (see docs/extensions.md). */

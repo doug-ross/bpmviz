@@ -18,3 +18,9 @@
 .bc-wave-card .select { min-height: 32px; }
 
 .bc-onepager .stat-row { margin-bottom: var(--space-3); }
+
+/* Value case figures drafted with AI, until a person reviews them (same marking as screening scores). */
+.input.bc-ai { border-style: dashed; border-color: var(--badge-purple-ink); }
+.bc-ai-text { color: var(--badge-purple-ink); }
+.bc-ai-banner { padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); display: grid; gap: 4px; }
+.bc-ai-banner p { margin: 0; }

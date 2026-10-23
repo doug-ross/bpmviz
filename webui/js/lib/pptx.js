@@ -13,12 +13,13 @@
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"),
-      require("./exporting.js"), require("./value-case.js"), require("./zip.js"), require("./ooxml.js"));
+      require("./exporting.js"), require("./value-case.js"), require("./zip.js"), require("./ooxml.js"),
+      require("./goals.js"), () => require("./benefits.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.pptx = factory(B.util, B.schema, B.units, B.exporting, B.valueCase, B.zip, B.ooxml);
+    B.pptx = factory(B.util, B.schema, B.units, B.exporting, B.valueCase, B.zip, B.ooxml, B.goals, () => B.benefits);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, exporting, valueCase, zip, ooxml) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, exporting, valueCase, zip, ooxml, goals, benefits) {
   "use strict";
 
   class PptxError extends Error {}
@@ -234,6 +235,8 @@
     return out;
   }
 
+  const CHECKPOINT_STATUS = { met: "Met", partial: "Partially met", "not-yet": "Not yet", worse: "Worse", "not-measurable": "Not measurable" };
+
   function tableSlides(title, headers, rows, notes) {
     const pages = paginate(rows, 10);
     return pages.map((page, i) => ({
@@ -267,6 +270,14 @@
     slides.push(...tableSlides("Scope", ["Process", "Role", "Version", "Status", "Steps"],
       hd.models.map(m => [m.name, m.role, String(m.version), m.status, String(m.steps)])));
 
+    const visibleGoals = goals.visibleGoals(e, ctx);
+    if (visibleGoals.length) {
+      slides.push(...tableSlides("Value goals", ["Goal", "Kind", "Measure", "Target", "By", "Basis"],
+        visibleGoals.map(g => [g.title, schema.label("goalKind", g.kind), g.metric || "Not set", goals.targetText(g) || "Not set", g.by || "Not set",
+          schema.label("assumptionStatus", g.basis)]),
+        ["Goals are what the client counts as value. Each opportunity lists the goals it serves."]));
+    }
+
     if (hd.sections.pain.length) {
       slides.push(...tableSlides("Pain points", ["Pain point", "Steps", "Owner", "Status"],
         hd.sections.pain.map(r => [r.title, r.steps.join(", ") || "Not linked", r.owner || "Unassigned", r.status])));
@@ -274,10 +285,12 @@
 
     const ranked = valueCase.rank(e, ctx);
     if (ranked.length) {
-      slides.push(...tableSlides("Opportunities", ["Rank", "Opportunity", "Value", "Wave"],
+      const byId = new Map((e.records || []).map(r => [r.id, r]));
+      const goalCell = r => goals.goalsFor(e, byId.get(r.recordId), ctx).map(g => g.title).join("; ") || "None linked";
+      slides.push(...tableSlides("Opportunities", ["Rank", "Opportunity", "Value", "Wave"].concat(visibleGoals.length ? ["Goals served"] : []),
         ranked.map(r => [String(r.rank), r.title,
           r.value === null ? "No estimate yet" : units.formatMeasure(r.value, r.unit, fmtCtx) + " a year (" + schema.label("assumptionStatus", r.basis).toLowerCase() + " inputs)",
-          schema.label("wave", r.wave || "")])));
+          schema.label("wave", r.wave || "")].concat(visibleGoals.length ? [goalCell(r)] : []))));
     }
 
     const folio = valueCase.portfolio(e, ctx);
@@ -289,6 +302,16 @@
         folio.total.netAnnualBenefit === null ? "No estimate yet" : units.formatMeasure(folio.total.netAnnualBenefit, "currency", fmtCtx),
         folio.total.annualHoursSaved === null ? "No estimate yet" : units.formatMeasure(folio.total.annualHoursSaved, "hour", fmtCtx)]);
       slides.push(...tableSlides("Value by wave", ["Wave", "Opportunities", "Net annual benefit", "Hours saved per year"], waveRows, folio.notes));
+    }
+
+    const measured = benefits() ? benefits().expectedVsCheckpoints(e, ctx) : [];
+    const checkpointRows = measured.flatMap(row => row.checkpoints.map(c => [row.title, c.label + (c.date ? ", " + c.date : ""),
+      row.expected ? units.formatMeasure(row.expected.value, "hour", fmtCtx) : "Not calculated",
+      c.realized ? units.formatMeasure(c.realized.value, "hour", fmtCtx) + " (" + schema.label("assumptionStatus", c.realized.basis).toLowerCase() + ")" : "Not calculated",
+      CHECKPOINT_STATUS[c.status] || c.status]));
+    if (checkpointRows.length) {
+      slides.push(...tableSlides("Results at checkpoints", ["Opportunity", "Checkpoint", "Expected hours a year", "Realized hours a year", "Status"], checkpointRows,
+        ["Realized figures come from hours per case the delivery team recorded after the change, not from an event log."]));
     }
 
     slides.push({

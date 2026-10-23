@@ -52,9 +52,18 @@ The **Matrix** opportunity view charts the scored opportunities into these four 
 
 The **Waves** opportunity view lays opportunities out in columns by wave, with each opportunity's wave changed through a "Move to" select, so moving an opportunity needs no dragging. Each wave column totals its modeled net annual benefit, and a note names any step that two opportunities in the same wave both change, since their savings may be double-counted.
 
+## Business cases drafted with AI
+
+The **Suggest findings** AI task can also draft the figures of a business case: share of cases affected, effort reduction, duration reduction, one-time cost and annual running cost. It drafts them for the opportunities it suggests and for opportunities already in the project that have no business case yet. It works only from figures in the project (assumptions, step efforts, findings and source facts) and gives a source for each figure. A figure without a source, or out of range, is left blank. See `docs/ai.md`.
+
+- A drafted business case is marked **AI draft, not reviewed**. Its figures have a dashed outline in the editor, and each one shows the source the AI gave.
+- Its basis is Illustrative, and its figures stay out of the ranking, the Matrix, the wave totals, the deck, the CFO one-pager and the report until someone reviews them. Turning on **Include unreviewed AI drafts** in an export or the Present view shows them, labeled as drafts.
+- To review one, check each figure against its source, then clear the **AI draft, not reviewed** tick in the editor and save. The figures and their sources stay; the business case is now yours.
+- A business case a person entered is never replaced by an AI draft. The review lists such a proposal as one that cannot be applied.
+
 ## The CFO one-pager
 
-The **Business case** mode in Present is printable. It opens on the All opportunities page: every ranked opportunity, with the wave totals (net annual benefit, one-time cost and time freed up) for now, next and later. The **Show** select above the page switches to a single opportunity's one-page business case: its headline figures, affected steps, note and any inputs still missing. The report carries a shorter version of the same table, Opportunity value and waves, after the Opportunities section, built from only the opportunities kept in the report, so a reader who never opens the Business case mode still sees the modeled value and the wave plan.
+The **Business case** mode in Present is printable. It opens on the All opportunities page: the client's value goals and the opportunities that serve each one (see `docs/goals.md`), then every ranked opportunity, with the wave totals (net annual benefit, one-time cost and time freed up) for now, next and later. The **Show** select above the page switches to a single opportunity's one-page business case: its headline figures, the value goals it serves, its results at checkpoints after the change (see `docs/benefits.md`), affected steps, note and any inputs still missing. The report carries a shorter version of the same table, Opportunity value and waves, after the Opportunities section, built from only the opportunities kept in the report, so a reader who never opens the Business case mode still sees the modeled value and the wave plan.
 
 Because the total adds every planned wave together, two opportunities that change the same step in different waves would otherwise double-count that step's savings with no warning. The All opportunities page and the report both name any step changed by opportunities planned in more than one wave, in a note under the totals.
 

@@ -70,7 +70,17 @@ export function payloadFor(task, prompt, mode) {
       ref: "s1", kind: "opportunity", title: bad ? "" : "Pre-fill the form from the submission", description: mode === "secret" ? "Use " + SECRET : "Less retyping.",
       linkedModelId: model ? model.id : null, linkedNodeIds: step ? [step.id] : [], basedOnRecordIds: [], priority: "medium",
       opportunity: { intervention: "simplify", simplerAlternative: "", expectedBenefit: "Less rework", affectedVolume: "", effort: "S", risk: "", dependencies: "", validationAction: "Time ten cases" },
+      valueCase: { shareOfCasesPct: null, effortReductionPct: 30, durationReductionPct: null, oneTimeCost: null, annualRunningCost: null, confidence: "low",
+        sources: { shareOfCasesPct: "", effortReductionPct: "Step " + (step ? step.label : "") + ": retyping is about a third of the touch effort.", durationReductionPct: "", oneTimeCost: "", annualRunningCost: "" } },
+      goalIds: [],
       confidence: "medium", rationale: "Retyping is named in the step."
+    }], valueCases: [] };
+  }
+  if (task === "goals") {
+    return { suggestions: [{
+      ref: "g1", kind: "cost", title: bad ? "" : "Cut the cost of handling a case", metric: "Cost per case", baseline: null, target: null, unit: "$", by: "",
+      owner: "", source: "notes.txt", quote: mode === "secret" ? SECRET : "Handling costs too much.", servedByRecordIds: [], confidence: "medium",
+      rationale: "The notes say handling costs too much."
     }] };
   }
   if (task === "future-state") {
