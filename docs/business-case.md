@@ -33,7 +33,9 @@ All figures are economics-shaped outputs: each one lists its formula, its inputs
 
 ## Other kinds of value, and how value becomes money
 
-Labor hours are one kind of value. Under **Other kinds of value** in the editor, add a value line for each other kind, worked out with its own formula: **Errors and rework**, **SLA penalties avoided**, **Hires avoided** and **Licenses and vendor fees**. Each line has its inputs, a basis and a note.
+Labor hours are one kind of value. Under **Other kinds of value** in the editor, add a value line for each other kind, worked out with its own formula: **Errors and rework**, **SLA penalties avoided**, **Late or slow cases**, **More work done**, **Handoffs and coordination**, **Exceptions handled**, **Decisions made in time**, **Faster quotes, more wins**, **Customer contacts avoided**, **Billing and revenue leakage**, **Hires avoided** and **Licenses and vendor fees**. Each line has its inputs, a basis and a note.
+
+An Errors and rework line can build its cost per error from **error types**: for each, how often it happens today and after the change, where it starts and is caught, and the steps people redo to fix it. Those steps' touch effort and the hours spent investigating, at the project's hourly rate, are the correction work; credits, write-offs, penalties and the expected cost of rare severe consequences are added per error. The line is then valued per error type, and the one-pager shows a **Cost of errors** table.
 
 Every part of the business case, the labor estimate included, also records how it becomes money: the **share that can be realized**, **how it becomes money** in words (such as overtime cut, planned hires not made, or seats dropped at renewal), the **finance owner**, and the **amount Finance confirmed per year** with where it comes from. When an opportunity uses any of this, its business case shows three figures:
 

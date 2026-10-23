@@ -2497,6 +2497,14 @@
           "enum": [
             "rework",
             "sla",
+            "lateCases",
+            "throughput",
+            "coordination",
+            "exceptions",
+            "decisions",
+            "winRate",
+            "contacts",
+            "leakage",
             "hires",
             "vendor"
           ]
@@ -2549,6 +2557,223 @@
               "minimum": 0
             },
             "penaltyPerBreach": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "lateBeforePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "lateAfterPct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "costPerLateCase": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "demandPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "capacityBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "capacityAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "marginPerUnit": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "touchesBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "touchesAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "minutesPerTouch": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "hourlyRate": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "exceptionsBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "exceptionsAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "costPerException": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "decisionsPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "lostBeforePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "lostAfterPct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "marginPerKept": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "opportunitiesPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "winRateBeforePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "winRateAfterPct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "marginPerWin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "contactsBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "contactsAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "costPerContact": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "itemsPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "leakageRatePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "amountPerLeak": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "recoveryBeforePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "recoveryAfterPct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "marginSharePct": {
               "type": [
                 "number",
                 "null"
@@ -2624,6 +2849,116 @@
         "validatedSource": {
           "type": "string",
           "maxLength": 500
+        },
+        "basis": {
+          "enum": [
+            "illustrative",
+            "supplied",
+            "observed",
+            "validated"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "errorTypes": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/$defs/errorType"
+          },
+          "description": "Errors and rework only: the cost per error built up per error type. When present, the line uses them instead of its error rates and cost per error."
+        }
+      }
+    },
+    "errorType": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "One kind of error, its frequency before and after the change, and what it costs: the touch effort of the steps it makes people redo, investigation hours, direct costs and the expected cost of rare severe consequences.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "severity": {
+          "enum": [
+            "minor",
+            "moderate",
+            "severe"
+          ]
+        },
+        "perMonth": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "perMonthAfter": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "originNodeId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "detectedNodeId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "redoNodeIds": {
+          "maxItems": 40,
+          "description": "The steps an error of this type makes people redo.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "investigationHours": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "directCost": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Credits, write-offs and penalties per error."
+        },
+        "riskCost": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Expected cost per error of rare severe consequences."
         },
         "basis": {
           "enum": [

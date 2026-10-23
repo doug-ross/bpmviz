@@ -51,36 +51,36 @@
   const DIMENSIONS = {
     rework: {
       label: "Errors and rework", treatment: "avoidedLoss", pool: "",
-      formula: "cases per year × (error rate today − error rate after) × cost per error",
-      typesFormula: "12 × sum over error types of (errors per month today − after) × cost per error",
+      formula: "cases per year \u00d7 (error rate today \u2212 error rate after) \u00d7 cost per error",
+      typesFormula: "12 \u00d7 sum over error types of (errors per month today \u2212 after) \u00d7 cost per error",
       hint: "Cost per error is everything an error causes: finding it, fixing it, work redone downstream, credits and write-offs. Add error types to build it up from the steps an error makes people redo.",
       inputs: [cases("casesPerYear", "Cases per year"), pct("errorRateBeforePct", "Error rate today"), pct("errorRateAfterPct", "Error rate after the change"), money("costPerError", "Cost per error")],
       value: x => x.casesPerYear * (x.errorRateBeforePct - x.errorRateAfterPct) / 100 * x.costPerError
     },
     sla: {
       label: "SLA penalties avoided", treatment: "avoidedLoss", pool: "",
-      formula: "(breaches per year today − breaches per year after) × penalty or credit per breach",
+      formula: "(breaches per year today \u2212 breaches per year after) \u00d7 penalty or credit per breach",
       hint: "Use the penalty or credit actually paid, not the contract maximum.",
       inputs: [count("breachesBefore", "Breaches per year today"), count("breachesAfter", "Breaches per year after the change"), money("penaltyPerBreach", "Penalty or credit per breach")],
       value: x => (x.breachesBefore - x.breachesAfter) * x.penaltyPerBreach
     },
     lateCases: {
       label: "Late or slow cases", treatment: "avoidedLoss", pool: "",
-      formula: "cases per year × (share late today − share late after) × cost of a late case",
+      formula: "cases per year \u00d7 (share late today \u2212 share late after) \u00d7 cost of a late case",
       hint: "A faster average is worth nothing on its own. Count what a late case costs: expediting, credits, escalations, a missed customer date. The slowest cases often carry most of it, so check the 90th percentile in an event log.",
       inputs: [cases("casesPerYear", "Cases per year"), pct("lateBeforePct", "Share of cases late today"), pct("lateAfterPct", "Share of cases late after the change"), money("costPerLateCase", "Cost of a late case")],
       value: x => x.casesPerYear * (x.lateBeforePct - x.lateAfterPct) / 100 * x.costPerLateCase
     },
     throughput: {
       label: "More work done", treatment: "contribution", pool: "",
-      formula: "(lower of demand and capacity after − lower of demand and capacity today) × margin per unit",
+      formula: "(lower of demand and capacity after \u2212 lower of demand and capacity today) \u00d7 margin per unit",
       hint: "Extra capacity is worth something only where there is demand for it and the step is the one holding the process back.",
       inputs: [count("demandPerYear", "Demand per year"), count("capacityBefore", "Capacity per year today"), count("capacityAfter", "Capacity per year after the change"), money("marginPerUnit", "Margin per extra unit")],
       value: x => (Math.min(x.demandPerYear, x.capacityAfter) - Math.min(x.demandPerYear, x.capacityBefore)) * x.marginPerUnit
     },
     coordination: {
       label: "Handoffs and coordination", treatment: "capacity", pool: "",
-      formula: "cases per year × (touches per case today − after) × minutes per touch ÷ 60 × hourly rate",
+      formula: "cases per year \u00d7 (touches per case today \u2212 after) \u00d7 minutes per touch \u00f7 60 \u00d7 hourly rate",
       hint: "Status requests, clarifications and follow-ups between teams. Count only time not already in the steps' touch effort, so it is not counted twice with labor.",
       inputs: [cases("casesPerYear", "Cases per year"), count("touchesBefore", "Coordination touches per case today"), count("touchesAfter", "Coordination touches per case after"),
         count("minutesPerTouch", "Minutes per touch"), rate()],
@@ -88,35 +88,35 @@
     },
     exceptions: {
       label: "Exceptions handled", treatment: "capacity", pool: "",
-      formula: "(exceptions per year today − after) × cost to handle an exception",
+      formula: "(exceptions per year today \u2212 after) \u00d7 cost to handle an exception",
       hint: "Cases that leave the standard path: missing data, mismatches, policy conflicts. Include the review of what the AI resolves.",
       inputs: [count("exceptionsBefore", "Exceptions per year today"), count("exceptionsAfter", "Exceptions per year after the change"), money("costPerException", "Cost to handle an exception")],
       value: x => (x.exceptionsBefore - x.exceptionsAfter) * x.costPerException
     },
     decisions: {
       label: "Decisions made in time", treatment: "contribution", pool: "",
-      formula: "decisions per year × (share lost to delay today − after) × margin per opportunity kept",
+      formula: "decisions per year \u00d7 (share lost to delay today \u2212 after) \u00d7 margin per opportunity kept",
       hint: "Only count opportunities that were lost because the decision came too late, not because of price or fit.",
       inputs: [count("decisionsPerYear", "Decisions per year"), pct("lostBeforePct", "Share lost to delay today"), pct("lostAfterPct", "Share lost to delay after the change"), money("marginPerKept", "Margin per opportunity kept")],
       value: x => x.decisionsPerYear * (x.lostBeforePct - x.lostAfterPct) / 100 * x.marginPerKept
     },
     winRate: {
       label: "Faster quotes, more wins", treatment: "contribution", pool: "",
-      formula: "opportunities per year × (win rate after − win rate today) × margin per win",
+      formula: "opportunities per year \u00d7 (win rate after \u2212 win rate today) \u00d7 margin per win",
       hint: "Where the first quote back usually wins, as with brokers in commercial insurance. Use margin, not revenue, and compare like with like.",
       inputs: [count("opportunitiesPerYear", "Quotes or opportunities per year"), pct("winRateBeforePct", "Win rate today"), pct("winRateAfterPct", "Win rate after the change"), money("marginPerWin", "Margin per win")],
       value: x => x.opportunitiesPerYear * (x.winRateAfterPct - x.winRateBeforePct) / 100 * x.marginPerWin
     },
     contacts: {
       label: "Customer contacts avoided", treatment: "capacity", pool: "",
-      formula: "(contacts per year today − after) × avoidable cost per contact",
+      formula: "(contacts per year today \u2212 after) \u00d7 avoidable cost per contact",
       hint: "Count issues resolved, not conversations deflected. A customer who calls back is still a contact.",
       inputs: [count("contactsBefore", "Contacts per year today"), count("contactsAfter", "Contacts per year after the change"), money("costPerContact", "Avoidable cost per contact")],
       value: x => (x.contactsBefore - x.contactsAfter) * x.costPerContact
     },
     leakage: {
       label: "Billing and revenue leakage", treatment: "contribution", pool: "",
-      formula: "billable items per year × leakage rate × amount per leak × (recovery after − recovery today) × margin share",
+      formula: "billable items per year \u00d7 leakage rate \u00d7 amount per leak \u00d7 (recovery after \u2212 recovery today) \u00d7 margin share",
       hint: "Revenue the client is owed and does not collect: wrong rates, missed charges, invoices that went out wrong. Finding an error is not the same as recovering it.",
       inputs: [count("itemsPerYear", "Billable items per year"), pct("leakageRatePct", "Share of items with leakage"), money("amountPerLeak", "Amount per leak"),
         pct("recoveryBeforePct", "Share recovered today"), pct("recoveryAfterPct", "Share recovered after the change"), pct("marginSharePct", "Margin share of recovered revenue")],
@@ -124,14 +124,14 @@
     },
     hires: {
       label: "Hires avoided", treatment: "costAvoidance", pool: "labor",
-      formula: "(planned hires − hires still needed) × fully loaded annual cost per hire",
+      formula: "(planned hires \u2212 hires still needed) \u00d7 fully loaded annual cost per hire",
       hint: "Count only hires in an approved or credible staffing plan. This is how the labor hours are realized, so labor is not counted again.",
       inputs: [count("plannedHires", "Planned hires"), count("hiresStillNeeded", "Hires still needed after the change"), money("annualCostPerHire", "Fully loaded annual cost per hire")],
       value: x => (x.plannedHires - x.hiresStillNeeded) * x.annualCostPerHire
     },
     vendor: {
       label: "Licenses and vendor fees", treatment: "directExpense", pool: "",
-      formula: "(seats or units paid for today − still needed) × cost per seat or unit per year",
+      formula: "(seats or units paid for today \u2212 still needed) \u00d7 cost per seat or unit per year",
       hint: "Check the contract: the saving usually starts at renewal, not on the day the work changes.",
       inputs: [count("unitsBefore", "Seats or units paid for today"), count("unitsAfter", "Seats or units still needed"), money("costPerUnitPerYear", "Cost per seat or unit per year")],
       value: x => (x.unitsBefore - x.unitsAfter) * x.costPerUnitPerYear

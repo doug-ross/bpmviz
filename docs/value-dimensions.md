@@ -1,6 +1,6 @@
 # Value dimensions: from a process change to money a CFO accepts
 
-This is the design for widening AIxRay's business case beyond labor savings. It is written for review by the business owner and the delivery team before each step is built. Step 1 is built; steps 2 and 3 are proposals.
+This is the design for widening AIxRay's business case beyond labor savings. It is written for review by the business owner and the delivery team before each step is built. Steps 1 and 2 are built; step 3 is a proposal.
 
 ## Why
 
@@ -132,7 +132,7 @@ What changes in the figures:
 
 Opportunities without value lines or realization fields compute, rank and print exactly as before, and files saved before step 1 keep their shape.
 
-## Step 2: the cost per error builder, and more templates (proposed)
+## Step 2: the cost per error builder, and more templates (built)
 
 A cost per error is rarely tracked as one number. The builder reconstructs it from the process map:
 
@@ -141,7 +141,24 @@ A cost per error is rarely tracked as one number. The builder reconstructs it fr
 3. **What the diagram cannot know**: credits, write-offs, penalties, and the expected cost of rare severe incidents.
 4. **Every figure labeled** measured, sampled or assumed, with the blended cost per error, the yearly cost of poor quality, and the part the change can address.
 
-The builder feeds the Errors and rework template. Step 2 also adds the templates the process model feeds directly: cycle time with a money effect, throughput, coordination and handoffs, slow cases, exceptions, decision delay, revenue and win rate, customer service, and billing leakage.
+The builder lives inside an Errors and rework line. When a line has error types, it is valued per type, as 12 × the sum over types of (errors per month today − after) × cost per error, and the line's own error rates and cost per error are not used. Each type's cost per error is the touch effort of the steps redone plus the investigation hours, at the project's hourly rate, plus the direct costs and the expected cost of rare severe consequences. Blank optional costs count as none. A redone step without a touch effort, or labor without an hourly rate, leaves the cost blank and says which. The one-pager shows a Cost of errors table with each type, the blended cost per error and the yearly cost of poor quality today.
+
+Step 2 also adds eight templates:
+
+| Template | Formula | Treatment |
+|---|---|---|
+| Late or slow cases | cases × (share late today − after) × cost of a late case | Avoided loss |
+| More work done | (min(demand, capacity after) − min(demand, capacity today)) × margin per unit | Extra margin |
+| Handoffs and coordination | cases × (touches today − after) × minutes per touch ÷ 60 × hourly rate | Freed capacity |
+| Exceptions handled | (exceptions today − after) × cost to handle one | Freed capacity |
+| Decisions made in time | decisions × (share lost to delay today − after) × margin per opportunity kept | Extra margin |
+| Faster quotes, more wins | opportunities × (win rate after − today) × margin per win | Extra margin |
+| Customer contacts avoided | (contacts today − after) × avoidable cost per contact | Freed capacity |
+| Billing and revenue leakage | items × leakage rate × amount × (recovery after − today) × margin share | Extra margin |
+
+Cases per year and the hourly rate fall back to the project's assumptions when left blank. The design's separate cycle time and slow cases rows are one template, Late or slow cases, because they share a formula; its hint points to the 90th percentile in an event log.
+
+Not yet in step 2: the templates do not fill themselves from the process. Prefilling handoffs from lane changes, late cases from the SLA lens and slow cases from event-log percentiles is the next refinement, and the error builder chooses redone steps from a list rather than by clicking the diagram.
 
 ## Step 3: investment economics and proof (proposed)
 

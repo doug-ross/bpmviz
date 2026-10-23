@@ -232,7 +232,7 @@
       notes: ["Elapsed time only. It is not converted to money."]
     });
 
-    const outputs = combine(record, vc, [hoursPerCase, annualHours, labor, net, fte, payback, elapsed], drivers, notes);
+    const outputs = combine(e, record, vc, [hoursPerCase, annualHours, labor, net, fte, payback, elapsed], drivers, notes);
     const head = headline({ outputs });
     return {
       recordId: record.id,
@@ -268,10 +268,18 @@
     return util.isFiniteNumber(v) ? v : null;
   }
 
-  function combine(record, vc, base, drivers, notes) {
+  function combine(e, record, vc, base, drivers, notes) {
     const lines = valueLines.linesOf(record);
     if (!lines.length && !hasRealizationFields(vc)) return base;
-    const fallbacks = { annualVolume: driverInput(drivers, "annualVolume") };
+    // What value lines draw on: the project's volume and hourly rate, and each step's touch effort for error types.
+    const model = (e.models || []).find(m => m.id === (record.linkedModelId || "")) || (e.models || []).find(m => m.role === "current") || null;
+    const fallbacks = {
+      annualVolume: driverInput(drivers, "annualVolume"), hourlyRate: driverInput(drivers, "hourlyRate"),
+      step: id => {
+        const n = model ? model.nodes.find(x => x.id === id && !x.removed) : null;
+        return n ? { label: n.label, hours: hoursOf(n.measures && n.measures.touchEffort), basis: nodeStatus(n) } : null;
+      }
+    };
     const lineResults = lines.map(line => ({ line, dim: valueLines.DIMENSIONS[line.dimension], gross: valueLines.grossOf(line, fallbacks) }));
     const labor = base.find(o => o.key === "laborCostSaved");
     const fte = base.find(o => o.key === "fteReleased");
@@ -359,7 +367,7 @@
   function linesOnly(e, record, opts) {
     const notes = [];
     const drivers = economics.driverMap(e, scenarioOf(e, opts));
-    const outputs = combine(record, null, [], drivers, notes);
+    const outputs = combine(e, record, null, [], drivers, notes);
     const head = headline({ outputs });
     return {
       recordId: record.id, outputs, basis: head ? head.basis : null, confidence: "",
@@ -375,7 +383,8 @@
       gross: p.gross.value, basis: p.gross.basis, missing: p.gross.missing,
       realizationPct: p.realizationPct,
       realizable: p.gross.value === null || p.realizationPct === null ? null : p.gross.value * p.realizationPct / 100,
-      validated: p.validatedAnnual, realizedBy: p.realizedBy, financeOwner: p.financeOwner, validatedSource: p.validatedSource
+      validated: p.validatedAnnual, realizedBy: p.realizedBy, financeOwner: p.financeOwner, validatedSource: p.validatedSource,
+      errorTypes: p.gross.errorTypes || null, costOfErrors: p.gross.costOfErrors || null
     }));
   }
 

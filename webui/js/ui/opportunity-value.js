@@ -14,6 +14,9 @@
   const { schema, units, util, valueCase, businessCase, datasetQuery, exporting, valueLines } = B;
   const { field, textarea } = B.forms;
 
+  /* Lowercases only the first letter, so step names keep their own capitals mid-sentence. */
+  const lowerFirst = t => t.charAt(0).toLowerCase() + t.slice(1);
+
   function unitsCtxOf(e) {
     return { currency: e.meta.currency, timeBasis: e.meta.timeBasis };
   }
@@ -111,6 +114,99 @@
     }
 
     /* One value line's editor: its template's inputs, then how it becomes money. */
+    /*
+     * The cost per error, built up per error type: how often it happens now
+     * and after the change, where it starts and is caught, and the steps it
+     * makes people redo. Their touch effort, at the project's hourly rate,
+     * is the correction labor.
+     */
+    const model = e.models.find(m => m.id === record.linkedModelId) || e.models.find(m => m.role === "current") || null;
+    const taskSteps = model ? model.nodes.filter(n => !n.removed && schema.typeInfo(n.semanticType).shape === "task") : [];
+    const drivers = B.economics.driverMap(e, ctx.scenarioId ? (e.scenarios || []).find(x => x.id === ctx.scenarioId) || null : null);
+    const costCtx = {
+      hourlyRate: B.economics.helpers.driverInput(drivers, "hourlyRate"),
+      step: id => {
+        const n = taskSteps.find(x => x.id === id);
+        const t = n && n.measures && n.measures.touchEffort;
+        const hours = t && util.isFiniteNumber(t.value) ? (t.unit === "hour" ? t.value : t.unit === "minute" ? t.value / 60 : null) : null;
+        return n ? { label: n.label, hours, basis: n.provenance && n.provenance.validation === "validated" ? "validated" : "supplied" } : null;
+      }
+    };
+    const stepLabel = n => {
+      const t = n.measures && n.measures.touchEffort;
+      return n.label + (t && util.isFiniteNumber(t.value) ? " (" + units.formatMeasure(t.value, t.unit, unitsCtxOf(e)) + ")" : " (no touch effort)");
+    };
+
+    function errorTypesEditor(line, pre) {
+      const editors = [];
+      const list = h("div", { class: "bc-et-list", id: pre + "types" });
+      const add = h("button", { type: "button", class: "btn", id: pre + "add-type" }, "Add an error type");
+      function typeEditor(t) {
+        const tp = pre + "et-" + t.id + "-";
+        const name = textInput(t.name, tp + "name", valueLines.TEXT.errorName);
+        const severity = h("select", { class: "select", id: tp + "severity" }, valueLines.SEVERITIES.map(([v, l]) => h("option", { value: v, selected: v === (t.severity || "moderate") }, l)));
+        const perMonth = numberInput(t.perMonth, "Errors per month today", { min: 0, id: tp + "per-month" });
+        const perMonthAfter = numberInput(t.perMonthAfter, "Errors per month after the change", { min: 0, id: tp + "per-month-after" });
+        const stepSelect = (value, id, label) => h("select", { class: "select", id, "aria-label": label },
+          h("option", { value: "" }, "Not chosen"), taskSteps.map(n => h("option", { value: n.id, selected: n.id === value }, n.label)));
+        const origin = stepSelect(t.originNodeId, tp + "origin", "Where the error starts");
+        const detected = stepSelect(t.detectedNodeId, tp + "detected", "Where the error is caught");
+        const redo = taskSteps.map(n => ({ n, box: h("input", { type: "checkbox", id: tp + "redo-" + n.id, checked: (t.redoNodeIds || []).includes(n.id) }) }));
+        const investigation = numberInput(t.investigationHours, "Hours spent finding and investigating it", { min: 0, id: tp + "investigation" });
+        const direct = numberInput(t.directCost, "Credits, write-offs and penalties per error", { min: 0, id: tp + "direct" });
+        const risk = numberInput(t.riskCost, "Expected cost per error of rare severe consequences", { min: 0, id: tp + "risk" });
+        const typeBasis = enumSelect("assumptionStatus", t.basis || "illustrative", { id: tp + "basis" });
+        const cost = h("p", { class: "small", role: "status", id: tp + "cost" });
+        const remove = h("button", { type: "button", class: "btn btn-ghost", id: tp + "remove" }, "Remove error type");
+        const value = () => ({
+          id: t.id, name: name.value, severity: severity.value, perMonth: numberOf(perMonth), perMonthAfter: numberOf(perMonthAfter),
+          originNodeId: origin.value || null, detectedNodeId: detected.value || null, redoNodeIds: redo.filter(x => x.box.checked).map(x => x.n.id),
+          investigationHours: numberOf(investigation), directCost: numberOf(direct), riskCost: numberOf(risk), basis: typeBasis.value, note: t.note || ""
+        });
+        function showCost() {
+          const v = valueLines.errorTypeOf(Object.assign(value(), { name: value().name || "Error" }));
+          const c = v ? valueLines.errorTypeCost(v, costCtx) : null;
+          const fmt = x => units.formatMeasure(x, "currency", unitsCtxOf(e));
+          cost.textContent = !c ? "" : c.costPerError === null ? "Cost per error needs " + c.missing.map(lowerFirst).join(", ") + "." :
+            "Cost per error " + fmt(c.costPerError) + (c.laborHours ? " (" + util.formatNumber(c.laborHours, 2) + " hours of work)" : "") +
+            (c.yearlyToday !== null ? ". Today " + fmt(c.yearlyToday) + " a year" : "") + (c.yearlyAvoided !== null ? ", avoided " + fmt(c.yearlyAvoided) + " a year." : ".");
+        }
+        [name, perMonth, perMonthAfter, investigation, direct, risk].forEach(x => x.addEventListener("input", () => { showCost(); updatePreview(); }));
+        [severity, origin, detected, typeBasis].concat(redo.map(x => x.box)).forEach(x => x.addEventListener("change", () => { showCost(); updatePreview(); }));
+        const box = h("fieldset", { class: "bc-et", id: tp + "box" },
+          h("legend", null, "Error type"),
+          h("div", { class: "field-row" }, field("What goes wrong", name), field("Severity", severity)),
+          h("div", { class: "field-row" }, field("Errors per month today", perMonth), field("Errors per month after the change", perMonthAfter)),
+          h("div", { class: "field-row" }, field("Where it starts", origin), field("Where it is caught", detected)),
+          taskSteps.length ? h("fieldset", { class: "bc-et-redo" }, h("legend", null, "Steps people redo to fix it"),
+            h("div", { class: "bc-et-steps" }, redo.map(x => h("label", { class: "check" }, x.box, stepLabel(x.n))))) :
+            h("p", { class: "small muted" }, "This process has no work steps to choose from."),
+          h("div", { class: "field-row" }, field("Hours finding and investigating it", investigation), field("Credits, write-offs and penalties per error", direct)),
+          h("div", { class: "field-row" }, field("Expected cost of rare severe consequences, per error", risk), field("Basis", typeBasis)),
+          cost, h("div", { class: "form-actions" }, remove));
+        const ed = { el: box, value };
+        remove.addEventListener("click", () => { editors.splice(editors.indexOf(ed), 1); box.remove(); updatePreview(); });
+        showCost();
+        return ed;
+      }
+      function addType(t) { const ed = typeEditor(t); editors.push(ed); list.appendChild(ed.el); return ed; }
+      add.addEventListener("click", () => {
+        const linked = (record.linkedNodeIds || []).filter(id => taskSteps.some(n => n.id === id));
+        const ed = addType({ id: valueLines.newErrorTypeId("error", editors.map(x => x.value())), name: "", severity: "moderate",
+          originNodeId: linked[0] || null, redoNodeIds: linked, basis: "illustrative" });
+        ed.el.querySelector("input").focus();
+        updatePreview();
+      });
+      (line.errorTypes || []).forEach(addType);
+      return {
+        el: h("div", { class: "bc-et-section" },
+          h("p", { class: "field-label" }, "Cost per error, by error type"),
+          h("p", { class: "small muted" }, "Optional. Trace a real error: where it starts, where it is caught, and which steps people redo. Their touch effort at the hourly rate is the correction work. With error types, this line uses them instead of the error rates and cost per error above."),
+          list, add),
+        value: () => editors.map(x => x.value()).filter(t => t.name.trim())
+      };
+    }
+
     function lineEditor(line) {
       const dim = valueLines.DIMENSIONS[line.dimension];
       const pre = "bc-vl-" + line.id + "-";
@@ -129,7 +225,9 @@
       [lineRealization, lineValidated].forEach(x => x.addEventListener("input", updatePreview));
       lineBasis.addEventListener("change", updatePreview);
       const remove = h("button", { type: "button", class: "btn btn-ghost", id: pre + "remove" }, "Remove");
-      const fallbackHint = d => d.fallback === "annualVolume" ? "Leave blank to use the project's annual volume." : undefined;
+      const fallbackHint = d => d.fallback === "annualVolume" ? "Leave blank to use the project's annual volume." :
+        d.fallback === "hourlyRate" ? "Leave blank to use the project's hourly rate." : undefined;
+      const types = line.dimension === "rework" ? errorTypesEditor(line, pre) : null;
       const box = h("fieldset", { class: "bc-vl", id: pre + "box" },
         h("legend", null, dim.label, h("span", { class: "formula" }, " " + valueLines.TREATMENTS[dim.treatment].label)),
         h("p", { class: "small muted" }, dim.hint),
@@ -137,6 +235,7 @@
         h("div", { class: "field-row" }, field("Basis", lineBasis), field("Share that can be realized (%)", lineRealization)),
         h("div", { class: "field-row" }, field("How it becomes money", lineRealizedBy), field("Finance owner", lineOwner)),
         h("div", { class: "field-row" }, field("Amount Finance confirmed per year", lineValidated), field("Where the confirmed amount comes from", lineSource)),
+        types ? types.el : null,
         field("Note", lineNote),
         h("div", { class: "form-actions" }, remove));
       const ed = {
@@ -144,7 +243,8 @@
         value: () => ({
           id: line.id, dimension: line.dimension, inputs: Object.fromEntries(inputs.map(x => [x.d.key, numberOf(x.el)])),
           realizationPct: numberOf(lineRealization), realizedBy: lineRealizedBy.value, financeOwner: lineOwner.value,
-          validatedAnnual: numberOf(lineValidated), validatedSource: lineSource.value, basis: lineBasis.value, note: lineNote.value
+          validatedAnnual: numberOf(lineValidated), validatedSource: lineSource.value, basis: lineBasis.value, note: lineNote.value,
+          errorTypes: types ? types.value() : undefined
         })
       };
       remove.addEventListener("click", () => {
@@ -189,7 +289,7 @@
       let result;
       try { result = valueCase.compute(e, draft, { scenarioId: ctx.scenarioId }); } catch (err) { preview.textContent = "These figures don't give an estimate. Check the numbers you entered."; return; }
       const head = valueCase.headline(result);
-      if (!head) { preview.textContent = "Not enough to estimate the value yet" + (result.missing.length ? ". Still needed: " + result.missing.join(", ").toLowerCase() + "." : "."); return; }
+      if (!head) { preview.textContent = "Not enough to estimate the value yet" + (result.missing.length ? ". Still needed: " + result.missing.map(lowerFirst).join(", ") + "." : "."); return; }
       const fig = key => result.outputs.find(o => o.key === key);
       const gross = fig("grossAnnualValue"), realizable = fig("realizableAnnualValue"), confirmed = fig("validatedAnnualValue");
       const money = o => units.formatMeasure(o.value, o.unit, unitsCtxOf(e));
@@ -259,7 +359,7 @@
     try { result = valueCase.compute(ctx.engagement, record, { scenarioId: ctx.scenarioId }); } catch (err) { return h("span", { class: "muted" }, "No estimate yet"); }
     const head = valueCase.headline(result);
     const draft = valueCase.hasDraftValueCase(record) ? h("span", { class: "formula bc-ai-text" }, " AI draft to review") : null;
-    if (!head) return h("span", { class: "muted" }, result.missing.length ? "Needs " + result.missing[0].toLowerCase() : "No estimate yet", draft);
+    if (!head) return h("span", { class: "muted" }, result.missing.length ? "Needs " + lowerFirst(result.missing[0]) : "No estimate yet", draft);
     return h("span", null, units.formatMeasure(head.value, head.unit, unitsCtxOf(ctx.engagement)) + " a year", h("span", { class: "formula" }, " " + basisWord(head.basis) + " basis"), draft);
   }
 
@@ -450,6 +550,26 @@
         h("td", null, CHECKPOINT_STATUS[x.status] || x.status))))));
   }
 
+  /* The cost of poor quality behind an Errors and rework line, per error type. */
+  function errorsTable(part, c) {
+    const money = v => v === null ? h("span", { class: "muted" }, "Not calculated") : units.formatMeasure(v, "currency", c);
+    const sev = Object.fromEntries(valueLines.SEVERITIES.map(([v, l]) => [v, l.split(":")[0]]));
+    const k = part.costOfErrors;
+    return [
+      h("h3", null, "Cost of errors"),
+      h("div", { class: "table-wrap" }, h("table", { class: "table bc-errors" },
+        h("thead", null, h("tr", null, ["Error type", "Severity", "Errors a month, today then after", "Cost per error", "Cost a year today", "Avoided a year"].map((col, i) => h("th", { scope: "col", class: i > 1 ? "num" : null }, col)))),
+        h("tbody", null, part.errorTypes.map(t => h("tr", null,
+          h("td", null, t.name, t.missing.length ? h("div", { class: "desc" }, "Needs " + t.missing.map(lowerFirst).join(", ")) : null),
+          h("td", null, sev[t.severity] || t.severity),
+          h("td", { class: "num" }, (t.perMonth === null ? "?" : util.formatNumber(t.perMonth, 1)) + " then " + (t.perMonthAfter === null ? "?" : util.formatNumber(t.perMonthAfter, 1))),
+          h("td", { class: "num" }, money(t.costPerError)), h("td", { class: "num" }, money(t.yearlyToday)), h("td", { class: "num" }, money(t.yearlyAvoided))))))),
+      h("p", { class: "note" }, (k.blendedCostPerError !== null ? "Blended cost per error " + units.formatMeasure(k.blendedCostPerError, "currency", c) + ". " : "") +
+        (k.yearlyToday !== null ? "Errors cost " + units.formatMeasure(k.yearlyToday, "currency", c) + " a year today. " : "") +
+        "Correction work is the touch effort of the steps redone, at the project's hourly rate.")
+    ];
+  }
+
   /* Each part of a business case with its gross, realizable and confirmed figures. */
   function partsTable(parts, c) {
     const money = v => v === null ? h("span", { class: "muted" }, "Not set") : units.formatMeasure(v, "currency", c);
@@ -458,7 +578,7 @@
       h("tbody", null, parts.map(p => h("tr", null,
         h("td", null, h("div", { class: "title-cell" }, p.label), h("div", { class: "desc" }, p.treatmentLabel + (p.gross !== null ? ", " + basisWord(p.basis) + " basis" : ""))),
         h("td", null, p.realizedBy || h("span", { class: "muted" }, "Not described"), p.financeOwner ? h("div", { class: "desc" }, "Finance owner: " + p.financeOwner) : null),
-        h("td", { class: "num" }, p.gross === null ? h("span", { class: "muted" }, "Needs " + (p.missing[0] || "inputs").toLowerCase()) : money(p.gross)),
+        h("td", { class: "num" }, p.gross === null ? h("span", { class: "muted" }, "Needs " + lowerFirst(p.missing[0] || "inputs")) : money(p.gross)),
         h("td", { class: "num" }, p.realizable === null ? h("span", { class: "muted" }, "Not set") : money(p.realizable),
           p.realizationPct !== null ? h("div", { class: "desc" }, util.formatNumber(p.realizationPct, 1) + "% of gross") : null),
         h("td", { class: "num" }, money(p.validated), p.validatedSource ? h("div", { class: "desc" }, p.validatedSource) : null))))));
@@ -475,7 +595,7 @@
     const stat = o => h("div", { class: "stat" },
       h("span", { class: "v" }, o.value === null ? "Not calculated" : o.key === "paybackMonths" ? util.formatNumber(o.value, 1) + " months" : units.formatMeasure(o.value, o.unit, c)),
       h("span", { class: "l" }, o.label),
-      h("span", { class: "s" }, o.value === null ? "Needs " + o.missing.join(", ").toLowerCase() : "From " + basisWord(o.basis) + " inputs"));
+      h("span", { class: "s" }, o.value === null ? "Needs " + o.missing.map(lowerFirst).join(", ") : "From " + basisWord(o.basis) + " inputs"));
     return h("article", { class: "handoff-doc bc-onepager", id: "bc-onepager" },
       eyebrowOf(e),
       h("h1", null, "Business case: " + page.title),
@@ -488,6 +608,7 @@
       page.hasValueCase ? h("div", { class: "stat-row" }, page.outputs.map(stat)) :
         h("p", { class: "note" }, page.notes[0] || "This opportunity has no business case yet. Open it in Findings to add one."),
       page.parts && page.parts.length ? [h("h2", null, "Value by type"), partsTable(page.parts, c),
+        page.parts.filter(p => p.costOfErrors).map(p => errorsTable(p, c)),
         h("p", { class: "note" }, "Gross is what the change is worth on all the work it touches. Realizable is the share with a named way to become money. Confirmed is what Finance validated.")] : null,
       page.goals.length ? [h("h2", null, "Value goals it serves"), goalsTable(page.goals, null)] : null,
       page.checkpoints.length ? [h("h2", null, "Results at checkpoints"), checkpointsTable(page.checkpoints, c),

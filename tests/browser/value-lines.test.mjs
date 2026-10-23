@@ -81,3 +81,51 @@ for (const mode of ["file", "http"]) {
     assert.deepEqual(problems.external, []);
   });
 }
+
+test("build a cost per error from the steps an error makes people redo", { timeout: 90000 }, async t => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  t.after(() => context.close(), { timeout: 15000 });
+  const page = await context.newPage(), problems = watch(page);
+  page.setDefaultTimeout(12000);
+  await page.goto(fileUrl() + "#example=underwriting&ws=records");
+  await page.waitForFunction(() => window.AIxRay.app && window.AIxRay.app.store);
+  await page.evaluate(() => {
+    const a = window.AIxRay.app;
+    a.dispatch("node/update", { modelId: "m-current", nodeId: "scrub-sov-geocode", patch: { measures: { touchEffort: { value: 30, unit: "minute" } } } });
+    a.dispatch("record/add", { record: { kind: "opportunity", title: "Validate SOVs on intake", linkedModelId: "m-current", linkedNodeIds: ["scrub-sov-geocode"], opportunity: { effort: "S" } } });
+    a.openRecordDialog(a.store.get().records.find(r => r.title === "Validate SOVs on intake"));
+  });
+  await page.waitForSelector("#bc-vl-add");
+  await page.selectOption("#bc-vl-add-kind", "rework");
+  await page.click("#bc-vl-add");
+  await page.click("#bc-vl-vl-rework-add-type");
+  const tp = "#bc-vl-vl-rework-et-et-error-";
+  await page.fill(tp + "name", "Bad geocode found at pricing");
+  assert.equal(await page.isChecked(tp + "redo-scrub-sov-geocode"), true, "the opportunity's linked step is redone by default");
+  await page.fill(tp + "per-month", "10");
+  await page.fill(tp + "per-month-after", "4");
+  await page.fill(tp + "investigation", "1");
+  await page.fill(tp + "direct", "40");
+  assert.equal(await page.textContent(tp + "cost"), "Cost per error $265 (1.5 hours of work). Today $31,800 a year, avoided $19,080 a year.");
+  await page.fill("#bc-vl-vl-rework-realization", "100");
+  await page.selectOption("#bc-vl-add-kind", "winRate");
+  await page.click("#bc-vl-add");
+  await page.fill("#bc-vl-vl-winRate-opportunitiesPerYear", "400");
+  await page.fill("#bc-vl-vl-winRate-winRateBeforePct", "20");
+  await page.fill("#bc-vl-vl-winRate-winRateAfterPct", "25");
+  await page.fill("#bc-vl-vl-winRate-marginPerWin", "2000");
+  await page.fill("#bc-vl-vl-winRate-realization", "50");
+  assert.match(await page.textContent("#bc-vc-preview"), /^Gross \$59,080 a year, realizable \$39,080\./);
+  await page.click("dialog[open] .dlg-foot .btn-primary");
+  await page.waitForFunction(() => !document.querySelector("dialog[open]"));
+  const r = await page.evaluate(() => window.AIxRay.app.store.get().records.find(x => x.title === "Validate SOVs on intake"));
+  assert.deepEqual(r.opportunity.valueLines[0].errorTypes[0].redoNodeIds, ["scrub-sov-geocode"]);
+  await page.click("#tab-present");
+  await page.click("#pr-mode-business-case");
+  await page.selectOption("#bc-present-select", r.id);
+  await page.waitForSelector(".bc-errors");
+  assert.match(await page.textContent(".bc-errors"), /Bad geocode found at pricing.*Moderate.*10 then 4.*\$265.*\$31,800.*\$19,080/);
+  assert.match(await page.textContent("#bc-onepager"), /Errors cost \$31,800 a year today/);
+  assert.deepEqual(problems.errors, []);
+  assert.deepEqual(problems.external, []);
+});

@@ -354,6 +354,22 @@ const doc = {
         },
         realizationPct: percent, realizedBy: text(valueLines.TEXT.realizedBy), financeOwner: text(valueLines.TEXT.financeOwner),
         validatedAnnual: { type: ["number", "null"] }, validatedSource: text(valueLines.TEXT.validatedSource),
+        basis: en("assumptionStatus"), note: text(valueLines.TEXT.note),
+        errorTypes: { type: "array", maxItems: valueLines.ERROR_TYPE_LIMIT, items: { $ref: "#/$defs/errorType" },
+          description: "Errors and rework only: the cost per error built up per error type. When present, the line uses them instead of its error rates and cost per error." }
+      }
+    },
+    errorType: {
+      type: "object", required: ["id", "name"], additionalProperties: false,
+      description: "One kind of error, its frequency before and after the change, and what it costs: the touch effort of the steps it makes people redo, investigation hours, direct costs and the expected cost of rare severe consequences.",
+      properties: {
+        id, name: text(valueLines.TEXT.errorName), severity: { enum: valueLines.SEVERITIES.map(x => x[0]) },
+        perMonth: { type: ["number", "null"], minimum: 0 }, perMonthAfter: { type: ["number", "null"], minimum: 0 },
+        originNodeId: nullableId, detectedNodeId: nullableId,
+        redoNodeIds: Object.assign({ maxItems: valueLines.REDO_STEP_LIMIT, description: "The steps an error of this type makes people redo." }, ids),
+        investigationHours: { type: ["number", "null"], minimum: 0 },
+        directCost: { type: ["number", "null"], minimum: 0, description: "Credits, write-offs and penalties per error." },
+        riskCost: { type: ["number", "null"], minimum: 0, description: "Expected cost per error of rare severe consequences." },
         basis: en("assumptionStatus"), note: text(valueLines.TEXT.note)
       }
     },

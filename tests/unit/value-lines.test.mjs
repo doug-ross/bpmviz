@@ -38,7 +38,7 @@ test("each template works out its gross value, and a blank input leaves it blank
   const blank = VL.grossOf(VL.lineOf(line("e", "vendor", { unitsBefore: 20, costPerUnitPerYear: 1200 })));
   assert.equal(blank.value, null);
   assert.deepEqual(blank.missing, ["Seats or units still needed"]);
-  assert.deepEqual(Object.keys(VL.DIMENSIONS), ["rework", "sla", "hires", "vendor"]);
+  assert.deepEqual(Object.keys(VL.DIMENSIONS), ["rework", "sla", "lateCases", "throughput", "coordination", "exceptions", "decisions", "winRate", "contacts", "leakage", "hires", "vendor"]);
 });
 
 test("stored lines are kept in shape", () => {
