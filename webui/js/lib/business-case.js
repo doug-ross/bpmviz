@@ -7,12 +7,13 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./util.js"), require("./schema.js"), require("./value-case.js"), require("./goals.js"), () => require("./benefits.js"));
+    module.exports = factory(require("./util.js"), require("./schema.js"), require("./value-case.js"), require("./goals.js"), () => require("./benefits.js"),
+      require("./investment.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.businessCase = factory(B.util, B.schema, B.valueCase, B.goals, () => B.benefits);
+    B.businessCase = factory(B.util, B.schema, B.valueCase, B.goals, () => B.benefits, B.investment);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, valueCase, goals, benefits) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, valueCase, goals, benefits, investment) {
   "use strict";
 
   /* Figures shown on a one-pager, lead with the supporting figure and end with the headline. */
@@ -84,6 +85,7 @@
       suggestedWave: ranked ? ranked.suggestedWave : "", hasValueCase: !!vc || (op.valueLines || []).length > 0,
       parts: result.parts || [], realizedBy: vc && vc.realizedBy ? vc.realizedBy : "", financeOwner: vc && vc.financeOwner ? vc.financeOwner : "",
       aiDraft: valueCase.hasDraftValueCase(rec),
+      investment: investment.compute(rec, result),
       goals: goals.goalsFor(e, r, options).map(goalSummary),
       checkpoints: checkpointRows(e, r.id, options)
     };

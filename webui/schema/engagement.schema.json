@@ -1550,6 +1550,9 @@
                   },
                   "description": "Kinds of value besides labor hours, one line each. See docs/value-dimensions.md."
                 },
+                "investment": {
+                  "$ref": "#/$defs/investment"
+                },
                 "goalIds": {
                   "description": "The value goals this opportunity serves.",
                   "type": "array",
@@ -2869,6 +2872,131 @@
             "$ref": "#/$defs/errorType"
           },
           "description": "Errors and rework only: the cost per error built up per error type. When present, the line uses them instead of its error rates and cost per error."
+        }
+      }
+    },
+    "investment": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The business case over time: adoption by year, costs by category, discount rate, low and high cases, and a gain-share fee priced on confirmed value.",
+      "properties": {
+        "horizonYears": {
+          "enum": [
+            3,
+            4,
+            5
+          ]
+        },
+        "discountRatePct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 50
+        },
+        "adoptionPct": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "description": "The share of the yearly benefit achieved in each year."
+        },
+        "costs": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "category": {
+                "enum": [
+                  "implementation",
+                  "integration",
+                  "modelUsage",
+                  "orchestration",
+                  "humanOversight",
+                  "evaluation",
+                  "infrastructure",
+                  "governance",
+                  "changeManagement",
+                  "maintenance",
+                  "other"
+                ]
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "oneTime": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "yearly": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "successfulWorkflowsPerYear": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "lowPct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100,
+          "description": "The low case as a share of the expected benefit."
+        },
+        "highPct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 300,
+          "description": "The high case as a share of the expected benefit."
+        },
+        "gainSharePct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "gainShareMonths": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 60
         }
       }
     },

@@ -273,19 +273,122 @@
       updatePreview();
     });
 
+    /*
+     * The business case over time (lib/investment.js): adoption by year,
+     * costs by category, a discount rate, low and high cases, and a
+     * gain-share fee priced on the value Finance confirmed.
+     */
+    const inv = B.investment;
+    const invStored = (record.opportunity && record.opportunity.investment) || null;
+    const invAt = invStored || { horizonYears: 3, adoptionPct: [], costs: [] };
+    const invHorizon = h("select", { class: "select", id: "bc-inv-horizon" },
+      inv.HORIZONS.map(n => h("option", { value: String(n), selected: n === invAt.horizonYears }, n + " years")));
+    const invRate = numberInput(invAt.discountRatePct, "Discount rate, percent", { min: 0, max: 50, id: "bc-inv-rate" });
+    const adoptionRow = h("div", { class: "field-row", id: "bc-inv-adoption" });
+    let adoption = [];
+    function drawAdoption(values) {
+      adoption = Array.from({ length: Number(invHorizon.value) }, (_, i) => {
+        const el = numberInput(values[i], "Adoption in year " + (i + 1) + ", percent", { min: 0, max: 100, id: "bc-inv-adopt-" + (i + 1) });
+        el.addEventListener("input", updatePreview);
+        return el;
+      });
+      adoptionRow.replaceChildren(...adoption.map((el, i) => field("Year " + (i + 1) + " (%)", el)));
+    }
+    drawAdoption(invAt.adoptionPct || []);
+    invHorizon.addEventListener("change", () => { drawAdoption(adoption.map(numberOf)); updatePreview(); });
+    const rampButton = h("button", { type: "button", class: "btn btn-ghost", id: "bc-inv-ramp" }, "Use a typical ramp: 50%, 90%, then 100%");
+    rampButton.addEventListener("click", () => { adoption.forEach((el, i) => { el.value = String([50, 90][i] || 100); }); updatePreview(); });
+
+    const costEditors = [];
+    const costList = h("div", { class: "bc-et-list", id: "bc-inv-costs" });
+    function costEditor(c) {
+      const pre = "bc-inv-" + c.id + "-";
+      const category = h("select", { class: "select", id: pre + "category" }, inv.CATEGORIES.map(([v, l]) => h("option", { value: v, selected: v === c.category }, l)));
+      const oneTime = numberInput(c.oneTime, "One-time cost", { min: 0, id: pre + "one-time" });
+      const yearly = numberInput(c.yearly, "Cost per year", { min: 0, id: pre + "yearly" });
+      const costNote = textInput(c.note, pre + "note", 300);
+      const remove = h("button", { type: "button", class: "btn btn-ghost", id: pre + "remove" }, "Remove cost");
+      [oneTime, yearly].forEach(x => x.addEventListener("input", updatePreview));
+      category.addEventListener("change", updatePreview);
+      const box = h("fieldset", { class: "bc-et", id: pre + "box" },
+        h("legend", null, "Cost"),
+        h("div", { class: "field-row" }, field("Category", category), field("What it covers", costNote)),
+        h("div", { class: "field-row" }, field("One-time", oneTime), field("Per year", yearly)),
+        h("div", { class: "form-actions" }, remove));
+      const ed = { el: box, value: () => ({ id: c.id, category: category.value, note: costNote.value, oneTime: numberOf(oneTime), yearly: numberOf(yearly) }) };
+      remove.addEventListener("click", () => { costEditors.splice(costEditors.indexOf(ed), 1); box.remove(); updatePreview(); });
+      return ed;
+    }
+    function addCost(c) { const ed = costEditor(c); costEditors.push(ed); costList.appendChild(ed.el); return ed; }
+    (invAt.costs || []).forEach(addCost);
+    const costKind = h("select", { class: "select", id: "bc-inv-add-category", "aria-label": "Kind of cost to add" },
+      inv.CATEGORIES.map(([v, l]) => h("option", { value: v }, l)));
+    const costAdd = h("button", { type: "button", class: "btn", id: "bc-inv-add-cost" }, "Add a cost");
+    costAdd.addEventListener("click", () => {
+      const ed = addCost({ id: inv.newCostId(costKind.value, costEditors.map(x => x.value())), category: costKind.value, note: "", oneTime: null, yearly: null });
+      ed.el.querySelector("input").focus();
+      updatePreview();
+    });
+    const invWorkflows = numberInput(invAt.successfulWorkflowsPerYear, "Successful workflows per year", { min: 0, id: "bc-inv-workflows" });
+    const invLow = numberInput(invAt.lowPct, "Low case, percent of the expected benefit", { min: 0, max: 100, id: "bc-inv-low" });
+    const invHigh = numberInput(invAt.highPct, "High case, percent of the expected benefit", { min: 0, max: 300, id: "bc-inv-high" });
+    const invShare = numberInput(invAt.gainSharePct, "Gain-share, percent of confirmed value", { min: 0, max: 100, id: "bc-inv-share" });
+    const invMonths = numberInput(invAt.gainShareMonths, "Gain-share period in months", { min: 1, max: 60, step: "1", id: "bc-inv-share-months" });
+    [invRate, invWorkflows, invLow, invHigh, invShare, invMonths].forEach(x => x.addEventListener("input", updatePreview));
+    const invPreview = h("p", { class: "note", role: "status", id: "bc-inv-preview" });
+    const invValue = () => ({
+      horizonYears: Number(invHorizon.value), discountRatePct: numberOf(invRate), adoptionPct: adoption.map(numberOf),
+      costs: costEditors.map(x => x.value()), successfulWorkflowsPerYear: numberOf(invWorkflows),
+      lowPct: numberOf(invLow), highPct: numberOf(invHigh), gainSharePct: numberOf(invShare), gainShareMonths: numberOf(invMonths)
+    });
+    const invTouched = v => v.discountRatePct !== null || v.adoptionPct.some(x => x !== null) || v.costs.length > 0 ||
+      v.successfulWorkflowsPerYear !== null || v.lowPct !== null || v.highPct !== null || v.gainSharePct !== null;
+
     function touchedFields(vc) {
       return vc.effortReductionPct !== null || vc.durationReductionPct !== null ||
         vc.shareOfCasesPct !== null || vc.oneTimeCost !== null || vc.datasetId !== null;
     }
 
+    /* The record as the editor has it now, for the previews. */
+    function draftRecord() {
+      const vc = currentValueCase();
+      return Object.assign({}, record, { opportunity: Object.assign({}, record.opportunity,
+        touchedFields(vc) ? { valueCase: vc } : { valueCase: undefined }, { valueLines: valueLines.sanitizeLines(currentLines()).lines }) });
+    }
+
     function updatePreview() {
+      updateValuePreview();
+      updateInvestmentPreview();
+    }
+
+    function updateInvestmentPreview() {
+      const v = invValue();
+      if (!invTouched(v)) { invPreview.textContent = "Fill in adoption by year and a discount rate to see NPV, ROI and payback over " + v.horizonYears + " years."; return; }
+      const draft = draftRecord();
+      draft.opportunity.investment = inv.sanitizeInvestment(v);
+      let r;
+      try { r = inv.compute(draft, valueCase.compute(e, draft, { scenarioId: ctx.scenarioId })); } catch (err) { invPreview.textContent = "These figures don't give an investment case. Check the numbers you entered."; return; }
+      const fmt = x => units.formatMeasure(x, "currency", unitsCtxOf(e));
+      const complete = r.totalCost !== null;
+      const said = [
+        r.npv !== null ? "NPV " + fmt(r.npv) + " over " + r.horizonYears + " years at " + util.formatNumber(r.discountRatePct, 1) + "%" : "NPV needs " + r.missing.map(lowerFirst).join(", "),
+        r.roiPct !== null ? "ROI " + util.formatNumber(r.roiPct, 1) + "%" : null,
+        r.paybackMonths !== null ? "payback in " + util.formatNumber(r.paybackMonths, 1) + " months" : complete ? "no payback within " + r.horizonYears + " years" : null
+      ].filter(Boolean).join(", ") + ".";
+      const cases = [["Low", r.scenarios.low], ["high", r.scenarios.high]].filter(([, x]) => x && x.npv !== null).map(([l, x]) => l + " case NPV " + fmt(x.npv)).join(", ");
+      invPreview.textContent = [said, cases ? cases.charAt(0).toUpperCase() + cases.slice(1) + "." : "",
+        r.costPerSuccessfulWorkflow !== null ? "Cost per successful workflow " + fmt(r.costPerSuccessfulWorkflow) + "." : "",
+        r.gainShare ? (r.gainShare.fee !== null ? "Gain-share fee " + fmt(r.gainShare.fee) + "." : "The gain-share fee waits for an amount Finance confirmed.") : "",
+        r.base.kind === "modeled" ? "This uses the modeled value, as nothing is marked realizable yet." : ""].filter(Boolean).join(" ");
+    }
+
+    function updateValuePreview() {
       datasetField.hidden = !needsDataset();
       shareField.hidden = shareSourceSel.value === "dataset";
       const vc = currentValueCase();
       const lines = currentLines();
       if (!touchedFields(vc) && !lines.length) { preview.textContent = "Fill in the effort or duration reduction, or add another kind of value, to see what this opportunity could be worth."; return; }
-      const cleanLines = valueLines.sanitizeLines(lines).lines;
-      const draft = Object.assign({}, record, { opportunity: Object.assign({}, record.opportunity, touchedFields(vc) ? { valueCase: vc } : { valueCase: undefined }, { valueLines: cleanLines }) });
+      const draft = draftRecord();
       let result;
       try { result = valueCase.compute(e, draft, { scenarioId: ctx.scenarioId }); } catch (err) { preview.textContent = "These figures don't give an estimate. Check the numbers you entered."; return; }
       const head = valueCase.headline(result);
@@ -329,6 +432,21 @@
       h("p", { class: "small muted" }, "Value besides labor hours, each worked out with its own formula. A hires-avoided line is how the labor hours are realized, so labor is not counted twice."),
       lineList,
       h("div", { class: "bc-vl-add" }, addKind, addButton),
+      h("details", { class: "bc-inv", id: "bc-inv", open: !!invStored },
+        h("summary", { class: "field-label" }, "Investment over time"),
+        h("p", { class: "small muted" }, "Optional. Spread the yearly value over the years as the change is adopted, count every cost, and see NPV, ROI and payback. Year 0 is the up-front cost."),
+        h("div", { class: "field-row" }, field("Horizon", invHorizon), field("Discount rate (%)", invRate, "The rate Finance uses for projects like this, often 8 to 12%.")),
+        h("p", { class: "field-label bc-sub" }, "Adoption: the share of the yearly value reached in each year"),
+        adoptionRow, h("div", { class: "form-actions" }, rampButton),
+        h("p", { class: "field-label bc-sub" }, "Costs"),
+        h("p", { class: "small muted" }, "With cost lines, these replace the one-time and annual running cost above. Count review, retries and monitoring, not only the build."),
+        costList, h("div", { class: "bc-vl-add" }, costKind, costAdd),
+        h("div", { class: "field-row" }, field("Successful workflows per year", invWorkflows, "Gives the cost per workflow that completes correctly."),
+          field("Low case (% of expected)", invLow), field("High case (% of expected)", invHigh)),
+        h("p", { class: "field-label bc-sub" }, "Gain-share"),
+        h("p", { class: "small muted" }, "A fee set as a share of the value Finance confirmed, for a set number of months. It is never priced on a forecast."),
+        h("div", { class: "field-row" }, field("Share of confirmed value (%)", invShare), field("Months", invMonths)),
+        invPreview),
       field("Wave", waveSel, "The Matrix and Waves views suggest a wave from value and effort. The choice is yours."),
       field("Note", note),
       preview);
@@ -343,6 +461,8 @@
         const out = { wave: waveSel.value };
         if (hadValueCase || touchedFields(vc)) out.valueCase = vc;
         if (hadLines || lines.length) out.valueLines = lines;
+        const iv = invValue();
+        if (invStored || invTouched(iv)) out.investment = iv;
         return out;
       },
       check: () => (needsDataset() && !datasetSel.value ? "Choose an event log, or switch effort and share of cases to values you enter." : null)
@@ -570,6 +690,50 @@
     ];
   }
 
+  /* The business case over time: cash flows by year, the low and high cases, costs by category and the gain-share fee. */
+  function investmentSection(r, c) {
+    const none = text => h("span", { class: "muted" }, text);
+    // Cash flows read in whole currency units; the cost per successful workflow keeps its cents.
+    const money = v => v === null ? none("Not calculated") : units.formatMeasure(Math.round(v), "currency", c);
+    const exact = v => v === null ? none("Not calculated") : units.formatMeasure(v, "currency", c);
+    const pct = v => v === null ? none("Not calculated") : util.formatNumber(v, 1) + "%";
+    const complete = r.totalCost !== null;
+    const months = v => v !== null ? util.formatNumber(v, 1) + " months" : none(complete ? "Not within " + r.horizonYears + " years" : "Not calculated");
+    const stat = (v, l, sub) => h("div", { class: "stat" }, h("span", { class: "v" }, v), h("span", { class: "l" }, l), sub ? h("span", { class: "s" }, sub) : null);
+    const th = (cols, from) => h("thead", null, h("tr", null, cols.map((col, i) => h("th", { scope: "col", class: i >= from ? "num" : null }, col))));
+    const cases = [["Low", r.scenarios.low], ["Expected", r.scenarios.expected], ["High", r.scenarios.high]].filter(([, x]) => x);
+    return [
+      h("h2", null, "Investment over " + r.horizonYears + " years"),
+      h("div", { class: "stat-row", id: "bc-inv-stats" },
+        stat(money(r.npv), "Net present value", r.discountRatePct !== null ? "At " + util.formatNumber(r.discountRatePct, 1) + "% a year" : "Needs a discount rate"),
+        stat(pct(r.roiPct), "Return on investment", "Over the horizon, undiscounted"),
+        stat(months(r.paybackMonths), "Payback"),
+        r.costPerSuccessfulWorkflow !== null ? stat(exact(r.costPerSuccessfulWorkflow), "Cost per successful workflow", "Yearly cost over the workflows that complete correctly") : null),
+      h("p", { class: "note" }, r.base.value === null ? "The yearly value is not calculated yet." :
+        "At full adoption the yearly benefit is " + units.formatMeasure(r.base.value, "currency", c) + ", the " + r.base.kind + " value before running costs."),
+      h("div", { class: "table-wrap" }, h("table", { class: "table", id: "bc-inv-years" },
+        th(["Year", "Adoption", "Benefit", "Cost", "Net", "Discounted", "Cumulative"], 1),
+        h("tbody", null, r.years.map(y => h("tr", null,
+          h("td", null, y.year === 0 ? "Year 0, up front" : "Year " + y.year),
+          h("td", { class: "num" }, y.year === 0 ? "" : pct(r.adoptionPct[y.year - 1])),
+          h("td", { class: "num" }, money(y.benefit)), h("td", { class: "num" }, money(y.cost)), h("td", { class: "num" }, money(y.net)),
+          h("td", { class: "num" }, money(y.discounted)), h("td", { class: "num" }, money(y.cumulative))))))),
+      cases.length > 1 ? h("div", { class: "table-wrap bc-inv-gap" }, h("table", { class: "table", id: "bc-inv-cases" },
+        th(["Case", "Benefit, share of expected", "NPV", "ROI", "Payback"], 1),
+        h("tbody", null, cases.map(([l, x]) => h("tr", null, h("td", null, l), h("td", { class: "num" }, util.formatNumber(x.pct, 0) + "%"),
+          h("td", { class: "num" }, money(x.npv)), h("td", { class: "num" }, pct(x.roiPct)), h("td", { class: "num" }, months(x.paybackMonths))))))) : null,
+      r.costsByCategory.length ? h("div", { class: "table-wrap bc-inv-gap" }, h("table", { class: "table", id: "bc-inv-costs-table" },
+        th(["Cost", "One-time", "Per year"], 1),
+        h("tbody", null, r.costsByCategory.map(x => h("tr", null, h("td", null, x.label), h("td", { class: "num" }, money(x.oneTime)), h("td", { class: "num" }, money(x.yearly))))))) : null,
+      r.gainShare ? h("p", { id: "bc-inv-gain-share" }, r.gainShare.fee !== null ?
+        "Gain-share: " + util.formatNumber(r.gainShare.sharePct, 1) + "% of the " + units.formatMeasure(r.gainShare.confirmedAnnual, "currency", c) +
+          " a year Finance confirmed, for " + r.gainShare.months + " months, is a fee of " + units.formatMeasure(r.gainShare.fee, "currency", c) + "." :
+        "Gain-share: " + util.formatNumber(r.gainShare.sharePct, 1) + "% of confirmed value for " + r.gainShare.months + " months. No value is confirmed yet, so there is no fee.") : null,
+      r.missing.length ? h("p", { class: "note" }, "Still needed: " + r.missing.map(lowerFirst).join(", ") + ".") : null,
+      h("ul", { class: "plain-list small" }, r.notes.map(n => h("li", null, n)))
+    ];
+  }
+
   /* Each part of a business case with its gross, realizable and confirmed figures. */
   function partsTable(parts, c) {
     const money = v => v === null ? h("span", { class: "muted" }, "Not set") : units.formatMeasure(v, "currency", c);
@@ -610,6 +774,7 @@
       page.parts && page.parts.length ? [h("h2", null, "Value by type"), partsTable(page.parts, c),
         page.parts.filter(p => p.costOfErrors).map(p => errorsTable(p, c)),
         h("p", { class: "note" }, "Gross is what the change is worth on all the work it touches. Realizable is the share with a named way to become money. Confirmed is what Finance validated.")] : null,
+      page.investment ? investmentSection(page.investment, c) : null,
       page.goals.length ? [h("h2", null, "Value goals it serves"), goalsTable(page.goals, null)] : null,
       page.checkpoints.length ? [h("h2", null, "Results at checkpoints"), checkpointsTable(page.checkpoints, c),
         h("p", { class: "note" }, "Realized figures come from hours per case the delivery team recorded after the change.")] : null,

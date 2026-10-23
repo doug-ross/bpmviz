@@ -40,3 +40,8 @@
 .bc-et-redo { border: 0; padding: 0; margin: 0; }
 .bc-et-redo legend { font-size: var(--fs-small); font-weight: var(--fw-medium); color: var(--ink); padding: 0; margin-bottom: 4px; }
 .bc-et-steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px var(--space-3); max-height: 180px; overflow: auto; }
+.bc-inv { border-top: 1px solid var(--border); padding-top: var(--space-2); display: grid; gap: var(--space-2); }
+.bc-inv > summary { cursor: pointer; }
+.bc-inv[open] > summary { margin-bottom: var(--space-1); }
+.bc-inv .form-actions { margin: 0; }
+.bc-inv-gap { margin-top: var(--space-3); }

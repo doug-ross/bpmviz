@@ -179,6 +179,10 @@
       if (!Array.isArray(o.valueLines)) throw new StoreError("invalid", "Value lines must be a list.");
       out.valueLines = validate.sanitizeValueLines(o.valueLines).lines;
     }
+    if (o.investment !== undefined && o.investment !== null) {
+      if (typeof o.investment !== "object" || Array.isArray(o.investment)) throw new StoreError("invalid", "The investment settings must be an object.");
+      out.investment = validate.sanitizeInvestment(o.investment);
+    }
     return out;
   }
 

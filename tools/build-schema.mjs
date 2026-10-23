@@ -19,6 +19,7 @@ const units = require("../webui/js/lib/units.js");
 const aiResults = require("../webui/js/lib/ai-results.js");
 const workshop = require("../webui/js/lib/workshop.js");
 const valueLines = require("../webui/js/lib/value-lines.js");
+const investment = require("../webui/js/lib/investment.js");
 const E = schema.ENUMS;
 
 const en = name => ({ enum: E[name] });
@@ -220,6 +221,7 @@ const doc = {
               wave: en("wave"), valueCase: { $ref: "#/$defs/valueCase" },
               valueLines: { type: "array", maxItems: valueLines.LIMIT, items: { $ref: "#/$defs/valueLine" },
                 description: "Kinds of value besides labor hours, one line each. See docs/value-dimensions.md." },
+              investment: { $ref: "#/$defs/investment" },
               goalIds: Object.assign({ description: "The value goals this opportunity serves." }, ids),
               aiAssessment: { type: "object", properties: Object.assign(Object.fromEntries(aiKeys.map(k => [k, text(2000)])), { mode: { enum: ["", "assist", "autonomous"] } }) }
             }
@@ -357,6 +359,25 @@ const doc = {
         basis: en("assumptionStatus"), note: text(valueLines.TEXT.note),
         errorTypes: { type: "array", maxItems: valueLines.ERROR_TYPE_LIMIT, items: { $ref: "#/$defs/errorType" },
           description: "Errors and rework only: the cost per error built up per error type. When present, the line uses them instead of its error rates and cost per error." }
+      }
+    },
+    investment: {
+      type: "object", additionalProperties: false,
+      description: "The business case over time: adoption by year, costs by category, discount rate, low and high cases, and a gain-share fee priced on confirmed value.",
+      properties: {
+        horizonYears: { enum: investment.HORIZONS },
+        discountRatePct: { type: ["number", "null"], minimum: 0, maximum: 50 },
+        adoptionPct: { type: "array", maxItems: Math.max(...investment.HORIZONS), items: { type: ["number", "null"], minimum: 0, maximum: 100 },
+          description: "The share of the yearly benefit achieved in each year." },
+        costs: { type: "array", maxItems: investment.COST_LIMIT, items: {
+          type: "object", required: ["id"], additionalProperties: false,
+          properties: { id, category: { enum: investment.CATEGORY_IDS }, note: text(300),
+            oneTime: { type: ["number", "null"], minimum: 0 }, yearly: { type: ["number", "null"], minimum: 0 } } } },
+        successfulWorkflowsPerYear: { type: ["number", "null"], minimum: 0 },
+        lowPct: { type: ["number", "null"], minimum: 0, maximum: 100, description: "The low case as a share of the expected benefit." },
+        highPct: { type: ["number", "null"], minimum: 0, maximum: 300, description: "The high case as a share of the expected benefit." },
+        gainSharePct: { type: ["number", "null"], minimum: 0, maximum: 100 },
+        gainShareMonths: { type: ["integer", "null"], minimum: 1, maximum: 60 }
       }
     },
     errorType: {

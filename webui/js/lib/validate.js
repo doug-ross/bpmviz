@@ -10,12 +10,12 @@
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"),
       require("./economics.js"), require("./migrate.js"), require("./replay.js"), require("./workshop.js"),
-      require("./goals.js"), require("./checkpoints.js"), require("./value-lines.js"));
+      require("./goals.js"), require("./checkpoints.js"), require("./value-lines.js"), require("./investment.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay, B.workshop, B.goals, B.checkpoints, B.valueLines);
+    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay, B.workshop, B.goals, B.checkpoints, B.valueLines, B.investment);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay, workshop, goals, checkpoints, valueLines) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay, workshop, goals, checkpoints, valueLines, investment) {
   "use strict";
 
   const L = schema.LIMITS;
@@ -915,6 +915,11 @@
     return standalone(c => valueCaseOf(c, raw, "valueCase", refsOf(e), record || null));
   }
 
+  /** An opportunity's investment settings in shape (lib/investment.js). */
+  function sanitizeInvestment(raw) {
+    return investment.sanitizeInvestment(raw);
+  }
+
   /** An opportunity's value lines in shape: { lines, dropped }. */
   function sanitizeValueLines(raw) {
     return valueLines.sanitizeLines(raw);
@@ -1062,6 +1067,10 @@
         const v = valueLines.sanitizeLines(arr(c, o.valueLines, op + ".valueLines", valueLines.LIMIT));
         record.opportunity.valueLines = v.lines;
         if (v.dropped > 0) c.warn(op + ".valueLines", v.dropped + " value line" + (v.dropped === 1 ? "" : "s") + " without a valid ID or a known kind of value, or with a repeated ID, " + (v.dropped === 1 ? "was" : "were") + " left out.", "valueLines.dropped");
+      }
+      if (o.investment !== undefined && o.investment !== null) {
+        if (!util.isPlainObject(o.investment)) c.warn(op + ".investment", "The investment settings were not an object and were left out.", "investment.dropped");
+        else record.opportunity.investment = investment.sanitizeInvestment(o.investment);
       }
     }
     const generated = sanitizeGenerated(c, r.generated, path + ".generated");
@@ -1304,7 +1313,7 @@
 
   return {
     validateEngagement, parseEngagementText,
-    sanitizeDataset, sanitizeValueCase, sanitizeValueLines, sanitizeScenarioFor, sanitizeReviewPack, sanitizeReview, validateReviewResponse,
+    sanitizeDataset, sanitizeValueCase, sanitizeValueLines, sanitizeInvestment, sanitizeScenarioFor, sanitizeReviewPack, sanitizeReview, validateReviewResponse,
     parseItemRef, refsOf
   };
 });
