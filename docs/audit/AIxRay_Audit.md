@@ -79,7 +79,7 @@ The current-state column below describes the uploaded snapshot. Recommendations 
 | Mapping | Three renderers display task/lane/edge configurations | No in-app structural editing; legacy semantics differ; source BPMN absent | First allow metadata corrections; later add a constrained table editor and supported BPMN import |
 | Diagnosis | Legacy SLA visualization and static bottleneck markers draw attention | No defensible separation of touch, wait, queue, rework, frequency, or evidence coverage | Typed measures; selectable analytical lenses; show unknowns and denominators |
 | Redesign | A configured after-state can be displayed | Cannot clone baseline, compare alternatives, or link an intervention to a changed activity | Immutable current-state baseline plus editable future-state versions and change records |
-| Comparison | v2 compares independent lane structures on a shared clock | Case changes scale offsets, not routing decisions; excluded nodes look complete | Explicit scenario membership; lineage-based activity matching; honest completion states |
+| Comparison | v2 compares independent lane structures on a shared clock | Case changes scale offsets, not routing decisions; excluded nodes look complete | Explicit scenario membership; lineage-based activity matching; completion states |
 | Value modeling | Supplied scorecard communicates a before/after story | No editable drivers, calculation trace, scenario allocation, investment basis, or financial validation | Formula-backed assumptions panel with capacity, cost, and realized cash separated |
 | Presentation | A polished v2 shell, themes, details, and navigator exist | Dense sidebars and tiny fitted labels; no dedicated executive layout/export | Presenter view with focused process segments, selected findings, and visible assumptions |
 | Follow-up | Files can be copied manually outside the application | No saved engagement, action log, opportunity register, snapshot, or deliverable export | Portable engagement file, recoverable local draft, linked actions, and selected exports |
@@ -448,7 +448,7 @@ Add engagement/schema/revision IDs; stable node and edge IDs; explicit time unit
 - Keyboard users can select an activity, edit/capture a record, close the panel, and recover focus. Reduced-motion startup and stopped playback behavior do not regress.
 - Untrusted configuration values render as data; the bundled workflow makes no external requests during load, capture, save, or selected export.
 - The handoff includes process scope/version, selected opportunities/actions, owner/status, and evidence/assumption labels. Sensitive notes are not exported accidentally.
-- Source fixtures and regression tests pass before the old entrypoints are archived. Browser/deployment limitations are documented honestly.
+- Source fixtures and regression tests pass before the old entrypoints are archived. Browser/deployment limitations are documented.
 
 ## Risks and mitigations
 

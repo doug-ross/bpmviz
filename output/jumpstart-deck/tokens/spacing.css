@@ -1,0 +1,53 @@
+/* ============================================================
+   Sogeti — Spacing, radius, shadow, motion tokens
+   ============================================================ */
+:root {
+  /* ---- Spacing scale (4px base) ---- */
+  --space-0:  0;
+  --space-1:  0.25rem;  /* 4  */
+  --space-2:  0.5rem;   /* 8  */
+  --space-3:  0.75rem;  /* 12 */
+  --space-4:  1rem;     /* 16 */
+  --space-5:  1.5rem;   /* 24 */
+  --space-6:  2rem;     /* 32 */
+  --space-7:  3rem;     /* 48 */
+  --space-8:  4rem;     /* 64 */
+  --space-9:  6rem;     /* 96 */
+
+  /* ---- Radius ----
+     The brand leans on the soft "sail" curve: generous, asymmetric
+     rounding. UI controls use a small consistent radius; the hero
+     "sail" device uses a large single-corner radius. */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-pill: 999px;
+  --radius-sail: 0 0 120px 0;  /* signature one-corner sail sweep */
+
+  /* ---- Borders ---- */
+  --border-width: 1px; /* @kind spacing */
+  --border-width-strong: 2px;
+
+  /* ---- Shadows (cool, low-contrast, blue-tinted) ---- */
+  --shadow-xs: 0 1px 2px rgba(43, 10, 61, 0.06);
+  --shadow-sm: 0 1px 3px rgba(43, 10, 61, 0.08), 0 1px 2px rgba(43, 10, 61, 0.06);
+  --shadow-md: 0 4px 12px rgba(43, 10, 61, 0.10);
+  --shadow-lg: 0 12px 32px rgba(43, 10, 61, 0.12);
+  --shadow-xl: 0 24px 56px rgba(43, 10, 61, 0.16);
+  --shadow-focus: 0 0 0 3px rgba(18, 171, 219, 0.40);
+
+  /* ---- Layout ---- */
+  --container-max: 1200px; /* @kind spacing */
+  --container-narrow: 760px; /* @kind spacing */
+
+  /* ---- Motion ----
+     Calm, professional. Short ease-outs; no bounce. */
+  --ease-standard: cubic-bezier(0.4, 0.0, 0.2, 1); /* @kind other */
+  --ease-out:      cubic-bezier(0.0, 0.0, 0.2, 1); /* @kind other */
+  --ease-in:       cubic-bezier(0.4, 0.0, 1, 1); /* @kind other */
+  --dur-fast:   120ms; /* @kind other */
+  --dur-base:   200ms; /* @kind other */
+  --dur-slow:   320ms; /* @kind other */
+}

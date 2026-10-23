@@ -235,7 +235,7 @@ test("prompts fence sources with a random code and cap the text sent to Codex", 
   assert.ok(a.text.length < 305000);
   const sys = systemPrompt("extract", "claude");
   assert.match(sys, /out\/engagement\.json/);
-  assert.match(sys, /## 7\. Keep the timing honest/);
+  assert.match(sys, /## 7\. Keep the timing accurate/);
   assert.doesNotMatch(sys, /## 10\./);
   assert.doesNotMatch(systemPrompt("future-state", "claude"), /\{\{/);
 });

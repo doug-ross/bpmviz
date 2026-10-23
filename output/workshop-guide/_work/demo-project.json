@@ -1,0 +1,1557 @@
+{
+  "schema": "aixray.engagement",
+  "schemaVersion": 1,
+  "id": "eng-i8ozw5cg",
+  "revision": 24,
+  "createdAt": "2026-10-15T18:32:58.925Z",
+  "updatedAt": "2026-10-15T18:33:05.414Z",
+  "meta": {
+    "clientDisplayName": "",
+    "engagementName": "",
+    "processName": "Application intake workshop",
+    "confidentiality": "public",
+    "dataStatus": "demonstration",
+    "timeBasis": {
+      "unit": "minute",
+      "calendar": "calendar",
+      "businessMinutesPerDay": 480
+    },
+    "currency": "USD",
+    "disclosure": "Synthetic workshop example. Timings and costs are illustrative.",
+    "summary": "",
+    "credits": ""
+  },
+  "milestones": [],
+  "models": [
+    {
+      "id": "m-current",
+      "role": "current",
+      "name": "Current state",
+      "version": 1,
+      "status": "baseline",
+      "locked": true,
+      "basedOn": null,
+      "sourceRefs": [],
+      "notes": "",
+      "lanes": [
+        {
+          "id": "team",
+          "name": "Case team",
+          "role": "",
+          "type": "human"
+        },
+        {
+          "id": "lane-v2a1x5yk",
+          "name": "Customer",
+          "role": "",
+          "type": "external"
+        },
+        {
+          "id": "lane-6oa2rr3w",
+          "name": "Approver",
+          "role": "",
+          "type": "human"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "step-71m59bdf",
+          "label": "Start",
+          "sub": "",
+          "semanticType": "startEvent",
+          "laneId": "team",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "step-9g7d0wzf",
+          "label": "End",
+          "sub": "",
+          "semanticType": "endEvent",
+          "laneId": "team",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "step-e9v7pfx0",
+          "label": "Review application",
+          "semanticType": "userTask",
+          "laneId": "team",
+          "sub": "",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "step-jh0o30jr",
+          "label": "Documents complete?",
+          "semanticType": "exclusiveGateway",
+          "laneId": "team",
+          "sub": "",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "step-c67u4vbh",
+          "label": "Approve application",
+          "semanticType": "userTask",
+          "laneId": "lane-6oa2rr3w",
+          "sub": "",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        },
+        {
+          "id": "step-0q1e4na2",
+          "label": "Provide missing documents",
+          "semanticType": "userTask",
+          "laneId": "lane-v2a1x5yk",
+          "sub": "",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": null,
+          "removed": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "flow-w57ccipf",
+          "from": "step-71m59bdf",
+          "to": "step-e9v7pfx0",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "flow-wj8o9jml",
+          "from": "step-e9v7pfx0",
+          "to": "step-jh0o30jr",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "flow-1ni5914i",
+          "from": "step-jh0o30jr",
+          "to": "step-c67u4vbh",
+          "label": "Complete",
+          "semanticType": "default",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "flow-8hwzlzfc",
+          "from": "step-c67u4vbh",
+          "to": "step-9g7d0wzf",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "flow-o0rzczqd",
+          "from": "step-jh0o30jr",
+          "to": "step-0q1e4na2",
+          "label": "Missing documents",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        },
+        {
+          "id": "flow-34kjp5hg",
+          "from": "step-0q1e4na2",
+          "to": "step-e9v7pfx0",
+          "label": "Documents resubmitted",
+          "semanticType": "loop",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": null
+        }
+      ],
+      "presentation": {
+        "laneHeight": null,
+        "nodes": {
+          "step-71m59bdf": {
+            "x": 0
+          },
+          "step-9g7d0wzf": {
+            "x": 2
+          },
+          "step-e9v7pfx0": {
+            "x": 1
+          },
+          "step-jh0o30jr": {
+            "x": 1.5
+          },
+          "step-c67u4vbh": {
+            "x": 1.75
+          },
+          "step-0q1e4na2": {
+            "x": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "m-future-draft",
+      "role": "future",
+      "name": "AI-assisted intake",
+      "version": 1,
+      "status": "draft",
+      "locked": false,
+      "basedOn": {
+        "modelId": "m-current",
+        "version": 1
+      },
+      "sourceRefs": [],
+      "notes": "",
+      "lanes": [
+        {
+          "id": "team",
+          "name": "Case team",
+          "role": "",
+          "type": "human"
+        },
+        {
+          "id": "lane-v2a1x5yk",
+          "name": "Customer",
+          "role": "",
+          "type": "external"
+        },
+        {
+          "id": "lane-6oa2rr3w",
+          "name": "Approver",
+          "role": "",
+          "type": "human"
+        },
+        {
+          "id": "lane-vrxz21iw",
+          "name": "AI assistant",
+          "role": "",
+          "type": "agent"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "step-71m59bdf",
+          "label": "Start",
+          "sub": "",
+          "semanticType": "startEvent",
+          "laneId": "team",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": {
+            "baselineNodeId": "step-71m59bdf",
+            "change": "unchanged",
+            "rationale": ""
+          },
+          "removed": false
+        },
+        {
+          "id": "step-9g7d0wzf",
+          "label": "End",
+          "sub": "",
+          "semanticType": "endEvent",
+          "laneId": "team",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": {
+            "baselineNodeId": "step-9g7d0wzf",
+            "change": "unchanged",
+            "rationale": ""
+          },
+          "removed": false
+        },
+        {
+          "id": "step-e9v7pfx0",
+          "label": "AI checks application completeness",
+          "semanticType": "userTask",
+          "laneId": "lane-vrxz21iw",
+          "sub": "",
+          "sourceIds": [],
+          "details": {
+            "desc": "Propose missing-document requests. A case handler approves every external message."
+          },
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": {
+            "baselineNodeId": "step-e9v7pfx0",
+            "change": "modified",
+            "rationale": "Prepare a completeness check while keeping human approval and manual fallback."
+          },
+          "removed": false
+        },
+        {
+          "id": "step-jh0o30jr",
+          "label": "Documents complete?",
+          "semanticType": "exclusiveGateway",
+          "laneId": "team",
+          "sub": "",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": {
+            "baselineNodeId": "step-jh0o30jr",
+            "change": "unchanged",
+            "rationale": ""
+          },
+          "removed": false
+        },
+        {
+          "id": "step-c67u4vbh",
+          "label": "Approve application",
+          "semanticType": "userTask",
+          "laneId": "lane-6oa2rr3w",
+          "sub": "",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": {
+            "baselineNodeId": "step-c67u4vbh",
+            "change": "unchanged",
+            "rationale": ""
+          },
+          "removed": false
+        },
+        {
+          "id": "step-0q1e4na2",
+          "label": "Provide missing documents",
+          "semanticType": "userTask",
+          "laneId": "lane-v2a1x5yk",
+          "sub": "",
+          "sourceIds": [],
+          "details": {},
+          "tags": {
+            "bottleneck": false,
+            "agent": false,
+            "humanReview": false,
+            "optional": false,
+            "sampled": false
+          },
+          "measures": {
+            "typicalDuration": null,
+            "slaTarget": null,
+            "touchEffort": null,
+            "waitType": ""
+          },
+          "provenance": {
+            "source": "workshop",
+            "validation": "unvalidated",
+            "evidenceRefs": [],
+            "note": ""
+          },
+          "lineage": {
+            "baselineNodeId": "step-0q1e4na2",
+            "change": "unchanged",
+            "rationale": ""
+          },
+          "removed": false
+        }
+      ],
+      "edges": [
+        {
+          "id": "flow-w57ccipf",
+          "from": "step-71m59bdf",
+          "to": "step-e9v7pfx0",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": {
+            "change": "unchanged",
+            "rationale": ""
+          }
+        },
+        {
+          "id": "flow-wj8o9jml",
+          "from": "step-e9v7pfx0",
+          "to": "step-jh0o30jr",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": {
+            "change": "unchanged",
+            "rationale": ""
+          }
+        },
+        {
+          "id": "flow-1ni5914i",
+          "from": "step-jh0o30jr",
+          "to": "step-c67u4vbh",
+          "label": "Complete",
+          "semanticType": "default",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": {
+            "change": "unchanged",
+            "rationale": ""
+          }
+        },
+        {
+          "id": "flow-8hwzlzfc",
+          "from": "step-c67u4vbh",
+          "to": "step-9g7d0wzf",
+          "label": "",
+          "semanticType": "sequence",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": {
+            "change": "unchanged",
+            "rationale": ""
+          }
+        },
+        {
+          "id": "flow-o0rzczqd",
+          "from": "step-jh0o30jr",
+          "to": "step-0q1e4na2",
+          "label": "Missing documents",
+          "semanticType": "conditional",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": {
+            "change": "unchanged",
+            "rationale": ""
+          }
+        },
+        {
+          "id": "flow-34kjp5hg",
+          "from": "step-0q1e4na2",
+          "to": "step-e9v7pfx0",
+          "label": "Documents resubmitted",
+          "semanticType": "loop",
+          "dashed": false,
+          "emphasis": "",
+          "removed": false,
+          "lineage": {
+            "change": "unchanged",
+            "rationale": ""
+          }
+        }
+      ],
+      "presentation": {
+        "laneHeight": null,
+        "nodes": {
+          "step-71m59bdf": {
+            "x": 0
+          },
+          "step-9g7d0wzf": {
+            "x": 2
+          },
+          "step-e9v7pfx0": {
+            "x": 1
+          },
+          "step-jh0o30jr": {
+            "x": 1.5
+          },
+          "step-c67u4vbh": {
+            "x": 1.75
+          },
+          "step-0q1e4na2": {
+            "x": 3
+          }
+        }
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "scn-iwi56s30",
+      "name": "Normal application",
+      "statusLabel": "Provided",
+      "statusTone": "",
+      "provenance": "illustrative",
+      "summary": "",
+      "attributes": [],
+      "timing": {
+        "method": "explicit-visits",
+        "note": "Authored sequential route; waits, durations and human effort are entered explicitly. Parallel branches require separate review."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v1",
+              "nodeId": "step-71m59bdf",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v2",
+              "nodeId": "step-e9v7pfx0",
+              "start": 15,
+              "end": 35
+            },
+            {
+              "id": "v3",
+              "nodeId": "step-jh0o30jr",
+              "start": 35,
+              "end": 35
+            },
+            {
+              "id": "v4",
+              "nodeId": "step-c67u4vbh",
+              "start": 35,
+              "end": 45
+            },
+            {
+              "id": "v5",
+              "nodeId": "step-9g7d0wzf",
+              "start": 45,
+              "end": 45
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "flow-w57ccipf",
+              "fromVisitId": "v1",
+              "toVisitId": "v2"
+            },
+            {
+              "edgeId": "flow-wj8o9jml",
+              "fromVisitId": "v2",
+              "toVisitId": "v3"
+            },
+            {
+              "edgeId": "flow-1ni5914i",
+              "fromVisitId": "v3",
+              "toVisitId": "v4"
+            },
+            {
+              "edgeId": "flow-8hwzlzfc",
+              "fromVisitId": "v4",
+              "toVisitId": "v5"
+            }
+          ],
+          "membership": {
+            "step-71m59bdf": "included",
+            "step-9g7d0wzf": "included",
+            "step-e9v7pfx0": "included",
+            "step-jh0o30jr": "included",
+            "step-c67u4vbh": "included",
+            "step-0q1e4na2": "unknown"
+          },
+          "pauseAt": null,
+          "milestones": {}
+        }
+      },
+      "measures": [
+        {
+          "key": "walkthroughEffort-v1",
+          "label": "Human effort, visit 1",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v2",
+          "label": "Human effort, visit 2",
+          "unit": "minute",
+          "values": {
+            "m-current": 20
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v3",
+          "label": "Human effort, visit 3",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v4",
+          "label": "Human effort, visit 4",
+          "unit": "minute",
+          "values": {
+            "m-current": 10
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v5",
+          "label": "Human effort, visit 5",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "humanTouch",
+          "label": "Human effort per case",
+          "unit": "minute",
+          "values": {
+            "m-current": 30
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "cycleTime",
+          "label": "Elapsed route time",
+          "unit": "minute",
+          "values": {
+            "m-current": 45
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        }
+      ],
+      "economics": {
+        "beforeModelId": "m-current",
+        "afterModelId": null,
+        "supplied": {
+          "beforeCostPerCase": null,
+          "afterCostPerCase": null,
+          "costSavedPerCase": null,
+          "fteCapacity": null,
+          "text": {
+            "cycleSaved": "",
+            "cycleSavedShare": "",
+            "costSaved": "",
+            "fte": ""
+          }
+        },
+        "overrides": {}
+      }
+    },
+    {
+      "id": "scn-4v4j21k9",
+      "name": "Normal application - Conservative",
+      "statusLabel": "Conservative",
+      "statusTone": "",
+      "provenance": "illustrative",
+      "summary": "Alternative using explicitly entered conservative assumptions. Annual results are alternatives and must not be added.",
+      "attributes": [],
+      "timing": {
+        "method": "explicit-visits",
+        "note": "Authored sequential route; waits, durations and human effort are entered explicitly. Parallel branches require separate review."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v1",
+              "nodeId": "step-71m59bdf",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v2",
+              "nodeId": "step-e9v7pfx0",
+              "start": 15,
+              "end": 35
+            },
+            {
+              "id": "v3",
+              "nodeId": "step-jh0o30jr",
+              "start": 35,
+              "end": 35
+            },
+            {
+              "id": "v4",
+              "nodeId": "step-c67u4vbh",
+              "start": 35,
+              "end": 45
+            },
+            {
+              "id": "v5",
+              "nodeId": "step-9g7d0wzf",
+              "start": 45,
+              "end": 45
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "flow-w57ccipf",
+              "fromVisitId": "v1",
+              "toVisitId": "v2"
+            },
+            {
+              "edgeId": "flow-wj8o9jml",
+              "fromVisitId": "v2",
+              "toVisitId": "v3"
+            },
+            {
+              "edgeId": "flow-1ni5914i",
+              "fromVisitId": "v3",
+              "toVisitId": "v4"
+            },
+            {
+              "edgeId": "flow-8hwzlzfc",
+              "fromVisitId": "v4",
+              "toVisitId": "v5"
+            }
+          ],
+          "membership": {
+            "step-71m59bdf": "included",
+            "step-9g7d0wzf": "included",
+            "step-e9v7pfx0": "included",
+            "step-jh0o30jr": "included",
+            "step-c67u4vbh": "included",
+            "step-0q1e4na2": "unknown"
+          },
+          "pauseAt": null,
+          "milestones": {}
+        }
+      },
+      "measures": [
+        {
+          "key": "walkthroughEffort-v1",
+          "label": "Human effort, visit 1",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v2",
+          "label": "Human effort, visit 2",
+          "unit": "minute",
+          "values": {
+            "m-current": 20
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v3",
+          "label": "Human effort, visit 3",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v4",
+          "label": "Human effort, visit 4",
+          "unit": "minute",
+          "values": {
+            "m-current": 10
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v5",
+          "label": "Human effort, visit 5",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "humanTouch",
+          "label": "Human effort per case",
+          "unit": "minute",
+          "values": {
+            "m-current": 30
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "cycleTime",
+          "label": "Elapsed route time",
+          "unit": "minute",
+          "values": {
+            "m-current": 45
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        }
+      ],
+      "economics": {
+        "beforeModelId": "m-current",
+        "afterModelId": null,
+        "supplied": {
+          "beforeCostPerCase": null,
+          "afterCostPerCase": null,
+          "costSavedPerCase": null,
+          "fteCapacity": null,
+          "text": {
+            "cycleSaved": "",
+            "cycleSavedShare": "",
+            "costSaved": "",
+            "fte": ""
+          }
+        },
+        "overrides": {
+          "hourlyRate": {
+            "value": 60,
+            "status": "supplied",
+            "note": ""
+          },
+          "annualVolume": {
+            "value": 1800,
+            "status": "supplied",
+            "note": ""
+          }
+        }
+      }
+    },
+    {
+      "id": "scn-b6kz911x",
+      "name": "Normal application - Expected",
+      "statusLabel": "Expected",
+      "statusTone": "",
+      "provenance": "illustrative",
+      "summary": "Alternative using explicitly entered expected assumptions. Annual results are alternatives and must not be added.",
+      "attributes": [],
+      "timing": {
+        "method": "explicit-visits",
+        "note": "Authored sequential route; waits, durations and human effort are entered explicitly. Parallel branches require separate review."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v1",
+              "nodeId": "step-71m59bdf",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v2",
+              "nodeId": "step-e9v7pfx0",
+              "start": 15,
+              "end": 35
+            },
+            {
+              "id": "v3",
+              "nodeId": "step-jh0o30jr",
+              "start": 35,
+              "end": 35
+            },
+            {
+              "id": "v4",
+              "nodeId": "step-c67u4vbh",
+              "start": 35,
+              "end": 45
+            },
+            {
+              "id": "v5",
+              "nodeId": "step-9g7d0wzf",
+              "start": 45,
+              "end": 45
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "flow-w57ccipf",
+              "fromVisitId": "v1",
+              "toVisitId": "v2"
+            },
+            {
+              "edgeId": "flow-wj8o9jml",
+              "fromVisitId": "v2",
+              "toVisitId": "v3"
+            },
+            {
+              "edgeId": "flow-1ni5914i",
+              "fromVisitId": "v3",
+              "toVisitId": "v4"
+            },
+            {
+              "edgeId": "flow-8hwzlzfc",
+              "fromVisitId": "v4",
+              "toVisitId": "v5"
+            }
+          ],
+          "membership": {
+            "step-71m59bdf": "included",
+            "step-9g7d0wzf": "included",
+            "step-e9v7pfx0": "included",
+            "step-jh0o30jr": "included",
+            "step-c67u4vbh": "included",
+            "step-0q1e4na2": "unknown"
+          },
+          "pauseAt": null,
+          "milestones": {}
+        }
+      },
+      "measures": [
+        {
+          "key": "walkthroughEffort-v1",
+          "label": "Human effort, visit 1",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v2",
+          "label": "Human effort, visit 2",
+          "unit": "minute",
+          "values": {
+            "m-current": 20
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v3",
+          "label": "Human effort, visit 3",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v4",
+          "label": "Human effort, visit 4",
+          "unit": "minute",
+          "values": {
+            "m-current": 10
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v5",
+          "label": "Human effort, visit 5",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "humanTouch",
+          "label": "Human effort per case",
+          "unit": "minute",
+          "values": {
+            "m-current": 30
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "cycleTime",
+          "label": "Elapsed route time",
+          "unit": "minute",
+          "values": {
+            "m-current": 45
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        }
+      ],
+      "economics": {
+        "beforeModelId": "m-current",
+        "afterModelId": null,
+        "supplied": {
+          "beforeCostPerCase": null,
+          "afterCostPerCase": null,
+          "costSavedPerCase": null,
+          "fteCapacity": null,
+          "text": {
+            "cycleSaved": "",
+            "cycleSavedShare": "",
+            "costSaved": "",
+            "fte": ""
+          }
+        },
+        "overrides": {
+          "hourlyRate": {
+            "value": 60,
+            "status": "supplied",
+            "note": ""
+          },
+          "annualVolume": {
+            "value": 2000,
+            "status": "supplied",
+            "note": ""
+          }
+        }
+      }
+    },
+    {
+      "id": "scn-aba1hmno",
+      "name": "Normal application - Optimistic",
+      "statusLabel": "Optimistic",
+      "statusTone": "",
+      "provenance": "illustrative",
+      "summary": "Alternative using explicitly entered optimistic assumptions. Annual results are alternatives and must not be added.",
+      "attributes": [],
+      "timing": {
+        "method": "explicit-visits",
+        "note": "Authored sequential route; waits, durations and human effort are entered explicitly. Parallel branches require separate review."
+      },
+      "runs": {
+        "m-current": {
+          "visits": [
+            {
+              "id": "v1",
+              "nodeId": "step-71m59bdf",
+              "start": 0,
+              "end": 0
+            },
+            {
+              "id": "v2",
+              "nodeId": "step-e9v7pfx0",
+              "start": 15,
+              "end": 35
+            },
+            {
+              "id": "v3",
+              "nodeId": "step-jh0o30jr",
+              "start": 35,
+              "end": 35
+            },
+            {
+              "id": "v4",
+              "nodeId": "step-c67u4vbh",
+              "start": 35,
+              "end": 45
+            },
+            {
+              "id": "v5",
+              "nodeId": "step-9g7d0wzf",
+              "start": 45,
+              "end": 45
+            }
+          ],
+          "transitions": [
+            {
+              "edgeId": "flow-w57ccipf",
+              "fromVisitId": "v1",
+              "toVisitId": "v2"
+            },
+            {
+              "edgeId": "flow-wj8o9jml",
+              "fromVisitId": "v2",
+              "toVisitId": "v3"
+            },
+            {
+              "edgeId": "flow-1ni5914i",
+              "fromVisitId": "v3",
+              "toVisitId": "v4"
+            },
+            {
+              "edgeId": "flow-8hwzlzfc",
+              "fromVisitId": "v4",
+              "toVisitId": "v5"
+            }
+          ],
+          "membership": {
+            "step-71m59bdf": "included",
+            "step-9g7d0wzf": "included",
+            "step-e9v7pfx0": "included",
+            "step-jh0o30jr": "included",
+            "step-c67u4vbh": "included",
+            "step-0q1e4na2": "unknown"
+          },
+          "pauseAt": null,
+          "milestones": {}
+        }
+      },
+      "measures": [
+        {
+          "key": "walkthroughEffort-v1",
+          "label": "Human effort, visit 1",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v2",
+          "label": "Human effort, visit 2",
+          "unit": "minute",
+          "values": {
+            "m-current": 20
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v3",
+          "label": "Human effort, visit 3",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v4",
+          "label": "Human effort, visit 4",
+          "unit": "minute",
+          "values": {
+            "m-current": 10
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "walkthroughEffort-v5",
+          "label": "Human effort, visit 5",
+          "unit": "minute",
+          "values": {
+            "m-current": 0
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "humanTouch",
+          "label": "Human effort per case",
+          "unit": "minute",
+          "values": {
+            "m-current": 30
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        },
+        {
+          "key": "cycleTime",
+          "label": "Elapsed route time",
+          "unit": "minute",
+          "values": {
+            "m-current": 45
+          },
+          "suppliedText": {},
+          "status": "supplied",
+          "note": "Entered in the scenario editor."
+        }
+      ],
+      "economics": {
+        "beforeModelId": "m-current",
+        "afterModelId": null,
+        "supplied": {
+          "beforeCostPerCase": null,
+          "afterCostPerCase": null,
+          "costSavedPerCase": null,
+          "fteCapacity": null,
+          "text": {
+            "cycleSaved": "",
+            "cycleSavedShare": "",
+            "costSaved": "",
+            "fte": ""
+          }
+        },
+        "overrides": {
+          "hourlyRate": {
+            "value": 60,
+            "status": "supplied",
+            "note": ""
+          },
+          "annualVolume": {
+            "value": 2400,
+            "status": "supplied",
+            "note": ""
+          }
+        }
+      }
+    }
+  ],
+  "records": [
+    {
+      "id": "rec-7bn19jws",
+      "kind": "note",
+      "title": "Confirm which documents are required",
+      "description": "",
+      "owner": "Process owner",
+      "status": "open",
+      "priority": "",
+      "linkedModelId": "m-current",
+      "linkedModelVersion": 1,
+      "linkedNodeIds": [
+        "step-jh0o30jr"
+      ],
+      "evidenceRefs": [],
+      "sensitive": false,
+      "includeInHandoff": true,
+      "opportunity": null,
+      "createdAt": "2026-10-15T18:33:01.778Z",
+      "updatedAt": "2026-10-15T18:33:01.778Z"
+    },
+    {
+      "id": "rec-f43362rb",
+      "kind": "action",
+      "title": "Prepare the pilot test set",
+      "description": "",
+      "owner": "Operations lead",
+      "status": "open",
+      "priority": "",
+      "linkedModelId": null,
+      "linkedModelVersion": null,
+      "linkedNodeIds": [],
+      "evidenceRefs": [],
+      "sensitive": false,
+      "includeInHandoff": true,
+      "opportunity": null,
+      "createdAt": "2026-10-15T18:33:04.936Z",
+      "updatedAt": "2026-10-15T18:33:04.936Z"
+    },
+    {
+      "id": "rec-mi4zwj5y",
+      "kind": "decision",
+      "title": "Pilot retains human approval",
+      "description": "",
+      "owner": "Process owner",
+      "status": "open",
+      "priority": "",
+      "linkedModelId": null,
+      "linkedModelVersion": null,
+      "linkedNodeIds": [],
+      "evidenceRefs": [],
+      "sensitive": false,
+      "includeInHandoff": true,
+      "opportunity": null,
+      "createdAt": "2026-10-15T18:33:04.948Z",
+      "updatedAt": "2026-10-15T18:33:04.948Z"
+    }
+  ],
+  "evidence": [],
+  "assumptions": [],
+  "narratives": [],
+  "migration": null,
+  "datasets": [],
+  "reviewPacks": [],
+  "reviews": [],
+  "workshop": {
+    "currentModelId": "m-current",
+    "futureModelId": "m-future-draft",
+    "agenda": [
+      {
+        "id": "agenda-fhmds8xy",
+        "title": "Confirm current state and agree the pilot",
+        "owner": "Facilitator",
+        "minutes": 45,
+        "status": "active"
+      }
+    ],
+    "designs": [
+      {
+        "modelId": "m-future-draft",
+        "nodeId": "step-e9v7pfx0",
+        "owner": "Operations lead",
+        "responsibility": "ai-assist",
+        "trigger": "Application received",
+        "inputs": "Application and supporting documents",
+        "outputs": "Proposed completeness check",
+        "systems": "Case system",
+        "rules": "Check required fields only. Do not approve applications.",
+        "approval": "Case handler approves every external message.",
+        "fallback": "Return to manual intake when extraction fails. Escalate uncertain cases to the duty manager.",
+        "testCriteria": "Flag every missing required document in the agreed test set.",
+        "sensitive": false,
+        "reviewed": true
+      }
+    ],
+    "checkpoint": {
+      "fingerprint": "ws1-7de2337328904401",
+      "reviewer": "Process owner",
+      "date": "2026-10-15",
+      "modelVersions": [
+        {
+          "modelId": "m-current",
+          "version": 1
+        },
+        {
+          "modelId": "m-future-draft",
+          "version": 1
+        }
+      ],
+      "acceptedRecordIds": [
+        "rec-mi4zwj5y"
+      ],
+      "unresolvedRecordIds": [
+        "rec-7bn19jws"
+      ],
+      "criteria": [
+        {
+          "id": "criterion-u005tl4k",
+          "text": "Case handler approves every external message. Failed extraction returns to manual intake.",
+          "owner": "Operations lead"
+        }
+      ],
+      "sensitive": false,
+      "reviewed": true
+    }
+  }
+}

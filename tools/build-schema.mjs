@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /*
- * Writes webui/schema/engagement.schema.json, ai-result.schema.json and
- * review-response.schema.json from the enumerations in webui/js/lib/schema.js
- * and the task schemas in ai-results.js, so the published contracts and the
+ * Writes webui/schema/engagement.schema.json, ai-result.schema.json,
+ * review-response.schema.json and screening.schema.json from the enumerations
+ * in webui/js/lib/schema.js, the task schemas in ai-results.js and the
+ * screening schema in screening.js, so the published contracts and the
  * validators agree.
  *   node tools/build-schema.mjs
  */
@@ -17,6 +18,9 @@ const schema = require("../webui/js/lib/schema.js");
 const units = require("../webui/js/lib/units.js");
 const aiResults = require("../webui/js/lib/ai-results.js");
 const workshop = require("../webui/js/lib/workshop.js");
+const valueLines = require("../webui/js/lib/value-lines.js");
+const investment = require("../webui/js/lib/investment.js");
+const ranges = require("../webui/js/lib/ranges.js");
 const E = schema.ENUMS;
 
 const en = name => ({ enum: E[name] });
@@ -36,8 +40,8 @@ const count = { type: "integer", minimum: 0 };
 const share = { type: ["number", "null"], minimum: 0, maximum: 1 };
 const percent = { type: ["number", "null"], minimum: 0, maximum: 100 };
 const stats = { anyOf: [{ type: "null" }, { $ref: "#/$defs/stats" }] };
-const itemRef = { type: "string", pattern: "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|record/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79})$",
-  description: "step/<modelId>/<nodeId> or record/<recordId>." };
+const itemRef = { type: "string", pattern: "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|record/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|value/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|assumption/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79})$",
+  description: "step/<modelId>/<nodeId>, record/<recordId>, value/<recordId>/<field> (a figure in a business case) or assumption/<assumptionId>." };
 
 const doc = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
@@ -67,6 +71,8 @@ const doc = {
     datasets: { type: "array", maxItems: L.datasets, items: { $ref: "#/$defs/dataset" }, description: "Aggregates of imported event logs. Optional." },
     reviewPacks: { type: "array", maxItems: L.reviewPacks, items: { $ref: "#/$defs/reviewPack" }, description: "Review packs sent to client stakeholders. Optional." },
     reviews: { type: "array", maxItems: L.reviews, items: { $ref: "#/$defs/review" }, description: "Client reviews received and applied. Optional." },
+    goals: { type: "array", maxItems: L.goals, items: { $ref: "#/$defs/goal" }, description: "What value means to the client. Opportunities link to them with opportunity.goalIds. Optional." },
+    checkpoints: { type: "array", maxItems: L.checkpoints, items: { $ref: "#/$defs/checkpoint" }, description: "Figures recorded by hand after a change, per opportunity. Optional." },
     workshop: workshop.WORKSHOP_SCHEMA,
     migration: { anyOf: [{ type: "null" }, { $ref: "#/$defs/migration" }] }
   },
@@ -214,6 +220,14 @@ const doc = {
               intervention: en("intervention"), simplerAlternative: text(4000), expectedBenefit: text(4000), affectedVolume: text(500),
               effort: en("effortSize"), risk: text(4000), dependencies: text(4000), validationAction: text(4000),
               wave: en("wave"), valueCase: { $ref: "#/$defs/valueCase" },
+              valueLines: { type: "array", maxItems: valueLines.LIMIT, items: { $ref: "#/$defs/valueLine" },
+                description: "Kinds of value besides labor hours, one line each. See docs/value-dimensions.md." },
+              investment: { $ref: "#/$defs/investment" },
+              ranges: { type: "object", maxProperties: ranges.LIMIT, additionalProperties: false,
+                description: "A low and a high value for figures in the business case: vc.<key> for the labor estimate, vl.<lineId>.<key> for a value line, as.<key> for a project assumption.",
+                patternProperties: { [ranges.FIELD.source]: { type: "object", additionalProperties: false,
+                  properties: { low: { type: ["number", "null"], minimum: 0 }, high: { type: ["number", "null"], minimum: 0 } } } } },
+              goalIds: Object.assign({ description: "The value goals this opportunity serves." }, ids),
               aiAssessment: { type: "object", properties: Object.assign(Object.fromEntries(aiKeys.map(k => [k, text(2000)])), { mode: { enum: ["", "assist", "autonomous"] } }) }
             }
           }]
@@ -260,7 +274,11 @@ const doc = {
       type: "object", required: ["id"], additionalProperties: false,
       description: "Aggregates of one event log: never events, case IDs or resource names.",
       properties: {
-        id, name: text(200), role: en("datasetRole"), comparesToDatasetId: nullableId, modelId: nullableId,
+        id, name: text(200), role: en("datasetRole"), comparesToDatasetId: nullableId,
+        comparisonGroup: { type: "object", required: ["baselineId", "afterId"], additionalProperties: false,
+          description: "Two event logs from a team that did not get the change, before and after; its own change is taken out of the measured change.",
+          properties: { baselineId: id, afterId: id } },
+        modelId: nullableId,
         dataStatus: en("dataStatus"), createdAt: text(40),
         source: {
           type: "object", additionalProperties: false,
@@ -323,7 +341,87 @@ const doc = {
         effortReductionPct: percent, durationReductionPct: percent, shareOfCasesPct: percent,
         shareSource: en("valueInputSource"), effortSource: { enum: ["node", "dataset"] }, datasetId: nullableId,
         oneTimeCost: { type: ["number", "null"], minimum: 0 }, annualRunningCost: { type: ["number", "null"], minimum: 0 },
-        confidence: en("confidence"), basis: en("assumptionStatus"), note: text(2000)
+        confidence: en("confidence"), basis: en("assumptionStatus"), note: text(2000),
+        aiDraft: { type: "boolean", description: "True for figures drafted with AI that no one has reviewed yet. Reports leave them out until then." },
+        sources: {
+          type: "object", additionalProperties: false, description: "Where each AI-drafted figure comes from.",
+          properties: Object.fromEntries(["shareOfCasesPct", "effortReductionPct", "durationReductionPct", "oneTimeCost", "annualRunningCost"].map(k => [k, text(500)]))
+        },
+        realizationPct: Object.assign({ description: "The share of the labor value that can become money." }, percent),
+        realizedBy: Object.assign({ description: "How the labor value becomes money, such as overtime cut or planned hires not made." }, text(valueLines.TEXT.realizedBy)),
+        financeOwner: text(valueLines.TEXT.financeOwner),
+        validatedAnnual: { type: ["number", "null"], description: "The yearly amount Finance confirmed." },
+        validatedSource: text(valueLines.TEXT.validatedSource)
+      }
+    },
+    valueLine: {
+      type: "object", required: ["id", "dimension"], additionalProperties: false,
+      description: "One kind of value besides labor hours, worked out with its template's formula.",
+      properties: {
+        id, dimension: { enum: valueLines.DIMENSION_IDS },
+        inputs: {
+          type: "object", additionalProperties: false, description: "The template's inputs. A blank input leaves the line's value blank.",
+          properties: Object.fromEntries([...new Set(Object.values(valueLines.DIMENSIONS).flatMap(d => d.inputs.map(i => i.key)))].map(k => [k, { type: ["number", "null"], minimum: 0 }]))
+        },
+        realizationPct: percent, realizedBy: text(valueLines.TEXT.realizedBy), financeOwner: text(valueLines.TEXT.financeOwner),
+        validatedAnnual: { type: ["number", "null"] }, validatedSource: text(valueLines.TEXT.validatedSource),
+        basis: en("assumptionStatus"), note: text(valueLines.TEXT.note),
+        errorTypes: { type: "array", maxItems: valueLines.ERROR_TYPE_LIMIT, items: { $ref: "#/$defs/errorType" },
+          description: "Errors and rework only: the cost per error built up per error type. When present, the line uses them instead of its error rates and cost per error." }
+      }
+    },
+    investment: {
+      type: "object", additionalProperties: false,
+      description: "The business case over time: adoption by year, costs by category, discount rate, low and high cases, and a gain-share fee priced on confirmed value.",
+      properties: {
+        horizonYears: { enum: investment.HORIZONS },
+        discountRatePct: { type: ["number", "null"], minimum: 0, maximum: 50 },
+        adoptionPct: { type: "array", maxItems: Math.max(...investment.HORIZONS), items: { type: ["number", "null"], minimum: 0, maximum: 100 },
+          description: "The share of the yearly benefit achieved in each year." },
+        costs: { type: "array", maxItems: investment.COST_LIMIT, items: {
+          type: "object", required: ["id"], additionalProperties: false,
+          properties: { id, category: { enum: investment.CATEGORY_IDS }, note: text(300),
+            oneTime: { type: ["number", "null"], minimum: 0 }, yearly: { type: ["number", "null"], minimum: 0 } } } },
+        successfulWorkflowsPerYear: { type: ["number", "null"], minimum: 0 },
+        lowPct: { type: ["number", "null"], minimum: 0, maximum: 100, description: "The low case as a share of the expected benefit." },
+        highPct: { type: ["number", "null"], minimum: 0, maximum: 300, description: "The high case as a share of the expected benefit." },
+        gainSharePct: { type: ["number", "null"], minimum: 0, maximum: 100 },
+        gainShareMonths: { type: ["integer", "null"], minimum: 1, maximum: 60 }
+      }
+    },
+    errorType: {
+      type: "object", required: ["id", "name"], additionalProperties: false,
+      description: "One kind of error, its frequency before and after the change, and what it costs: the touch effort of the steps it makes people redo, investigation hours, direct costs and the expected cost of rare severe consequences.",
+      properties: {
+        id, name: text(valueLines.TEXT.errorName), severity: { enum: valueLines.SEVERITIES.map(x => x[0]) },
+        perMonth: { type: ["number", "null"], minimum: 0 }, perMonthAfter: { type: ["number", "null"], minimum: 0 },
+        originNodeId: nullableId, detectedNodeId: nullableId,
+        redoNodeIds: Object.assign({ maxItems: valueLines.REDO_STEP_LIMIT, description: "The steps an error of this type makes people redo." }, ids),
+        investigationHours: { type: ["number", "null"], minimum: 0 },
+        directCost: { type: ["number", "null"], minimum: 0, description: "Credits, write-offs and penalties per error." },
+        riskCost: { type: ["number", "null"], minimum: 0, description: "Expected cost per error of rare severe consequences." },
+        basis: en("assumptionStatus"), note: text(valueLines.TEXT.note)
+      }
+    },
+    goal: {
+      type: "object", required: ["id", "title"], additionalProperties: false,
+      description: "One thing the client counts as value, such as more revenue, a lower cost per case or a new capability.",
+      properties: {
+        id, kind: en("goalKind"), title: text(300), metric: text(300),
+        baseline: { type: ["number", "null"], description: "Today's figure." }, target: { type: ["number", "null"] }, unit: text(40),
+        by: { type: "string", pattern: "^(\\d{4}-\\d{2}-\\d{2})?$" }, owner: text(200), basis: en("assumptionStatus"),
+        source: text(500), quote: text(300), note: text(2000), sensitive: { type: "boolean" }, generated: { $ref: "#/$defs/generated" }
+      }
+    },
+    checkpoint: {
+      type: "object", required: ["id", "recordId", "hoursPerCaseAfter"], additionalProperties: false,
+      description: "Figures a delivery team recorded by hand after the change for one opportunity.",
+      properties: {
+        id, recordId: id, label: text(60), date: { type: "string", pattern: "^(\\d{4}-\\d{2}-\\d{2})?$" },
+        hoursPerCaseAfter: { type: ["number", "null"], minimum: 0, description: "Measured hands-on hours per affected case after the change." },
+        shareOfCasesPct: percent, annualVolume: { type: ["number", "null"], minimum: 0 },
+        cycleTimeAfterMinutes: { type: ["number", "null"], minimum: 0 }, oneTimeCostActual: { type: ["number", "null"], minimum: 0 },
+        basis: { enum: ["supplied", "observed", "validated"] }, source: text(500), note: text(2000)
       }
     },
     person: { type: "object", additionalProperties: false, properties: { name: text(200), role: text(200), organization: text(200) } },
@@ -368,7 +466,7 @@ const resultDoc = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://aixray.local/schema/ai-result.schema.json",
   title: "AIxRay AI result",
-  description: "Output of one AI task (extract, opportunities, future-state, summary or log-mapping), schema version 1. " +
+  description: "Output of one AI task (extract, opportunities, future-state, summary, log-mapping, screen or goals), schema version 1. " +
     "The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. " +
     "webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
   type: "object",
@@ -380,6 +478,8 @@ const resultDoc = {
     engagementId: { anyOf: [id, { type: "null" }], description: "The engagement the task read. Null for extract." },
     engagementRevision: { type: ["integer", "null"], minimum: 0 },
     baselineModelId: { anyOf: [id, { type: "null" }], description: "The current-state model a future-state change set applies to, or the model a log mapping maps activities to." },
+    screeningId: { anyOf: [id, { type: "null" }], description: "screen: the screening the scores were drafted for (see screening.schema.json)." },
+    screeningRevision: { type: ["integer", "null"], minimum: 0 },
     generated: {
       type: "object",
       properties: { tool: text(80), provider: en("aiProvider"), model: text(120), surface: en("aiSurface"), at: text(40), jobId: text(80), plan: en("aiPlan") }
@@ -398,7 +498,7 @@ const resultDoc = {
       description: "extract: { engagement } (see engagement.schema.json). The other tasks use the schemas in $defs.",
       anyOf: [
         { type: "object", required: ["engagement"], properties: { engagement: { $ref: "engagement.schema.json" } } },
-        { $ref: "#/$defs/opportunities" }, { $ref: "#/$defs/futureState" }, { $ref: "#/$defs/summary" }, { $ref: "#/$defs/logMapping" }
+        { $ref: "#/$defs/opportunities" }, { $ref: "#/$defs/futureState" }, { $ref: "#/$defs/summary" }, { $ref: "#/$defs/logMapping" }, { $ref: "#/$defs/screen" }, { $ref: "#/$defs/goals" }
       ]
     }
   },
@@ -407,7 +507,9 @@ const resultDoc = {
     opportunities: T.opportunities,
     futureState: T["future-state"],
     summary: T.summary,
-    logMapping: T["log-mapping"]
+    logMapping: T["log-mapping"],
+    screen: T.screen,
+    goals: T.goals
   }
 };
 const resultOut = path.join(root, "webui", "schema", "ai-result.schema.json");
@@ -446,3 +548,8 @@ const responseDoc = {
 const responseOut = path.join(root, "webui", "schema", "review-response.schema.json");
 fs.writeFileSync(responseOut, JSON.stringify(responseDoc, null, 2) + "\n");
 console.log("Wrote " + path.relative(root, responseOut));
+
+const screening = require("../webui/js/lib/screening.js");
+const screeningOut = path.join(root, "webui", "schema", "screening.schema.json");
+fs.writeFileSync(screeningOut, JSON.stringify(screening.SCREENING_SCHEMA, null, 2) + "\n");
+console.log("Wrote " + path.relative(root, screeningOut));

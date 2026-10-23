@@ -15,12 +15,14 @@ The deck is a 16:9 presentation with one static layout, built the same way every
 
 1. **Title**: the process name, the client and project, the data status, confidentiality and version.
 2. **Scope**: the models in the project, their role, version, status and step count.
-3. **Pain points**: the pain points included in the report.
-4. **Opportunities**: every opportunity, ranked the same way as in the Matrix view, with its modeled value and the basis of that figure (illustrative, provided, measured or confirmed). An opportunity with no business case recorded shows "No estimate yet" rather than a fabricated number.
-5. **Value by wave**: the net annual benefit and hours saved for each delivery wave (now, next, later), and the opportunities not yet assigned to one.
-6. **Process**: the diagram currently shown in the Process tab. If the Process tab has not drawn a diagram in this session, the slide says so instead of leaving a blank image. Open the Process tab once, then export again, to include it.
-7. **Next steps**: decisions, actions and open questions recorded against the project.
-8. **About this data**: the project's disclosure text, and a note of how many sensitive findings or unreviewed AI drafts were left out.
+3. **Value goals**: what the client counts as value, with the measure, target, date and basis of each goal (see `docs/goals.md`). Shown only when the project has goals the deck may show.
+4. **Pain points**: the pain points included in the report.
+5. **Opportunities**: every opportunity, ranked the same way as in the Matrix view, with its modeled value and the basis of that figure (illustrative, provided, measured or confirmed), and the goals it serves when the project has goals. An opportunity with no business case recorded, or with one drafted by AI and not reviewed, shows "No estimate yet" rather than a fabricated number.
+6. **Value by wave**: the net annual benefit and hours saved for each delivery wave (now, next, later), and the opportunities not yet assigned to one.
+7. **Results at checkpoints**: expected and realized hours a year, and the status, for each checkpoint recorded after the change (see `docs/benefits.md`). Shown only when there are checkpoints.
+8. **Process**: the diagram currently shown in the Process tab. If the Process tab has not drawn a diagram in this session, the slide says so instead of leaving a blank image. Open the Process tab once, then export again, to include it.
+9. **Next steps**: decisions, actions and open questions recorded against the project.
+10. **About this data**: the project's disclosure text, and a note of how many sensitive findings or unreviewed AI drafts were left out.
 
 A table longer than ten rows continues on further slides, each headed "(2 of 3)" and so on; any notes for that table are shown on the last page.
 

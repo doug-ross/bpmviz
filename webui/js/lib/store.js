@@ -7,12 +7,12 @@
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./util.js"), require("./schema.js"), require("./validate.js"));
+    module.exports = factory(require("./util.js"), require("./schema.js"), require("./validate.js"), require("./goals.js"), require("./checkpoints.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.store = factory(B.util, B.schema, B.validate);
+    B.store = factory(B.util, B.schema, B.validate, B.goals, B.checkpoints);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, validate) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, validate, goals, checkpoints) {
   "use strict";
 
   class StoreError extends Error {
@@ -145,7 +145,7 @@
   }
 
   /*
-   * wave and valueCase are kept only when given, so records written before
+   * wave, goalIds, valueCase and valueLines are kept only when given, so records written before
    * they existed keep their shape. valueCase goes through the validator's
    * sanitizer, which removes references that do not resolve.
    */
@@ -169,10 +169,23 @@
       }
     };
     if (o.wave !== undefined && o.wave !== null) out.wave = enumValue("wave", o.wave, "");
+    if (o.goalIds !== undefined && o.goalIds !== null) out.goalIds = goals.cleanGoalIds(o.goalIds, e);
     if (o.valueCase !== undefined && o.valueCase !== null) {
       const r = validate.sanitizeValueCase(o.valueCase, e, record);
       if (r.errors.length) throw new StoreError("invalid", "Business case: " + r.errors[0].message);
       out.valueCase = r.value;
+    }
+    if (o.valueLines !== undefined && o.valueLines !== null) {
+      if (!Array.isArray(o.valueLines)) throw new StoreError("invalid", "Value lines must be a list.");
+      out.valueLines = validate.sanitizeValueLines(o.valueLines).lines;
+    }
+    if (o.investment !== undefined && o.investment !== null) {
+      if (typeof o.investment !== "object" || Array.isArray(o.investment)) throw new StoreError("invalid", "The investment settings must be an object.");
+      out.investment = validate.sanitizeInvestment(o.investment);
+    }
+    if (o.ranges !== undefined && o.ranges !== null) {
+      if (typeof o.ranges !== "object" || Array.isArray(o.ranges)) throw new StoreError("invalid", "The low and high values must be an object.");
+      out.ranges = validate.sanitizeRanges(o.ranges);
     }
     return out;
   }
@@ -246,6 +259,7 @@
       e.records = e.records.filter(r => r.id !== p.id);
       if (e.records.length === before) throw new StoreError("not-found", "That finding no longer exists.");
       pruneReviewRefs(e, ref => ref === "record/" + p.id);
+      if (Array.isArray(e.checkpoints)) e.checkpoints = e.checkpoints.filter(c => c.recordId !== p.id);
       return { id: p.id };
     },
 
@@ -564,6 +578,21 @@
           if (!e.datasets.some(x => x.id === target)) throw new StoreError("not-found", "The event log to compare with no longer exists.");
           d.comparesToDatasetId = target;
         }
+        // A comparison group belongs to the comparison: it goes when the comparison does, or when it would compare a log with itself.
+        const g = d.comparisonGroup;
+        if (g && (!d.comparesToDatasetId || g.baselineId === d.comparesToDatasetId || g.afterId === d.comparesToDatasetId)) delete d.comparisonGroup;
+      }
+      if (patch.comparisonGroup !== undefined) {
+        const g = patch.comparisonGroup;
+        if (g === null) delete d.comparisonGroup;
+        else {
+          if (typeof g !== "object" || Array.isArray(g)) throw new StoreError("invalid", "A comparison group names two event logs.");
+          const ids = [g.baselineId, g.afterId];
+          if (ids.some(x => !e.datasets.some(y => y.id === x))) throw new StoreError("not-found", "An event log for the comparison group no longer exists.");
+          if (ids[0] === ids[1]) throw new StoreError("invalid", "Choose two different event logs for the comparison group, one from before the change and one from after.");
+          if (ids.some(x => x === d.id || x === d.comparesToDatasetId)) throw new StoreError("invalid", "A comparison group comes from a team that did not get the change, so it cannot use the logs being compared.");
+          d.comparisonGroup = { baselineId: ids[0], afterId: ids[1] };
+        }
       }
       return { id: d.id };
     },
@@ -577,7 +606,11 @@
       const d = list.find(x => x.id === p.id);
       if (!d) throw new StoreError("not-found", "Event log not found.");
       e.datasets = list.filter(x => x.id !== d.id);
-      e.datasets.forEach(x => { if (x.comparesToDatasetId === d.id) x.comparesToDatasetId = null; });
+      e.datasets.forEach(x => {
+        const g = x.comparisonGroup;
+        if (x.comparesToDatasetId === d.id) { x.comparesToDatasetId = null; delete x.comparisonGroup; }
+        if (g && (g.baselineId === d.id || g.afterId === d.id)) delete x.comparisonGroup;
+      });
       const made = new Set(d.scenarioIds.concat(e.scenarios.filter(s => s.observedFrom && s.observedFrom.datasetId === d.id).map(s => s.id)));
       let removed = 0;
       if (p.removeScenarios === true) {
@@ -595,10 +628,15 @@
       return { id: d.id, scenariosRemoved: removed };
     },
 
-    /* AI suggestions become records in one step, each marked as an AI draft. */
+    /*
+     * AI suggestions become records in one step, each marked as an AI draft.
+     * Value cases drafted for existing opportunities are added in the same
+     * step, marked aiDraft, and never replace a value case a person entered.
+     */
     "ai/applySuggestions"(e, p) {
       const records = Array.isArray(p.records) ? p.records : [];
-      if (!records.length) throw new StoreError("invalid", "Select at least one suggestion to add.");
+      const valueCases = Array.isArray(p.valueCases) ? p.valueCases : [];
+      if (!records.length && !valueCases.length) throw new StoreError("invalid", "Select at least one suggestion to add.");
       const ids = [];
       records.forEach(input => {
         const record = newRecord(e, input);
@@ -606,7 +644,18 @@
         e.records.push(record);
         ids.push(record.id);
       });
-      return { ids };
+      const sized = [];
+      valueCases.forEach(item => {
+        const r = e.records.find(x => x.id === (item && item.recordId) && x.kind === "opportunity");
+        if (!r || !r.opportunity) throw new StoreError("not-found", "An opportunity in this proposal no longer exists.");
+        if (r.opportunity.valueCase && r.opportunity.valueCase.aiDraft !== true) throw new StoreError("invalid", "\"" + r.title + "\" already has a business case a person entered, and it stays.");
+        const v = validate.sanitizeValueCase(Object.assign({}, item.valueCase, { aiDraft: true, basis: "illustrative" }), e, r);
+        if (v.errors.length) throw new StoreError("invalid", "Business case: " + v.errors[0].message);
+        r.opportunity.valueCase = v.value;
+        r.updatedAt = util.nowIso();
+        sized.push(r.id);
+      });
+      return { ids, sized };
     },
 
     /*
@@ -731,6 +780,8 @@
       subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
     };
   }
+
+  Object.assign(COMMANDS, goals.commands(StoreError), checkpoints.commands(StoreError));
 
   /**
    * Adds commands from a feature module: { "area/verb"(draft, payload) { ... } }.

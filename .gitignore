@@ -15,6 +15,7 @@ Thumbs.db
 *.ai-result.json
 aixray-*.draft.json
 *.with-ai.engagement.json
+*.with-ai.screening.json
 !tests/fixtures/ai/*.ai-result.json
 
 # Local-only skills and the audit package stay on your machine.

@@ -112,6 +112,22 @@
       },
       "description": "Client reviews received and applied. Optional."
     },
+    "goals": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "$ref": "#/$defs/goal"
+      },
+      "description": "What value means to the client. Opportunities link to them with opportunity.goalIds. Optional."
+    },
+    "checkpoints": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "$ref": "#/$defs/checkpoint"
+      },
+      "description": "Figures recorded by hand after a change, per opportunity. Optional."
+    },
     "workshop": {
       "type": "object",
       "additionalProperties": false,
@@ -1526,6 +1542,52 @@
                 "valueCase": {
                   "$ref": "#/$defs/valueCase"
                 },
+                "valueLines": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "$ref": "#/$defs/valueLine"
+                  },
+                  "description": "Kinds of value besides labor hours, one line each. See docs/value-dimensions.md."
+                },
+                "investment": {
+                  "$ref": "#/$defs/investment"
+                },
+                "ranges": {
+                  "type": "object",
+                  "maxProperties": 60,
+                  "additionalProperties": false,
+                  "description": "A low and a high value for figures in the business case: vc.<key> for the labor estimate, vl.<lineId>.<key> for a value line, as.<key> for a project assumption.",
+                  "patternProperties": {
+                    "^(vc\\.[A-Za-z]{1,40}|as\\.[A-Za-z]{1,40}|vl\\.[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}\\.[A-Za-z]{1,40})$": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "low": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0
+                        },
+                        "high": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                },
+                "goalIds": {
+                  "description": "The value goals this opportunity serves.",
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/id"
+                  }
+                },
                 "aiAssessment": {
                   "type": "object",
                   "properties": {
@@ -1598,7 +1660,9 @@
             "opportunities",
             "future-state",
             "summary",
-            "log-mapping"
+            "log-mapping",
+            "screen",
+            "goals"
           ]
         },
         "provider": {
@@ -1880,6 +1944,23 @@
               "type": "null"
             }
           ]
+        },
+        "comparisonGroup": {
+          "type": "object",
+          "required": [
+            "baselineId",
+            "afterId"
+          ],
+          "additionalProperties": false,
+          "description": "Two event logs from a team that did not get the change, before and after; its own change is taken out of the measured change.",
+          "properties": {
+            "baselineId": {
+              "$ref": "#/$defs/id"
+            },
+            "afterId": {
+              "$ref": "#/$defs/id"
+            }
+          }
         },
         "modelId": {
           "anyOf": [
@@ -2385,6 +2466,845 @@
         "note": {
           "type": "string",
           "maxLength": 2000
+        },
+        "aiDraft": {
+          "type": "boolean",
+          "description": "True for figures drafted with AI that no one has reviewed yet. Reports leave them out until then."
+        },
+        "sources": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Where each AI-drafted figure comes from.",
+          "properties": {
+            "shareOfCasesPct": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "effortReductionPct": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "durationReductionPct": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "oneTimeCost": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "annualRunningCost": {
+              "type": "string",
+              "maxLength": 500
+            }
+          }
+        },
+        "realizationPct": {
+          "description": "The share of the labor value that can become money.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "realizedBy": {
+          "description": "How the labor value becomes money, such as overtime cut or planned hires not made.",
+          "type": "string",
+          "maxLength": 500
+        },
+        "financeOwner": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "validatedAnnual": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "The yearly amount Finance confirmed."
+        },
+        "validatedSource": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "valueLine": {
+      "type": "object",
+      "required": [
+        "id",
+        "dimension"
+      ],
+      "additionalProperties": false,
+      "description": "One kind of value besides labor hours, worked out with its template's formula.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "dimension": {
+          "enum": [
+            "rework",
+            "sla",
+            "lateCases",
+            "throughput",
+            "coordination",
+            "exceptions",
+            "decisions",
+            "winRate",
+            "contacts",
+            "leakage",
+            "hires",
+            "vendor"
+          ]
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "The template's inputs. A blank input leaves the line's value blank.",
+          "properties": {
+            "casesPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "errorRateBeforePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "errorRateAfterPct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "costPerError": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "breachesBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "breachesAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "penaltyPerBreach": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "lateBeforePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "lateAfterPct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "costPerLateCase": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "demandPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "capacityBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "capacityAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "marginPerUnit": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "touchesBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "touchesAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "minutesPerTouch": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "hourlyRate": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "exceptionsBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "exceptionsAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "costPerException": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "decisionsPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "lostBeforePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "lostAfterPct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "marginPerKept": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "opportunitiesPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "winRateBeforePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "winRateAfterPct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "marginPerWin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "contactsBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "contactsAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "costPerContact": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "itemsPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "leakageRatePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "amountPerLeak": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "recoveryBeforePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "recoveryAfterPct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "marginSharePct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "plannedHires": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "hiresStillNeeded": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "annualCostPerHire": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "unitsBefore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "unitsAfter": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "costPerUnitPerYear": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "realizationPct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "realizedBy": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "financeOwner": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "validatedAnnual": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "validatedSource": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "basis": {
+          "enum": [
+            "illustrative",
+            "supplied",
+            "observed",
+            "validated"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "errorTypes": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/$defs/errorType"
+          },
+          "description": "Errors and rework only: the cost per error built up per error type. When present, the line uses them instead of its error rates and cost per error."
+        }
+      }
+    },
+    "investment": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The business case over time: adoption by year, costs by category, discount rate, low and high cases, and a gain-share fee priced on confirmed value.",
+      "properties": {
+        "horizonYears": {
+          "enum": [
+            3,
+            4,
+            5
+          ]
+        },
+        "discountRatePct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 50
+        },
+        "adoptionPct": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "description": "The share of the yearly benefit achieved in each year."
+        },
+        "costs": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "category": {
+                "enum": [
+                  "implementation",
+                  "integration",
+                  "modelUsage",
+                  "orchestration",
+                  "humanOversight",
+                  "evaluation",
+                  "infrastructure",
+                  "governance",
+                  "changeManagement",
+                  "maintenance",
+                  "other"
+                ]
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "oneTime": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "yearly": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "successfulWorkflowsPerYear": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "lowPct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100,
+          "description": "The low case as a share of the expected benefit."
+        },
+        "highPct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 300,
+          "description": "The high case as a share of the expected benefit."
+        },
+        "gainSharePct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "gainShareMonths": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 60
+        }
+      }
+    },
+    "errorType": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "One kind of error, its frequency before and after the change, and what it costs: the touch effort of the steps it makes people redo, investigation hours, direct costs and the expected cost of rare severe consequences.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "severity": {
+          "enum": [
+            "minor",
+            "moderate",
+            "severe"
+          ]
+        },
+        "perMonth": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "perMonthAfter": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "originNodeId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "detectedNodeId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "redoNodeIds": {
+          "maxItems": 40,
+          "description": "The steps an error of this type makes people redo.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "investigationHours": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "directCost": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Credits, write-offs and penalties per error."
+        },
+        "riskCost": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Expected cost per error of rare severe consequences."
+        },
+        "basis": {
+          "enum": [
+            "illustrative",
+            "supplied",
+            "observed",
+            "validated"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "goal": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "additionalProperties": false,
+      "description": "One thing the client counts as value, such as more revenue, a lower cost per case or a new capability.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "revenue",
+            "cost",
+            "capability",
+            "risk",
+            "experience",
+            "other"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "metric": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "baseline": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Today's figure."
+        },
+        "target": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "by": {
+          "type": "string",
+          "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$"
+        },
+        "owner": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "basis": {
+          "enum": [
+            "illustrative",
+            "supplied",
+            "observed",
+            "validated"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "quote": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "sensitive": {
+          "type": "boolean"
+        },
+        "generated": {
+          "$ref": "#/$defs/generated"
+        }
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "required": [
+        "id",
+        "recordId",
+        "hoursPerCaseAfter"
+      ],
+      "additionalProperties": false,
+      "description": "Figures a delivery team recorded by hand after the change for one opportunity.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "recordId": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$"
+        },
+        "hoursPerCaseAfter": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Measured hands-on hours per affected case after the change."
+        },
+        "shareOfCasesPct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "annualVolume": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cycleTimeAfterMinutes": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "oneTimeCostActual": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "basis": {
+          "enum": [
+            "supplied",
+            "observed",
+            "validated"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
         }
       }
     },
@@ -2408,8 +3328,8 @@
     },
     "itemRef": {
       "type": "string",
-      "pattern": "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|record/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79})$",
-      "description": "step/<modelId>/<nodeId> or record/<recordId>."
+      "pattern": "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|record/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|value/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|assumption/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79})$",
+      "description": "step/<modelId>/<nodeId>, record/<recordId>, value/<recordId>/<field> (a figure in a business case) or assumption/<assumptionId>."
     },
     "reviewPack": {
       "type": "object",

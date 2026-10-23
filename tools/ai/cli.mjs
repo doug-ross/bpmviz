@@ -7,6 +7,7 @@
  *   npm run ai -- future-state --in claims.engagement.json --yes
  *   npm run ai -- summary --in claims.engagement.json --yes
  *   npm run ai -- log-mapping --in claims.engagement.json --activities claims-log.csv --yes
+ *   npm run ai -- screen --in shortlist.screening.json --yes
  *   npm run ai -- check claims.opportunities.ai-result.json --in claims.engagement.json
  * Run with --help for every option. See docs/ai.md.
  */
@@ -30,6 +31,7 @@ const schema = lib("schema");
 const csv = lib("csv");
 const xlsx = lib("xlsx");
 const mining = lib("mining");
+const screeningLib = lib("screening");
 
 const HELP = `AIxRay AI tasks, run on your own Claude Code or Codex sign-in.
 
@@ -43,8 +45,10 @@ Commands
   summary --in <file>             Draft the executive summary for the report
   log-mapping --in <file> --activities <file>
                                   Match each event log activity to a step
-  check <result> [--in <file>]    Check an AI result file, and what it would change in the project
-  gate [--in <file>]              Say whether this project may go to this AI account, and what you must confirm
+  screen --in <file>              Draft scores for the processes in a screening that people have not scored yet
+  goals --in <file> <files...>    Draft value goals (revenue, cost, capability) from meeting notes, transcripts or documents
+  check <result> [--in <file>]    Check an AI result file, and what it would change in the project or screening
+  gate [--in <file>]              Say whether this project or screening may go to this AI account, and what you must confirm
   text <file>                     Print the text AIxRay reads from a document
   input <task> --in <file>        Print what a task sends to the AI tool (log-mapping also needs --activities)
   wrap <task> --payload <file>    Turn an agent skill's output into a checked result file
@@ -56,7 +60,7 @@ Options
   --yes                           Confirm the project lead approved sending this material to this account
   --training-off                  Confirm model training is off for this account (needed on consumer plans)
   --written-approval "<text>"     Written client approval for restricted material: who approved, and when
-  --include-sensitive             Also send findings marked sensitive
+  --include-sensitive             Also send findings, or screening processes, marked sensitive
   --baseline <model id>           Current-state model a future state starts from, or the model log-mapping maps to
                                   (default: the first current-state model)
   --activities <file>             log-mapping: the activity names, as a .txt file with one name per line, or a
@@ -68,7 +72,7 @@ Options
   --client <text>                 extract: client name
   --engagement-name <text>        extract: project name
   --model <name>                  Model to ask the tool for
-  --apply                         Also write a copy of the project with every item applied, marked as unreviewed AI drafts
+  --apply                         Also write a copy of the project or screening with every item applied, marked as unreviewed AI drafts
   --keep                          Keep the job folder for inspection
   --use-api-key                   Allow an API key sign-in instead of a subscription (billed to the key)
   --surface cli|skill|app         How the task was started (wrap sets skill)
@@ -159,6 +163,26 @@ async function logMappingOptions(opts, engagement) {
   return { modelId, activities };
 }
 
+/* The file given with --in: { engagement } for a project, { screening } for a screening. */
+function readSubject(file) {
+  if (!file) throw new UsageError("Give the project or screening file with --in.");
+  const textValue = fs.readFileSync(file, "utf8");
+  let data = null;
+  try { data = JSON.parse(textValue); } catch (_) { /* parseEngagementText reports it */ }
+  if (data && data.schema === screeningLib.SCREENING_ID) {
+    const r = screeningLib.parseScreening(data);
+    if (!r.ok) throw new UsageError(file + " is not a screening AIxRay can open: " + r.errors.join(" "));
+    return { engagement: null, screening: r.screening };
+  }
+  return { engagement: readEngagement(file), screening: null };
+}
+
+function readScreening(file) {
+  const s = readSubject(file);
+  if (!s.screening) throw new UsageError("The screen task needs a screening file (.screening.json) with --in.");
+  return s.screening;
+}
+
 function readEngagement(file) {
   if (!file) throw new UsageError("Give the project file with --in.");
   const v = validate.parseEngagementText(fs.readFileSync(file, "utf8"));
@@ -168,7 +192,7 @@ function readEngagement(file) {
 
 function baseName(file, fallback) {
   if (!file) return fallback;
-  return path.basename(file).replace(/\.engagement\.json$|\.json$/i, "").replace(/\.[^.]+$/, "") || fallback;
+  return path.basename(file).replace(/\.engagement\.json$|\.screening\.json$|\.json$/i, "").replace(/\.[^.]+$/, "") || fallback;
 }
 
 function say(opts, text) {
@@ -184,12 +208,13 @@ function describeReview(review, result) {
   if (result.task === "extract") {
     const e = result.payload.engagement;
     lines.push("  " + e.models.map(m => m.name + ": " + m.nodes.length + " steps in " + m.lanes.length + " lanes").join("; "));
-    lines.push("  " + e.records.length + " findings, " + e.evidence.length + " sources, " + e.scenarios.length + " scenarios");
+    lines.push("  " + e.records.length + " findings, " + e.evidence.length + " sources, " + e.scenarios.length + " scenarios" +
+      (Array.isArray(e.goals) && e.goals.length ? ", " + e.goals.length + " value goal" + (e.goals.length === 1 ? "" : "s") : ""));
     return lines;
   }
   const items = review ? review.items : [];
   const blocked = items.filter(it => it.problems.length).length;
-  const noun = { opportunities: "suggestion", "future-state": "change", summary: "summary", "log-mapping": "mapping" }[result.task];
+  const noun = { opportunities: "item", "future-state": "change", summary: "summary", "log-mapping": "mapping", screen: "score", goals: "goal" }[result.task];
   lines.push("  " + items.length + " " + noun + (items.length === 1 ? "" : "s") + (blocked ? ", " + blocked + " cannot be applied" : ""));
   items.slice(0, 20).forEach(it => lines.push("   - " + it.title + (it.problems.length ? "  [cannot be applied: " + it.problems.join(" ") + "]" : "")));
   if (items.length > 20) lines.push("   ... and " + (items.length - 20) + " more");
@@ -202,6 +227,15 @@ function printWarnings(opts, warnings) {
   say(opts, "Check before you apply:");
   shown.slice(0, 15).forEach(w => say(opts, "  - " + w.message));
   if (shown.length > 15) say(opts, "  ... and " + (shown.length - 15) + " more");
+}
+
+/* Applies every drafted score that can be applied and writes a new screening file next to the input. */
+function applyAllScores(review, screening, inFile) {
+  const r = screeningLib.applyAiScores(screening, review, review.items.map(it => it.key));
+  if (!r.applied) return null;
+  const out = path.join(path.dirname(inFile), baseName(inFile, "screening") + ".with-ai.screening.json");
+  fs.writeFileSync(out, JSON.stringify(r.screening, null, 2) + "\n");
+  return out;
 }
 
 /* Applies every item that can be applied and writes a new engagement file next to the input. */
@@ -236,9 +270,9 @@ async function cmdGate(opts) {
   const p = PROVIDERS[provider];
   if (!p) throw new UsageError("Unknown AI tool " + provider + ".");
   const status = await p.status(opts);
-  const engagement = opts.in ? readEngagement(opts.in) : null;
+  const subject = opts.in ? readSubject(opts.in) : { engagement: null, screening: null };
   const g = gateFor({
-    engagement, plan: opts.plan, confidentiality: opts.confidentiality, dataStatus: opts["data-status"],
+    engagement: subject.engagement, screening: subject.screening, plan: opts.plan, confidentiality: opts.confidentiality, dataStatus: opts["data-status"],
     approvalConfirmed: !!opts.yes, trainingOptOutConfirmed: !!opts["training-off"], writtenApproval: opts["written-approval"],
     includeSensitive: !!opts["include-sensitive"]
   }, status);
@@ -260,13 +294,17 @@ async function cmdText(opts) {
 
 async function cmdInput(opts) {
   const task = opts._[1];
-  if (!["opportunities", "future-state", "summary", "log-mapping"].includes(task)) throw new UsageError("Give a task: opportunities, future-state, summary or log-mapping.");
+  if (!["opportunities", "future-state", "summary", "log-mapping", "screen"].includes(task)) throw new UsageError("Give a task: opportunities, future-state, summary, log-mapping or screen.");
+  if (task === "screen") {
+    process.stdout.write(JSON.stringify(screeningLib.aiTaskInput(readScreening(opts.in), { includeSensitive: !!opts["include-sensitive"] }), null, 1) + "\n");
+    return;
+  }
   const e = readEngagement(opts.in);
   const extra = task === "log-mapping" ? await logMappingOptions(opts, e) : {};
   process.stdout.write(JSON.stringify(ai.buildTaskInput(e, task, Object.assign({ includeSensitive: !!opts["include-sensitive"], baselineModelId: opts.baseline }, extra)), null, 1) + "\n");
 }
 
-function checkAndReport(opts, result, validation, engagement, context) {
+function checkAndReport(opts, result, validation, engagement, context, screening) {
   if (!validation.ok) {
     say(opts, "The result has " + validation.errors.length + " problem" + (validation.errors.length === 1 ? "" : "s") + ":");
     validation.errors.slice(0, 30).forEach(x => say(opts, "  - " + (x.path ? x.path + ": " : "") + x.message));
@@ -274,8 +312,13 @@ function checkAndReport(opts, result, validation, engagement, context) {
     return 1;
   }
   let review = null;
-  if (engagement || result.task === "extract") {
-    review = ai.prepareReview(validation.result, engagement, context);
+  if (result.task === "screen" && !screening && engagement) {
+    say(opts, "  - This result holds screening scores. Check it with --in <the .screening.json file>.");
+    emitJson(opts, { type: "check", ok: false, errors: [{ path: "in", message: "Check screening scores against a screening file." }] });
+    return 1;
+  }
+  if (screening || engagement || result.task === "extract") {
+    review = screening ? screeningLib.prepareAiScores(validation.result, screening) : ai.prepareReview(validation.result, engagement, context);
     if (review.errors.length) {
       review.errors.forEach(x => say(opts, "  - " + x.message));
       emitJson(opts, { type: "check", ok: false, errors: review.errors });
@@ -284,7 +327,7 @@ function checkAndReport(opts, result, validation, engagement, context) {
     describeReview(review, validation.result).forEach(l => say(opts, l));
   }
   printWarnings(opts, validation.warnings.concat(validation.result.warnings, review ? review.warnings : []));
-  say(opts, "The result is valid." + (engagement || result.task === "extract" ? "" : " Add --in <file> to check it against the project."));
+  say(opts, "The result is valid." + (screening || engagement || result.task === "extract" ? "" : " Add --in <file> to check it against the project or screening."));
   emitJson(opts, { type: "check", ok: true, warnings: validation.warnings, review });
   return 0;
 }
@@ -293,22 +336,24 @@ async function cmdCheck(opts) {
   const file = opts._[1];
   if (!file) throw new UsageError("Give a result file: npm run ai -- check <file>");
   const v = ai.parseAiResultText(fs.readFileSync(file, "utf8"));
-  const engagement = opts.in ? readEngagement(opts.in) : null;
+  const subject = opts.in ? readSubject(opts.in) : { engagement: null, screening: null };
+  const engagement = subject.engagement;
   const context = engagement && opts.activities ? { activities: await readActivities(opts.activities, opts["activity-column"]) } : undefined;
-  return checkAndReport(opts, v.result, v, engagement, context);
+  return checkAndReport(opts, v.result, v, engagement, context, subject.screening);
 }
 
 /* Agent skills write a payload; wrap adds the envelope, checks it and writes the result file. */
 async function cmdWrap(opts) {
   const task = opts._[1];
-  if (!schema.ENUMS.aiTask.includes(task)) throw new UsageError("Give a task: extract, opportunities, future-state, summary or log-mapping.");
+  if (!schema.ENUMS.aiTask.includes(task)) throw new UsageError("Give a task: extract, opportunities, future-state, summary, log-mapping, screen or goals.");
   if (!opts.payload) throw new UsageError("Give the skill's output with --payload <file>.");
   let raw;
   try { raw = JSON.parse(fs.readFileSync(opts.payload, "utf8")); } catch (err) { throw new UsageError(opts.payload + " is not valid JSON: " + err.message); }
-  const engagement = task === "extract" ? null : readEngagement(opts.in);
+  const screening = task === "screen" ? readScreening(opts.in) : null;
+  const engagement = task === "extract" || task === "screen" ? null : readEngagement(opts.in);
   const provider = opts.with || "claude";
   const status = PROVIDERS[provider] ? await PROVIDERS[provider].status(opts) : null;
-  const g = gateFor({ engagement, plan: opts.plan, confidentiality: opts.confidentiality, dataStatus: opts["data-status"],
+  const g = gateFor({ engagement, screening, plan: opts.plan, confidentiality: opts.confidentiality, dataStatus: opts["data-status"],
     approvalConfirmed: !!opts.yes, trainingOptOutConfirmed: !!opts["training-off"], writtenApproval: opts["written-approval"],
     includeSensitive: !!opts["include-sensitive"] }, status);
   if (!g.gate.allowed) say(opts, "Warning: this material did not pass the data-handling check for this account: " + g.gate.message + " Run npm run ai -- gate before a skill reads any source.");
@@ -324,12 +369,13 @@ async function cmdWrap(opts) {
   const context = task === "log-mapping" && opts.activities ? { activities: await readActivities(opts.activities, opts["activity-column"]) } : undefined;
   const envelope = ai.makeEnvelope({
     task, engagementId: engagement ? engagement.id : null, engagementRevision: engagement ? engagement.revision : null, baselineModelId,
+    screeningId: screening ? screening.id : null, screeningRevision: screening ? screening.revision : null,
     generated: { tool: "aixray-ai wrap", provider: PROVIDERS[provider] ? provider : "other", model: opts.model || "", surface: opts.surface || "skill",
       at: new Date().toISOString(), jobId: "", plan: g.plan },
     dataHandling: g.dataHandling, sources: [], notes, warnings, payload
   });
   const v = ai.validateAiResult(envelope);
-  const code = checkAndReport(opts, v.result, v, engagement, context);
+  const code = checkAndReport(opts, v.result, v, engagement, context, screening);
   if (code) return code;
   const out = opts.out || baseName(opts.in || (opts.payload), task) + "." + task + ".ai-result.json";
   fs.writeFileSync(out, JSON.stringify(v.result, null, 2) + "\n");
@@ -342,10 +388,12 @@ async function cmdWrap(opts) {
 async function cmdTask(opts) {
   const task = opts._[0];
   const provider = opts.with || "claude";
-  const engagement = task === "extract" ? null : readEngagement(opts.in);
-  const files = task === "extract" ? opts._.slice(1) : [];
+  const screening = task === "screen" ? readScreening(opts.in) : null;
+  const engagement = task === "extract" || task === "screen" ? null : readEngagement(opts.in);
+  const files = task === "extract" || task === "goals" ? opts._.slice(1) : [];
   const taskOptions = task === "log-mapping" ? await logMappingOptions(opts, engagement) : undefined;
   if (task === "extract" && !files.length) throw new UsageError("Give the source files: npm run ai -- extract <files...>");
+  if (task === "goals" && !files.length) throw new UsageError("Give the meeting notes or documents: npm run ai -- goals --in <project> <files...>");
   const sources = files.map(f => {
     if (!fs.existsSync(f) || !fs.statSync(f).isFile()) throw new UsageError("Source not found: " + f);
     return { name: path.basename(f), buffer: fs.readFileSync(f) };
@@ -356,7 +404,7 @@ async function cmdTask(opts) {
   let r;
   try {
     r = await runTask({
-      task, provider, engagement, sources, plan: opts.plan, approvalConfirmed: !!opts.yes, trainingOptOutConfirmed: !!opts["training-off"],
+      task, provider, engagement, screening, sources, plan: opts.plan, approvalConfirmed: !!opts.yes, trainingOptOutConfirmed: !!opts["training-off"],
       writtenApproval: opts["written-approval"], includeSensitive: !!opts["include-sensitive"], baselineModelId: opts.baseline,
       model: opts.model, surface: opts.surface || "cli", confidentiality: opts.confidentiality, dataStatus: opts["data-status"],
       processName: opts["process-name"], clientDisplayName: opts.client, engagementName: opts["engagement-name"],
@@ -385,12 +433,16 @@ async function cmdTask(opts) {
   if (r.jobDir) say(opts, "The job folder was kept at " + r.jobDir);
   let applied = null;
   if (opts.apply && task === "log-mapping") say(opts, "--apply is not used by log-mapping. You review the mappings in the event log import.");
-  else if (opts.apply && task !== "extract" && r.review) {
+  else if (opts.apply && task === "screen" && r.review) {
+    applied = applyAllScores(r.review, screening, opts.in);
+    if (applied) say(opts, "Wrote " + applied + " with every drafted score applied as an unreviewed AI draft.");
+  } else if (opts.apply && task !== "extract" && r.review) {
     applied = applyAll(r.result, r.review, engagement, opts.in);
     if (applied) say(opts, "Wrote " + applied + " with every item applied as an unreviewed AI draft.");
   }
   say(opts, task === "extract" ?
-    "Open the result in AIxRay with Open, check it, choose Open as a new project, then save it." : task === "log-mapping" ?
+    "Open the result in AIxRay with Open, check it, choose Open as a new project, then save it." : task === "screen" ?
+    "In AIxRay, open the screening (Screen processes, then Open), choose Load AI scores, tick the scores you want and apply them." : task === "log-mapping" ?
     "In AIxRay, open the project, choose More actions, Import an event log, pick the log, and in the Activities step choose Load an AI mapping result." :
     "Open the project in AIxRay, then open the result with Open, tick the items you want and apply them.");
   emitJson(opts, { type: "written", file: out, applied, result: opts.json ? r.result : undefined });

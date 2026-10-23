@@ -13,15 +13,17 @@ import { systemPrompt, userPrompt, repairPrompt, root } from "./prompt.mjs";
 
 const require = createRequire(import.meta.url);
 const ai = require(path.join(root, "webui", "js", "lib", "ai-results.js"));
+const screeningLib = require(path.join(root, "webui", "js", "lib", "screening.js"));
 
 export const MAX_REPAIRS = 2;
-export const TASKS = ["extract", "opportunities", "future-state", "summary", "log-mapping"];
+export const TASKS = ["extract", "opportunities", "future-state", "summary", "log-mapping", "screen", "goals"];
 const SECRET_ADVICE = {
   extract: "Remove credentials from the sources", opportunities: "Remove credentials from the project",
   "future-state": "Remove credentials from the project", summary: "Remove credentials from the project",
-  "log-mapping": "Check the activity names and the model steps"
+  "log-mapping": "Check the activity names and the model steps", screen: "Remove credentials from the screening",
+  goals: "Remove credentials from the sources and the project"
 };
-const TIMEOUT_MS = { extract: 20 * 60000, opportunities: 8 * 60000, "future-state": 10 * 60000, summary: 6 * 60000, "log-mapping": 6 * 60000 };
+const TIMEOUT_MS = { extract: 20 * 60000, opportunities: 8 * 60000, "future-state": 10 * 60000, summary: 6 * 60000, "log-mapping": 6 * 60000, screen: 8 * 60000, goals: 10 * 60000 };
 
 /*
  * Task options passed through to the task input. Log mapping takes
@@ -49,12 +51,17 @@ export function effectivePlan(status, declared) {
   return ["commercial", "consumer"].includes(declared) ? declared : "unknown";
 }
 
-/** The data-handling facts for a job, and whether the gate lets it run. */
+/**
+ * The data-handling facts for a job, and whether the gate lets it run. A
+ * screening is held to the strictest confidentiality among the screening and
+ * the processes that would be sent.
+ */
 export function gateFor(o, status) {
   const e = o.engagement || null;
+  const sc = o.screening ? screeningLib.dataHandlingOf(o.screening, { includeSensitive: o.includeSensitive === true }) : null;
   const dataHandling = {
-    confidentiality: e ? e.meta.confidentiality : (o.confidentiality || "client-confidential"),
-    dataStatus: e ? e.meta.dataStatus : (o.dataStatus || "supplied"),
+    confidentiality: sc ? sc.confidentiality : e ? e.meta.confidentiality : (o.confidentiality || "client-confidential"),
+    dataStatus: sc ? sc.dataStatus : e ? e.meta.dataStatus : (o.dataStatus || "supplied"),
     approvalConfirmed: o.approvalConfirmed === true,
     trainingOptOutConfirmed: o.trainingOptOutConfirmed === true,
     writtenApproval: o.writtenApproval || "",
@@ -75,7 +82,7 @@ function readDraftFile(job) {
 }
 
 /**
- * options: { task, provider, engagement, sources: [{ name, buffer }], plan, approvalConfirmed,
+ * options: { task, provider, engagement, screening (screen only), sources: [{ name, buffer }], plan, approvalConfirmed,
  *   trainingOptOutConfirmed, writtenApproval, includeSensitive, baselineModelId, model, surface,
  *   confidentiality, dataStatus, processName, clientDisplayName, engagementName, useApiKey,
  *   keep, signal, onEvent, status, timeoutMs, taskOptions (log mapping: { modelId, activities }) }
@@ -88,8 +95,10 @@ export async function runTask(o) {
   const task = o.task;
   if (!TASKS.includes(task)) throw new AiFailure("input.task", "Unknown task \"" + task + "\".");
   const emit = ev => { if (o.onEvent) o.onEvent(ev); };
-  const e = o.engagement || null;
-  if (task !== "extract" && !e) throw new AiFailure("input.missing", "This task needs a project. Give the project file with --in.");
+  const e = task === "screen" ? null : o.engagement || null;
+  const sc = task === "screen" ? o.screening || null : null;
+  if (task === "screen" && !sc) throw new AiFailure("input.missing", "This task needs a screening. Give the screening file with --in.");
+  if (task !== "extract" && task !== "screen" && !e) throw new AiFailure("input.missing", "This task needs a project. Give the project file with --in.");
   const taskOptions = cleanTaskOptions(task, o.taskOptions);
   if (task === "log-mapping") {
     if (!taskOptions.activities.length) throw new AiFailure("input.missing", "Give the activity names to map, with --activities.");
@@ -127,8 +136,11 @@ export async function runTask(o) {
       if (info.warning) warnings.push({ code: "source.unreadable", path: info.name, message: info.name + ": " + info.warning });
     }
     if (task === "extract" && !job.sources.length) throw new AiFailure("input.missing", "Add at least one document to create the process from.");
+    if (task === "goals" && !job.sources.length) throw new AiFailure("input.missing", "Add at least one document, such as meeting notes or a transcript, to draft goals from.");
 
-    const input = e ? ai.buildTaskInput(e, task, Object.assign({ includeSensitive: o.includeSensitive, baselineModelId: o.baselineModelId }, taskOptions)) : null;
+    const input = sc ? screeningLib.aiTaskInput(sc, { includeSensitive: o.includeSensitive }) :
+      e ? ai.buildTaskInput(e, task, Object.assign({ includeSensitive: o.includeSensitive, baselineModelId: o.baselineModelId }, taskOptions)) : null;
+    if (sc && !input.candidates.some(c => c.toScore.length)) throw new AiFailure("input.missing", "Every process in the screening is already scored by a person, so there is nothing to draft.");
     const baselineModelId = task === "future-state" || task === "log-mapping" ? input.baselineModelId : null;
     const reviewContext = task === "log-mapping" ? { activities: input.activities } : undefined;
     if (task === "future-state" && !baselineModelId) throw new AiFailure("input.baseline", "The project has no current-state model to start from.");
@@ -138,6 +150,10 @@ export async function runTask(o) {
     if (input && input.excluded.secretActivities) {
       const n = input.excluded.secretActivities;
       warnings.push({ code: "input.secret", path: "activities", message: n + " activity name" + (n === 1 ? " that looks" : "s that look") + " like a credential " + (n === 1 ? "was" : "were") + " not sent. Map " + (n === 1 ? "it" : "them") + " yourself in the event log import." });
+    }
+    if (input && input.excluded.sensitiveCandidates) {
+      const n = input.excluded.sensitiveCandidates;
+      warnings.push({ code: "input.sensitive", path: "candidates", message: n + " process" + (n === 1 ? "" : "es") + " marked sensitive " + (n === 1 ? "was" : "were") + " not sent." });
     }
     if (input && input.excluded.sensitiveRecords) {
       warnings.push({ code: "input.sensitive", path: "records", message: input.excluded.sensitiveRecords + " finding" + (input.excluded.sensitiveRecords === 1 ? "" : "s") + " marked sensitive " + (input.excluded.sensitiveRecords === 1 ? "was" : "were") + " not sent." });
@@ -194,6 +210,7 @@ export async function runTask(o) {
         run.denials.map(d => ({ code: "provider.denied", path: "", message: "The AI tried to use " + d + " and was refused." })));
       const envelope = ai.makeEnvelope({
         task, engagementId: e ? e.id : null, engagementRevision: e ? e.revision : null, baselineModelId,
+        screeningId: sc ? sc.id : null, screeningRevision: sc ? sc.revision : null,
         generated: { tool: "aixray-ai", provider: o.provider, model: run.model || o.model || "", surface: o.surface || "cli",
           at: new Date().toISOString(), jobId: job.id, plan },
         dataHandling, sources, notes: typeof output.notes === "string" ? output.notes : "", warnings: runWarnings, payload
@@ -204,10 +221,12 @@ export async function runTask(o) {
         const secret = validation.errors.find(x => x.code === "output.secret");
         if (secret) throw new AiFailure("output.secret", "The draft contained something that looks like a credential, so AIxRay did not keep it. " + SECRET_ADVICE[task] + " and run the task again.");
         validation.errors.forEach(x => problems.push(x));
-        if (validation.ok && e) {
-          review = ai.prepareReview(validation.result, e, reviewContext);
+        if (validation.ok && (e || sc)) {
+          review = sc ? screeningLib.prepareAiScores(validation.result, sc) : ai.prepareReview(validation.result, e, reviewContext);
           review.errors.forEach(x => problems.push(x));
-          review.items.filter(it => it.problems.length).forEach(it => problems.push({ path: "item " + (it.index + 1), message: it.title + ": " + it.problems.join(" ") }));
+          // A score the AI left blank, or one a person already gave, is expected and needs no repair.
+          const repairable = it => !sc || it.problems.some(p => /not in the screening/.test(p));
+          review.items.filter(it => it.problems.length && repairable(it)).forEach(it => problems.push({ path: "item " + (it.index + 1), message: it.title + ": " + it.problems.join(" ") }));
         }
       }
       last = { problems, validation, review, output, payload };

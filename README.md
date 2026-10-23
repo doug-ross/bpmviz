@@ -10,11 +10,21 @@ It runs from local files. There is no server, account, install or network connec
 
 1. Download or clone this repository.
 2. Open `webui/index.htm` in Chrome, Edge, Firefox or Safari. Double-clicking the file is enough.
-3. Choose **Try an example** or another bundled example, or open a project file or a BPMN file.
+3. Choose **Take a tour** for a guided walk through the app, **Try an example** or another bundled example, or open a project file or a BPMN file.
+
+Select the AIxRay name in the header at any time to go back to the start page. The open project stays open, and the tabs take you back to it.
 
 To serve the app over HTTP instead, run `npm run serve` and open `http://127.0.0.1:8080/index.htm`. Both ways are tested.
 
 ## What you can do
+
+### Take a guided tour
+
+**Take a tour**, on the start screen and in More actions, walks through the real app on the bundled examples, so your own project and files stay as they are. Each step puts a ring around the control to use and explains it; click it, or choose Next and the tour does it for you. One tour analyzes a client's process and starts its future state; the other screens several processes to find the best first use case and turns the winner into a project. Where the tour adds sample data, such as three opportunities or sample AI scores, the step says so. A first visit offers the tour once. For a demo, open `index.htm#tour=analyze` or `index.htm#tour=screen` to start one straight away.
+
+### Choose which process to start with
+
+Choose **Screen processes** to compare several candidate processes before you pick one. Score each from 1 to 5 against weighted criteria for value, feasibility, and readiness and risk; type a process in, or add a project file you already have. The Ranking tab shows each process's score, where it falls on a chart of value against ease, its yearly hands-on hours and labor cost, any flags, and whether the first choice holds when a weight moves by 20 percent. The Summary tab prints a one-page summary, and **Start a project** turns the chosen process into a new project. A screening is its own file and never changes a project. **Open the example screening** in an empty screening shows a finished one. See [the screening guide](docs/screening.md).
 
 ### Build and run a Jumpstart workshop
 
@@ -64,7 +74,7 @@ The Present tab has two modes: **Present**, a low-chrome view for the room, and 
 
 ### Draft with AI on your Claude or ChatGPT plan
 
-Claude Code (Claude Pro, Max, Team or Enterprise) or Codex (ChatGPT Plus, Pro, Business or Enterprise) can draft four things: a current state extracted from PDF, Word, PowerPoint, diagram images, notes or BPMN; suggested pain points, opportunities and questions; a future state as changes to the current state; and the executive summary for the report. AIxRay runs the tool you already use, on the account you signed in with, so no API key is involved and AIxRay never handles a credential.
+Claude Code (Claude Pro, Max, Team or Enterprise) or Codex (ChatGPT Plus, Pro, Business or Enterprise) can draft a current state extracted from PDF, Word, PowerPoint, diagram images, notes or BPMN; suggested pain points, opportunities and questions; a future state as changes to the current state; the executive summary for the report; value goals from meeting notes; business case figures for opportunities; and scores for the processes in a screening. AIxRay runs the tool you already use, on the account you signed in with, so no API key is involved and AIxRay never handles a credential.
 
 ```
 npm run ai -- status
@@ -92,6 +102,10 @@ Open the project, then choose **More actions, Import an event log**, or just ope
 
 Only aggregates are kept: counts and times per step, never the individual events, case IDs or the names of people in the log. `docs/event-logs.md` covers the file formats, the timestamp rules, how activities are matched to steps, and what is and is not stored.
 
+### Agree what value means to the client
+
+What counts as success for IT is not always what counts for the business. The **Value goals** card in the Value tab records what the client counts as value: more revenue, a lower cost, a new capability, less risk or a better experience, each with what it is measured by, a target and its basis. Link each opportunity to the goals it serves, then read the goals back to the client and ask: is this what value means to you? The goals carry through to the report, the deck, the CFO one-pager and the pilot brief. The **Suggest value goals** AI task drafts them from meeting notes or transcripts, each with the client's own words. See [the value goals guide](docs/goals.md).
+
 ### Build the business case for an opportunity
 
 Every opportunity can carry a business case: typed or measured inputs for how much effort it saves, how many cases it affects, and what it costs to deliver. As you fill it in, AIxRay estimates the opportunity's annual value right away, using the same formula everywhere it shows up.
@@ -100,15 +114,15 @@ The **Matrix** view in Findings, Opportunities charts every scored opportunity b
 
 ![Opportunities charted by value and effort in the Matrix view](docs/screenshots/16-business-case-matrix.png)
 
-A missing input leaves a result blank rather than assuming zero, and every figure carries the basis of its weakest input (illustrative, provided, measured or confirmed). See `docs/business-case.md` for the formulas and how ranking and the quadrants work.
+Besides labor hours, a business case can count fewer errors and rework, SLA penalties avoided, hires avoided, and licenses and vendor fees. Each part records the share that can become money, how, and who in Finance confirms it, so the case shows gross, realizable and Finance-confirmed annual value. A review form can send the business case figures to the client to confirm, and confirmed figures carry a Confirmed basis. Each figure can take a low and a high value, which shows which figures matter most and gives a low and a high case. **Investment over time** spreads the case over three to five years with an adoption ramp, costs by category, NPV, ROI, payback, low and high cases, the cost per successful workflow and a gain-share fee on confirmed value; `docs/value-dimensions.md` is the design for the value dimensions still to come. A missing input leaves a result blank rather than assuming zero, and every figure carries the basis of its weakest input (illustrative, provided, measured or confirmed). The **Suggest findings** AI task can draft the business case figures from the project's own figures, with a source for each one; drafted figures stay out of the ranking and the reports until you review them. See `docs/business-case.md` for the formulas and how ranking and the quadrants work.
 
 ### Check whether a change actually worked
 
-Once you have an event log from before a change and another from after it, the **Benefits** section in the Value tab compares the two: what each step actually took, and whether an opportunity's modeled business case was borne out. It never claims savings were "realized": a measured change can be confounded by seasonality, a different volume mix, or a change in how activities were matched between the two periods, and the section lists those caveats in the notes under every comparison. A read-only **Measured change** lens on the canvas marks each measured step faster, slower or about the same.
+Once you have an event log from before a change and another from after it, the **Benefits** section in the Value tab compares the two: what each step actually took, and whether an opportunity's modeled business case was borne out. It never claims savings were "realized": a measured change can be confounded by seasonality, a different volume mix, or a change in how activities were matched between the two periods, and the section lists those caveats in the notes under every comparison. Two logs from a team that did not get the change can serve as a **comparison group**, so what changed for everyone, such as the season, is taken out of the measured change. A read-only **Measured change** lens on the canvas marks each measured step faster, slower or about the same.
 
 ![A step-by-step comparison of a baseline and an after event log](docs/screenshots/19-benefits.png)
 
-Start it from the Value tab once the project has two event logs. See `docs/benefits.md` for how the comparison is built and what each status (Met, Partially met, Not yet, Worse, Not measurable) means.
+Start it from the Value tab once the project has two event logs. Without an event log, the delivery team records **checkpoints** at 30, 60 or 90 days: the hands-on hours per case after the change, with its basis and source. AIxRay works out the realized hours and money with the business case's own formula and compares them with what was modeled. See `docs/benefits.md` for how the comparison is built and what each status (Met, Partially met, Not yet, Worse, Not measurable) means.
 
 ### Ask a client stakeholder to check the process
 
@@ -136,6 +150,7 @@ The deck covers scope, pain points, opportunities with their modeled value, the 
 - Every screen and export shows whether the content is demonstration data, provided data or measured data.
 - **An imported event log keeps only aggregates.** The project never holds the log's individual events, case IDs or the names of people in it, only counts and times per step. Case IDs are hashed by default, and people are counted only if you choose to, with no names stored either way. See `docs/event-logs.md`.
 - **A review form carries only what you chose for it.** Steps, the findings you included, and the project's title, client name, data status, confidentiality and disclosure; no figures, other findings, sources or notes. Sensitive findings and unreviewed AI drafts stay out unless included on purpose. The web page form stores nothing in the browser and sends nothing anywhere. See `docs/client-review.md`.
+- **A screening is its own file.** It holds the scores and the figures you typed or copied from a project, never the project itself. Processes marked sensitive stay out of the ranking and the summary unless you include them. See `docs/screening.md`.
 - **Export to other tools never changes the project.** The PowerPoint deck, BPMN file and backlog it builds respect the same sensitive-finding and AI-draft settings as the report. See `docs/exports.md`.
 
 ## Bring your own process
@@ -192,8 +207,8 @@ The app has no build step. Every file under `webui/js/lib/` works both as a brow
 | Path | Contents |
 |---|---|
 | `webui/index.htm` | The app |
-| `webui/js/lib/` | Model and logic: schema, validation, replay, layout, lenses, economics, store, persistence, exports, BPMN import, AI result files, event-log mining, business case figures, benefits comparison, review forms |
-| `webui/js/ui/` | Interface: diagram, Process tab, side panel, forms, findings, value and present views, AI review and tasks, event-log import wizard, opportunity value and the business case, the benefits section, reviews and exports to other tools |
+| `webui/js/lib/` | Model and logic: schema, validation, replay, layout, lenses, economics, store, persistence, exports, BPMN import, AI result files, event-log mining, business case figures, benefits comparison, review forms, process screening |
+| `webui/js/ui/` | Interface: diagram, Process tab, side panel, forms, findings, value and present views, AI review and tasks, event-log import wizard, opportunity value and the business case, the benefits section, reviews and exports to other tools, the screening window |
 | `webui/css/` | Design tokens (Sogeti palette and Ubuntu type) and app styles |
 | `webui/examples/` | Bundled example projects, generated from `archive/` |
 | `webui/schema/` | JSON Schemas for project files and AI result files |
@@ -201,7 +216,7 @@ The app has no build step. Every file under `webui/js/lib/` works both as a brow
 | `tools/ai/` | The AI runner, command line and local helper: Claude Code and Codex commands, document text, prompts, checks |
 | `.claude/skills/`, `.agents/skills/` | The AIxRay agent skills for Claude Code and Codex |
 | `tests/` | Unit tests, browser tests and fixtures |
-| `docs/` | AI guide, event logs, the business case, benefits tracking, review forms, exports, audit tracker, the September 2026 audit, sample event logs and screenshots |
+| `docs/` | AI guide, event logs, the business case, benefits tracking, review forms, exports, process screening, audit tracker, the September 2026 audit, sample event logs and screenshots |
 | `archive/` | The earlier prototypes and prompts, kept for reference |
 
 ## Audit

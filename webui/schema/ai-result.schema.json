@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aixray.local/schema/ai-result.schema.json",
   "title": "AIxRay AI result",
-  "description": "Output of one AI task (extract, opportunities, future-state, summary or log-mapping), schema version 1. The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
+  "description": "Output of one AI task (extract, opportunities, future-state, summary, log-mapping, screen or goals), schema version 1. The app opens it with Open, lists each proposed change for review and applies the ticked ones in one undoable step. webui/js/lib/ai-results.js enforces this contract. Check a file with: npm run ai -- check <file>.",
   "type": "object",
   "required": [
     "schema",
@@ -23,7 +23,9 @@
         "opportunities",
         "future-state",
         "summary",
-        "log-mapping"
+        "log-mapping",
+        "screen",
+        "goals"
       ]
     },
     "engagementId": {
@@ -54,6 +56,24 @@
         }
       ],
       "description": "The current-state model a future-state change set applies to, or the model a log mapping maps activities to."
+    },
+    "screeningId": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/id"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "screen: the screening the scores were drafted for (see screening.schema.json)."
+    },
+    "screeningRevision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
     },
     "generated": {
       "type": "object",
@@ -205,6 +225,12 @@
         },
         {
           "$ref": "#/$defs/logMapping"
+        },
+        {
+          "$ref": "#/$defs/screen"
+        },
+        {
+          "$ref": "#/$defs/goals"
         }
       ]
     }
@@ -218,7 +244,8 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "suggestions"
+        "suggestions",
+        "valueCases"
       ],
       "properties": {
         "suggestions": {
@@ -236,6 +263,8 @@
               "basedOnRecordIds",
               "priority",
               "opportunity",
+              "valueCase",
+              "goalIds",
               "confidence",
               "rationale"
             ],
@@ -350,6 +379,100 @@
                   }
                 ]
               },
+              "valueCase": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "shareOfCasesPct",
+                      "effortReductionPct",
+                      "durationReductionPct",
+                      "oneTimeCost",
+                      "annualRunningCost",
+                      "confidence",
+                      "sources"
+                    ],
+                    "properties": {
+                      "shareOfCasesPct": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "effortReductionPct": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "durationReductionPct": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "oneTimeCost": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "annualRunningCost": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "confidence": {
+                        "type": "string",
+                        "enum": [
+                          "low",
+                          "medium",
+                          "high"
+                        ]
+                      },
+                      "sources": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "shareOfCasesPct",
+                          "effortReductionPct",
+                          "durationReductionPct",
+                          "oneTimeCost",
+                          "annualRunningCost"
+                        ],
+                        "properties": {
+                          "shareOfCasesPct": {
+                            "type": "string"
+                          },
+                          "effortReductionPct": {
+                            "type": "string"
+                          },
+                          "durationReductionPct": {
+                            "type": "string"
+                          },
+                          "oneTimeCost": {
+                            "type": "string"
+                          },
+                          "annualRunningCost": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "goalIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
               "confidence": {
                 "type": "string",
                 "enum": [
@@ -357,6 +480,114 @@
                   "medium",
                   "high"
                 ]
+              },
+              "rationale": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "valueCases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "recordId",
+              "nodeIds",
+              "valueCase",
+              "rationale"
+            ],
+            "properties": {
+              "recordId": {
+                "type": "string"
+              },
+              "nodeIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "valueCase": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "shareOfCasesPct",
+                  "effortReductionPct",
+                  "durationReductionPct",
+                  "oneTimeCost",
+                  "annualRunningCost",
+                  "confidence",
+                  "sources"
+                ],
+                "properties": {
+                  "shareOfCasesPct": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "effortReductionPct": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "durationReductionPct": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "oneTimeCost": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "annualRunningCost": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "confidence": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ]
+                  },
+                  "sources": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "shareOfCasesPct",
+                      "effortReductionPct",
+                      "durationReductionPct",
+                      "oneTimeCost",
+                      "annualRunningCost"
+                    ],
+                    "properties": {
+                      "shareOfCasesPct": {
+                        "type": "string"
+                      },
+                      "effortReductionPct": {
+                        "type": "string"
+                      },
+                      "durationReductionPct": {
+                        "type": "string"
+                      },
+                      "oneTimeCost": {
+                        "type": "string"
+                      },
+                      "annualRunningCost": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
               },
               "rationale": {
                 "type": "string"
@@ -663,6 +894,152 @@
                   "string",
                   "null"
                 ]
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "rationale": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "screen": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scores"
+      ],
+      "properties": {
+        "scores": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "candidateId",
+              "criterionId",
+              "value",
+              "confidence",
+              "rationale"
+            ],
+            "properties": {
+              "candidateId": {
+                "type": "string"
+              },
+              "criterionId": {
+                "type": "string"
+              },
+              "value": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "rationale": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "goals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suggestions"
+      ],
+      "properties": {
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ref",
+              "kind",
+              "title",
+              "metric",
+              "baseline",
+              "target",
+              "unit",
+              "by",
+              "owner",
+              "source",
+              "quote",
+              "servedByRecordIds",
+              "confidence",
+              "rationale"
+            ],
+            "properties": {
+              "ref": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "revenue",
+                  "cost",
+                  "capability",
+                  "risk",
+                  "experience",
+                  "other"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "metric": {
+                "type": "string"
+              },
+              "baseline": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "target": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "unit": {
+                "type": "string"
+              },
+              "by": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "quote": {
+                "type": "string"
+              },
+              "servedByRecordIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               },
               "confidence": {
                 "type": "string",

@@ -18,3 +18,32 @@
 .bc-wave-card .select { min-height: 32px; }
 
 .bc-onepager .stat-row { margin-bottom: var(--space-3); }
+
+/* Value case figures drafted with AI, until a person reviews them (same marking as screening scores). */
+.input.bc-ai { border-style: dashed; border-color: var(--badge-purple-ink); }
+.bc-ai-text { color: var(--badge-purple-ink); }
+.bc-ai-banner { padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); display: grid; gap: 4px; }
+.bc-ai-banner p { margin: 0; }
+
+/* Value lines in the business case editor (docs/value-dimensions.md). */
+.bc-sub { margin-top: var(--space-2); }
+.bc-vl-list { display: grid; gap: var(--space-3); }
+.bc-vl { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-3); margin: 0; display: grid; gap: var(--space-2); }
+.bc-vl legend { font-weight: var(--fw-medium); color: var(--ink); padding: 0 var(--space-1); }
+.bc-vl .form-actions { margin: 0; }
+.bc-vl-add { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.bc-vl-add .select { width: auto; min-width: 220px; }
+.bc-et-section { display: grid; gap: var(--space-2); }
+.bc-et-list { display: grid; gap: var(--space-2); }
+.bc-et { border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: var(--space-3); margin: 0; display: grid; gap: var(--space-2); }
+.bc-et legend { font-size: var(--fs-small); color: var(--ink-muted); padding: 0 var(--space-1); }
+.bc-et-redo { border: 0; padding: 0; margin: 0; }
+.bc-et-redo legend { font-size: var(--fs-small); font-weight: var(--fw-medium); color: var(--ink); padding: 0; margin-bottom: 4px; }
+.bc-et-steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px var(--space-3); max-height: 180px; overflow: auto; }
+.bc-inv { border-top: 1px solid var(--border); padding-top: var(--space-2); display: grid; gap: var(--space-2); }
+.bc-inv > summary { cursor: pointer; }
+.bc-inv[open] > summary { margin-bottom: var(--space-1); }
+.bc-inv .form-actions { margin: 0; }
+.bc-inv-gap { margin-top: var(--space-3); }
+#bc-rng-onepager .sens-cell { width: 36%; }
+.bc-rng-table td:first-child { min-width: 200px; }

@@ -95,7 +95,9 @@ test("registered tabs, views, columns, sections, modes and actions render", asyn
   await p.waitForSelector("#demo-value");
   const order = await p.$$eval("#ws-value .value-stack > section", els => els.map(e => e.id || e.getAttribute("aria-labelledby")));
   assert.equal(order[order.length - 1], "demo-value");
-  assert.equal(order[order.length - 2], "vv-rec");
+  // Registered sections follow the reconciliation card; the built-in Value goals section (order -10) comes first among them.
+  assert.equal(order[order.indexOf("vv-rec") + 1], "goal-section");
+  assert.ok(order.indexOf("vv-rec") < order.indexOf("demo-value"));
   // Present: registered mode, action and handoff sections.
   await p.click("#tab-present");
   await p.click("#pr-mode-demo");

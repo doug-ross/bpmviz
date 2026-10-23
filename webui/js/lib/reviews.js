@@ -2,8 +2,9 @@
  * AIxRay reviews: client review packs, the answers that come back, and
  * applying them to the engagement.
  *
- * A pack lists steps of one model and findings (records) for a client
- * stakeholder to confirm, dispute or mark as not sure. It goes out as a
+ * A pack lists steps of one model, findings (records) and, when asked, the
+ * figures in its business cases (value inputs and the project assumptions)
+ * for a client stakeholder to confirm, dispute or mark as not sure. It goes out as a
  * self-contained web page (lib/review-pack.js) or an Excel workbook
  * (workbookSpec here, written by lib/xlsx.js). The answers come back as a
  * review response file (schema aixray.review-response) or the filled-in
@@ -14,18 +15,22 @@
  * choices into one review/apply command. Applying never edits the process:
  * it changes the validation status of steps (also on a locked baseline,
  * without marking anything modified), may add open questions and an
- * evidence source, and appends the review to engagement.reviews.
+ * evidence source, and appends the review to engagement.reviews. Once
+ * every figure in one part of a business case (the labor estimate, or one
+ * value line) or a project assumption is confirmed, applying marks its
+ * basis Confirmed.
  *
  * Owned by the client review feature; see docs/client-review.md.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./util.js"), require("./schema.js"), require("./validate.js"), require("./store.js"));
+    module.exports = factory(require("./util.js"), require("./schema.js"), require("./validate.js"), require("./store.js"),
+      require("./units.js"), require("./value-lines.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.reviews = factory(B.util, B.schema, B.validate, B.store);
+    B.reviews = factory(B.util, B.schema, B.validate, B.store, B.units, B.valueLines);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, validate, store) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, validate, store, units, valueLines) {
   "use strict";
 
   const L = schema.LIMITS;
@@ -48,6 +53,57 @@
 
   function stepRef(modelId, nodeId) { return "step/" + modelId + "/" + nodeId; }
   function recordRef(recordId) { return "record/" + recordId; }
+  function valueRef(recordId, field) { return "value/" + recordId + "/" + field; }
+  function assumptionRef(assumptionId) { return "assumption/" + assumptionId; }
+
+  /* The labor estimate's figures a client can confirm, in the editor's order. */
+  const LABOR_FIELDS = [
+    ["effortReductionPct", "Effort reduction", "percent"],
+    ["durationReductionPct", "Duration reduction", "percent"],
+    ["shareOfCasesPct", "Share of cases affected", "percent"],
+    ["oneTimeCost", "One-time cost", "currency"],
+    ["annualRunningCost", "Annual running cost", "currency"],
+    ["realizationPct", "Share of the labor value that can be realized", "percent"]
+  ];
+  const lowerFirst = t => t.charAt(0).toLowerCase() + t.slice(1);
+
+  /*
+   * The figures set in one opportunity's business case, each with the part
+   * it belongs to: [{ field, part, label, value, unit }]. part is "labor" for
+   * the labor estimate or the value line's ID. Figures drafted with AI and
+   * not reviewed are left out, as are figures read from an event log.
+   */
+  function valueInputsOf(record) {
+    const o = (record && record.opportunity) || {};
+    const out = [];
+    const vc = o.valueCase;
+    if (vc && !vc.aiDraft) {
+      LABOR_FIELDS.forEach(([key, label, unit]) => {
+        if (key === "shareOfCasesPct" && vc.shareSource === "dataset") return;
+        if (util.isFiniteNumber(vc[key])) out.push({ field: "vc." + key, part: "labor", label, value: vc[key], unit });
+      });
+    }
+    (Array.isArray(o.valueLines) ? o.valueLines : []).forEach(line => {
+      const dim = valueLines.DIMENSIONS[line.dimension];
+      if (!dim) return;
+      dim.inputs.forEach(d => {
+        const v = line.inputs && line.inputs[d.key];
+        if (util.isFiniteNumber(v)) out.push({ field: "vl." + line.id + "." + d.key, part: line.id, label: dim.label + ", " + lowerFirst(d.label), value: v, unit: d.unit });
+      });
+      if (util.isFiniteNumber(line.realizationPct)) {
+        out.push({ field: "vl." + line.id + ".realizationPct", part: line.id, label: dim.label + ", share that can be realized", value: line.realizationPct, unit: "percent" });
+      }
+    });
+    return out;
+  }
+
+  /* The basis of one part of a business case: the labor estimate's, or a value line's. */
+  function partBasis(record, part) {
+    const o = record.opportunity || {};
+    if (part === "labor") return (o.valueCase && o.valueCase.basis) || "illustrative";
+    const line = (o.valueLines || []).find(l => l.id === part);
+    return (line && line.basis) || "illustrative";
+  }
 
   function text(v) {
     if (v === null || v === undefined) return "";
@@ -80,11 +136,32 @@
 
   /**
    * What an item reference points at in engagement e, or null:
-   * { itemRef, kind: "step" | "record", modelId, nodeId, recordId, model, node, record, label, type, lane, details }.
+   * { itemRef, kind: "step" | "record" | "value", modelId, nodeId, recordId, model, node, record, label, type, lane, details }.
+   * A value item also has assumptionId (a project assumption) or field and
+   * part (a figure in a record's business case), and basis, its current basis.
    */
   function resolveItem(e, itemRef) {
     const p = validate.parseItemRef(itemRef);
     if (!p) return null;
+    const unitsCtx = { currency: e.meta && e.meta.currency, timeBasis: e.meta && e.meta.timeBasis };
+    if (p.kind === "assumption") {
+      const a = (e.assumptions || []).find(x => x.id === p.assumptionId);
+      if (!a || !util.isFiniteNumber(a.value)) return null;
+      return { itemRef, kind: "value", modelId: null, nodeId: null, recordId: null, model: null, node: null, record: null,
+        assumptionId: a.id, field: null, part: null, basis: a.status || "illustrative",
+        label: a.label + ": " + units.formatMeasure(a.value, a.unit, unitsCtx), type: "Project assumption", lane: "Used by every business case",
+        details: clip(a.source ? "Source: " + a.source + "." : "", 1200) };
+    }
+    if (p.kind === "value") {
+      const record = e.records.find(r => r.id === p.recordId);
+      const input = record && record.kind === "opportunity" ? valueInputsOf(record).find(x => x.field === p.field) : null;
+      if (!input) return null;
+      const basis = partBasis(record, input.part);
+      return { itemRef, kind: "value", modelId: record.linkedModelId || null, nodeId: null, recordId: record.id, model: null, node: null, record,
+        assumptionId: null, field: input.field, part: input.part, basis,
+        label: input.label + ": " + units.formatMeasure(input.value, input.unit, unitsCtx), type: "Business case figure", lane: record.title,
+        details: clip("A figure in the business case for " + record.title + ". The team's basis for it: " + lowerFirst(schema.label("assumptionStatus", basis)) + ".", 1200) };
+    }
     if (p.kind === "step") {
       const model = e.models.find(m => m.id === p.modelId);
       const node = model && model.nodes.find(n => n.id === p.nodeId);
@@ -137,14 +214,31 @@
     const records = {};
     FINDING_KINDS.forEach(k => { records[k] = 0; });
     candidateRecords(e, o).forEach(r => { if (r.kind in records) records[r.kind]++; });
-    return { steps, records };
+    return { steps, records, values: valueItems(e, Object.assign({}, o, { values: true })).length };
+  }
+
+  /*
+   * The business case figures a pack can offer: the project assumptions with
+   * a value, then each opportunity's figures, for opportunities that pass the
+   * same checks as findings.
+   */
+  function valueItems(e, o, only) {
+    const refs = [];
+    if (!o.values && !only) return refs;
+    (e.assumptions || []).forEach(a => refs.push(assumptionRef(a.id)));
+    const opps = candidateRecords(e, Object.assign({}, o, { modelId: only ? null : o.modelId })).filter(r => r.kind === "opportunity");
+    opps.forEach(r => valueInputsOf(r).forEach(x => refs.push(valueRef(r.id, x.field))));
+    const items = refs.filter(ref => !only || only.has(ref)).map(ref => resolveItem(e, ref)).filter(Boolean);
+    // Assumptions only matter next to a business case, unless the recorded pack named them.
+    return only || items.some(it => it.recordId) ? items : [];
   }
 
   /**
    * The items for a review pack, in reading order: steps by lane and flow
    * position, then findings by kind.
    * opts: { modelId, steps (default true), kinds (record kinds, default pain,
-   *   opportunity, decision, assumption), includeSensitive, includeUnreviewedAi,
+   *   opportunity, decision, assumption), values (business case figures,
+   *   default false), includeSensitive, includeUnreviewedAi,
    *   itemRefs (only these, for downloading a recorded pack again; records
    *   still pass the sensitive, AI draft, dropped and handoff checks) }
    * Returns [{ itemRef, kind, type, lane, label, details }].
@@ -169,6 +263,7 @@
     const records = only ? candidateRecords(e, Object.assign({}, o, { modelId: null })).filter(r => only.has(recordRef(r.id))) :
       candidateRecords(e, Object.assign({}, o, { modelId: model ? model.id : o.modelId }));
     kinds.forEach(kind => records.filter(r => r.kind === kind).forEach(r => items.push(resolveItem(e, recordRef(r.id)))));
+    valueItems(e, o, only).forEach(it => items.push(it));
     return items.filter(Boolean).slice(0, L.reviewEntries).map(it => ({
       itemRef: it.itemRef, kind: it.kind, type: it.type, lane: it.lane, label: it.label, details: it.details
     }));
@@ -277,7 +372,7 @@
     if (payload.note) about.push(["Note from the team", payload.note], []);
     about.push(
       ["How to review"],
-      ["1", "Go to the Review sheet. Each row is one step in the process, or one point the team noted, such as a problem or an idea."],
+      ["1", "Go to the Review sheet. Each row is one step in the process, one point the team noted, such as a problem or an idea, or a figure the team used to work out what a change is worth."],
       ["2", "In the Your answer column, choose " + choiceText + "."],
       ["3", "In the Your comment column, say what is wrong, missing or unclear. Comments help most when a row is wrong or you are not sure."],
       ["4", "Fill in your details below, save the workbook and send it back to the team. Please don't rename the sheets, or change the Item ID column or the references at the bottom of this sheet."],
@@ -517,6 +612,12 @@
     // Ordered as latestVerdicts will order the stored review: by the submission
     // date, or by the time it is received (now) when the response has none.
     const answeredAt = response.submittedAt || util.nowIso();
+    // The verdicts once this response is applied, for whether a whole part of a business case ends up confirmed.
+    const after = new Map([...latest].map(([k, v]) => [k, v.verdict]));
+    response.entries.forEach(en => {
+      const prev = latest.get(en.itemRef);
+      if (en.verdict && !(prev && compareTimes(answeredAt, prev.at) < 0)) after.set(en.itemRef, en.verdict);
+    });
     const counts = Object.assign({}, empty);
     const items = [];
     response.entries.forEach(en => {
@@ -527,7 +628,10 @@
       if (pack && !packItem) warnings.push(issue("review.extra", "\"" + clip(it.label, 80) + "\" wasn't in the review form but has an answer. It is included.", "info"));
       const packLabel = packItem ? packItem.label : null;
       const renamed = packLabel !== null && packLabel !== it.label.slice(0, 300);
-      if (renamed) {
+      if (renamed && it.kind === "value") {
+        warnings.push(issue("review.renamed", "The figure is now \"" + clip(it.label, 80) + "\"; it was \"" + clip(packLabel, 80) +
+          "\" in the review form. The answer is about the old figure, so it does not mark the new one confirmed.", "warning"));
+      } else if (renamed) {
         warnings.push(issue("review.renamed", (it.kind === "step" ? "Step" : "Finding") + " \"" + clip(it.label, 80) + "\" was called \"" + clip(packLabel, 80) +
           "\" in the review form. Check that the answer still applies.", "warning"));
       }
@@ -538,15 +642,24 @@
           (prev.at ? " on " + dateOnly(prev.at) : "") + "; this file says \"" + schema.label("reviewVerdict", en.verdict) + "\". " +
           (superseded ? "This file is older, so the answer already imported still counts." : "This file is newer, so its answer counts."), "warning"));
       }
-      const current = it.node ? ((it.node.provenance && it.node.provenance.validation) || "unvalidated") : null;
-      const target = it.node && !superseded && VALIDATION_FOR[en.verdict] ? VALIDATION_FOR[en.verdict] : null;
+      let current = it.node ? ((it.node.provenance && it.node.provenance.validation) || "unvalidated") : null;
+      let target = it.node && !superseded && VALIDATION_FOR[en.verdict] ? VALIDATION_FOR[en.verdict] : null;
+      let toConfirm = 0;
+      if (it.kind === "value") {
+        // A figure's basis becomes Confirmed once every figure in its part is confirmed (an assumption is its own part).
+        current = it.basis;
+        const part = it.assumptionId ? [it.itemRef] : valueInputsOf(it.record).filter(x => x.part === it.part).map(x => valueRef(it.recordId, x.field));
+        toConfirm = part.filter(ref => after.get(ref) !== "confirm").length;
+        target = en.verdict === "confirm" && !superseded && !renamed && toConfirm === 0 ? "validated" : null;
+      }
       if (en.verdict) counts[en.verdict]++;
       else counts.blank++;
       items.push({
         itemRef: en.itemRef, kind: it.kind, modelId: it.modelId, nodeId: it.nodeId, recordId: it.recordId,
         label: it.label, packLabel, renamed, type: it.type, verdict: en.verdict, comment: en.comment,
         currentValidation: current, targetValidation: target, locked: !!(it.model && it.model.locked),
-        previous: prev, superseded
+        previous: prev, superseded,
+        assumptionId: it.assumptionId || null, part: it.part || null, toConfirm
       });
     });
     const answered = new Set(response.entries.filter(en => en.verdict || en.comment.trim()).map(en => en.itemRef));
@@ -558,10 +671,10 @@
   /**
    * The payload for review/apply from prepareApply output and the
    * consultant's choices: { validations (default true), questions (default
-   * true), evidence (default true) }.
+   * true), evidence (default true), values (default true) }.
    */
   function buildApplyPayload(e, prepared, choices) {
-    const c = Object.assign({ validations: true, questions: true, evidence: true }, choices || {});
+    const c = Object.assign({ validations: true, questions: true, evidence: true, values: true }, choices || {});
     const r = prepared.response;
     const taken = new Set((e.reviews || []).map(x => x.id));
     let id = util.uid("rv");
@@ -586,6 +699,11 @@
     const validations = c.validations ? items
       .filter(it => it.kind === "step" && it.targetValidation && it.targetValidation !== it.currentValidation)
       .map(it => ({ modelId: it.modelId, nodeId: it.nodeId, validation: it.targetValidation })) : [];
+    const seen = new Set();
+    const bases = c.values ? items
+      .filter(it => it.kind === "value" && it.targetValidation && it.targetValidation !== it.currentValidation)
+      .map(it => (it.assumptionId ? { assumptionId: it.assumptionId } : { recordId: it.recordId, part: it.part }))
+      .filter(b => { const k = b.assumptionId || b.recordId + "/" + b.part; return !seen.has(k) && seen.add(k); }) : [];
     const name = who(r.reviewer);
     const day = dateOnly(r.submittedAt || now);
     const questions = c.questions ? items
@@ -595,7 +713,7 @@
         const lead = it.verdict === "dispute" ? "Disputed in client review: " : "Not confirmed in client review: ";
         return {
           kind: "question",
-          title: (lead + it.label).slice(0, 300),
+          title: (lead + (it.kind === "value" && record ? record.title + ", " + lowerFirst(it.label) : it.label)).slice(0, 300),
           description: name + " (" + day + ") on \"" + it.label + "\": " + it.comment,
           linkedModelId: it.kind === "step" ? it.modelId : (record ? record.linkedModelId : null),
           linkedNodeIds: it.kind === "step" ? [it.nodeId] : (record ? record.linkedNodeIds.slice() : []),
@@ -616,7 +734,7 @@
         steps: items.filter(it => it.kind === "step" && it.verdict === "confirm").map(it => ({ modelId: it.modelId, nodeId: it.nodeId }))
       };
     }
-    return { review, validations, questions, evidence };
+    return { review, validations, questions, evidence, bases };
   }
 
   /* ---------- Store commands ---------- */
@@ -655,6 +773,22 @@
         node.provenance = node.provenance || { source: "unknown", validation: "unvalidated", evidenceRefs: [], note: "" };
         if (node.provenance.validation !== v.validation) { node.provenance.validation = v.validation; changed++; }
       });
+      // Business case parts and assumptions every figure of which the client confirmed.
+      let values = 0;
+      (Array.isArray(p.bases) ? p.bases : []).forEach(b => {
+        if (b && b.assumptionId) {
+          const a = (e.assumptions || []).find(x => x.id === b.assumptionId);
+          if (!a) throw new H.StoreError("not-found", "Assumption not found.");
+          if (a.status !== "validated") { a.status = "validated"; values++; }
+          return;
+        }
+        const record = e.records.find(x => x.id === (b && b.recordId));
+        const o = record && record.opportunity;
+        if (!o) throw new H.StoreError("not-found", "Opportunity not found.");
+        const target = b.part === "labor" ? o.valueCase : (o.valueLines || []).find(l => l.id === b.part);
+        if (!target) throw new H.StoreError("not-found", "That part of the business case no longer exists.");
+        if (target.basis !== "validated") { target.basis = "validated"; values++; }
+      });
       let evidenceId = null;
       if (p.evidence) {
         const ev = p.evidence;
@@ -685,10 +819,11 @@
       });
       const ids = new Set(e.reviews.map(x => x.id));
       const id = util.isValidId(raw.id) && !ids.has(raw.id) ? raw.id : util.uniqueId("rv-" + util.slug(util.nowIso().slice(0, 10)), ids);
-      const r = validate.sanitizeReview(Object.assign({}, raw, { id, applied: { validations: changed, questions: questionIds.length, evidenceId } }), e);
+      const applied = Object.assign({ validations: changed, questions: questionIds.length, evidenceId }, values ? { values } : {});
+      const r = validate.sanitizeReview(Object.assign({}, raw, { id, applied }), e);
       if (r.errors.length) throw new H.StoreError("invalid", "Review: " + r.errors[0].message);
       e.reviews.push(r.value);
-      return { id, validations: changed, questions: questionIds, evidenceId };
+      return { id, validations: changed, questions: questionIds, evidenceId, values };
     },
 
     /* Removes a received review. Validation it set on steps stays as it is. */
@@ -715,7 +850,7 @@
 
   /**
    * A summary for the handoff and the records tab, using the latest answer
-   * per item: { reviews, reviewers, steps: { confirm, dispute, unsure }, findings: { ... }, items }.
+   * per item: { reviews, reviewers, steps: { confirm, dispute, unsure }, findings: { ... }, values: { ... }, items }.
    * Findings that are sensitive or unreviewed AI drafts are left out unless asked.
    */
   function summarize(e, opts) {
@@ -723,24 +858,25 @@
     const latest = latestVerdicts(e);
     const steps = { confirm: 0, dispute: 0, unsure: 0 };
     const findings = { confirm: 0, dispute: 0, unsure: 0 };
+    const values = { confirm: 0, dispute: 0, unsure: 0 };
     const items = [];
     latest.forEach((answer, ref) => {
       const it = resolveItem(e, ref);
       if (!it) return;
       if (it.record && ((it.record.sensitive && !o.includeSensitive) || (isUnreviewedAi(it.record) && !o.includeUnreviewedAi))) return;
-      const bucket = it.kind === "step" ? steps : findings;
+      const bucket = it.kind === "step" ? steps : it.kind === "value" ? values : findings;
       if (answer.verdict in bucket) bucket[answer.verdict]++;
       items.push({ itemRef: ref, kind: it.kind, label: it.label, type: it.type, lane: it.lane, modelId: it.modelId, nodeId: it.nodeId,
         recordId: it.recordId, answer });
     });
     const reviewers = [];
     (e.reviews || []).forEach(r => { const w = who(r.reviewer); if (!reviewers.includes(w)) reviewers.push(w); });
-    return { reviews: (e.reviews || []).length, reviewers, steps, findings, items };
+    return { reviews: (e.reviews || []).length, reviewers, steps, findings, values, items };
   }
 
   return {
     PACK_SHEET, LEGACY_PACK_SHEET, REVIEW_SHEET, ABOUT_SHEET, REVIEW_HEADERS, FINDING_KINDS, DEFAULT_KINDS, ReviewError,
-    stepRef, recordRef, resolveItem, packCounts, buildPackItems, newPack, packPayload, workbookSpec,
+    stepRef, recordRef, valueRef, assumptionRef, valueInputsOf, resolveItem, packCounts, buildPackItems, newPack, packPayload, workbookSpec,
     normalizeVerdict, responseFromWorkbook, latestVerdicts, prepareApply, buildApplyPayload, summarize, who,
     commands: COMMANDS
   };

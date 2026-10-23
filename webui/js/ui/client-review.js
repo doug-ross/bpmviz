@@ -77,26 +77,33 @@
     const steps = h("input", { type: "checkbox", id: "cr-inc-steps", checked: true });
     const stepsText = h("span");
     const kinds = OFFERED_KINDS.map(k => ({ kind: k, input: h("input", { type: "checkbox", id: "cr-inc-" + k, checked: R.DEFAULT_KINDS.includes(k) }), text: h("span") }));
+    const values = h("input", { type: "checkbox", id: "cr-inc-values" });
+    const valuesText = h("span");
     const note = h("textarea", { class: "textarea", id: "cr-note", maxlength: 4000, rows: 3, placeholder: "What you would like the reviewer to focus on, and when you need the answers" });
     const summary = h("p", { class: "small", id: "cr-summary", "aria-live": "polite" });
 
     const options = () => ({
-      modelId: model.value, steps: steps.checked, kinds: kinds.filter(k => k.input.checked).map(k => k.kind),
+      modelId: model.value, steps: steps.checked, kinds: kinds.filter(k => k.input.checked).map(k => k.kind), values: values.checked,
       includeSensitive: scope.includeSensitive, includeUnreviewedAi: scope.includeUnreviewedAi
     });
     function update() {
       const counts = R.packCounts(e, options());
       stepsText.textContent = "Steps and decision points (" + counts.steps + ")";
       kinds.forEach(k => { k.text.textContent = KIND_TITLES[k.kind] + " (" + counts.records[k.kind] + ")"; });
+      valuesText.textContent = "Business case figures, for the client to confirm (" + counts.values + ")";
       const items = R.buildPackItems(e, options());
       const nSteps = items.filter(i => i.kind === "step").length;
-      summary.textContent = items.length ? "The form will list " + plural(items.length, "item") + ": " + plural(nSteps, "step") + " and " + plural(items.length - nSteps, "finding") + "." :
+      const nFigures = items.filter(i => i.kind === "value").length;
+      const nFindings = items.length - nSteps - nFigures;
+      summary.textContent = items.length ? "The form will list " + plural(items.length, "item") + ": " + plural(nSteps, "step") +
+        (nFigures ? ", " + plural(nFindings, "finding") + " and " + plural(nFigures, "business case figure") : " and " + plural(nFindings, "finding")) + "." :
         "Nothing to review yet. Tick at least one kind of item that has entries.";
     }
-    [model, steps].concat(kinds.map(k => k.input)).forEach(x => x.addEventListener("change", update));
+    [model, steps, values].concat(kinds.map(k => k.input)).forEach(x => x.addEventListener("change", update));
     update();
 
     const privacy = "The form holds only the items above with their descriptions, plus the project's title, client name, data status, confidentiality and disclosure. " +
+      "Figures from the business cases go in only when Business case figures is ticked. " +
       (scope.includeSensitive ? "Sensitive findings are included, as set in Present. " : "Sensitive findings are left out. ") +
       (scope.includeUnreviewedAi ? "AI drafts not yet reviewed are included." : "AI drafts not yet reviewed are left out.");
 
@@ -133,6 +140,7 @@
       h("fieldset", { class: "cr-options" }, h("legend", { class: "field-label" }, "What to include"),
         h("label", { class: "check" }, steps, stepsText),
         kinds.map(k => h("label", { class: "check" }, k.input, k.text)),
+        h("label", { class: "check" }, values, valuesText),
         h("p", { class: "field-hint" }, "Only findings that are included in the report and linked to this process (or to no process) go in.")),
       h("fieldset", { class: "segmented" }, h("legend", null, "Format"), formats),
       h("div", { class: "field" }, h("label", { for: "cr-note" }, "Note to the reviewer (optional)"), note),
@@ -176,6 +184,14 @@
   /* ---------- Importing a response ---------- */
 
   function effectOf(it) {
+    if (it.kind === "value") {
+      if (it.superseded) return "No change: a later review answered this figure";
+      if (it.verdict !== "confirm") return "Saved with the review";
+      if (it.renamed) return "No change: the figure has changed since the form was made";
+      if (it.targetValidation && it.targetValidation !== it.currentValidation) return "Basis changes from " + schema.label("assumptionStatus", it.currentValidation) + " to Confirmed";
+      if (it.targetValidation) return "Already confirmed";
+      return "Confirmed. " + plural(it.toConfirm, "more figure") + " in this part of the business case to confirm before its basis becomes Confirmed";
+    }
     if (it.kind !== "step") return "Saved with the review";
     if (it.superseded) return "No change: a later review answered this step";
     if (!it.targetValidation) return "No change (" + schema.label("validation", it.currentValidation).toLowerCase() + ")";
@@ -213,11 +229,14 @@
     const askable = items.filter(it => (it.verdict === "dispute" || it.verdict === "unsure" || !it.verdict) && it.comment.trim()).length;
     const confirmedSteps = items.filter(it => it.kind === "step" && it.verdict === "confirm").length;
     const locked = items.some(it => it.kind === "step" && it.locked);
+    const figures = items.filter(it => it.kind === "value");
+    const baseChanges = new Set(figures.filter(it => it.targetValidation && it.targetValidation !== it.currentValidation).map(it => it.assumptionId || it.recordId + "/" + it.part)).size;
     const opt = (id, text, checked) => {
       const input = h("input", { type: "checkbox", id, checked });
       return { input, el: h("label", { class: "check" }, input, h("span", null, text)) };
     };
     const optValidation = opt("cr-apply-validation", "Update the steps: mark confirmed steps as confirmed and disputed steps as disputed (" + plural(changes, "change") + "). Not sure leaves a step as it is.", true);
+    const optValues = opt("cr-apply-values", "Mark business case figures the client confirmed as Confirmed, once every figure in that part is confirmed (" + plural(baseChanges, "change") + ")", true);
     const optQuestions = opt("cr-apply-questions", "Add an open question for each item that has a comment and was not confirmed (" + askable + ")", askable > 0);
     const optEvidence = opt("cr-apply-evidence", confirmedSteps ? "Add the review as a source, linked to the " + plural(confirmedSteps, "confirmed step") :
       "Add the review as a source (no step was confirmed, so it isn't linked to any step)", true);
@@ -238,7 +257,7 @@
         stat(n.unanswered, "Not answered", pack ? "Of " + plural(n.total, "item") + " in the form" : "No answer or comment")),
       prepared.warnings.length ? h("section", null, h("h3", null, "Check before applying (" + prepared.warnings.length + ")"), warningList(prepared.warnings)) : null,
       r.generalComment ? h("section", null, h("h3", null, "General comment"), h("p", { class: "cr-comment" }, r.generalComment)) : null,
-      h("fieldset", { class: "cr-options" }, h("legend", { class: "field-label" }, "When you apply the answers"), optValidation.el, optQuestions.el, optEvidence.el,
+      h("fieldset", { class: "cr-options" }, h("legend", { class: "field-label" }, "When you apply the answers"), optValidation.el, figures.length ? optValues.el : null, optQuestions.el, optEvidence.el,
         locked ? h("p", { class: "note" }, "The baseline is locked because a future state is based on it. Applying the answers changes only whether its steps are confirmed and which sources they link to. The steps themselves are not edited.") : null,
         h("p", { class: "note" }, "You can undo this in one step.")),
       err,
@@ -247,9 +266,11 @@
       title: "Apply review answers", eyebrow: fileName || null, wide: true, body,
       actions: [{ label: "Cancel" }, { label: "Apply answers", variant: "btn-primary", keepOpen: true, onClick: api => {
         const e = app.store.get();
-        const payload = R.buildApplyPayload(e, prepared, { validations: optValidation.input.checked, questions: optQuestions.input.checked, evidence: optEvidence.input.checked });
-        const nv = payload.validations.length, nq = payload.questions.length;
-        const ok = app.dispatch("review/apply", payload, "Answers from " + (r.reviewer.name || "the reviewer") + " applied: " + plural(nv, "step") + " updated, " + plural(nq, "open question") + " added.", err);
+        const payload = R.buildApplyPayload(e, prepared, { validations: optValidation.input.checked, questions: optQuestions.input.checked, evidence: optEvidence.input.checked,
+          values: optValues.input.checked });
+        const nv = payload.validations.length, nq = payload.questions.length, nb = payload.bases.length;
+        const ok = app.dispatch("review/apply", payload, "Answers from " + (r.reviewer.name || "the reviewer") + " applied: " + plural(nv, "step") + " updated, " +
+          (nb ? plural(nb, "business case figure set") + " confirmed, " : "") + plural(nq, "open question") + " added.", err);
         if (ok) api.close("applied");
         return false;
       } }]
@@ -340,7 +361,8 @@
         list.slice().reverse().map(r => {
           const c = { confirm: 0, dispute: 0, unsure: 0 };
           r.entries.forEach(en => { c[en.verdict] = (c[en.verdict] || 0) + 1; });
-          const applied = [plural(r.applied.validations, "step") + " updated", plural(r.applied.questions, "open question")]
+          const applied = [plural(r.applied.validations, "step") + " updated"].concat(r.applied.values ? [plural(r.applied.values, "business case basis", "business case bases") + " confirmed"] : [])
+            .concat([plural(r.applied.questions, "open question")])
             .concat(r.applied.evidenceId ? ["a source"] : []).join(", ");
           return h("tr", null,
             h("td", null, h("div", { class: "title-cell" }, R.who(r.reviewer)), r.generalComment ? h("div", { class: "desc cr-comment" }, r.generalComment) : null),
@@ -397,7 +419,8 @@
     return h("section", { class: "cr-handoff", id: "hd-client-review", "aria-labelledby": "hd-cr-h" },
       h("h2", { id: "hd-cr-h" }, "Review answers"),
       h("p", null, plural(sum.reviews, "review") + " received, from " + sum.reviewers.join("; ") + "."),
-      h("p", null, "Latest answer per item: steps " + count(sum.steps) + "; findings " + count(sum.findings) + "."),
+      h("p", null, "Latest answer per item: steps " + count(sum.steps) + "; findings " + count(sum.findings) +
+        (sum.values.confirm + sum.values.dispute + sum.values.unsure ? "; business case figures " + count(sum.values) : "") + "."),
       open.length ? [h("h3", null, "Disputed or not sure (" + open.length + ")"),
         h("div", { class: "table-wrap" }, h("table", { class: "table" },
           h("thead", null, h("tr", null, ["Item", "Type", "Answer", "Reviewer", "Comment"].map(c => h("th", { scope: "col" }, c)))),

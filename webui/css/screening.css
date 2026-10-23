@@ -1,0 +1,59 @@
+/* Styles for process screening (ui/screening.js). Use the tokens in tokens.css. The chart reuses the quadrant styles in business-case.css. */
+
+dialog.dlg.screening-dlg { width: min(1360px, calc(100vw - 32px)); }
+.screening-dlg .dlg-shell { height: calc(100dvh - 50px); }
+.screening-dlg .dlg-body { flex: 1; }
+
+.scr-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-5); border-bottom: 1px solid var(--border); background: var(--surface-muted); }
+.scr-bar .grow { flex: 1; }
+.scr-status { min-height: 1.4em; margin: 0 0 var(--space-2); color: var(--ink-muted); }
+.scr-actions { margin: 0 0 var(--space-3); }
+
+.scr-grid th.scr-group { text-align: center; border-left: 1px solid var(--border); }
+.scr-grid th.scr-crit { white-space: normal; min-width: 76px; max-width: 120px; vertical-align: bottom; }
+.scr-grid th[scope="row"] { text-align: left; font-weight: var(--fw-regular); min-width: 180px; }
+.scr-grid td.scr-cell { padding: 4px 6px; }
+.scr-grid .select { min-width: 72px; min-height: 32px; }
+.scr-grid .desc { display: block; }
+#screening-dialog td.num .desc, #scr-print td.num .desc { display: block; }
+
+.scr-score-table td:nth-child(2) .select { min-width: 72px; }
+.scr-score-table td:nth-child(3) .select { min-width: 140px; }
+.scr-score-table td:last-child { min-width: 220px; }
+.scr-source { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-3); background: var(--surface-muted); }
+.scr-source p { margin: 0; }
+.scr-source p + p { margin-top: 4px; }
+
+.scr-criteria .input, .scr-criteria .select { min-height: 32px; }
+.scr-criteria .scr-weight { width: 7ch; }
+.scr-add-criterion { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); margin-top: var(--space-4); }
+.scr-add-criterion .field { min-width: 220px; }
+
+.scr-first { font-size: var(--fs-h3); font-weight: var(--fw-bold); color: var(--ink); }
+.scr-chart { max-width: 680px; margin: 0 auto var(--space-4); }
+.scr-quadrant-start { fill: var(--surface); stroke: var(--primary); stroke-width: 2; }
+.bc-dot.scr-dot-flagged { fill: var(--status-warning); }
+.scr-flags { margin: 0; }
+.scr-flags li + li { margin-top: 4px; }
+.scr-stability { margin-top: var(--space-4); }
+.scr-stability h3 { font-size: var(--fs-h3); margin-bottom: var(--space-2); }
+.scr-notes { margin-top: var(--space-3); }
+
+.scr-start-first { align-self: flex-start; margin-top: var(--space-2); }
+.scr-summary { border: 1px solid var(--border); border-radius: var(--radius-md); }
+.scr-doc .scr-chart { margin-top: var(--space-4); }
+
+.scr-grid td.scr-ai .select { border-style: dashed; border-color: var(--badge-purple-ink); }
+.scr-ai-text { color: var(--badge-purple-ink); }
+.scr-ai-check { display: flex; margin-top: 4px; font-size: var(--fs-caption); }
+.scr-ai-note { padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.scr-ai-items li { padding: var(--space-2) 0; border-bottom: 1px solid var(--border); }
+.scr-ai-items li:last-child { border-bottom: 0; }
+.scr-ai-items p { margin: 2px 0 0 24px; }
+
+#scr-print { display: none; }
+@media print {
+  body.scr-printing .app { display: none !important; }
+  body.scr-printing #scr-print { display: block !important; }
+  .scr-doc .scr-chart { break-inside: avoid; }
+}

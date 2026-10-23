@@ -68,6 +68,7 @@ Top level:
   "records": [ ],
   "evidence": [ ],
   "assumptions": [ ],
+  "goals": [ ],
   "migration": { "sourceFormat": "Generated from <source>", "sourceFiles": ["<file name>"], "warnings": [ ] }
 }
 ```
@@ -182,6 +183,22 @@ Economic drivers, each `{ "id", "key", "label", "value", "unit", "status", "sour
 
 One entry per source: `{ "id", "title", "locator", "extractedFact", "status": "unreviewed" }`. Reference it from steps (`provenance.evidenceRefs`) and from the model (`sourceRefs`).
 
+### goals
+
+Optional. What the client counts as value for this work, when the sources say so. Opportunities list the goals they serve in `opportunity.goalIds`.
+
+```json
+{
+  "id": "goal-cost-per-claim", "kind": "cost", "title": "Cut the cost of handling a claim",
+  "metric": "Cost per claim", "baseline": 42, "target": 30, "unit": "$", "by": "",
+  "owner": "Head of claims", "basis": "supplied",
+  "source": "Workshop notes [p2], head of claims", "quote": "We need to get the cost per claim down to about thirty dollars.",
+  "note": ""
+}
+```
+
+`kind` is `revenue`, `cost`, `capability`, `risk`, `experience` or `other`. Set `baseline` and `target` only when a person in the sources gave the number; otherwise use `null`. `basis` is `supplied` for what the client said, never `observed` or `validated`.
+
 ## 5. Choose and disclose the representative route
 
 For a complex process, pick one representative route and state it in `meta.summary` and in each scenario's `timing.note`: which gateway outcomes it takes, which external dependencies and approvals apply, how many rework passes, and how it ends. Mark every step off that route `excluded`. Hold the underlying case constant between current and future state unless a change is part of the proposal. If a physical survey or an external confirmation is required in the current state, keep it in the future state.
@@ -192,7 +209,7 @@ Tie each change to a named current-state step or bottleneck. For every AI-enable
 
 Keep delegated authority limits, human authorization for material commitments, compliance escalation, external confirmation, segregation of duties, pre-commit QA and evidence records where they apply. A step tagged `humanReview` describes a review; it is not an enforced control. AI does not remove physical work, market response time, customer decisions or specialist accountability. If one of these gets faster in the future state, state the operational assumption that makes it faster.
 
-## 7. Keep the timing honest
+## 7. Keep the timing accurate
 
 - Use one time basis for the whole file.
 - For every visit, `0 <= start <= end`.

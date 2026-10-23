@@ -76,8 +76,8 @@
         "properties": {
           "itemRef": {
             "type": "string",
-            "pattern": "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|record/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79})$",
-            "description": "step/<modelId>/<nodeId> or record/<recordId>."
+            "pattern": "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|record/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|value/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|assumption/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79})$",
+            "description": "step/<modelId>/<nodeId>, record/<recordId>, value/<recordId>/<field> (a figure in a business case) or assumption/<assumptionId>."
           },
           "verdict": {
             "enum": [

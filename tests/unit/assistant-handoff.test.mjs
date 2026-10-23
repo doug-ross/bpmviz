@@ -16,10 +16,10 @@ const packet = (e = project(), extra = {}) => handoff.createPacket(e, options(ex
 const suggestion = () => ({
   ref: "s1", kind: "question", title: "Who checks exceptions?", description: "Confirm the handoff.",
   linkedModelId: "m-current", linkedNodeIds: ["work"], basedOnRecordIds: [], priority: "",
-  opportunity: null, confidence: "low", rationale: "Ownership needs confirmation."
+  opportunity: null, valueCase: null, goalIds: [], confidence: "low", rationale: "Ownership needs confirmation."
 });
 const payloads = {
-  opportunities: { suggestions: [suggestion()] },
+  opportunities: { suggestions: [suggestion()], valueCases: [] },
   "future-state": { name: "Simpler intake", summary: "Test a checklist.", lanes: [], operations: [] },
   summary: { title: "Intake review", text: "Confirm who checks the work.", keyPoints: [], caveats: ["No observed figures supplied."] },
   "log-mapping": { mappings: [{ activity: "Do work", nodeId: "work", confidence: "high", rationale: "Same task." }] }

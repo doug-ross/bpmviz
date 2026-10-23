@@ -117,7 +117,7 @@
         h("label", { class: "check" }, sensitiveBox, "Include sensitive findings"),
         h("label", { class: "check" }, unreviewedBox, "Include unreviewed AI drafts")),
       h("div", { class: "export-grid" },
-        section("PowerPoint deck", "Scope, pain points, ranked opportunities, value by wave, the process diagram and next steps.",
+        section("PowerPoint deck", "Scope, value goals, pain points, ranked opportunities, value by wave, results at checkpoints, the process diagram and next steps.",
           field("Scenario", scenarioSelect, "Used for the figures in the deck."),
           h("button", { type: "button", class: "btn btn-primary", id: "exp-pptx", on: { click: downloadDeck } }, icon("download"), "Download deck")),
         section("BPMN 2.0 diagram", "The chosen process as a standard BPMN file, for other process modeling tools.",

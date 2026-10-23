@@ -25,10 +25,17 @@
     opportunities: "Review the suggestions",
     "future-state": "Review the future-state draft",
     summary: "Review the drafted summary",
-    "log-mapping": "Review the suggested steps"
+    "log-mapping": "Review the suggested steps",
+    goals: "Review the drafted value goals"
+  };
+  const FIGURE_LABEL = {
+    shareOfCasesPct: "Share of cases affected", effortReductionPct: "Effort reduction", durationReductionPct: "Duration reduction",
+    oneTimeCost: "One-time cost", annualRunningCost: "Annual running cost"
   };
   const PLAN = { unknown: "not stated", commercial: "commercial", consumer: "consumer" };
   const OP_LABEL = { modify: "Change", insert: "Add", remove: "Remove" };
+  /* The app that opened the review, for the project's currency in drafted figures. */
+  let app0 = null;
   const OP_TONE = { modify: "info", insert: "success", remove: "warning" };
 
   /* Who drafted it, on which plan, what was sent, and the file it came from. */
@@ -62,7 +69,31 @@
     return value ? h("p", { class: "small" }, h("span", { class: "muted" }, label + ": "), value) : null;
   }
 
+  /* A drafted business case: each figure next to the source the AI gave for it. */
+  function figureTable(it) {
+    if (!it.figures || !it.figures.length) return null;
+    const cur = app0 && app0.store ? app0.store.get().meta.currency : "USD";
+    const show = f => /Pct$/.test(f.key) ? util.formatNumber(f.value, 1) + "%" : B.units.formatMeasure(f.value, "currency", { currency: cur });
+    return h("div", { class: "ai-figures" },
+      h("p", { class: "small muted" }, "Drafted business case" + (it.valueCaseConfidence ? ", " + it.valueCaseConfidence + " confidence" : "")),
+      h("table", { class: "table small" },
+        h("thead", null, h("tr", null, h("th", { scope: "col" }, "Figure"), h("th", { scope: "col", class: "num" }, "Value"), h("th", { scope: "col" }, "Source"))),
+        h("tbody", null, it.figures.map(f => h("tr", null, h("td", null, FIGURE_LABEL[f.key] || f.key), h("td", { class: "num" }, show(f)), h("td", null, f.source))))));
+  }
+
   function itemBody(task, it) {
+    if (it.kind === "valueCase") {
+      return [para("Steps", it.stepLabels.join(", ") || "Its linked steps"), figureTable(it), para("Why", it.rationale)];
+    }
+    if (task === "goals") {
+      const fig = v => v === null || v === undefined ? "" : (it.unit === "$" ? "$" + util.formatNumber(v, 2) : util.formatNumber(v, 2) + (it.unit ? " " + it.unit : ""));
+      const target = it.baseline !== null && it.target !== null ? "From " + fig(it.baseline) + " to " + fig(it.target) : it.target !== null ? fig(it.target) : "";
+      return [
+        para("Measured by", it.metric), para("Target", target), para("By", it.by), para("Owner", it.owner),
+        it.quote ? h("p", { class: "small" }, h("span", { class: "muted" }, "In the client's words: "), "\u201c" + it.quote + "\u201d") : null,
+        para("Source", it.source), para("Served by", it.servedTitles.join("; ")), para("Why", it.rationale)
+      ];
+    }
     if (task === "log-mapping") {
       return [para("Step", it.stepLabel || (it.nodeId ? it.nodeId : "No step suggested")), para("Why", it.rationale)];
     }
@@ -76,6 +107,8 @@
         para("How to confirm it", o.validationAction),
         para("Steps", it.stepLabels.join(", ")),
         para("Based on", it.basedOnTitles.join("; ")),
+        para("Goals served", (it.goalTitles || []).join("; ")),
+        figureTable(it),
         para("Why", it.rationale)
       ];
     }
@@ -98,6 +131,8 @@
   const confidenceText = c => c ? c.charAt(0).toUpperCase() + c.slice(1) + " confidence" : "";
 
   function itemHead(task, it) {
+    if (it.kind === "valueCase") return [h("strong", null, "Business case: " + it.title), itemMeta(["For an opportunity already in the project", confidenceText(it.valueCaseConfidence)])];
+    if (task === "goals") return [h("strong", null, it.title), itemMeta([schema.label("goalKind", it.goalKind), confidenceText(it.confidence)])];
     if (task === "opportunities") {
       return [h("strong", null, it.title), itemMeta([schema.label("recordKind", it.kind), confidenceText(it.confidence),
         it.priority ? schema.label("priority", it.priority) + " priority" : ""])];
@@ -142,9 +177,14 @@
     } else if (result.task === "log-mapping") {
       announce(count + " AI mapping" + (count === 1 ? "" : "s") + " added to the import. Tick each one you accept.");
     } else if (result.task === "opportunities") {
+      const sized = out && out.sized ? out.sized.length : 0, added = out && out.ids ? out.ids.length : count;
       app.goto("records");
-      app.recordsView.setTab("records");
-      announce(count + " AI draft finding" + (count === 1 ? "" : "s") + " added. Undo removes " + (count === 1 ? "it" : "them") + ".");
+      app.recordsView.setTab(sized && !added ? "opportunities" : "records");
+      announce([added ? added + " AI draft finding" + (added === 1 ? "" : "s") + " added." : "",
+        sized ? sized + " AI draft business case" + (sized === 1 ? "" : "s") + " added to existing opportunities." : "", "Undo removes them."].filter(Boolean).join(" "));
+    } else if (result.task === "goals") {
+      app.goto("value");
+      announce(count + " AI draft goal" + (count === 1 ? "" : "s") + " added. Check " + (count === 1 ? "it" : "them") + " with the client, then mark " + (count === 1 ? "it" : "them") + " reviewed. Undo removes " + (count === 1 ? "it" : "them") + ".");
     } else {
       app.goto("present");
       app.presentView.setMode("handoff");
@@ -196,7 +236,8 @@
       h("p", null, h("strong", null, p.name), review.baseline ? " starts as a copy of " + review.baseline.name + " v" + review.baseline.version + "." : ""),
       p.summary ? h("p", { class: "small" }, p.summary) : null,
       p.lanes.length ? para("New lanes, added only if a change you pick uses them", p.lanes.map(l => l.name + " (" + schema.label("laneType", l.type).toLowerCase() + ")").join(", ")) : null) :
-      task === "opportunities" ? h("p", { class: "small" }, "Tick the suggestions you want as findings. Each one is added as an AI draft, linked to its steps, and stays out of the report until someone marks it reviewed.") :
+      task === "opportunities" ? h("p", { class: "small" }, "Tick the suggestions you want as findings, and the business cases you want on opportunities already in the project. Each one is added as an AI draft and stays out of the report until someone reviews it. Check each drafted figure against its source.") :
+      task === "goals" ? h("p", { class: "small" }, "Tick the goals that match what the client said. Each one is added as an AI draft and stays out of the report until someone checks it with the client and marks it reviewed.") :
       task === "log-mapping" ? h("p", { class: "small" }, "Tick the mappings you want in the event log import" + (review.baseline ? " for " + review.baseline.name : "") + ". You still tick each one in the Activities step before the log is added.") :
       h("p", { class: "small" }, "The summary is added as a draft. It stays out of the report until someone reviews it, and the printed report says it was drafted with AI assistance.");
     const body = h("div", { class: "ai-review" },
@@ -208,7 +249,7 @@
       h("p", { class: "note" }, single ? "Undo removes the summary." : task === "log-mapping" ?
         "Nothing in the project changes here. A mapping marked \"Cannot be applied\" points to a step that is not in the model, to a gateway, or to an activity that was not sent." : task === "future-state" ?
         "A change marked \"Cannot be applied\" refers to a step or connector that is not in the baseline, or would break the flow. Undo removes the whole draft." :
-        "Undo removes all the findings added here."),
+        task === "goals" ? "Undo removes all the goals added here." : "Undo removes everything added here."),
       provenanceLine(result, info.fileName),
       err);
     const api = openDialog({
@@ -260,7 +301,8 @@
       h("dt", null, "Process"), h("dd", null, x.processName),
       x.client ? [h("dt", null, "Client"), h("dd", null, x.client)] : null,
       h("dt", null, "Confidentiality"), h("dd", null, x.confidentiality),
-      h("dt", null, "Content"), h("dd", null, [x.records + " findings", x.evidence + " sources", x.assumptions + " assumptions", x.scenarios + " scenarios"].join(", ")));
+      h("dt", null, "Content"), h("dd", null, [x.records + " findings", x.evidence + " sources", x.assumptions + " assumptions", x.scenarios + " scenarios"]
+        .concat(x.goals ? [x.goals + " value goal" + (x.goals === 1 ? "" : "s")] : []).join(", ")));
     const models = h("div", { class: "table-wrap" }, h("table", { class: "table" },
       h("thead", null, h("tr", null, ["Model", "Role", "Lanes", "Steps"].map(c => h("th", { scope: "col" }, c)))),
       h("tbody", null, x.models.map(m => h("tr", null, h("td", null, m.name), h("td", null, m.role), h("td", { class: "num" }, String(m.lanes)), h("td", { class: "num" }, String(m.steps)))))));
@@ -292,6 +334,7 @@
    * from aiResults.validateAiResult.
    */
   function openResult(app, validation, info) {
+    app0 = app;
     const meta = info || {};
     if (!validation.ok) {
       messageDialog("This AI draft didn't open", h("div", null,
@@ -302,6 +345,10 @@
     }
     const result = validation.result;
     if (result.task === "extract") return reviewExtraction(app, result, validation.warnings, meta);
+    if (result.task === "screen") {
+      if (B.screeningUi) B.screeningUi.openAiResult(app, validation, meta);
+      return null;
+    }
     if (result.task === "log-mapping" && !meta.onProposals) {
       messageDialog("Open this mapping from the event-log import", h("div", null,
         h("p", null, (meta.fileName || "This file") + " suggests a step for each activity in an event log. You use it while you import the log, so nothing was changed."),
@@ -318,19 +365,20 @@
   const TASK_NAMES = {
     extract: "Create a process from documents", opportunities: "Suggest findings",
     "future-state": "Draft a future state", summary: "Draft the summary",
-    "log-mapping": "Match event log activities to steps"
+    "log-mapping": "Match event log activities to steps", goals: "Suggest value goals"
   };
   const TASK_HINTS = {
     extract: "Turn PDF, Word, PowerPoint, diagram images, notes or BPMN files into a draft process in a new project.",
     opportunities: "Pain points, opportunities and open questions for the open project, each linked to its steps.",
     "future-state": "A proposed future state: steps changed, added or removed, and any new lanes.",
     summary: "The executive summary at the start of the printed report.",
-    "log-mapping": "A suggested step for each activity name in the event log. Only the activity names and the steps are sent."
+    "log-mapping": "A suggested step for each activity name in the event log. Only the activity names and the steps are sent.",
+    goals: "What the client counts as value (revenue, cost, capability, risk, experience), drafted from meeting notes or documents against the open project."
   };
   /* The Start button names what the task produces. */
   const START_LABELS = {
     extract: "Create draft", opportunities: "Get suggestions", "future-state": "Draft future state",
-    summary: "Draft summary", "log-mapping": "Get suggestions"
+    summary: "Draft summary", "log-mapping": "Get suggestions", goals: "Draft goals"
   };
   const ACCEPT = ".pdf,.docx,.pptx,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.markdown,.csv,.tsv,.json,.bpmn,.xml";
   const helper = { token: null, providers: null, limits: null, problem: "" };
@@ -458,6 +506,7 @@
   async function openTask(app, task, options) {
     const o = options || {};
     const taskOptions = o.taskOptions || {};
+    const needsFiles = task === "extract" || task === "goals";
     if (!(await ensureHelper())) { messageDialog("AI helper not connected", helper.problem); return null; }
     const e = app.store ? app.store.get() : null;
     if (task !== "extract" && !e) { messageDialog("Open a project first", "This task works on the open project."); return null; }
@@ -532,7 +581,11 @@
         B.dom.clear(fileList);
         list.forEach(f => fileList.appendChild(h("li", null, f.name + " (" + sizeText(f.size) + ")")));
       }
-      const ready = g.allowed && (task !== "extract" || (files.files && files.files.length));
+      if (task === "goals") {
+        B.dom.clear(fileList);
+        Array.from(files.files || []).forEach(f => fileList.appendChild(h("li", null, f.name + " (" + sizeText(f.size) + ")")));
+      }
+      const ready = g.allowed && (!needsFiles || (files.files && files.files.length));
       if (startBtn) startBtn.disabled = !ready;
       return g;
     }
@@ -553,6 +606,7 @@
         field("Project name", engName),
         h("div", { class: "field-row" }, field("Confidentiality", conf), field("Data status", dataStatus)));
     } else {
+      if (task === "goals") sections.push(field("Meeting notes or documents", files, "Transcripts, notes, slides or documents where the client says what they count as value."), fileList);
       if (task === "future-state" && currents.length > 1) sections.push(field("Start from", baseline));
       if (hasSensitive && task !== "log-mapping") sections.push(h("label", { class: "check" }, sensitive, "Also send findings marked sensitive"));
       sections.push(h("section", { "aria-labelledby": "ai-sent-head" }, h("h3", { id: "ai-sent-head", class: "small" }, "What will be sent"), sent));
@@ -582,7 +636,7 @@
           if (task === "log-mapping") body.taskOptions = taskOptions;
           const info = task === "log-mapping" ? { onProposals: o.onProposals, context: { activities: aiResults.buildTaskInput(app.store.get(), task, taskOptions).activities } } : {};
           dlg.close();
-          runJob(app, task, body, task === "extract" ? Array.from(files.files) : [], chosen, info);
+          runJob(app, task, body, needsFiles ? Array.from(files.files) : [], chosen, info);
           return false;
         } }
       ]
@@ -669,13 +723,14 @@
   }
 
   function chooseTask(app) {
+    app0 = app;
     const has = !!app.store;
     // Log mapping starts from the event-log import, which has the activity names.
     const buttons = Object.keys(TASK_NAMES).filter(task => task !== "log-mapping").map(task => h("button", { type: "button", class: "btn ai-task-btn", id: "ai-task-" + task, disabled: task !== "extract" && !has,
       on: { click: () => { api.close(); openTask(app, task); } } },
       h("strong", null, TASK_NAMES[task]), h("span", { class: "small muted" }, TASK_HINTS[task])));
     const api = openDialog({ title: "Draft with AI", eyebrow: "AI task", body: h("div", { class: "ai-task-list" }, buttons,
-      has ? null : h("p", { class: "note" }, "Open a project to use the other three tasks.")), actions: [{ label: "Close" }] });
+      has ? null : h("p", { class: "note" }, "Open a project to use the other tasks.")), actions: [{ label: "Close" }] });
     return api;
   }
 

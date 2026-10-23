@@ -1,0 +1,142 @@
+[
+  {
+    "key": "01-start",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\01-start.png",
+    "caption": "Build a process starts a blank current state with a process name and first lane.",
+    "width": 640,
+    "height": 398
+  },
+  {
+    "key": "01b-lanes",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\01b-lanes.png",
+    "caption": "Name the people and external parties who perform the work, then choose Add lane.",
+    "width": 950,
+    "height": 623
+  },
+  {
+    "key": "02-add-step",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\02-add-step.png",
+    "caption": "Insert a named step into an existing flow and choose its lane and type.",
+    "width": 950,
+    "height": 371.5
+  },
+  {
+    "key": "03-connect",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\03-connect.png",
+    "caption": "Use a conditional flow for missing documents and a default flow for the complete case.",
+    "width": 950,
+    "height": 401.5
+  },
+  {
+    "key": "04-current-process",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\04-current-process.png",
+    "caption": "The current state has a normal route and a missing-document loop.",
+    "width": 1256,
+    "height": 186
+  },
+  {
+    "key": "05-walkthrough",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\05-walkthrough.png",
+    "caption": "Choose the missing-document branch with the participants before advancing.",
+    "width": 1280,
+    "height": 777.40625
+  },
+  {
+    "key": "06-finding",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\06-finding.png",
+    "caption": "Capture the question against the decision step and name an owner.",
+    "width": 640,
+    "height": 752.25
+  },
+  {
+    "key": "07-scenarios",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\07-scenarios.png",
+    "caption": "Save the ordered route with explicit wait, duration and human effort for each visit.",
+    "width": 950,
+    "height": 559
+  },
+  {
+    "key": "08-assumptions",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\08-assumptions.png",
+    "caption": "Enter explicit assumptions for conservative, expected and optimistic alternatives.",
+    "width": 950,
+    "height": 712
+  },
+  {
+    "key": "09-future-alternative",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\09-future-alternative.png",
+    "caption": "Name a future alternative before creating the copy and locking the baseline.",
+    "width": 950,
+    "height": 194.5
+  },
+  {
+    "key": "10-future-compare",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\10-future-compare.png",
+    "caption": "Compare the locked baseline with the AI-assisted future alternative.",
+    "width": 1280,
+    "height": 866.609375
+  },
+  {
+    "key": "11-automation-inputs",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\11-automation-inputs.png",
+    "caption": "Record the owner, responsibility, inputs and outputs of the proposed AI step.",
+    "width": 1118,
+    "height": 700
+  },
+  {
+    "key": "12-automation-controls",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\12-automation-controls.png",
+    "caption": "Keep approval, fallback and tests explicit before marking the design reviewed.",
+    "width": 1118,
+    "height": 640
+  },
+  {
+    "key": "13-agenda",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\13-agenda.png",
+    "caption": "Agree the process versions, save the agenda and assign parked questions and actions.",
+    "width": 1152,
+    "height": 730
+  },
+  {
+    "key": "14-checkpoint",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\14-checkpoint.png",
+    "caption": "Capture a dated checkpoint with a reviewer and owned acceptance criteria.",
+    "width": 1152,
+    "height": 513.875
+  },
+  {
+    "key": "15-pilot-brief",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\15-pilot-brief.png",
+    "caption": "Review the checkpoint, accepted scope and owned criteria in the printable Pilot brief.",
+    "width": 860,
+    "height": 760
+  },
+  {
+    "key": "16-save-reopen",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\16-save-reopen.png",
+    "caption": "Save the project file and reopen it before handing over the workshop.",
+    "width": 1280,
+    "height": 650
+  },
+  {
+    "key": "17-assistant",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\17-assistant.png",
+    "caption": "Choose an approved assistant account, review the packet and export the bounded task.",
+    "width": 1000,
+    "height": 780
+  },
+  {
+    "key": "17b-assistant-export",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\17b-assistant-export.png",
+    "caption": "Review the approved packet, export it, then select the completed result file.",
+    "width": 1000,
+    "height": 952
+  },
+  {
+    "key": "18-result-review",
+    "file": "C:\\Users\\JOOTEY\\Downloads\\bpmviz\\output\\workshop-guide\\_work\\screenshots\\18-result-review.png",
+    "caption": "Inspect the returned AI proposal before applying it as an unreviewed draft.",
+    "width": 1000,
+    "height": 379.390625
+  }
+]

@@ -1,0 +1,7 @@
+/* Ubuntu and Ubuntu Mono served from local files so the deck works offline (Ubuntu Font Licence 1.0, see fonts/UFL.txt). */
+@font-face { font-family: "Ubuntu"; font-style: normal; font-weight: 300; font-display: swap; src: url("../fonts/ubuntu-300.woff2") format("woff2"); }
+@font-face { font-family: "Ubuntu"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/ubuntu-400.woff2") format("woff2"); }
+@font-face { font-family: "Ubuntu"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/ubuntu-500.woff2") format("woff2"); }
+@font-face { font-family: "Ubuntu"; font-style: normal; font-weight: 700; font-display: swap; src: url("../fonts/ubuntu-700.woff2") format("woff2"); }
+@font-face { font-family: "Ubuntu Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/ubuntu-mono-400.woff2") format("woff2"); }
+@font-face { font-family: "Ubuntu Mono"; font-style: normal; font-weight: 700; font-display: swap; src: url("../fonts/ubuntu-mono-700.woff2") format("woff2"); }

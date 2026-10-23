@@ -1,0 +1,87 @@
+{
+  "source": "docs/workshops.md",
+  "sourceCommit": "94b59f2",
+  "pages": [
+    {
+      "title": "AIxRay process workshop guide",
+      "screenshot": "01-start"
+    },
+    {
+      "title": "1 Name the roles and lanes",
+      "screenshot": "01b-lanes"
+    },
+    {
+      "title": "1 Add lanes and steps",
+      "screenshot": "02-add-step"
+    },
+    {
+      "title": "1 Connect decisions and loops",
+      "screenshot": "03-connect"
+    },
+    {
+      "title": "1 Check the current process",
+      "screenshot": "04-current-process"
+    },
+    {
+      "title": "2 Walk normal and exception routes",
+      "screenshot": "05-walkthrough"
+    },
+    {
+      "title": "2 Capture a finding at the step",
+      "screenshot": "06-finding"
+    },
+    {
+      "title": "3 Record a timed scenario",
+      "screenshot": "07-scenarios"
+    },
+    {
+      "title": "3 Compare explicit assumptions",
+      "screenshot": "08-assumptions"
+    },
+    {
+      "title": "4 Create a future alternative",
+      "screenshot": "09-future-alternative"
+    },
+    {
+      "title": "4 Compare the process designs",
+      "screenshot": "10-future-compare"
+    },
+    {
+      "title": "5 Describe the automation work",
+      "screenshot": "11-automation-inputs"
+    },
+    {
+      "title": "5 Define approval fallback and tests",
+      "screenshot": "12-automation-controls"
+    },
+    {
+      "title": "6 Run the agenda and parking lot",
+      "screenshot": "13-agenda"
+    },
+    {
+      "title": "6 Capture a workshop checkpoint",
+      "screenshot": "14-checkpoint"
+    },
+    {
+      "title": "7 Review and share the pilot brief",
+      "screenshot": "15-pilot-brief"
+    },
+    {
+      "title": "7 Save and reopen the project",
+      "screenshot": "16-save-reopen"
+    },
+    {
+      "title": "8 Prepare an assistant packet",
+      "screenshot": "17-assistant"
+    },
+    {
+      "title": "8 Export and return the result",
+      "screenshot": "17b-assistant-export"
+    },
+    {
+      "title": "8 Review the returned proposal",
+      "screenshot": "18-result-review"
+    }
+  ],
+  "screenshots": 20
+}

@@ -23,6 +23,8 @@
   const MAX_OPERATIONS = 200;
   const MAX_NEW_LANES = 10;
   const MAX_MINUTES = 525600;
+  /* A screening holds at most 50 candidates and 30 criteria. */
+  const MAX_SCREEN_SCORES = 1500;
 
   const SUGGESTION_KINDS = ["opportunity", "pain", "question"];
   const WARNING_CODES = ["source.instruction", "source.unreadable", "source.conflict", "source.gap", "assumption", "other"];
@@ -53,6 +55,13 @@
     risk: S, dependencies: S, validationAction: S
   });
 
+  /* The figures of a drafted business case. Each figure is null or a number with its source in sources. */
+  const VALUE_CASE_FIGURES = ["shareOfCasesPct", "effortReductionPct", "durationReductionPct", "oneTimeCost", "annualRunningCost"];
+  const VALUE_CASE = strict(Object.assign(Object.fromEntries(VALUE_CASE_FIGURES.map(k => [k, NULLABLE_N])), {
+    confidence: { type: "string", enum: CONFIDENCE },
+    sources: strict(Object.fromEntries(VALUE_CASE_FIGURES.map(k => [k, S])))
+  }));
+
   const TASK_SCHEMAS = {
     opportunities: strict({
       suggestions: {
@@ -64,6 +73,25 @@
           linkedModelId: NULLABLE_S, linkedNodeIds: IDS, basedOnRecordIds: IDS,
           priority: { type: "string", enum: schema.ENUMS.priority },
           opportunity: { anyOf: [OPPORTUNITY, { type: "null" }] },
+          valueCase: { anyOf: [VALUE_CASE, { type: "null" }] },
+          goalIds: IDS,
+          confidence: { type: "string", enum: CONFIDENCE },
+          rationale: S
+        })
+      },
+      valueCases: {
+        type: "array",
+        items: strict({ recordId: S, nodeIds: IDS, valueCase: VALUE_CASE, rationale: S })
+      }
+    }),
+    goals: strict({
+      suggestions: {
+        type: "array",
+        items: strict({
+          ref: S,
+          kind: { type: "string", enum: schema.ENUMS.goalKind },
+          title: S, metric: S, baseline: NULLABLE_N, target: NULLABLE_N, unit: S, by: S, owner: S,
+          source: S, quote: S, servedByRecordIds: IDS,
           confidence: { type: "string", enum: CONFIDENCE },
           rationale: S
         })
@@ -101,6 +129,17 @@
         type: "array",
         items: strict({
           activity: S, nodeId: NULLABLE_S,
+          confidence: { type: "string", enum: CONFIDENCE },
+          rationale: S
+        })
+      }
+    }),
+    screen: strict({
+      scores: {
+        type: "array",
+        items: strict({
+          candidateId: S, criterionId: S,
+          value: { type: ["integer", "null"] },
           confidence: { type: "string", enum: CONFIDENCE },
           rationale: S
         })
@@ -330,6 +369,12 @@
     });
     if (observed) note(observed + " measured or confirmed figure" + (observed === 1 ? " was" : "s were") + " set to provided.");
     e.records.forEach(r => { r.generated = Object.assign({}, mark); });
+    let goalBasis = 0;
+    (Array.isArray(e.goals) ? e.goals : []).forEach(g => {
+      if (g.basis === "observed" || g.basis === "validated") { g.basis = "supplied"; goalBasis++; }
+      g.generated = Object.assign({}, mark);
+    });
+    if (goalBasis) note(goalBasis + " value goal" + (goalBasis === 1 ? " was" : "s were") + " marked as measured or confirmed. AIxRay set " + (goalBasis === 1 ? "it" : "them") + " to provided.", "goals");
     return { engagement: e, changes };
   }
 
@@ -342,6 +387,47 @@
       simplerAlternative: text(o.simplerAlternative), expectedBenefit: text(o.expectedBenefit),
       affectedVolume: text(o.affectedVolume, 500), effort: enumOr("effortSize", o.effort, ""),
       risk: text(o.risk), dependencies: text(o.dependencies), validationAction: text(o.validationAction)
+    };
+  }
+
+  /*
+   * A drafted business case. A figure without a source is left blank, a figure
+   * out of range is left blank, and the result is null when nothing is left.
+   */
+  function sanitizeValueCaseDraft(v, path, warnings) {
+    if (!util.isPlainObject(v)) return null;
+    // Every key stays present, blank when unused, so a sanitized result still matches the strict schema.
+    const out = { confidence: v.confidence, sources: Object.fromEntries(VALUE_CASE_FIGURES.map(k => [k, ""])) };
+    let kept = 0;
+    VALUE_CASE_FIGURES.forEach(k => {
+      const value = v[k];
+      const source = text(v.sources && v.sources[k], 500).trim();
+      out[k] = null;
+      if (value === null || value === undefined) return;
+      const pct = /Pct$/.test(k);
+      if (!(typeof value === "number" && Number.isFinite(value) && value >= 0 && (!pct || value <= 100))) {
+        warnings.push({ code: "payload.range", message: "A drafted " + k + " is out of range and was left blank.", path: path + "." + k });
+        return;
+      }
+      if (!source) {
+        warnings.push({ code: "payload.source", message: "A drafted " + k + " has no source, so it was left blank.", path: path + "." + k });
+        return;
+      }
+      out[k] = value;
+      out.sources[k] = source;
+      kept++;
+    });
+    return kept ? out : null;
+  }
+
+  /** The value case stored on a record from a drafted one: AI draft, illustrative, manual inputs. */
+  function draftValueCase(vc, nodeIds, rationale) {
+    return {
+      nodeIds: nodeIds || [], effortReductionPct: vc.effortReductionPct, durationReductionPct: vc.durationReductionPct,
+      shareOfCasesPct: vc.shareOfCasesPct, shareSource: "manual", effortSource: "node", datasetId: null,
+      oneTimeCost: vc.oneTimeCost, annualRunningCost: vc.annualRunningCost, confidence: vc.confidence, basis: "illustrative",
+      note: rationale ? text("Drafted with AI. " + rationale, 2000) : "Drafted with AI.", aiDraft: true,
+      sources: Object.fromEntries(Object.entries(vc.sources).filter(([, t]) => t))
     };
   }
 
@@ -360,7 +446,49 @@
         linkedModelId: util.isValidId(s.linkedModelId) ? s.linkedModelId : null,
         linkedNodeIds: ids(s.linkedNodeIds), basedOnRecordIds: ids(s.basedOnRecordIds),
         priority: s.priority, opportunity: s.kind === "opportunity" ? sanitizeOpportunity(s.opportunity) : null,
+        valueCase: s.kind === "opportunity" ? sanitizeValueCaseDraft(s.valueCase, path + ".valueCase", warnings) : null,
+        goalIds: s.kind === "opportunity" ? ids(s.goalIds) : [],
         confidence: s.confidence, rationale: text(s.rationale, 2000)
+      });
+    });
+    const sized = new Set();
+    const valueCases = [];
+    (p.valueCases || []).slice(0, MAX_SUGGESTIONS).forEach((x, i) => {
+      const path = "payload.valueCases[" + i + "]";
+      if (!util.isValidId(x.recordId)) { errors.push({ path: path + ".recordId", message: "Each business case needs the opportunity ID exactly as given." }); return; }
+      if (sized.has(x.recordId)) { warnings.push({ code: "payload.duplicate", message: "An opportunity has two drafted business cases; the first is kept.", path }); return; }
+      sized.add(x.recordId);
+      valueCases.push({ recordId: x.recordId, nodeIds: ids(x.nodeIds), valueCase: sanitizeValueCaseDraft(x.valueCase, path + ".valueCase", warnings), rationale: text(x.rationale, 2000) });
+    });
+    return { suggestions, valueCases };
+  }
+
+  function dateText(v) {
+    const t = text(v, 10).trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(t) && Number.isFinite(Date.parse(t)) ? t : "";
+  }
+
+  function sanitizeGoals(p, errors, warnings) {
+    const max = schema.LIMITS.goals;
+    if (p.suggestions.length > max) warnings.push({ code: "payload.truncated", message: "Only the first " + max + " goals are kept.", path: "payload.suggestions" });
+    const refs = new Set();
+    const suggestions = [];
+    p.suggestions.slice(0, max).forEach((g, i) => {
+      const path = "payload.suggestions[" + i + "]";
+      const title = text(g.title, 300).trim();
+      if (!title) { errors.push({ path: path + ".title", message: "Each goal needs a title." }); return; }
+      const num = (v, key) => {
+        if (v === null || v === undefined) return null;
+        if (typeof v === "number" && Number.isFinite(v)) return v;
+        warnings.push({ code: "payload.range", message: "A goal's " + key + " is not a number and was left blank.", path: path + "." + key });
+        return null;
+      };
+      suggestions.push({
+        ref: util.uniqueId(text(g.ref, 60).trim() || "g" + (i + 1), refs), kind: g.kind, title,
+        metric: text(g.metric, 300).trim(), baseline: num(g.baseline, "baseline"), target: num(g.target, "target"),
+        unit: text(g.unit, 40).trim(), by: dateText(g.by), owner: text(g.owner, 200).trim(),
+        source: text(g.source, 500).trim(), quote: text(g.quote, 300).trim(), servedByRecordIds: ids(g.servedByRecordIds),
+        confidence: g.confidence, rationale: text(g.rationale, 2000)
       });
     });
     return { suggestions };
@@ -459,6 +587,36 @@
     return { mappings };
   }
 
+  /*
+   * Drafted screening scores. IDs are checked for their form here; whether the
+   * candidate and the criterion exist is checked against the screening when
+   * the scores are reviewed (screening.prepareAiScores).
+   */
+  function sanitizeScreen(p, errors, warnings) {
+    if (p.scores.length > MAX_SCREEN_SCORES) warnings.push({ code: "payload.truncated", message: "Only the first " + MAX_SCREEN_SCORES + " scores are kept.", path: "payload.scores" });
+    const seen = new Set();
+    const scores = [];
+    p.scores.slice(0, MAX_SCREEN_SCORES).forEach((x, i) => {
+      const path = "payload.scores[" + i + "]";
+      if (!util.isValidId(x.candidateId) || !util.isValidId(x.criterionId)) {
+        errors.push({ path, message: "Each score needs the candidate and criterion IDs exactly as given." });
+        return;
+      }
+      if (x.value !== null && !(x.value >= 1 && x.value <= 5)) {
+        errors.push({ path: path + ".value", message: "A score is a whole number from 1 to 5, or null when the material does not say enough." });
+        return;
+      }
+      const key = x.candidateId + "|" + x.criterionId;
+      if (seen.has(key)) {
+        warnings.push({ code: "payload.duplicate", message: "A criterion is scored twice for the same candidate; the first score is kept.", path });
+        return;
+      }
+      seen.add(key);
+      scores.push({ candidateId: x.candidateId, criterionId: x.criterionId, value: x.value, confidence: x.confidence, rationale: text(x.rationale, 2000) });
+    });
+    return { scores };
+  }
+
   /* ---------- The result file ---------- */
 
   function isAiResult(data) {
@@ -497,6 +655,8 @@
       engagementId: util.isValidId(input.engagementId) ? input.engagementId : null,
       engagementRevision: Number.isInteger(input.engagementRevision) && input.engagementRevision >= 0 ? input.engagementRevision : null,
       baselineModelId: util.isValidId(input.baselineModelId) ? input.baselineModelId : null,
+      screeningId: util.isValidId(input.screeningId) ? input.screeningId : null,
+      screeningRevision: Number.isInteger(input.screeningRevision) && input.screeningRevision >= 0 ? input.screeningRevision : null,
       generated: sanitizeGenerated(input.generated),
       dataHandling: sanitizeDataHandling(input.dataHandling),
       sources: sanitizeSources(input.sources),
@@ -504,13 +664,15 @@
       warnings: sanitizeWarnings(input.warnings),
       payload: null
     };
-    if (task !== "extract" && !result.engagementId) errors.push({ path: "engagementId", message: "The result does not say which project it was made for." });
+    if (task === "screen" && !result.screeningId) errors.push({ path: "screeningId", message: "The result does not say which screening it was made for." });
+    if (task !== "extract" && task !== "screen" && !result.engagementId) errors.push({ path: "engagementId", message: "The result does not say which project it was made for." });
     if (task === "future-state" && !result.baselineModelId) errors.push({ path: "baselineModelId", message: "A future-state result needs the baseline model ID." });
     if (task === "log-mapping" && !result.baselineModelId) errors.push({ path: "baselineModelId", message: "A log-mapping result needs the ID of the model the activities are mapped to." });
 
     scanSecrets({ payload: input.payload, notes: input.notes, warnings: input.warnings }).forEach(hit => {
       errors.push({ path: hit.path, code: "output.secret", message: "This looks like " + hit.kind + ". The result was not loaded. " +
-        (task === "log-mapping" ? "Check the activity names and the model steps" : task === "extract" ? "Remove it from the sources" : "Remove it from the project") + " and run the task again." });
+        (task === "log-mapping" ? "Check the activity names and the model steps" : task === "extract" ? "Remove it from the sources" :
+          task === "screen" ? "Remove it from the screening" : "Remove it from the project") + " and run the task again." });
     });
 
     const payload = input.payload;
@@ -531,15 +693,33 @@
     }
     const shapeErrors = [];
     const extra = [];
+    if (task === "opportunities") upgradeOpportunities(payload);
     checkShape(TASK_SCHEMAS[task], payload, "payload", shapeErrors, extra);
     shapeErrors.forEach(e => errors.push(e));
     if (extra.length) warnings.push({ code: "fields.ignored", message: "Ignored " + extra.length + " unrecognized field" + (extra.length === 1 ? "" : "s") + ": " + extra.slice(0, 6).join(", ") + (extra.length > 6 ? ", ..." : "") + ".", path: "payload", level: "info" });
     if (shapeErrors.length) return done(result);
     if (task === "opportunities") result.payload = sanitizeOpportunities(payload, errors, warnings);
+    else if (task === "goals") result.payload = sanitizeGoals(payload, errors, warnings);
     else if (task === "future-state") result.payload = sanitizeFutureState(payload, errors, warnings);
     else if (task === "log-mapping") result.payload = sanitizeLogMapping(payload, errors, warnings);
+    else if (task === "screen") result.payload = sanitizeScreen(payload, errors, warnings);
     else result.payload = sanitizeSummary(payload, errors, warnings);
     return done(result);
+  }
+
+  /*
+   * Result files written before business cases were drafted have no
+   * valueCases, valueCase or goalIds. They mean "none", so they are filled in
+   * before the strict shape check rather than refused.
+   */
+  function upgradeOpportunities(payload) {
+    if (payload.valueCases === undefined) payload.valueCases = [];
+    if (!Array.isArray(payload.suggestions)) return;
+    payload.suggestions.forEach(x => {
+      if (!util.isPlainObject(x)) return;
+      if (x.valueCase === undefined) x.valueCase = null;
+      if (x.goalIds === undefined) x.goalIds = [];
+    });
   }
 
   function parseAiResultText(textValue) {
@@ -562,6 +742,8 @@
       engagementId: x.engagementId || null,
       engagementRevision: Number.isInteger(x.engagementRevision) ? x.engagementRevision : null,
       baselineModelId: x.baselineModelId || null,
+      screeningId: x.screeningId || null,
+      screeningRevision: Number.isInteger(x.screeningRevision) ? x.screeningRevision : null,
       generated: Object.assign({ tool: "aixray-ai", provider: "other", model: "", surface: "cli", at: util.nowIso(), jobId: "", plan: "unknown" }, x.generated || {}),
       dataHandling: sanitizeDataHandling(x.dataHandling),
       sources: x.sources || [],
@@ -688,8 +870,16 @@
       })),
       assumptions: e.assumptions.map(a => compact({ key: a.key, label: a.label, value: a.value, unit: a.unit, status: a.status, source: a.source })),
       evidence: e.evidence.map(x => compact({ id: x.id, title: x.title, locator: x.locator, extractedFact: x.extractedFact, status: x.status })),
+      goals: (Array.isArray(e.goals) ? e.goals : []).filter(g => (o.includeSensitive || !g.sensitive) &&
+        (task !== "summary" || o.includeUnreviewedAi || !(g.generated && !g.generated.reviewed))).map(g => compact({
+        id: g.id, kind: g.kind, title: g.title, metric: g.metric, baseline: g.baseline, target: g.target, unit: g.unit, by: g.by,
+        basis: g.basis, source: g.source, origin: g.generated ? (g.generated.reviewed ? "ai-reviewed" : "ai-draft") : ""
+      })),
       excluded: { sensitiveRecords: e.records.filter(r => r.sensitive).length - records.filter(r => r.sensitive).length }
     };
+    if (task === "opportunities") {
+      input.unsizedOpportunityIds = records.filter(r => r.kind === "opportunity" && r.status !== "dropped" && r.opportunity && !r.opportunity.valueCase).map(r => r.id);
+    }
     if (task === "future-state") input.baselineModelId = baseline ? baseline.id : null;
     if (task === "summary") {
       const h = exporting.buildHandoff(e, { includeSensitive: o.includeSensitive, includeUnreviewedAi: o.includeUnreviewedAi, scenarioId: o.scenarioId });
@@ -828,14 +1018,22 @@
       processName: e.meta.processName, client: e.meta.clientDisplayName,
       confidentiality: schema.label("confidentiality", e.meta.confidentiality),
       models: e.models.map(m => ({ name: m.name, role: schema.label("modelRole", m.role), steps: m.nodes.length, lanes: m.lanes.length })),
-      records: e.records.length, evidence: e.evidence.length, scenarios: e.scenarios.length, assumptions: e.assumptions.length
+      records: e.records.length, evidence: e.evidence.length, scenarios: e.scenarios.length, assumptions: e.assumptions.length,
+      goals: Array.isArray(e.goals) ? e.goals.length : 0
     };
+  }
+
+  /* A drafted business case as the review shows it: one row per figure with its source. */
+  function figureRows(vc) {
+    if (!vc) return [];
+    return VALUE_CASE_FIGURES.filter(k => vc[k] !== null && vc[k] !== undefined).map(k => ({ key: k, value: vc[k], source: vc.sources[k] || "" }));
   }
 
   function opportunityItems(result, engagement) {
     const nodeIndex = new Map(engagement.models.map(m => [m.id, new Map(m.nodes.map(n => [n.id, n]))]));
     const records = new Map(engagement.records.map(r => [r.id, r]));
     const titles = new Set(engagement.records.map(r => r.title.trim().toLowerCase()));
+    const goalsById = new Map((Array.isArray(engagement.goals) ? engagement.goals : []).map(g => [g.id, g]));
     return result.payload.suggestions.map((s, i) => {
       const notes = [];
       let modelId = s.linkedModelId;
@@ -849,17 +1047,81 @@
       });
       const basedOn = s.basedOnRecordIds.filter(id => records.has(id));
       if (titles.has(s.title.toLowerCase())) notes.push("A finding with this title already exists.");
+      const goalIds = (s.goalIds || []).filter(id => {
+        if (goalsById.has(id)) return true;
+        notes.push("Goal " + id + " not found; link removed.");
+        return false;
+      });
+      if (s.valueCase && !linkedNodeIds.length) notes.push("The drafted business case has no linked steps to work out the hours from.");
       const why = [s.rationale && "Why: " + s.rationale, "Confidence: " + s.confidence + ".",
         basedOn.length ? "Based on: " + basedOn.map(id => records.get(id).title).join("; ") + "." : ""].filter(Boolean).join(" ");
       return {
         key: "s" + i, index: i, kind: s.kind, title: s.title, description: s.description, priority: s.priority,
         confidence: s.confidence, rationale: s.rationale, opportunity: s.opportunity,
         stepLabels, basedOnTitles: basedOn.map(id => records.get(id).title), problems: [], notes,
+        figures: figureRows(s.valueCase), valueCaseConfidence: s.valueCase ? s.valueCase.confidence : "",
+        goalTitles: goalIds.map(id => goalsById.get(id).title),
         record: {
           kind: s.kind, title: s.title, status: "open", priority: s.priority,
           description: [s.description, why].filter(Boolean).join("\n\n"),
-          linkedModelId: modelId, linkedNodeIds, opportunity: s.opportunity || undefined
+          linkedModelId: modelId, linkedNodeIds,
+          opportunity: s.opportunity ? Object.assign({}, s.opportunity,
+            s.valueCase ? { valueCase: draftValueCase(s.valueCase, [], s.rationale) } : {},
+            goalIds.length ? { goalIds } : {}) : undefined
         }
+      };
+    });
+  }
+
+  /* Drafted business cases for opportunities already in the project. A person's own business case is never replaced. */
+  function valueCaseItems(result, engagement) {
+    const records = new Map(engagement.records.map(r => [r.id, r]));
+    return (result.payload.valueCases || []).map((x, i) => {
+      const problems = [], notes = [];
+      const r = records.get(x.recordId);
+      if (!r || r.kind !== "opportunity") problems.push("Opportunity " + x.recordId + " is not in this project.");
+      else if (r.opportunity && r.opportunity.valueCase && r.opportunity.valueCase.aiDraft !== true) problems.push("A person already entered a business case for this opportunity, and it stays.");
+      if (!x.valueCase) problems.push("The AI could not size this opportunity from the project's figures.");
+      const model = r && r.linkedModelId ? engagement.models.find(m => m.id === r.linkedModelId) : null;
+      const pool = model ? [model] : engagement.models;
+      const stepLabels = [];
+      const nodeIds = x.nodeIds.filter(id => {
+        const hit = pool.map(m => m.nodes.find(n => n.id === id)).find(Boolean);
+        if (hit) stepLabels.push(hit.label);
+        else notes.push("Step " + id + " not found; link removed.");
+        return !!hit;
+      });
+      if (r && r.opportunity && r.opportunity.valueCase && r.opportunity.valueCase.aiDraft === true) notes.push("This replaces an earlier AI draft that no one has reviewed.");
+      return {
+        key: "v" + i, index: i, kind: "valueCase", recordId: x.recordId, title: r ? r.title : x.recordId,
+        rationale: x.rationale, stepLabels, figures: figureRows(x.valueCase), valueCaseConfidence: x.valueCase ? x.valueCase.confidence : "",
+        problems, notes,
+        valueCase: x.valueCase ? { recordId: x.recordId, valueCase: draftValueCase(x.valueCase, nodeIds, x.rationale) } : null
+      };
+    });
+  }
+
+  function goalItems(result, engagement) {
+    const titles = new Set((Array.isArray(engagement.goals) ? engagement.goals : []).map(g => g.title.trim().toLowerCase()));
+    const opps = new Map(engagement.records.filter(r => r.kind === "opportunity").map(r => [r.id, r]));
+    return result.payload.suggestions.map((g, i) => {
+      const notes = [];
+      if (titles.has(g.title.toLowerCase())) notes.push("A goal with this title already exists.");
+      const served = g.servedByRecordIds.filter(id => {
+        if (opps.has(id)) return true;
+        notes.push("Opportunity " + id + " not found; link removed.");
+        return false;
+      });
+      return {
+        key: "g" + i, index: i, kind: "goal", title: g.title, goalKind: g.kind, metric: g.metric, baseline: g.baseline, target: g.target,
+        unit: g.unit, by: g.by, owner: g.owner, source: g.source, quote: g.quote, confidence: g.confidence, rationale: g.rationale,
+        servedTitles: served.map(id => opps.get(id).title), problems: [], notes,
+        goal: {
+          kind: g.kind, title: g.title, metric: g.metric, baseline: g.baseline, target: g.target, unit: g.unit, by: g.by, owner: g.owner,
+          basis: "supplied", source: g.source, quote: g.quote,
+          note: [g.rationale && "Why: " + g.rationale, "Confidence: " + g.confidence + "."].filter(Boolean).join(" ")
+        },
+        servedByRecordIds: served
       };
     });
   }
@@ -971,6 +1233,10 @@
    */
   function prepareReview(result, engagement, context) {
     const out = { task: result.task, errors: [], warnings: [], items: [], baseline: null, engagementSummary: null };
+    if (result.task === "screen") {
+      out.errors.push({ path: "task", message: "These are drafted screening scores. Open them in the screening they were made for." });
+      return out;
+    }
     const st = staleCheck(result, engagement);
     if (st.error) { out.errors.push({ path: "engagementId", message: st.error }); return out; }
     if (st.warning) out.warnings.push({ code: "result.stale", message: st.warning, path: "" });
@@ -980,7 +1246,8 @@
       out.engagementSummary = describeEngagement(result.payload.engagement);
       return out;
     }
-    if (result.task === "opportunities") out.items = opportunityItems(result, engagement);
+    if (result.task === "opportunities") out.items = opportunityItems(result, engagement).concat(valueCaseItems(result, engagement));
+    else if (result.task === "goals") out.items = goalItems(result, engagement);
     else if (result.task === "future-state") out.items = futureStateItems(result, engagement, out);
     else if (result.task === "log-mapping") out.items = logMappingItems(result, engagement, out, context);
     else out.items = summaryItems(result, engagement, out);
@@ -1000,7 +1267,12 @@
     const picked = review.items.filter(it => chosen.has(it.key) && !it.problems.length);
     if (!picked.length) return null;
     if (result.task === "opportunities") {
-      return { type: "ai/applySuggestions", payload: { records: picked.map(it => it.record), stamp } };
+      return { type: "ai/applySuggestions", payload: {
+        records: picked.filter(it => it.record).map(it => it.record),
+        valueCases: picked.filter(it => it.valueCase).map(it => it.valueCase), stamp } };
+    }
+    if (result.task === "goals") {
+      return { type: "goal/applySuggestions", payload: { goals: picked.map(it => ({ goal: it.goal, servedByRecordIds: it.servedByRecordIds })), stamp } };
     }
     if (result.task === "log-mapping") {
       return {
@@ -1034,7 +1306,7 @@
   }
 
   return {
-    RESULT_SCHEMA, RESULT_VERSION, TASK_SCHEMAS, TASK_TYPES, SUGGESTION_KINDS, WARNING_CODES, GATE_TEXT, EXTRACT_DISCLOSURE,
+    RESULT_SCHEMA, RESULT_VERSION, TASK_SCHEMAS, TASK_TYPES, SUGGESTION_KINDS, VALUE_CASE_FIGURES, WARNING_CODES, GATE_TEXT, EXTRACT_DISCLOSURE,
     MAX_SUGGESTIONS, outputSchema,
     isAiResult, validateAiResult, parseAiResultText, makeEnvelope, stampOf, checkShape,
     enforceDraftRules, scanSecrets, checkSummaryNumbers, numbersIn, buildTaskInput, dataHandlingGate,

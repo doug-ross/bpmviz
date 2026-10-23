@@ -1,0 +1,481 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aixray.local/schema/screening.schema.json",
+  "title": "AIxRay screening",
+  "description": "Candidate processes scored against weighted criteria to choose where to start, schema version 1. webui/js/lib/screening.js enforces this contract. Scores run from 1 to 5 and a higher score is always better.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "id",
+    "criteria",
+    "candidates"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "aixray.screening"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+      "maxLength": 80
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "createdAt": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "updatedAt": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "clientDisplayName": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "confidentiality": {
+          "enum": [
+            "internal",
+            "client-confidential",
+            "restricted",
+            "public"
+          ]
+        },
+        "dataStatus": {
+          "enum": [
+            "demonstration",
+            "supplied",
+            "observed"
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "hourlyRate": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "basis"
+              ],
+              "properties": {
+                "value": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "basis": {
+                  "enum": [
+                    "illustrative",
+                    "supplied",
+                    "observed",
+                    "validated"
+                  ]
+                },
+                "note": {
+                  "type": "string",
+                  "maxLength": 500
+                }
+              }
+            }
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "criteria": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "group",
+          "weight"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+            "maxLength": 80
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "group": {
+            "enum": [
+              "value",
+              "feasibility",
+              "readiness"
+            ]
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "gateAtOrBelow": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 4,
+            "description": "A score at or below this flags the candidate. The candidate stays in the ranking."
+          },
+          "help": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "anchors": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "1": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "3": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "5": {
+                "type": "string",
+                "maxLength": 300
+              }
+            }
+          }
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+            "maxLength": 80
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "owner": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "confidentiality": {
+            "enum": [
+              "",
+              "internal",
+              "client-confidential",
+              "restricted",
+              "public"
+            ],
+            "description": "Empty means the screening's confidentiality."
+          },
+          "sensitive": {
+            "type": "boolean"
+          },
+          "facts": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "annualVolume": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "value",
+                      "basis"
+                    ],
+                    "properties": {
+                      "value": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "basis": {
+                        "enum": [
+                          "illustrative",
+                          "supplied",
+                          "observed",
+                          "validated"
+                        ]
+                      },
+                      "note": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    }
+                  }
+                ]
+              },
+              "effortHoursPerCase": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "value",
+                      "basis"
+                    ],
+                    "properties": {
+                      "value": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "basis": {
+                        "enum": [
+                          "illustrative",
+                          "supplied",
+                          "observed",
+                          "validated"
+                        ]
+                      },
+                      "note": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    }
+                  }
+                ]
+              },
+              "hourlyRate": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "value",
+                      "basis"
+                    ],
+                    "properties": {
+                      "value": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "basis": {
+                        "enum": [
+                          "illustrative",
+                          "supplied",
+                          "observed",
+                          "validated"
+                        ]
+                      },
+                      "note": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "scores": {
+            "type": "object",
+            "description": "Score per criterion ID.",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value"
+              ],
+              "properties": {
+                "value": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "basis": {
+                  "enum": [
+                    "illustrative",
+                    "supplied",
+                    "observed",
+                    "validated"
+                  ]
+                },
+                "note": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "aiDraft": {
+                  "type": "boolean",
+                  "description": "True for a score drafted with AI that no one has reviewed yet."
+                }
+              }
+            }
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "engagementId"
+                ],
+                "description": "Figures copied from a project file when the candidate was added from it. The project itself is not stored.",
+                "properties": {
+                  "engagementId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$",
+                    "maxLength": 80
+                  },
+                  "engagementRevision": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "fileName": {
+                    "type": "string",
+                    "maxLength": 260
+                  },
+                  "takenAt": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "processName": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "dataStatus": {
+                    "enum": [
+                      "demonstration",
+                      "supplied",
+                      "observed"
+                    ]
+                  },
+                  "confidentiality": {
+                    "enum": [
+                      "internal",
+                      "client-confidential",
+                      "restricted",
+                      "public"
+                    ]
+                  },
+                  "steps": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "stepsWithEffort": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "opportunities": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "hasEventLog": {
+                    "type": "boolean"
+                  },
+                  "topOpportunity": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 300
+                          },
+                          "value": {
+                            "type": "number"
+                          },
+                          "unit": {
+                            "enum": [
+                              "currency",
+                              "hour"
+                            ]
+                          },
+                          "basis": {
+                            "enum": [
+                              "illustrative",
+                              "supplied",
+                              "observed",
+                              "validated"
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

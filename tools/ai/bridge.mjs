@@ -128,6 +128,7 @@ export function createBridge(options) {
     if (running) return { ok: false, code: "busy", message: "Another AI task is running. Wait for it to finish or cancel it." };
     const task = body.task;
     if (!TASKS.includes(task)) return { ok: false, code: "input.task", message: "Unknown task." };
+    if (task === "screen") return { ok: false, code: "input.task", message: "Draft screening scores from the command line (npm run ai -- screen) or the aixray-screen skill." };
     const provider = body.provider;
     if (!PROVIDERS[provider]) return { ok: false, code: "input.provider", message: "Unknown AI tool." };
     let engagement = null;
@@ -138,7 +139,7 @@ export function createBridge(options) {
     }
     const names = Array.isArray(body.sourceNames) ? body.sourceNames.slice(0, SOURCE_LIMITS.files + 1).map(n => String(n).slice(0, 260)) : [];
     if (names.length > SOURCE_LIMITS.files) return { ok: false, code: "input.source", message: "Choose at most " + SOURCE_LIMITS.files + " documents per task." };
-    if (task === "extract" && !names.length) return { ok: false, code: "input.missing", message: "Choose at least one document." };
+    if ((task === "extract" || task === "goals") && !names.length) return { ok: false, code: "input.missing", message: "Choose at least one document." };
     const taskOptions = cleanTaskOptions(task, body.taskOptions);
     if (task === "log-mapping" && !taskOptions.activities.length) return { ok: false, code: "input.missing", message: "There are no activity names to map." };
     const opts = {

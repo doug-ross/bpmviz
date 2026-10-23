@@ -1,0 +1,44 @@
+/* Styles for the guided tour (ui/tour.js). Use the tokens in tokens.css. */
+
+.tour-layer { position: fixed; inset: 0; pointer-events: none; z-index: 2147483000; }
+.tour-ring { position: fixed; border: 3px solid var(--focus); border-radius: 8px; box-shadow: 0 0 0 9999px var(--backdrop); pointer-events: none;
+  transition: left 160ms ease, top 160ms ease, width 160ms ease, height 160ms ease; }
+.tour-layer.in-dialog .tour-ring { box-shadow: none; }
+.tour-ring::after { content: ""; position: absolute; inset: -8px; border: 2px solid var(--focus); border-radius: 12px; opacity: 0; animation: tour-pulse 1.8s ease-out infinite; }
+@keyframes tour-pulse { 0% { opacity: 0.8; transform: scale(0.97); } 100% { opacity: 0; transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) {
+  .tour-ring { transition: none; }
+  .tour-ring::after { animation: none; opacity: 0.5; }
+}
+
+.tour-card { position: fixed; left: 50%; top: 30%; width: min(360px, calc(100vw - 32px)); pointer-events: auto; display: grid; gap: var(--space-2);
+  padding: var(--space-4); background: var(--surface); color: var(--ink-body); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+.tour-head { display: flex; align-items: center; gap: var(--space-2); margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0; }
+.tour-name { flex: 1; min-width: 0; font-size: var(--fs-caption); font-weight: var(--fw-medium); color: var(--primary); text-transform: uppercase; letter-spacing: 0.06em; }
+.tour-count { font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--ink-muted); }
+.tour-title { font-size: var(--fs-h3); line-height: 1.3; color: var(--ink); margin: 0; }
+.tour-title:focus { outline: none; }
+.tour-body, .tour-do, .tour-status { margin: 0; font-size: var(--fs-small); line-height: 1.5; }
+.tour-body code { font-family: var(--font-mono); font-size: 0.95em; overflow-wrap: anywhere; }
+.tour-do { color: var(--ink); }
+.tour-or { color: var(--ink-muted); }
+.tour-status { color: var(--ink-muted); }
+.tour-status:empty { display: none; }
+.tour-nav { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: flex-end; margin-top: var(--space-1); }
+
+.tour-options { display: grid; gap: var(--space-3); }
+.tour-option { display: grid; gap: 4px; text-align: left; font: inherit; cursor: pointer; padding: var(--space-3) var(--space-4);
+  background: var(--surface); color: var(--ink-body); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.tour-option:hover { border-color: var(--primary); }
+.tour-option:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.tour-option strong { color: var(--ink); font-size: var(--fs-body); }
+.tour-option span { font-size: var(--fs-small); }
+.tour-option-meta { color: var(--ink-muted); }
+
+.tour-offer { position: fixed; right: 16px; bottom: 16px; z-index: 50; width: min(380px, calc(100vw - 32px)); display: grid; gap: var(--space-2);
+  padding: var(--space-4); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+.tour-offer h2 { font-size: var(--fs-h3); margin: 0; color: var(--ink); }
+.tour-offer p { margin: 0; font-size: var(--fs-small); }
+.tour-offer-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+@media print { .tour-layer, .tour-offer { display: none !important; } }

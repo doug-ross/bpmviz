@@ -230,7 +230,7 @@ test("AC-8: blocked storage is reported and file save stays available", async t 
 });
 
 for (const [w, hgt] of [[1366, 768], [1920, 1080], [1024, 768]]) {
-  test("AC-9: usable at " + w + "x" + hgt + " with a readable default and an honest overview", async t => {
+  test("AC-9: usable at " + w + "x" + hgt + " with a readable default and an overview", async t => {
     const s = await open(t, "#example=underwriting&scenario=case-3", { context: { viewport: { width: w, height: hgt } } });
     if (!s) return;
     const p = s.page;

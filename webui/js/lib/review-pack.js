@@ -136,7 +136,8 @@
 
     const indexed = data.items.map((item, i) => ({ item, i }));
     const steps = indexed.filter(x => x.item.kind === "step");
-    const findings = indexed.filter(x => x.item.kind !== "step");
+    const findings = indexed.filter(x => x.item.kind !== "step" && x.item.kind !== "value");
+    const figures = indexed.filter(x => x.item.kind === "value");
     const section = (title, list, keyOf, intro) => list.length ? el("section", { class: "block", "aria-label": title },
       el("h2", null, title + " (" + list.length + ")"), intro ? el("p", { class: "small" }, intro) : null,
       groups(list, keyOf).map(g => [el("h3", null, g.key), g.entries.map(x => itemCard(x.item, x.i))])) : null;
@@ -225,7 +226,8 @@
       ["Prepared for", [s.name, s.role, s.organization].filter(Boolean).join(", ")],
       ["Prepared on", day(data.createdAt)],
       ["Process", data.modelName],
-      ["Items to review", String(data.items.length) + " (" + steps.length + (steps.length === 1 ? " step, " : " steps, ") + findings.length + (findings.length === 1 ? " finding)" : " findings)")],
+      ["Items to review", String(data.items.length) + " (" + steps.length + (steps.length === 1 ? " step, " : " steps, ") + findings.length + (findings.length === 1 ? " finding" : " findings") +
+        (figures.length ? ", " + figures.length + (figures.length === 1 ? " figure)" : " figures)") : ")")],
       ["Data status", data.dataStatus],
       ["Confidentiality", data.confidentiality]
     ].filter(f => f[1]);
@@ -246,6 +248,8 @@
         el("span", { class: "spacer" }), button("pack-load", "Open saved answers", false, () => picker.click()), button("pack-save", "Save answers", true, save), picker),
       section("Steps in the process", steps, item => item.lane, "Each step as the team understands it. Choose " + labelOf("confirm") + " if it happens as described."),
       section("What the team found", findings, item => item.type, "Problems, ideas for improvement and other points the team noted."),
+      section("Figures in the business case", figures, item => item.lane, "The figures the team used to work out what each change is worth. Choose " + labelOf("confirm") +
+        " if a figure is right for your organization. If it is not, say in a comment what it should be."),
       el("section", { class: "block", "aria-label": "General comment" }, el("h2", null, "General comment"), general.wrap),
       el("div", { class: "foot" }, button("pack-save-end", "Save answers", true, save), status),
       data.disclosure ? el("p", { class: "small" }, data.disclosure) : null
@@ -311,7 +315,7 @@
   ].join("\n");
 
   /* SHA-256 of PACK_SCRIPT and PACK_STYLE, base64, as the content security policy needs them. */
-  const PACK_SCRIPT_SHA256 = "WMvZhsbs0K2Uymax6CeM2+nS6vvBuYlr/yHYdiYfCjw=";
+  const PACK_SCRIPT_SHA256 = "eeHbLBduLzgDy/UGPJnLumj5IEHZEte4nUxtrzIM99Q=";
   const PACK_STYLE_SHA256 = "5dn3qn3UAcR0HU4XWCeOk+9c7kbALAAPPWCgqyff4iA=";
 
   const CSP = "default-src 'none'; script-src 'sha256-" + PACK_SCRIPT_SHA256 + "'; style-src 'sha256-" + PACK_STYLE_SHA256 +

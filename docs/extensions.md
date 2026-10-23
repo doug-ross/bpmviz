@@ -13,6 +13,8 @@ The workshop workflows use four additional vertical slices. Their libraries load
 | Workshop and pilot closure | `workshop.js`, `ui/workshop.js`, `workshop.css` | `workshop/`, Findings subtab, step designs, printable Pilot brief and handoff |
 | External assistants | `assistant-handoff.js`, `ui/assistant-handoff.js`, `assistant-handoff.css` | AI menu; packets use existing AI result schemas and the existing review flow |
 
+Value goals and benefit checkpoints follow the same pattern. `lib/goals.js` and `lib/checkpoints.js` load before validation and depend only on `util` and `schema`; `ui/goals.js` owns the Value goals card, the Goals served section of the opportunity dialog, the Goals column and the report section, and `ui/benefits-view.js` owns the checkpoint block. Their store commands are part of the store's own commands, so the command line and the app apply AI results the same way. See `docs/goals.md` and `docs/benefits.md`.
+
 `engagement.workshop` is optional and sanitized on open through `workshop.sanitizeWorkshop`. Its JSON Schema is exported as `WORKSHOP_SCHEMA` and included by `tools/build-schema.mjs`. The schema version remains 1. Agenda, designs and checkpoint references live there; routes remain standard scenarios. Saving a project preserves both.
 
 Graph authoring uses `store.helpers.invalidateModelRuns` to discard obsolete runs and figures derived from authored routes while retaining independent supplied measures and event-log evidence. Undo restores the graph and its runs together. Proposal commands may carry `expectedRevision`; the store refuses them when that revision no longer matches. The AI review also checks the live project immediately before applying and requires explicit review when the result's original revision differs.
@@ -93,7 +95,10 @@ Commands provided by the foundation:
 
 - `dataset/update { id, patch: { name, role, comparesToDatasetId, dataStatus, notes } }`
 - `dataset/delete { id, removeScenarios }`: clears references to the dataset; with `removeScenarios` the scenarios made from it are deleted too.
-- `record/update` keeps `opportunity.wave` and `opportunity.valueCase`.
+- `record/update` keeps `opportunity.wave`, `opportunity.goalIds` and `opportunity.valueCase`.
+- `goal/save { goal, servedByRecordIds, aiReviewed }`, `goal/delete { id }` (also unlinks the goal from every opportunity), `goal/markReviewed { ids, reviewed }`, `goal/applySuggestions { goals: [{ goal, servedByRecordIds }], stamp }`.
+- `checkpoint/save { checkpoint }` and `checkpoint/delete { id }`. `record/delete` also deletes the opportunity's checkpoints.
+- `ai/applySuggestions { records, valueCases: [{ recordId, valueCase }], stamp }` adds suggested records and AI-drafted business cases in one step. A drafted business case is marked `aiDraft` and never replaces one a person entered.
 - `model/delete` detaches datasets and review packs from the deleted draft; `record/delete`, `evidence/delete` and `model/delete` remove review references that no longer resolve.
 
 Reserved command names:
@@ -104,7 +109,8 @@ Reserved command names:
 | value | `opportunity/setWaves { changes: [{ id, wave }] }` |
 | review | `review/recordPack { pack }`, `review/apply { review, validations, questions, evidence }` |
 | exports | none (exports do not change the engagement) |
-| benefits | none; uses `dataset/update` to mark a dataset as after |
+| benefits | `checkpoint/save`, `checkpoint/delete` (in the store); uses `dataset/update` to mark a dataset as after |
+| goals | `goal/save`, `goal/delete`, `goal/markReviewed`, `goal/applySuggestions` (in the store) |
 
 `log-mapping/proposals` is not a store command: it is what `aiResults.applyCommand` returns for a log-mapping result, for the import wizard to show.
 
@@ -130,12 +136,19 @@ New enumerations (first value is the default): `datasetRole` (baseline, after), 
 
 Statistics are `{ n, mean, min, p10, p25, p50, p75, p90, max }` in minutes of the dataset's time basis. Shares are fractions from 0 to 1. A scenario made from a log has `observedFrom: { datasetId, variantId, caseLabel }`, and a measure may have status `observed`.
 
-An opportunity record may have `opportunity.wave` and `opportunity.valueCase`:
+An opportunity record may have `opportunity.wave`, `opportunity.goalIds` and `opportunity.valueCase`:
 
 ```
 { modelId, nodeIds (empty means the linked steps), effortReductionPct, durationReductionPct, shareOfCasesPct,
-  shareSource, effortSource ("node" or "dataset"), datasetId, oneTimeCost, annualRunningCost, confidence, basis, note }
+  shareSource, effortSource ("node" or "dataset"), datasetId, oneTimeCost, annualRunningCost, confidence, basis, note,
+  aiDraft (only when true), sources: { shareOfCasesPct, effortReductionPct, durationReductionPct, oneTimeCost, annualRunningCost } (only when set) }
 ```
+
+`valueCase.aiDraft` marks figures drafted with AI that no one has reviewed; `valueCase.forReport(record, opts)` and `valueCase.opportunities` leave them out of reports unless `includeUnreviewedAi` is set.
+
+`engagement.goals[]` (optional): `{ id, kind, title, metric, baseline, target, unit, by, owner, basis, source, quote, note, sensitive, generated }`. `kind` is the `goalKind` enumeration (revenue, cost, capability, risk, experience, other).
+
+`engagement.checkpoints[]` (optional): `{ id, recordId, label, date, hoursPerCaseAfter, shareOfCasesPct, annualVolume, cycleTimeAfterMinutes, oneTimeCostActual, basis, source, note }`. `recordId` names an opportunity; a checkpoint for an opportunity that is not in the file is dropped with a warning. `basis` is supplied, observed or validated.
 
 Reviews refer to items as `step/<modelId>/<nodeId>` or `record/<recordId>`. `engagement.reviewPacks[]` and `engagement.reviews[]` follow `webui/schema/engagement.schema.json`; a client's answers come back as a review response file (`schema: "aixray.review-response"`, `webui/schema/review-response.schema.json`).
 

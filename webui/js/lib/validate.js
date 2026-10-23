@@ -9,12 +9,13 @@
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
     module.exports = factory(require("./util.js"), require("./schema.js"), require("./units.js"),
-      require("./economics.js"), require("./migrate.js"), require("./replay.js"), require("./workshop.js"));
+      require("./economics.js"), require("./migrate.js"), require("./replay.js"), require("./workshop.js"),
+      require("./goals.js"), require("./checkpoints.js"), require("./value-lines.js"), require("./investment.js"), require("./ranges.js"));
   } else {
     const B = root.AIxRay = root.AIxRay || {};
-    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay, B.workshop);
+    B.validate = factory(B.util, B.schema, B.units, B.economics, B.migrate, B.replay, B.workshop, B.goals, B.checkpoints, B.valueLines, B.investment, B.ranges);
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay, workshop) {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (util, schema, units, economics, migrate, replay, workshop, goals, checkpoints, valueLines, investment, ranges) {
   "use strict";
 
   const L = schema.LIMITS;
@@ -555,7 +556,9 @@
       datasetIds: new Set(list("datasets").map(d => d.id)),
       recordIds: new Set(list("records").map(r => r.id)),
       evidenceIds: new Set(list("evidence").map(x => x.id)),
-      packIds: new Set(list("reviewPacks").map(p => p.id))
+      packIds: new Set(list("reviewPacks").map(p => p.id)),
+      goalIds: new Set(list("goals").map(g => g.id)),
+      assumptionIds: new Set(list("assumptions").map(a => a.id))
     };
   }
 
@@ -591,7 +594,7 @@
    */
   function datasetOf(c, raw, path, refs, datasetIds, taken) {
     const d = obj(c, raw, path, true);
-    knownKeys(c, d, path, ["id", "name", "role", "comparesToDatasetId", "modelId", "dataStatus", "createdAt", "source", "period",
+    knownKeys(c, d, path, ["id", "name", "role", "comparesToDatasetId", "comparisonGroup", "modelId", "dataStatus", "createdAt", "source", "period",
       "timeBasis", "mapping", "cases", "steps", "transitions", "variants", "otherVariants", "scenarioIds", "notes"]);
     const id = idOf(c, d.id, path + ".id", taken);
     const modelId = optionalRef(c, d.modelId, path + ".modelId", refs.modelsById, "Model");
@@ -607,6 +610,18 @@
     if (d.comparesToDatasetId != null && d.comparesToDatasetId !== "") {
       if (d.comparesToDatasetId === d.id) c.warn(path + ".comparesToDatasetId", "An event log cannot be compared with itself; the comparison was removed.", "ref.dangling");
       else compares = optionalRef(c, d.comparesToDatasetId, path + ".comparesToDatasetId", datasetIds, "Event log");
+    }
+    // A comparison group: two other logs, from a team that did not get the change. Kept only when set.
+    let group = null;
+    if (d.comparisonGroup !== undefined && d.comparisonGroup !== null) {
+      const gp = path + ".comparisonGroup";
+      const g = util.isPlainObject(d.comparisonGroup) ? d.comparisonGroup : {};
+      knownKeys(c, g, gp, ["baselineId", "afterId"]);
+      const gb = optionalRef(c, g.baselineId, gp + ".baselineId", datasetIds, "Event log");
+      const ga = optionalRef(c, g.afterId, gp + ".afterId", datasetIds, "Event log");
+      const own = [id, compares];
+      if (gb && ga && gb !== ga && !own.includes(gb) && !own.includes(ga)) group = { baselineId: gb, afterId: ga };
+      else c.warn(gp, "A comparison group needs two other event logs, one from before and one from after; it was removed.", "ref.dangling");
     }
     const sp = path + ".source";
     const src = obj(c, d.source, sp);
@@ -667,6 +682,7 @@
       scenarioIds: [],
       notes: str(c, d.notes, path + ".notes", { max: 4000 })
     };
+    if (group) out.comparisonGroup = group;
     const activities = new Set();
     arr(c, d.mapping, path + ".mapping", L.datasetMapping).forEach((m, j) => {
       const mp = path + ".mapping[" + j + "]";
@@ -744,7 +760,10 @@
   }
 
   const VALUE_CASE_KEYS = ["modelId", "nodeIds", "effortReductionPct", "durationReductionPct", "shareOfCasesPct", "shareSource",
-    "effortSource", "datasetId", "oneTimeCost", "annualRunningCost", "confidence", "basis", "note"];
+    "effortSource", "datasetId", "oneTimeCost", "annualRunningCost", "confidence", "basis", "note", "aiDraft", "sources",
+    "realizationPct", "realizedBy", "financeOwner", "validatedAnnual", "validatedSource"];
+  /* The figures an AI draft cites a source for, one line of text each. */
+  const VALUE_CASE_SOURCE_KEYS = ["shareOfCasesPct", "effortReductionPct", "durationReductionPct", "oneTimeCost", "annualRunningCost"];
 
   /* The figures behind an opportunity's value. Empty nodeIds means the record's linked steps. */
   function valueCaseOf(c, raw, path, refs, record) {
@@ -759,7 +778,7 @@
     });
     const pct = key => num(c, v[key], path + "." + key, { min: 0, max: 100 });
     const money = key => num(c, v[key], path + "." + key, { min: 0 });
-    return {
+    const out = {
       modelId, nodeIds: [...new Set(nodeIds)],
       effortReductionPct: pct("effortReductionPct"),
       durationReductionPct: pct("durationReductionPct"),
@@ -773,6 +792,25 @@
       basis: en(c, v.basis, "assumptionStatus", path + ".basis"),
       note: str(c, v.note, path + ".note", { max: 2000 })
     };
+    // Kept only when set, so value cases written before AI drafting keep their shape.
+    if (v.aiDraft === true) out.aiDraft = true;
+    // How the labor value is realized (docs/value-dimensions.md), also kept only when set.
+    const realization = num(c, v.realizationPct, path + ".realizationPct", { min: 0, max: 100 });
+    if (realization !== null) out.realizationPct = realization;
+    const validated = num(c, v.validatedAnnual, path + ".validatedAnnual", {});
+    if (validated !== null) out.validatedAnnual = validated;
+    [["realizedBy", valueLines.TEXT.realizedBy], ["financeOwner", valueLines.TEXT.financeOwner], ["validatedSource", valueLines.TEXT.validatedSource]].forEach(([k, max]) => {
+      const t = str(c, v[k], path + "." + k, { max }).trim();
+      if (t) out[k] = t;
+    });
+    if (v.sources !== undefined && v.sources !== null) {
+      const src = obj(c, v.sources, path + ".sources");
+      knownKeys(c, src, path + ".sources", VALUE_CASE_SOURCE_KEYS);
+      const sources = {};
+      VALUE_CASE_SOURCE_KEYS.forEach(k => { const t = str(c, src[k], path + ".sources." + k, { max: 500 }).trim(); if (t) sources[k] = t; });
+      if (Object.keys(sources).length) out.sources = sources;
+    }
+    return out;
   }
 
   /**
@@ -784,13 +822,16 @@
     const parts = ref.split("/");
     if (parts[0] === "step" && parts.length === 3 && util.isValidId(parts[1]) && util.isValidId(parts[2])) return { kind: "step", modelId: parts[1], nodeId: parts[2] };
     if (parts[0] === "record" && parts.length === 2 && util.isValidId(parts[1])) return { kind: "record", recordId: parts[1] };
+    if (parts[0] === "value" && parts.length === 3 && util.isValidId(parts[1]) && util.isValidId(parts[2])) return { kind: "value", recordId: parts[1], field: parts[2] };
+    if (parts[0] === "assumption" && parts.length === 2 && util.isValidId(parts[1])) return { kind: "assumption", assumptionId: parts[1] };
     return null;
   }
 
   function itemRefResolves(ref, refs) {
     const p = parseItemRef(ref);
     if (!p) return false;
-    if (p.kind === "record") return refs.recordIds.has(p.recordId);
+    if (p.kind === "record" || p.kind === "value") return refs.recordIds.has(p.recordId);
+    if (p.kind === "assumption") return refs.assumptionIds.has(p.assumptionId);
     return refs.nodeIndex.has(p.modelId) && refs.nodeIndex.get(p.modelId).has(p.nodeId);
   }
 
@@ -837,8 +878,8 @@
     knownKeys(c, r, path, ["id", "packId", "receivedAt", "submittedAt", "source", "reviewer", "generalComment", "entries", "applied"]);
     const ap = path + ".applied";
     const applied = obj(c, r.applied, ap);
-    knownKeys(c, applied, ap, ["validations", "questions", "evidenceId"]);
-    return {
+    knownKeys(c, applied, ap, ["validations", "questions", "evidenceId", "values"]);
+    const out = {
       id: idOf(c, r.id, path + ".id", taken),
       packId: optionalRef(c, r.packId, path + ".packId", refs.packIds, "Review form"),
       receivedAt: str(c, r.receivedAt, path + ".receivedAt", { max: 40 }),
@@ -863,6 +904,10 @@
         evidenceId: optionalRef(c, applied.evidenceId, ap + ".evidenceId", refs.evidenceIds, "Evidence")
       }
     };
+    // Business case figures marked confirmed (lib/reviews.js), kept only when some were.
+    const values = count(c, applied.values, ap + ".values");
+    if (values > 0) out.applied.values = values;
+    return out;
   }
 
   function noteIgnored(c) {
@@ -889,6 +934,21 @@
   /** An opportunity's value case, checked against engagement e and the record it belongs to. */
   function sanitizeValueCase(raw, e, record) {
     return standalone(c => valueCaseOf(c, raw, "valueCase", refsOf(e), record || null));
+  }
+
+  /** An opportunity's low and high value per figure in shape (lib/ranges.js). */
+  function sanitizeRanges(raw) {
+    return ranges.sanitizeRanges(raw);
+  }
+
+  /** An opportunity's investment settings in shape (lib/investment.js). */
+  function sanitizeInvestment(raw) {
+    return investment.sanitizeInvestment(raw);
+  }
+
+  /** An opportunity's value lines in shape: { lines, dropped }. */
+  function sanitizeValueLines(raw) {
+    return valueLines.sanitizeLines(raw);
   }
 
   /** A scenario that is not yet in engagement e, such as one generated from an event log. */
@@ -1018,8 +1078,29 @@
           { mode: ["assist", "autonomous", ""].includes(ai.mode) ? ai.mode : "" })
       };
       if (o.wave !== undefined) record.opportunity.wave = en(c, o.wave, "wave", op + ".wave", { fallback: "" });
+      if (o.goalIds !== undefined && o.goalIds !== null) {
+        const known = (refs || refsOf(null)).goalIds;
+        record.opportunity.goalIds = [...new Set(idList(c, o.goalIds, op + ".goalIds"))].filter(id => {
+          if (known.has(id)) return true;
+          c.warn(op + ".goalIds", "Goal \"" + id + "\" not found; link removed.", "ref.dangling");
+          return false;
+        });
+      }
       if (o.valueCase !== undefined && o.valueCase !== null) {
         record.opportunity.valueCase = valueCaseOf(c, o.valueCase, op + ".valueCase", refs || refsOf(null), record);
+      }
+      if (o.valueLines !== undefined && o.valueLines !== null) {
+        const v = valueLines.sanitizeLines(arr(c, o.valueLines, op + ".valueLines", valueLines.LIMIT));
+        record.opportunity.valueLines = v.lines;
+        if (v.dropped > 0) c.warn(op + ".valueLines", v.dropped + " value line" + (v.dropped === 1 ? "" : "s") + " without a valid ID or a known kind of value, or with a repeated ID, " + (v.dropped === 1 ? "was" : "were") + " left out.", "valueLines.dropped");
+      }
+      if (o.investment !== undefined && o.investment !== null) {
+        if (!util.isPlainObject(o.investment)) c.warn(op + ".investment", "The investment settings were not an object and were left out.", "investment.dropped");
+        else record.opportunity.investment = investment.sanitizeInvestment(o.investment);
+      }
+      if (o.ranges !== undefined && o.ranges !== null) {
+        if (!util.isPlainObject(o.ranges)) c.warn(op + ".ranges", "The low and high values were not an object and were left out.", "ranges.dropped");
+        else record.opportunity.ranges = ranges.sanitizeRanges(o.ranges);
       }
     }
     const generated = sanitizeGenerated(c, r.generated, path + ".generated");
@@ -1094,7 +1175,7 @@
     const raw = migrated.engagement;
     knownKeys(c, raw, "", ["schema", "schemaVersion", "id", "revision", "createdAt", "updatedAt", "meta",
       "milestones", "models", "scenarios", "records", "evidence", "assumptions", "narratives", "datasets", "reviewPacks", "reviews",
-      "migration", "workshop"]);
+      "migration", "workshop", "goals", "checkpoints"]);
 
     const out = {
       schema: schema.SCHEMA_ID,
@@ -1154,6 +1235,14 @@
     const evidenceIds = new Set();
     arr(c, raw.evidence, "evidence", L.evidence).forEach((e, i) => out.evidence.push(sanitizeEvidence(c, e, i, evidenceIds)));
 
+    if (raw.goals !== undefined && raw.goals !== null) {
+      const rawGoals = arr(c, raw.goals, "goals", L.goals);
+      out.goals = goals.sanitizeGoals(rawGoals);
+      goals.ignoredKeys(rawGoals).forEach(k => c.ignored.push(k));
+      const lost = rawGoals.length - out.goals.length;
+      if (lost > 0) c.warn("goals", lost + " goal" + (lost === 1 ? "" : "s") + " without a valid ID or title, or with a repeated ID, " + (lost === 1 ? "was" : "were") + " left out.", "goals.dropped");
+    }
+
     const nodeIndex = new Map(out.models.map(m => [m.id, new Set(m.nodes.map(n => n.id))]));
     const recordIds = new Set();
     const recordRefs = refsOf(out);
@@ -1164,6 +1253,12 @@
 
     const narrativeKinds = new Set();
     arr(c, raw.narratives, "narratives", L.narratives).forEach((n, i) => out.narratives.push(sanitizeNarrative(c, n, i, narrativeKinds)));
+
+    if (raw.checkpoints !== undefined && raw.checkpoints !== null) {
+      const rawCheckpoints = arr(c, raw.checkpoints, "checkpoints", L.checkpoints);
+      out.checkpoints = checkpoints.sanitizeCheckpoints(rawCheckpoints, out);
+      checkpoints.dropped(rawCheckpoints, out).forEach(p => c.warn(p, "A checkpoint without a valid ID, or for an opportunity that is not in the file, was left out.", "ref.dangling"));
+    }
 
     if (raw.reviewPacks !== undefined && raw.reviewPacks !== null) {
       const refs = refsOf(out);
@@ -1248,7 +1343,7 @@
 
   return {
     validateEngagement, parseEngagementText,
-    sanitizeDataset, sanitizeValueCase, sanitizeScenarioFor, sanitizeReviewPack, sanitizeReview, validateReviewResponse,
+    sanitizeDataset, sanitizeValueCase, sanitizeValueLines, sanitizeInvestment, sanitizeRanges, sanitizeScenarioFor, sanitizeReviewPack, sanitizeReview, validateReviewResponse,
     parseItemRef, refsOf
   };
 });

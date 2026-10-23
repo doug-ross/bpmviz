@@ -46,7 +46,7 @@ The checkpoint fingerprint detects changes to the agreed process, findings, or a
 
 ### 7. Review the Pilot brief, then save and reopen
 
-From Workshop, choose **Open pilot brief** to go to Present and select **Pilot brief**. Review the agreed processes, checkpoint status, acceptance criteria, accepted changes, unresolved issues, reviewed automation designs, and actions. Sensitive material and unreviewed drafts are excluded. If the checkpoint is stale, review it before sharing. **Download pilot brief** exports a text file; **Pilot brief text** is also available in Present. The printable Pilot brief can be printed from Present.
+From Workshop, choose **Open pilot brief** to go to Present and select **Pilot brief**. Review the agreed processes, the value goals the accepted changes serve, checkpoint status, acceptance criteria, accepted changes, unresolved issues, reviewed automation designs, and actions. Sensitive material and unreviewed drafts are excluded. If the checkpoint is stale, review it before sharing. **Download pilot brief** exports a text file; **Pilot brief text** is also available in Present. The printable Pilot brief can be printed from Present.
 
 Return to the project and choose **Save a copy**. Save the project file in the agreed location. Reopen that saved file with **Open** and check that the process, routes, findings, Workshop agenda, designs, and checkpoint are present. This confirms the saved file can be continued; it does not replace the participants' decision or approval process.
 

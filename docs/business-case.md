@@ -31,6 +31,21 @@ All figures are economics-shaped outputs: each one lists its formula, its inputs
 - **Simple payback period** = one-time cost divided by (modeled net annual benefit divided by 12), shown only when the net annual benefit is positive.
 - **Elapsed time saved per affected case** = sum of the affected steps' durations times duration reduction, in minutes. This is time only; it is never converted to money.
 
+## Other kinds of value, and how value becomes money
+
+Labor hours are one kind of value. Under **Other kinds of value** in the editor, add a value line for each other kind, worked out with its own formula: **Errors and rework**, **SLA penalties avoided**, **Late or slow cases**, **More work done**, **Handoffs and coordination**, **Exceptions handled**, **Decisions made in time**, **Faster quotes, more wins**, **Customer contacts avoided**, **Billing and revenue leakage**, **Hires avoided** and **Licenses and vendor fees**. Each line has its inputs, a basis and a note.
+
+An Errors and rework line can build its cost per error from **error types**: for each, how often it happens today and after the change, where it starts and is caught, and the steps people redo to fix it. Those steps' touch effort and the hours spent investigating, at the project's hourly rate, are the correction work; credits, write-offs, penalties and the expected cost of rare severe consequences are added per error. The line is then valued per error type, and the one-pager shows a **Cost of errors** table.
+
+Every part of the business case, the labor estimate included, also records how it becomes money: the **share that can be realized**, **how it becomes money** in words (such as overtime cut, planned hires not made, or seats dropped at renewal), the **finance owner**, and the **amount Finance confirmed per year** with where it comes from. When an opportunity uses any of this, its business case shows three figures:
+
+- **Gross annual value** = labor cost of the hours saved + every value line. A hires-avoided line is how the labor hours are realized, so when there is one, the labor cost is shown for reference and not counted again. If more hires are avoided than the labor estimate frees up, the case says so.
+- **Modeled net annual benefit** = gross annual value minus the annual running cost.
+- **Realizable annual value** = the sum of each part's gross value times its realizable share, minus the annual running cost. It stays blank until every part has a realizable share, and that does not make the business case incomplete.
+- **Validated annual value** = the sum of the amounts Finance confirmed, with how many parts are confirmed. Its basis is confirmed.
+
+An opportunity is ranked on its realizable annual value when it has one, otherwise on its modeled net annual benefit. Payback uses the realizable value when there is one. Opportunities without value lines or realization fields compute exactly as described above. The CFO one-pager lists each part under **Value by type**. The design, and the dimensions still to come, are in [value-dimensions.md](value-dimensions.md).
+
 ## Ranking, the Matrix and Waves views
 
 Every opportunity with an effort size is scored:
@@ -52,9 +67,41 @@ The **Matrix** opportunity view charts the scored opportunities into these four 
 
 The **Waves** opportunity view lays opportunities out in columns by wave, with each opportunity's wave changed through a "Move to" select, so moving an opportunity needs no dragging. Each wave column totals its modeled net annual benefit, and a note names any step that two opportunities in the same wave both change, since their savings may be double-counted.
 
+## Business cases drafted with AI
+
+The **Suggest findings** AI task can also draft the figures of a business case: share of cases affected, effort reduction, duration reduction, one-time cost and annual running cost. It drafts them for the opportunities it suggests and for opportunities already in the project that have no business case yet. It works only from figures in the project (assumptions, step efforts, findings and source facts) and gives a source for each figure. A figure without a source, or out of range, is left blank. See `docs/ai.md`.
+
+- A drafted business case is marked **AI draft, not reviewed**. Its figures have a dashed outline in the editor, and each one shows the source the AI gave.
+- Its basis is Illustrative, and its figures stay out of the ranking, the Matrix, the wave totals, the deck, the CFO one-pager and the report until someone reviews them. Turning on **Include unreviewed AI drafts** in an export or the Present view shows them, labeled as drafts.
+- To review one, check each figure against its source, then clear the **AI draft, not reviewed** tick in the editor and save. The figures and their sources stay; the business case is now yours.
+- A business case a person entered is never replaced by an AI draft. The review lists such a proposal as one that cannot be applied.
+
+## Low and high for each figure
+
+Under **Low and high for each figure** in the editor, each figure the business case has (the labor estimate's inputs, each value line's inputs and realizable share, and the project's hourly rate and annual volume) can take the lowest and highest value you would believe. A blank end counts as today's value. The table follows the figures the business case has: clear one and its row goes, set it again and its range comes back.
+
+- **Which figures matter most**: each figure is moved to its low and its high with the others held, and the business case's headline figure (the realizable annual value, else the net annual benefit, else hours saved) is worked out again. The one-pager lists the figures widest first, with the value at each end and a bar.
+- **Low and high case**: every figure at the end of its range that lowers the value, then at the end that raises it. For most figures that is the low or the high end, but the case is decided by the result, so fewer licenses after the change counts as the better end.
+- With ranges, the investment case's low and high cases are these two cases, run through the same adoption ramp and discount rate, with their own one-time and running cost when those are ranged. Without ranges, the low and high cases are still a share of the expected benefit.
+
+Ranges are saved on the opportunity as `ranges`, keyed by figure (`vc.<key>`, `vl.<lineId>.<key>`, `as.<key>`), and kept only when set. A range for a figure that is no longer set is left out of the results, with a note. Error types inside an Errors and rework line do not take ranges yet.
+
+## Investment over time
+
+Under **Investment over time** in the editor, an opportunity's business case can be spread over three, four or five years. Year 0 is the up-front cost; each later year's benefit is the yearly value at full adoption times that year's **adoption** percentage (**Use a typical ramp** fills 50%, 90%, then 100%), and its cost is the yearly cost.
+
+- The yearly value at full adoption is the realizable annual value before running costs. When nothing is marked realizable, the modeled gross value is used and the case says so.
+- **Costs** are cost lines by category, each with a one-time amount and an amount per year. With no cost lines, the business case's one-time cost and annual running cost are used.
+- **NPV** = the sum over years of (benefit − cost) ÷ (1 + discount rate)^year. **ROI** = (total benefit − total cost) ÷ total cost, undiscounted. **Payback** is the month the cumulative net turns positive, with benefits spread evenly within each year.
+- **Low** and **high** cases give their own NPV, ROI and payback. They come from the ranges above when the business case has any, and otherwise scale the benefit by a percentage of the expected case.
+- **Cost per successful workflow** = the yearly cost ÷ the workflows that complete correctly each year, so failed runs, retries and review are carried by the ones that succeed.
+- **Gain-share fee** = the validated annual value × months ÷ 12 × the share. It stays blank until Finance confirms an amount.
+
+A blank adoption year or discount rate leaves NPV blank rather than counting as zero. The one-pager shows the years, the cases, the costs by category and the gain-share fee under **Investment over N years**. An opportunity without these settings is saved and shown as before.
+
 ## The CFO one-pager
 
-The **Business case** mode in Present is printable. It opens on the All opportunities page: every ranked opportunity, with the wave totals (net annual benefit, one-time cost and time freed up) for now, next and later. The **Show** select above the page switches to a single opportunity's one-page business case: its headline figures, affected steps, note and any inputs still missing. The report carries a shorter version of the same table, Opportunity value and waves, after the Opportunities section, built from only the opportunities kept in the report, so a reader who never opens the Business case mode still sees the modeled value and the wave plan.
+The **Business case** mode in Present is printable. It opens on the All opportunities page: the client's value goals and the opportunities that serve each one (see `docs/goals.md`), then every ranked opportunity, with the wave totals (net annual benefit, one-time cost and time freed up) for now, next and later. The **Show** select above the page switches to a single opportunity's one-page business case: its headline figures, the value goals it serves, its results at checkpoints after the change (see `docs/benefits.md`), affected steps, note and any inputs still missing. The report carries a shorter version of the same table, Opportunity value and waves, after the Opportunities section, built from only the opportunities kept in the report, so a reader who never opens the Business case mode still sees the modeled value and the wave plan.
 
 Because the total adds every planned wave together, two opportunities that change the same step in different waves would otherwise double-count that step's savings with no warning. The All opportunities page and the report both name any step changed by opportunities planned in more than one wave, in a note under the totals.
 
@@ -72,6 +119,9 @@ opportunity/setWaves { changes: [{ id, wave }] }
 
 | File | Holds |
 | --- | --- |
+| `webui/js/lib/value-lines.js` | The value line templates, their clean-up and each line's gross value |
+| `webui/js/lib/ranges.js` | Low and high values per figure: which figures matter most and the combined low and high cases |
+| `webui/js/lib/investment.js` | The investment case over time: adoption, costs by category, NPV, ROI, payback, low and high cases, cost per successful workflow and gain-share |
 | `webui/js/lib/value-case.js` | `compute`, `rank` and `portfolio`: the formulas above (owned by this feature; its function signatures are frozen for the other features that read it) |
 | `webui/js/lib/business-case.js` | `buildOnePager`, `buildPortfolioPager` and `suggestWave`, which shape `value-case.js`'s output for the UI, and the `opportunity/setWaves` command body |
 | `webui/js/ui/opportunity-value.js` | The business case editor, the opportunity columns, the Matrix and Waves views, the Business case mode in Present and the report section |
