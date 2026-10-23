@@ -81,6 +81,23 @@
       anchors: { 1: "No reliable figures", 3: "Counts and estimates", 5: "A system log of the process" } }
   ];
 
+  /*
+   * Value that belongs to a portfolio of changes rather than to one process
+   * (docs/value-dimensions.md): offered as extra criteria, not in the
+   * default set, so a screening that does not use them scores as before.
+   */
+  const PORTFOLIO_CRITERIA = [
+    { id: "reuse", group: "value", weight: 1, gateAtOrBelow: null, label: "Reuse in other processes",
+      help: "Whether what gets built here, such as document reading, a rules check or an integration, would make later changes cheaper.",
+      anchors: { 1: "Built for this process only", 3: "Parts could serve one or two other processes", 5: "A shared component several processes are waiting for" } },
+    { id: "workingCapital", group: "value", weight: 1, gateAtOrBelow: null, label: "Cash tied up by the process",
+      help: "Whether a faster process frees cash: invoices sent sooner, payments collected sooner, less stock or work in progress.",
+      anchors: { 1: "No effect on cash", 3: "Some days of billing or collection at stake", 5: "Large balances wait on this process" } },
+    { id: "learning", group: "value", weight: 1, gateAtOrBelow: null, label: "What a pilot would teach",
+      help: "Whether a pilot answers a question the client needs answered before a larger program, at a cost it can afford to lose.",
+      anchors: { 1: "Nothing new to learn", 3: "Tests one open assumption", 5: "Settles the key question for a larger program" } }
+  ];
+
   class ScreeningError extends Error {
     constructor(message) { super(message); this.name = "ScreeningError"; this.code = "invalid"; }
   }
@@ -398,6 +415,18 @@
       const id = util.uniqueId(util.slug(label, 40), takenIds(next.criteria));
       next.criteria.push(sanitizeCriterion(Object.assign({ weight: 1 }, f, { id, label })));
       return { criterionId: id };
+    });
+  }
+
+  /** Adds the portfolio criteria not in the screening yet: { screening, added: [ids] }. */
+  function addPortfolioCriteria(s) {
+    const have = new Set(s.criteria.map(c => c.id));
+    const missing = PORTFOLIO_CRITERIA.filter(c => !have.has(c.id));
+    if (!missing.length) fail("The portfolio criteria are already in this screening.");
+    if (s.criteria.length + missing.length > LIMITS.criteria) fail("A screening holds at most " + LIMITS.criteria + " criteria.");
+    return change(s, next => {
+      missing.forEach(c => next.criteria.push(sanitizeCriterion(util.clone(c))));
+      return { added: missing.map(c => c.id) };
     });
   }
 
@@ -838,9 +867,9 @@
   }
 
   return {
-    SCREENING_ID, SCREENING_VERSION, SCREENING_SCHEMA, LIMITS, SCALE, WEIGHT_MAX, GROUPS, FACTS, QUADRANTS, DEFAULT_CRITERIA, ScreeningError,
+    SCREENING_ID, SCREENING_VERSION, SCREENING_SCHEMA, LIMITS, SCALE, WEIGHT_MAX, GROUPS, FACTS, QUADRANTS, DEFAULT_CRITERIA, PORTFOLIO_CRITERIA, ScreeningError,
     blankScreening, sanitizeScreening, parseScreening,
-    addCandidate, updateCandidate, removeCandidate, setScore, reviewAiScores, aiDraftCount, addCriterion, updateCriterion, removeCriterion, updateMeta,
+    addCandidate, updateCandidate, removeCandidate, setScore, reviewAiScores, aiDraftCount, addCriterion, addPortfolioCriteria, updateCriterion, removeCriterion, updateMeta,
     dataHandlingOf, aiTaskInput, prepareAiScores, applyAiScores,
     fromEngagement, addFromEngagement, evaluate, stability, buildSummary, toStarterEngagement
   };

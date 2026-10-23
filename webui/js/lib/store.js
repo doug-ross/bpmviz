@@ -574,6 +574,21 @@
           if (!e.datasets.some(x => x.id === target)) throw new StoreError("not-found", "The event log to compare with no longer exists.");
           d.comparesToDatasetId = target;
         }
+        // A comparison group belongs to the comparison: it goes when the comparison does, or when it would compare a log with itself.
+        const g = d.comparisonGroup;
+        if (g && (!d.comparesToDatasetId || g.baselineId === d.comparesToDatasetId || g.afterId === d.comparesToDatasetId)) delete d.comparisonGroup;
+      }
+      if (patch.comparisonGroup !== undefined) {
+        const g = patch.comparisonGroup;
+        if (g === null) delete d.comparisonGroup;
+        else {
+          if (typeof g !== "object" || Array.isArray(g)) throw new StoreError("invalid", "A comparison group names two event logs.");
+          const ids = [g.baselineId, g.afterId];
+          if (ids.some(x => !e.datasets.some(y => y.id === x))) throw new StoreError("not-found", "An event log for the comparison group no longer exists.");
+          if (ids[0] === ids[1]) throw new StoreError("invalid", "Choose two different event logs for the comparison group, one from before the change and one from after.");
+          if (ids.some(x => x === d.id || x === d.comparesToDatasetId)) throw new StoreError("invalid", "A comparison group comes from a team that did not get the change, so it cannot use the logs being compared.");
+          d.comparisonGroup = { baselineId: ids[0], afterId: ids[1] };
+        }
       }
       return { id: d.id };
     },
@@ -587,7 +602,11 @@
       const d = list.find(x => x.id === p.id);
       if (!d) throw new StoreError("not-found", "Event log not found.");
       e.datasets = list.filter(x => x.id !== d.id);
-      e.datasets.forEach(x => { if (x.comparesToDatasetId === d.id) x.comparesToDatasetId = null; });
+      e.datasets.forEach(x => {
+        const g = x.comparisonGroup;
+        if (x.comparesToDatasetId === d.id) { x.comparesToDatasetId = null; delete x.comparisonGroup; }
+        if (g && (g.baselineId === d.id || g.afterId === d.id)) delete x.comparisonGroup;
+      });
       const made = new Set(d.scenarioIds.concat(e.scenarios.filter(s => s.observedFrom && s.observedFrom.datasetId === d.id).map(s => s.id)));
       let removed = 0;
       if (p.removeScenarios === true) {

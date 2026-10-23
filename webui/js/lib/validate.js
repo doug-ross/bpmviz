@@ -557,7 +557,8 @@
       recordIds: new Set(list("records").map(r => r.id)),
       evidenceIds: new Set(list("evidence").map(x => x.id)),
       packIds: new Set(list("reviewPacks").map(p => p.id)),
-      goalIds: new Set(list("goals").map(g => g.id))
+      goalIds: new Set(list("goals").map(g => g.id)),
+      assumptionIds: new Set(list("assumptions").map(a => a.id))
     };
   }
 
@@ -593,7 +594,7 @@
    */
   function datasetOf(c, raw, path, refs, datasetIds, taken) {
     const d = obj(c, raw, path, true);
-    knownKeys(c, d, path, ["id", "name", "role", "comparesToDatasetId", "modelId", "dataStatus", "createdAt", "source", "period",
+    knownKeys(c, d, path, ["id", "name", "role", "comparesToDatasetId", "comparisonGroup", "modelId", "dataStatus", "createdAt", "source", "period",
       "timeBasis", "mapping", "cases", "steps", "transitions", "variants", "otherVariants", "scenarioIds", "notes"]);
     const id = idOf(c, d.id, path + ".id", taken);
     const modelId = optionalRef(c, d.modelId, path + ".modelId", refs.modelsById, "Model");
@@ -609,6 +610,18 @@
     if (d.comparesToDatasetId != null && d.comparesToDatasetId !== "") {
       if (d.comparesToDatasetId === d.id) c.warn(path + ".comparesToDatasetId", "An event log cannot be compared with itself; the comparison was removed.", "ref.dangling");
       else compares = optionalRef(c, d.comparesToDatasetId, path + ".comparesToDatasetId", datasetIds, "Event log");
+    }
+    // A comparison group: two other logs, from a team that did not get the change. Kept only when set.
+    let group = null;
+    if (d.comparisonGroup !== undefined && d.comparisonGroup !== null) {
+      const gp = path + ".comparisonGroup";
+      const g = util.isPlainObject(d.comparisonGroup) ? d.comparisonGroup : {};
+      knownKeys(c, g, gp, ["baselineId", "afterId"]);
+      const gb = optionalRef(c, g.baselineId, gp + ".baselineId", datasetIds, "Event log");
+      const ga = optionalRef(c, g.afterId, gp + ".afterId", datasetIds, "Event log");
+      const own = [id, compares];
+      if (gb && ga && gb !== ga && !own.includes(gb) && !own.includes(ga)) group = { baselineId: gb, afterId: ga };
+      else c.warn(gp, "A comparison group needs two other event logs, one from before and one from after; it was removed.", "ref.dangling");
     }
     const sp = path + ".source";
     const src = obj(c, d.source, sp);
@@ -669,6 +682,7 @@
       scenarioIds: [],
       notes: str(c, d.notes, path + ".notes", { max: 4000 })
     };
+    if (group) out.comparisonGroup = group;
     const activities = new Set();
     arr(c, d.mapping, path + ".mapping", L.datasetMapping).forEach((m, j) => {
       const mp = path + ".mapping[" + j + "]";
@@ -808,13 +822,16 @@
     const parts = ref.split("/");
     if (parts[0] === "step" && parts.length === 3 && util.isValidId(parts[1]) && util.isValidId(parts[2])) return { kind: "step", modelId: parts[1], nodeId: parts[2] };
     if (parts[0] === "record" && parts.length === 2 && util.isValidId(parts[1])) return { kind: "record", recordId: parts[1] };
+    if (parts[0] === "value" && parts.length === 3 && util.isValidId(parts[1]) && util.isValidId(parts[2])) return { kind: "value", recordId: parts[1], field: parts[2] };
+    if (parts[0] === "assumption" && parts.length === 2 && util.isValidId(parts[1])) return { kind: "assumption", assumptionId: parts[1] };
     return null;
   }
 
   function itemRefResolves(ref, refs) {
     const p = parseItemRef(ref);
     if (!p) return false;
-    if (p.kind === "record") return refs.recordIds.has(p.recordId);
+    if (p.kind === "record" || p.kind === "value") return refs.recordIds.has(p.recordId);
+    if (p.kind === "assumption") return refs.assumptionIds.has(p.assumptionId);
     return refs.nodeIndex.has(p.modelId) && refs.nodeIndex.get(p.modelId).has(p.nodeId);
   }
 
@@ -861,8 +878,8 @@
     knownKeys(c, r, path, ["id", "packId", "receivedAt", "submittedAt", "source", "reviewer", "generalComment", "entries", "applied"]);
     const ap = path + ".applied";
     const applied = obj(c, r.applied, ap);
-    knownKeys(c, applied, ap, ["validations", "questions", "evidenceId"]);
-    return {
+    knownKeys(c, applied, ap, ["validations", "questions", "evidenceId", "values"]);
+    const out = {
       id: idOf(c, r.id, path + ".id", taken),
       packId: optionalRef(c, r.packId, path + ".packId", refs.packIds, "Review form"),
       receivedAt: str(c, r.receivedAt, path + ".receivedAt", { max: 40 }),
@@ -887,6 +904,10 @@
         evidenceId: optionalRef(c, applied.evidenceId, ap + ".evidenceId", refs.evidenceIds, "Evidence")
       }
     };
+    // Business case figures marked confirmed (lib/reviews.js), kept only when some were.
+    const values = count(c, applied.values, ap + ".values");
+    if (values > 0) out.applied.values = values;
+    return out;
   }
 
   function noteIgnored(c) {

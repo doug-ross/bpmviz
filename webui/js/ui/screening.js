@@ -503,6 +503,16 @@
       }
     } } }, field("New criterion", newLabel), field("Group", newGroup),
       h("button", { type: "submit", class: "btn", id: "scr-k-add" }, icon("plus"), "Add criterion")));
+    // Value that shows across several changes: reuse, cash freed and what a pilot teaches.
+    const missing = S.PORTFOLIO_CRITERIA.filter(c => !sc.criteria.some(k => k.id === c.id));
+    if (missing.length) {
+      host.appendChild(h("div", { class: "scr-portfolio", id: "scr-portfolio" },
+        h("p", { class: "small", style: { maxWidth: "75ch" } }, "Some value shows only across several changes: " +
+          missing.map(c => c.label.toLowerCase()).join(", ") + ". Add these as criteria when the client is choosing a first use case for a larger program."),
+        h("button", { type: "button", class: "btn", id: "scr-k-add-portfolio", on: { click: () =>
+          attempt(x => S.addPortfolioCriteria(x), r => "Added " + r.added.length + " portfolio " + (r.added.length === 1 ? "criterion" : "criteria") + ".") } },
+          icon("plus"), "Add portfolio criteria")));
+    }
   }
 
   /* ---------- Ranking tab ---------- */

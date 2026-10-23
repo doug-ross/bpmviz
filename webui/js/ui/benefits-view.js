@@ -2,7 +2,8 @@
  * AIxRay benefits-view: the Benefits section in the value workspace and its
  * handoff summary. Compares a baseline event log against one taken after a
  * change and checks opportunities' modeled value cases against what the
- * logs actually measured. Without event logs, delivery teams record
+ * logs actually measured, net of a comparison group when one is recorded
+ * (two logs of a team that did not get the change). Without event logs, delivery teams record
  * checkpoints by hand (checkpoint/save, checkpoint/delete in lib/checkpoints.js)
  * and see them against the same business case. Linking two existing event
  * logs together goes through the foundation's dataset/update command.
@@ -56,8 +57,15 @@
     return " (" + units.formatPercentChange(before, after) + ")";
   }
 
+  /* A step's change net of the comparison group, in minutes: "5 min faster". */
+  function netChangeText(minutes, pair, e) {
+    if (!util.isFiniteNumber(minutes)) return "Not measured";
+    if (Math.abs(minutes) < 0.05) return "No change";
+    return units.formatMeasure(Math.abs(minutes), "minute", unitsCtx(pair.baseline, e)) + (minutes < 0 ? " faster" : " slower");
+  }
+
   /* One row of the step-by-step comparison table. */
-  function stepRow(s, pair, e) {
+  function stepRow(s, pair, e, withGroup) {
     const durBefore = s.duration.before ? s.duration.before.p50 : null;
     const durAfter = s.duration.after ? s.duration.after.p50 : null;
     const sojBefore = s.sojourn.before ? s.sojourn.before.p50 : null;
@@ -70,7 +78,8 @@
       h("td", { class: "num" }, beforeAfter(minuteText(s.sojourn.before, pair.baseline, e), minuteText(s.sojourn.after, pair.after, e), changeText(sojBefore, sojAfter))),
       h("td", { class: "num" }, beforeAfter(pct(s.reworkRate.before), pct(s.reworkRate.after))),
       h("td", { class: "num" }, beforeAfter(pct(s.caseShare.before), pct(s.caseShare.after))),
-      h("td", { class: "num" }, beforeAfter(count(s.visitsPerCase.before), count(s.visitsPerCase.after))));
+      h("td", { class: "num" }, beforeAfter(count(s.visitsPerCase.before), count(s.visitsPerCase.after))),
+      withGroup ? h("td", { class: "num" }, netChangeText(s.group && s.group.netChange, pair, e)) : null);
   }
 
   function overallFacts(cmp, pair, e) {
@@ -99,12 +108,59 @@
       h("tbody", null, rows.map(r => h("tr", null,
         h("td", null, h("div", { class: "title-cell" }, r.title), r.notes.length ? h("div", { class: "desc" }, r.notes.join(" ")) : null),
         h("td", { class: "num" }, figure(r.expected)),
-        h("td", { class: "num" }, figure(r.realized)),
+        h("td", { class: "num" }, figure(r.realized),
+          r.unadjusted ? h("div", { class: "desc" }, "Before the comparison group: " + units.formatMeasure(r.unadjusted.value, r.unadjusted.unit, c)) : null),
         h("td", null, badge(STATUS_LABEL[r.status], STATUS_TONE[r.status])))))));
+  }
+
+  /*
+   * The comparison group under a comparison: which two logs it is, or a form
+   * to choose them from the project's other event logs.
+   */
+  function groupBlock(pair, cmp, e, ctx) {
+    const id = pair.after.id;
+    const g = pair.after.comparisonGroup;
+    const datasets = e.datasets || [];
+    const intro = "Optional. Two event logs from a team or region that did not get the change, one from each period. Its own change is taken out of the measured change, so what changed for everyone, such as the season or the mix of work, is not counted.";
+    if (g) {
+      const named = x => { const d = datasets.find(y => y.id === x); return d ? d.name : "a log no longer in the project"; };
+      const cg = cmp.comparisonGroup;
+      const groupBaseline = datasets.find(d => d.id === g.baselineId);
+      const cycle = cg && cg.usable && cg.cycleTime.before && cg.cycleTime.after ?
+        " Its median cycle time went from " + minuteText(cg.cycleTime.before, groupBaseline, e) + " to " + minuteText(cg.cycleTime.after, groupBaseline, e) +
+          changeText(cg.cycleTime.before.p50, cg.cycleTime.after.p50) + "." : "";
+      const remove = h("button", { class: "btn", type: "button", id: "bv-group-remove-" + id }, "Remove the comparison group");
+      remove.addEventListener("click", () => ctx.dispatch("dataset/update", { id, patch: { comparisonGroup: null } }, "Comparison group removed"));
+      return h("div", { class: "form-grid bv-group", id: "bv-group-" + id },
+        h("p", { class: "section-title benefits-sub" }, "Comparison group"),
+        h("p", { class: "small" }, "Logs from a team that did not get the change: " + named(g.baselineId) + " (before) and " + named(g.afterId) + " (after)." + cycle),
+        h("div", { class: "form-actions" }, remove));
+    }
+    const others = datasets.filter(d => d.id !== id && d.id !== pair.baseline.id);
+    if (others.length < 2) {
+      return h("p", { class: "small muted", id: "bv-group-" + id }, "To take out what changed for everyone, such as the season, import two event logs from a team that did not get the change, one for each period, and use them as a comparison group.");
+    }
+    const option = d => h("option", { value: d.id }, d.name);
+    const before = h("select", { class: "select", id: "bv-group-before-" + id }, others.map(option));
+    const after = h("select", { class: "select", id: "bv-group-after-" + id }, others.map(option));
+    after.value = others[1].id;
+    const err = h("p", { class: "error-text", hidden: true });
+    const save = h("button", { class: "btn", type: "button", id: "bv-group-save-" + id }, "Use as the comparison group");
+    save.addEventListener("click", () => ctx.dispatch("dataset/update",
+      { id, patch: { comparisonGroup: { baselineId: before.value, afterId: after.value } } }, "Comparison group recorded", err));
+    return h("div", { class: "form-grid bv-group", id: "bv-group-" + id },
+      h("p", { class: "section-title benefits-sub" }, "Comparison group"),
+      h("p", { class: "small" }, intro),
+      h("div", { class: "field-row" },
+        h("div", { class: "field" }, h("label", { for: before.id }, "Comparison group, before the change"), before),
+        h("div", { class: "field" }, h("label", { for: after.id }, "Comparison group, after the change"), after)),
+      h("div", { class: "form-actions" }, save),
+      err);
   }
 
   function pairCard(pair, e, ctx) {
     const cmp = benefits.compareDatasets(e, pair.baseline.id, pair.after.id);
+    const withGroup = !!(cmp.comparisonGroup && cmp.comparisonGroup.usable);
     const vs = benefits.expectedVsRealized(e, pair.baseline.id, pair.after.id);
     const removeBtn = h("button", { class: "btn", type: "button" }, "Remove this comparison");
     removeBtn.addEventListener("click", () => ctx.dispatch("dataset/update", { id: pair.after.id, patch: { comparesToDatasetId: null } }, "Comparison removed"));
@@ -118,12 +174,14 @@
       h("p", { class: "section-title benefits-sub" }, "Step by step"),
       cmp.steps.length ? h("div", { class: "table-wrap" }, h("table", { class: "table" },
         h("caption", { class: "sr-only" }, "Step-by-step comparison"),
-        h("thead", null, h("tr", null, ["Step", "Median duration", "Median time since the previous event", "Rework rate", "Share of cases", "Visits per case"].map(t => h("th", { scope: "col" }, t)))),
-        h("tbody", null, cmp.steps.map(s => stepRow(s, pair, e))))) :
+        h("thead", null, h("tr", null, ["Step", "Median duration", "Median time since the previous event", "Rework rate", "Share of cases", "Visits per case"]
+          .concat(withGroup ? ["Duration change net of the comparison group"] : []).map(t => h("th", { scope: "col" }, t)))),
+        h("tbody", null, cmp.steps.map(s => stepRow(s, pair, e, withGroup))))) :
         h("p", { class: "small muted" }, "The two logs have no measured step in common to compare."),
       cmp.unmatched.length ? h("p", { class: "note" },
         cmp.unmatched.length + " step" + (cmp.unmatched.length === 1 ? "" : "s") + " with no match in the other log: " +
         cmp.unmatched.map(u => u.label + " (" + u.side + ")").join(", ") + ".") : null,
+      groupBlock(pair, cmp, e, ctx),
       cmp.caveats.length ? [h("p", { class: "section-title benefits-sub" }, "Notes"),
         h("ul", { class: "plain-list small" }, cmp.caveats.map(c => h("li", null, c)))] : null,
       h("div", { class: "form-actions" }, removeBtn));
@@ -315,7 +373,8 @@
         h("p", null, stepsMeasured + " step" + (stepsMeasured === 1 ? "" : "s") + " measured across " + pairs.length +
           " comparison" + (pairs.length === 1 ? "" : "s") + ": " + pairs.map(p => p.after.name + " compared to " + p.baseline.name).join("; ") + "."),
         vsRows.length ? h("ul", null, vsRows.map(r => h("li", null,
-          r.title + ": " + STATUS_LABEL[r.status] + (r.realized ? " (" + units.formatMeasure(r.realized.value, r.realized.unit, {}) + " measured)" : "")))) : null,
+          r.title + ": " + STATUS_LABEL[r.status] + (r.realized ? " (" + units.formatMeasure(r.realized.value, r.realized.unit, {}) +
+            (r.groupChange ? " measured, net of a comparison group)" : " measured)") : "")))) : null,
         caveats.size ? [h("h4", null, "Notes"), h("ul", null, [...caveats].map(c => h("li", null, c)))] : null,
         manualList
       ];

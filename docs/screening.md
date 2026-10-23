@@ -39,6 +39,8 @@ The screening starts with ten criteria in three groups. Every criterion is worde
 
 In the Criteria tab you can rename criteria, move them between groups, change weights from 0 to 10, add and remove criteria, and set a flag. A weight of 0 keeps a criterion visible without counting it. A flag marks any process scored at or below the level you set; the process stays in the ranking with the flag next to it. Removing a criterion removes the scores given against it, and Undo brings them back.
 
+Some value shows only across several changes, so it is not in the default set. **Add portfolio criteria** adds three value criteria, each with a weight of 1: **Reuse in other processes** (what gets built here would make later changes cheaper), **Cash tied up by the process** (a faster process frees working capital) and **What a pilot would teach** (a pilot settles a question the client needs answered before a larger program). Add them when the client is choosing a first use case for a larger program. Until a process is scored on them, its score is provisional. The button is shown while any of the three is missing.
+
 ## How the ranking works
 
 - **Score** is the weighted mean of a process's scores on a scale of 0 to 100, where a 1 counts as 0 and a 5 as 100.

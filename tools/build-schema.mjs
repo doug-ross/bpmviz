@@ -39,8 +39,8 @@ const count = { type: "integer", minimum: 0 };
 const share = { type: ["number", "null"], minimum: 0, maximum: 1 };
 const percent = { type: ["number", "null"], minimum: 0, maximum: 100 };
 const stats = { anyOf: [{ type: "null" }, { $ref: "#/$defs/stats" }] };
-const itemRef = { type: "string", pattern: "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|record/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79})$",
-  description: "step/<modelId>/<nodeId> or record/<recordId>." };
+const itemRef = { type: "string", pattern: "^(step/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|record/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|value/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}|assumption/[A-Za-z0-9][A-Za-z0-9_.:-]{0,79})$",
+  description: "step/<modelId>/<nodeId>, record/<recordId>, value/<recordId>/<field> (a figure in a business case) or assumption/<assumptionId>." };
 
 const doc = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
@@ -269,7 +269,11 @@ const doc = {
       type: "object", required: ["id"], additionalProperties: false,
       description: "Aggregates of one event log: never events, case IDs or resource names.",
       properties: {
-        id, name: text(200), role: en("datasetRole"), comparesToDatasetId: nullableId, modelId: nullableId,
+        id, name: text(200), role: en("datasetRole"), comparesToDatasetId: nullableId,
+        comparisonGroup: { type: "object", required: ["baselineId", "afterId"], additionalProperties: false,
+          description: "Two event logs from a team that did not get the change, before and after; its own change is taken out of the measured change.",
+          properties: { baselineId: id, afterId: id } },
+        modelId: nullableId,
         dataStatus: en("dataStatus"), createdAt: text(40),
         source: {
           type: "object", additionalProperties: false,
