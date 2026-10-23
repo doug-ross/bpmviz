@@ -1,0 +1,68 @@
+/* ============================================================
+   Sogeti — base element styles & helpers
+   Light reset + sensible defaults wired to the tokens. Optional for
+   consumers, but makes specimen cards and kits render consistently.
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--text-body);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  color: var(--text-strong);
+  line-height: var(--lh-snug);
+  margin: 0 0 var(--space-3);
+  font-weight: var(--fw-bold);
+}
+h1 { font-size: var(--fs-h1); }
+h2 { font-size: var(--fs-h2); }
+h3 { font-size: var(--fs-h3); }
+h4 { font-size: var(--fs-h4); }
+
+p { margin: 0 0 var(--space-4); text-wrap: pretty; }
+
+a { color: var(--text-link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---- Display title helper: Ubuntu Mono, the signature title face ---- */
+.sg-display {
+  font-family: var(--font-display);
+  color: var(--text-strong);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tight);
+  font-weight: var(--fw-regular);
+}
+
+/* ---- Eyebrow / overline label ---- */
+.sg-eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--sg-blue);
+}
+
+/* ---- The signature "sail" sweep block ---- */
+.sg-sail {
+  border-radius: var(--radius-sail);
+  background: var(--sg-blue);
+}
+
+::selection { background: rgba(18, 171, 219, 0.25); }
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-xs);
+}

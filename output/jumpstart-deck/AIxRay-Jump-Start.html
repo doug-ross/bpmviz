@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AIxRay in your Jump Start workshop | Sogeti</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  html, body { margin: 0; background: #0b0b10; }
+  deck-stage:not(:defined) { visibility: hidden; }
+
+  .s { width: 100%; height: 100%; box-sizing: border-box; position: relative; overflow: hidden;
+       background: var(--sg-white); font-family: var(--font-sans); color: var(--text-body);
+       padding: 60px 72px 0; }
+  .s.dark { background: var(--sg-purple); color: var(--text-on-dark); }
+  .s.grey { background: var(--surface-muted); }
+
+  .eyebrow { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 500;
+             letter-spacing: var(--ls-caps); text-transform: uppercase; color: var(--sg-blue); }
+  .eyebrow .rule { width: 34px; height: 2px; background: var(--sg-blue); }
+  .dark .eyebrow { color: var(--sg-vibrant); }
+  .dark .eyebrow .rule { background: var(--sg-vibrant); }
+
+  .title { font-family: var(--font-mono); font-weight: 700; font-size: 40px; line-height: 1.1;
+           letter-spacing: var(--ls-tight); color: var(--sg-purple); margin: 14px 0 12px; max-width: 1060px; }
+  .dark .title { color: var(--sg-white); }
+  .lead { font-weight: 300; font-size: 19px; line-height: 1.5; color: var(--text-body); max-width: 900px; margin: 0; }
+  .dark .lead { color: rgba(255,255,255,.84); }
+
+  .mono { font-family: var(--font-mono); }
+  h3 { font-size: 19px; font-weight: 700; color: var(--sg-purple); margin: 0 0 6px; line-height: 1.3; }
+  .dark h3 { color: var(--sg-white); }
+  p.body { font-size: 15.5px; line-height: 1.55; margin: 0; color: var(--text-body); }
+  .dark p.body { color: rgba(255,255,255,.8); }
+
+  .foot { position: absolute; left: 72px; right: 72px; bottom: 24px; display: flex; justify-content: space-between;
+          align-items: center; font-size: 11.5px; color: var(--text-muted); }
+  .dark .foot { color: rgba(255,255,255,.55); }
+  .foot .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--sg-purple); font-size: 13px; }
+  .dark .foot .brand { color: var(--sg-white); }
+  .foot .brand img { height: 18px; }
+
+  .shot { display: block; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+          box-shadow: var(--shadow-md); background: var(--sg-white); }
+  .caption { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+
+  /* numbered list rows with hairline separators */
+  .rows { display: flex; flex-direction: column; }
+  .row { display: grid; grid-template-columns: 44px 1fr; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border-subtle); }
+  .row:last-child { border-bottom: 0; }
+  .row .n { font-family: var(--font-mono); font-weight: 700; font-size: 22px; color: var(--sg-blue); line-height: 1.2; }
+  .row p { margin: 0; font-size: 15.5px; line-height: 1.5; }
+  .row b { color: var(--sg-purple); }
+
+  .card { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 22px 24px; }
+  .grey .card { border-color: var(--sg-grey-200); }
+
+  table.spec { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table.spec th { text-align: left; font-weight: 500; color: var(--text-muted); font-size: 12px; letter-spacing: var(--ls-caps);
+                  text-transform: uppercase; padding: 0 16px 10px 0; border-bottom: 1px solid var(--border-strong); }
+  table.spec td { padding: 12px 16px 12px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; line-height: 1.45; }
+  table.spec td:first-child { font-weight: 700; color: var(--sg-purple); width: 210px; }
+</style>
+</head>
+<body>
+<deck-stage width="1280" height="720">
+
+  <!-- 01 TITLE -->
+  <section data-label="Title">
+    <div class="s" style="padding:0">
+      <div style="position:absolute;right:0;top:0;width:520px;height:100%;border-radius:0 0 0 200px;overflow:hidden">
+        <img src="assets/photos/colleagues.jpg" alt="" style="width:100%;height:100%;object-fit:cover">
+      </div>
+      <div style="position:absolute;left:80px;top:150px;width:620px">
+        <div class="eyebrow"><span class="rule"></span>Jump Start workshops</div>
+        <div class="mono" style="font-weight:700;font-size:56px;line-height:1.08;letter-spacing:-.02em;color:var(--sg-purple);margin:22px 0 22px">See the process. Reimagine the possibilities.</div>
+        <div style="font-weight:300;font-size:21px;line-height:1.5;color:var(--text-body);max-width:560px">How we use AIxRay in a Jump Start to understand how your work runs today and to design how it could run with supervised AI.</div>
+      </div>
+      <div style="position:absolute;left:80px;bottom:34px;display:flex;align-items:center;gap:12px">
+        <img src="assets/brand/sogeti-sail.svg" alt="" style="height:26px"><span style="font-weight:700;font-size:18px;color:var(--sg-purple)">Sogeti</span>
+        <span style="font-size:13px;color:var(--text-muted);margin-left:8px">Part of the Capgemini Group</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 EXECUTIVE SUMMARY -->
+  <section data-label="Executive summary">
+    <div class="s">
+      <div class="eyebrow"><span class="rule"></span>Executive summary</div>
+      <div class="title">One shared view of a process turns AI ideas into decisions</div>
+      <div style="display:grid;grid-template-columns:400px 1fr;gap:56px;margin-top:26px">
+        <div>
+          <p class="lead" style="font-size:19px">Many AI conversations stall because nobody can point to where the work happens, who does it and what a change would be worth.</p>
+          <p class="lead" style="font-size:19px;margin-top:18px">In a Jump Start, we put one of your processes under AIxRay and work through it with the people who run it. The same model carries the discussion from today's process to a future design and a first estimate of its value.</p>
+        </div>
+        <div class="rows">
+          <div class="row"><span class="n">01</span><p><b>Understand.</b> We build a model of today's process from your documents and the people in the room, then play real cases through it, exceptions included.</p></div>
+          <div class="row"><span class="n">02</span><p><b>Reimagine.</b> We design a future version, trying simpler fixes first and using supervised AI where it earns its place, with approvals and fallbacks written down.</p></div>
+          <div class="row"><span class="n">03</span><p><b>Evaluate.</b> We estimate cycle time, effort and cost from assumptions everyone can see and challenge, and agree what to validate next.</p></div>
+          <div class="row"><span class="n" style="color:var(--sg-red)">&rarr;</span><p><b>You leave with</b> an agreed current-state model, a future-state design, a prioritized list of opportunities and a pilot brief with named owners.</p></div>
+        </div>
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 02</span></div>
+    </div>
+  </section>
+
+  <!-- 03 THE CHALLENGE -->
+  <section data-label="The challenge">
+    <div class="s">
+      <div class="eyebrow"><span class="rule"></span>Why start with the process</div>
+      <div class="title">AI ideas need a real process to land in</div>
+      <p class="lead">Before deciding where AI fits, a leadership team needs the same picture of how work moves today. Three things usually get in the way.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:44px;margin-top:64px">
+        <div>
+          <img src="assets/icons-3d/chat.png" alt="" style="height:78px;margin-bottom:18px">
+          <h3>Process knowledge sits with people</h3>
+          <p class="body">How work really moves, where it waits and how exceptions are handled often lives in people's heads and in documents that disagree with each other.</p>
+        </div>
+        <div>
+          <img src="assets/icons-3d/cube.png" alt="" style="height:78px;margin-bottom:18px">
+          <h3>AI opportunities stay abstract</h3>
+          <p class="body">Without a shared view of the steps, it is hard to say where AI helps, where a simpler fix would do, and where people need to stay in control.</p>
+        </div>
+        <div>
+          <img src="assets/icons-3d/dollar.png" alt="" style="height:78px;margin-bottom:18px">
+          <h3>Business cases hide their assumptions</h3>
+          <p class="body">Benefit figures are hard to trust when nobody can see the volumes, effort and costs behind them, or which of those were measured and which were guessed.</p>
+        </div>
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 03</span></div>
+    </div>
+  </section>
+
+  <!-- 04 WHAT AIXRAY IS -->
+  <section data-label="What AIxRay is">
+    <div class="s">
+      <div class="eyebrow"><span class="rule"></span>The tool</div>
+      <div class="title">AIxRay is a workbench for process workshops</div>
+      <div style="display:grid;grid-template-columns:410px 1fr;gap:44px;margin-top:22px;align-items:start">
+        <div class="rows">
+          <div class="row" style="grid-template-columns:30px 1fr"><span class="n" style="font-size:18px">01</span><p>Plays a case through the process step by step, on one screen the whole room can follow.</p></div>
+          <div class="row" style="grid-template-columns:30px 1fr"><span class="n" style="font-size:18px">02</span><p>Records pain points, questions and ideas on the step where they come up.</p></div>
+          <div class="row" style="grid-template-columns:30px 1fr"><span class="n" style="font-size:18px">03</span><p>Compares today's process with a future design on the same clock.</p></div>
+          <div class="row" style="grid-template-columns:30px 1fr"><span class="n" style="font-size:18px">04</span><p>Shows every figure with its formula and inputs, labeled by how much we know about them.</p></div>
+          <div class="row" style="grid-template-columns:30px 1fr"><span class="n" style="font-size:18px">05</span><p>Runs in the browser from local files, with no server, account or installation.</p></div>
+        </div>
+        <div>
+          <img class="shot" src="assets/screens/02-process-step.png" alt="AIxRay playing an underwriting process with one step open in the side panel">
+          <div class="caption">Illustrative example: commercial property underwriting, demonstration data.</div>
+        </div>
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 04</span></div>
+    </div>
+  </section>
+
+  <!-- 05 HOW IT FITS -->
+  <section data-label="How it fits">
+    <div class="s grey">
+      <div class="eyebrow"><span class="rule"></span>How AIxRay fits in a Jump Start</div>
+      <div class="title">One model carries the work from understanding to evaluation</div>
+      <p class="lead">The workshop runs as three conversations, understand, reimagine and evaluate, with preparation before and a clear hand-over after.</p>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-top:40px">
+        <div style="padding-top:18px;border-top:2px solid var(--sg-grey-300)">
+          <div class="mono" style="font-weight:700;font-size:15px;color:var(--text-muted)">BEFORE</div>
+          <h3 style="margin-top:8px">Prepare</h3>
+          <p class="body" style="font-size:14.5px">We gather your procedures, maps and notes, plus a system event log where one exists, and draft a first model of the process.</p>
+        </div>
+        <div style="padding-top:18px;border-top:2px solid var(--sg-blue)">
+          <div class="mono" style="font-weight:700;font-size:15px;color:var(--sg-blue)">01</div>
+          <h3 style="margin-top:8px">Understand</h3>
+          <p class="body" style="font-size:14.5px">We walk routine cases and exceptions with the people who do the work, correct the model live and capture findings at each step.</p>
+        </div>
+        <div style="padding-top:18px;border-top:2px solid var(--sg-blue)">
+          <div class="mono" style="font-weight:700;font-size:15px;color:var(--sg-blue)">02</div>
+          <h3 style="margin-top:8px">Reimagine</h3>
+          <p class="body" style="font-size:14.5px">We try removing, simplifying and connecting steps before adding automation and AI, and design the controls for each AI step.</p>
+        </div>
+        <div style="padding-top:18px;border-top:2px solid var(--sg-blue)">
+          <div class="mono" style="font-weight:700;font-size:15px;color:var(--sg-blue)">03</div>
+          <h3 style="margin-top:8px">Evaluate</h3>
+          <p class="body" style="font-size:14.5px">We model cycle time, effort and cost against today's baseline, see which assumptions matter most and rank the opportunities.</p>
+        </div>
+        <div style="padding-top:18px;border-top:2px solid var(--sg-grey-300)">
+          <div class="mono" style="font-weight:700;font-size:15px;color:var(--text-muted)">AFTER</div>
+          <h3 style="margin-top:8px">Hand over</h3>
+          <p class="body" style="font-size:14.5px">We agree a checkpoint, produce the pilot brief and report, and send a review form to stakeholders who were not in the room.</p>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-top:26px;padding-top:16px;border-top:1px solid var(--border-subtle)">
+        <div style="grid-column:1 / -1;font-size:12px;font-weight:500;letter-spacing:var(--ls-caps);text-transform:uppercase;color:var(--text-muted);margin-bottom:-6px">On screen in AIxRay</div>
+        <p class="body" style="font-size:13.5px;color:var(--sg-purple)">AI-drafted model, reviewed by our team</p>
+        <p class="body" style="font-size:13.5px;color:var(--sg-purple)">Walkthrough and findings at each step</p>
+        <p class="body" style="font-size:13.5px;color:var(--sg-purple)">Future alternatives and automation designs</p>
+        <p class="body" style="font-size:13.5px;color:var(--sg-purple)">Value, sensitivity, matrix and waves</p>
+        <p class="body" style="font-size:13.5px;color:var(--sg-purple)">Pilot brief, report, review form and exports</p>
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 05</span></div>
+    </div>
+  </section>
+
+  <!-- 06 UNDERSTAND -->
+  <section data-label="Understand">
+    <div class="s">
+      <div class="eyebrow"><span class="rule"></span>01 &nbsp;Understand</div>
+      <div class="title">Agree how the work runs today</div>
+      <div style="display:grid;grid-template-columns:1fr 430px;gap:44px;margin-top:22px;align-items:start">
+        <div>
+          <img class="shot" src="assets/screens/03-capture.png" alt="Adding findings to a step while the process is paused">
+          <div class="caption">Findings recorded on the step they belong to. Illustrative example, demonstration data.</div>
+        </div>
+        <div class="rows">
+          <div class="row"><span class="n">A</span><p><b>Start from what you have.</b> Procedures, process maps, slides, notes or BPMN files. AI can draft the first model; our team reviews it before you see it.</p></div>
+          <div class="row"><span class="n">B</span><p><b>Walk the routes.</b> The routine case first, then the exceptions, choosing each branch with the participants.</p></div>
+          <div class="row"><span class="n">C</span><p><b>Capture at the step.</b> Pain points, open questions and decisions are recorded where they arise, each with an owner.</p></div>
+          <div class="row"><span class="n">D</span><p><b>Keep evidence apart from belief.</b> Each step shows where it came from and whether you have confirmed it.</p></div>
+        </div>
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 06</span></div>
+    </div>
+  </section>
+
+  <!-- 07 REIMAGINE -->
+  <section data-label="Reimagine">
+    <div class="s">
+      <div class="eyebrow"><span class="rule"></span>02 &nbsp;Reimagine</div>
+      <div class="title">Design the future process against a locked baseline</div>
+      <div style="display:grid;grid-template-columns:430px 1fr;gap:44px;margin-top:22px;align-items:start">
+        <div class="rows">
+          <div class="row"><span class="n">A</span><p><b>Simpler changes first.</b> Each opportunity asks whether removing, simplifying, standardizing or connecting systems would do the job before automation or AI.</p></div>
+          <div class="row"><span class="n">B</span><p><b>A baseline that cannot drift.</b> Today's process is locked. Every future alternative records which steps changed, were added or removed, and why.</p></div>
+          <div class="row"><span class="n">C</span><p><b>Side by side, on one clock.</b> Both versions play together, so the room sees where time, handoffs and waits fall away.</p></div>
+        </div>
+        <div>
+          <img class="shot" src="assets/screens/05-compare.png" alt="Current and proposed future state compared side by side with a scorecard">
+          <div class="caption">Current and proposed future state with the scorecard. Illustrative example, demonstration data.</div>
+        </div>
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 07</span></div>
+    </div>
+  </section>
+
+  <!-- 08 CONTROLS -->
+  <section data-label="Controls">
+    <div class="s">
+      <div class="eyebrow"><span class="rule"></span>02 &nbsp;Reimagine</div>
+      <div class="title">Every AI step is designed with its controls</div>
+      <div style="display:grid;grid-template-columns:330px 1fr;gap:56px;margin-top:26px;align-items:start">
+        <div>
+          <p class="lead" style="font-size:18px">For each step where automation or AI does the work, we write down how it is supervised before it goes anywhere near a pilot.</p>
+          <p class="lead" style="font-size:18px;margin-top:18px">Approvals, permissions, escalation and test criteria stay attached to the design and flow into the pilot brief and its acceptance criteria.</p>
+          <div style="display:flex;align-items:center;gap:16px;margin-top:30px">
+            <img src="assets/icons-3d/thumbs-up.png" alt="" style="height:64px">
+            <span style="font-size:15px;color:var(--sg-purple);font-weight:500;line-height:1.4">People keep the decisions that need judgment.</span>
+          </div>
+        </div>
+        <div>
+          <table class="spec">
+            <thead><tr><th>Design element</th><th>Example: AI checks application completeness</th></tr></thead>
+            <tbody>
+              <tr><td>Trigger</td><td>Application received</td></tr>
+              <tr><td>Rules and limits</td><td>Check required fields only. Do not approve applications.</td></tr>
+              <tr><td>Approval</td><td>Case handler approves every external message.</td></tr>
+              <tr><td>Fallback and escalation</td><td>Return to manual intake when extraction fails. Escalate uncertain cases to the duty manager.</td></tr>
+              <tr><td>Test criteria</td><td>Flag every missing required document in the agreed test set.</td></tr>
+              <tr><td>Owner</td><td>Operations lead</td></tr>
+            </tbody>
+          </table>
+          <div class="caption">Illustrative example from a synthetic workshop.</div>
+        </div>
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 08</span></div>
+    </div>
+  </section>
+
+  <!-- 09 EVALUATE -->
+  <section data-label="Evaluate">
+    <div class="s">
+      <div class="eyebrow"><span class="rule"></span>03 &nbsp;Evaluate</div>
+      <div class="title">Directional estimates you can check line by line</div>
+      <div style="display:grid;grid-template-columns:400px 1fr;gap:44px;margin-top:20px;align-items:start">
+        <div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">
+            <div style="padding:12px 0;border-bottom:1px solid var(--border-subtle)"><div class="mono" style="font-weight:700;font-size:20px;color:var(--sg-blue)">Cycle time</div><div style="font-size:13.5px;margin-top:2px">Start to finish, waits included</div></div>
+            <div style="padding:12px 0;border-bottom:1px solid var(--border-subtle)"><div class="mono" style="font-weight:700;font-size:20px;color:var(--sg-blue)">Human effort</div><div style="font-size:13.5px;margin-top:2px">Hands-on hours per case</div></div>
+            <div style="padding:12px 0"><div class="mono" style="font-weight:700;font-size:20px;color:var(--sg-blue)">Operating cost</div><div style="font-size:13.5px;margin-top:2px">Labor plus AI and service cost</div></div>
+            <div style="padding:12px 0"><div class="mono" style="font-weight:700;font-size:20px;color:var(--sg-blue)">Freed capacity</div><div style="font-size:13.5px;margin-top:2px">Time released, in FTE</div></div>
+          </div>
+          <div class="rows" style="margin-top:14px">
+            <div class="row" style="grid-template-columns:24px 1fr;padding:10px 0"><span class="n" style="font-size:16px">&rarr;</span><p style="font-size:14.5px">Every figure shows its formula and inputs. Each input is labeled illustrative, provided, measured or confirmed.</p></div>
+            <div class="row" style="grid-template-columns:24px 1fr;padding:10px 0"><span class="n" style="font-size:16px">&rarr;</span><p style="font-size:14.5px">A missing input leaves the result blank rather than assuming zero.</p></div>
+            <div class="row" style="grid-template-columns:24px 1fr;padding:10px 0"><span class="n" style="font-size:16px">&rarr;</span><p style="font-size:14.5px">A sensitivity view shows which inputs move the result most, which tells us what to validate first.</p></div>
+          </div>
+        </div>
+        <div>
+          <img class="shot" src="assets/screens/08-value.png" alt="Modeled results with each formula, its inputs and the basis of each input">
+          <div class="caption">Figures are directional estimates for decision-making, not guaranteed results. Illustrative example, demonstration data.</div>
+        </div>
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 09</span></div>
+    </div>
+  </section>
+
+  <!-- 10 PRIORITIZE -->
+  <section data-label="Prioritize">
+    <div class="s">
+      <div class="eyebrow"><span class="rule"></span>03 &nbsp;Evaluate</div>
+      <div class="title">From a list of findings to a plan in waves</div>
+      <p class="lead">Each opportunity carries a small business case: effort saved, cases affected and cost to deliver. That lets us compare them on the same terms.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;margin-top:30px">
+        <div>
+          <h3 style="margin-bottom:14px">Value against effort</h3>
+          <div style="display:grid;grid-template-columns:28px 1fr 1fr;grid-template-rows:auto 1fr 1fr;gap:8px">
+            <div></div>
+            <div style="font-size:12px;color:var(--text-muted);text-align:center">Lower effort</div>
+            <div style="font-size:12px;color:var(--text-muted);text-align:center">Higher effort</div>
+            <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;color:var(--text-muted);text-align:center">Higher value</div>
+            <div class="card" style="padding:16px 18px;border:2px solid var(--sg-blue)"><div style="font-weight:700;color:var(--sg-purple)">Quick wins</div><div style="font-size:13.5px;margin-top:4px">Start here</div></div>
+            <div class="card" style="padding:16px 18px"><div style="font-weight:700;color:var(--sg-purple)">Major projects</div><div style="font-size:13.5px;margin-top:4px">Plan and fund deliberately</div></div>
+            <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;color:var(--text-muted);text-align:center">Lower value</div>
+            <div class="card" style="padding:16px 18px"><div style="font-weight:700;color:var(--sg-purple)">Fill-ins</div><div style="font-size:13.5px;margin-top:4px">Do when capacity allows</div></div>
+            <div class="card" style="padding:16px 18px"><div style="font-weight:700;color:var(--sg-purple)">Reconsider</div><div style="font-size:13.5px;margin-top:4px">Challenge before committing</div></div>
+          </div>
+        </div>
+        <div>
+          <h3 style="margin-bottom:14px">Delivery waves</h3>
+          <div class="rows">
+            <div class="row" style="grid-template-columns:80px 1fr"><span class="n" style="font-size:20px">Now</span><p>Quick wins and the first supervised AI pilot, with acceptance criteria and owners.</p></div>
+            <div class="row" style="grid-template-columns:80px 1fr"><span class="n" style="font-size:20px">Next</span><p>Changes that depend on the pilot's results or on connecting systems.</p></div>
+            <div class="row" style="grid-template-columns:80px 1fr"><span class="n" style="font-size:20px">Later</span><p>Larger redesigns, kept visible with their open questions.</p></div>
+          </div>
+          <p class="body" style="margin-top:14px;font-size:14px;color:var(--text-muted)">Each wave shows a running total of its modeled value, built from the same formulas as the individual opportunities.</p>
+        </div>
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 10</span></div>
+    </div>
+  </section>
+
+  <!-- 11 MEASURED DATA -->
+  <section data-label="Measured data">
+    <div class="s grey">
+      <div class="eyebrow"><span class="rule"></span>Beyond the workshop</div>
+      <div class="title">Add measured data when you have it</div>
+      <p class="lead">Workshop estimates are a starting point. If your workflow, ticketing or core system can export an event log, the same model can show how the process actually runs.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 300px;gap:28px;margin-top:36px;align-items:start">
+        <div class="card">
+          <img src="assets/icons-3d/growth.png" alt="" style="height:56px;margin-bottom:14px">
+          <h3>Measure today's process</h3>
+          <p class="body" style="font-size:14.5px">How many cases reach each step, how long each step takes and which paths cases follow, shown next to what the workshop captured.</p>
+        </div>
+        <div class="card">
+          <img src="assets/icons-3d/cycle.png" alt="" style="height:56px;margin-bottom:14px">
+          <h3>Check whether a change worked</h3>
+          <p class="body" style="font-size:14.5px">A log from before a change and one from after are compared step by step, with caveats such as seasonality and volume mix stated alongside.</p>
+        </div>
+        <div style="padding-top:6px">
+          <h3 style="font-size:16px">Only aggregates are kept</h3>
+          <p class="body" style="font-size:14px">Counts and times per step. Individual events, case IDs and the names of people in the log are not stored.</p>
+        </div>
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 11</span></div>
+    </div>
+  </section>
+
+  <!-- 12 DELIVERABLES -->
+  <section data-label="What you leave with">
+    <div class="s">
+      <div class="eyebrow"><span class="rule"></span>Outcomes</div>
+      <div class="title">What you take away from the Jump Start</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:30px">
+        <div class="card"><div class="mono" style="font-weight:700;color:var(--sg-blue);font-size:15px">01</div><h3 style="margin-top:6px">Current-state model</h3><p class="body" style="font-size:14.5px">Agreed with the people who run the process, with its sources and open questions.</p></div>
+        <div class="card"><div class="mono" style="font-weight:700;color:var(--sg-blue);font-size:15px">02</div><h3 style="margin-top:6px">Future-state design</h3><p class="body" style="font-size:14.5px">One or more alternatives compared with the baseline, each change with its reason.</p></div>
+        <div class="card"><div class="mono" style="font-weight:700;color:var(--sg-blue);font-size:15px">03</div><h3 style="margin-top:6px">Prioritized opportunities</h3><p class="body" style="font-size:14.5px">Ranked by value against effort and grouped into now, next and later.</p></div>
+        <div class="card"><div class="mono" style="font-weight:700;color:var(--sg-blue);font-size:15px">04</div><h3 style="margin-top:6px">Pilot brief</h3><p class="body" style="font-size:14.5px">Automation designs with their controls, acceptance criteria and owned actions.</p></div>
+        <div class="card"><div class="mono" style="font-weight:700;color:var(--sg-blue);font-size:15px">05</div><h3 style="margin-top:6px">Report and review form</h3><p class="body" style="font-size:14.5px">A printable summary, and a form that lets stakeholders confirm or dispute each step.</p></div>
+        <div class="card"><div class="mono" style="font-weight:700;color:var(--sg-blue);font-size:15px">06</div><h3 style="margin-top:6px">Exports for your tools</h3><p class="body" style="font-size:14.5px">A PowerPoint deck, a BPMN 2.0 diagram, and a Jira, Azure DevOps or Excel backlog.</p></div>
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 12</span></div>
+    </div>
+  </section>
+
+  <!-- 13 YOUR DATA -->
+  <section data-label="Your data">
+    <div class="s dark">
+      <div style="position:absolute;right:0;bottom:0;width:300px;height:300px;border-radius:300px 0 0 0;background:var(--sg-purple-700)"></div>
+      <div class="eyebrow"><span class="rule"></span>Data handling</div>
+      <div class="title">Your material stays under your control</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:34px 56px;margin-top:34px;max-width:1000px;position:relative">
+        <div><h3>Runs from local files</h3><p class="body">Opened from disk, AIxRay makes no network requests. The saved project file is the record, stored like any other client document.</p></div>
+        <div><h3>AI drafting is optional and labeled</h3><p class="body">AI runs only on approved commercial plans with the project lead's approval. Every AI draft stays out of reports and exports until a person reviews it.</p></div>
+        <div><h3>Sensitive findings stay out by default</h3><p class="body">Findings marked sensitive are left out of reports, review forms and exports unless someone deliberately includes them.</p></div>
+        <div><h3>Review forms carry only what you choose</h3><p class="body">Steps and selected findings, with no figures, sources or notes. The form sends nothing anywhere; answers come back as a file.</p></div>
+      </div>
+      <p style="position:relative;font-size:15px;color:rgba(255,255,255,.78);margin:46px 0 0;max-width:820px;padding-top:18px;border-top:1px solid rgba(255,255,255,.2)">Where material includes personal or otherwise regulated data, we agree the handling with your data protection officer before the workshop.</p>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 13</span></div>
+    </div>
+  </section>
+
+  <!-- 14 WHAT WE NEED -->
+  <section data-label="What we need">
+    <div class="s">
+      <div class="eyebrow"><span class="rule"></span>Getting ready</div>
+      <div class="title">What we ask of you before the workshop</div>
+      <div style="display:grid;grid-template-columns:1fr 380px;gap:56px;margin-top:22px;align-items:center">
+        <div class="rows">
+          <div class="row"><span class="n">01</span><p><b>A candidate process</b> with a clear start, a clear end and a business owner who wants it improved.</p></div>
+          <div class="row"><span class="n">02</span><p><b>The right people in the room:</b> those who run the work day to day, and a decision maker for the checkpoint.</p></div>
+          <div class="row"><span class="n">03</span><p><b>The evidence you already have:</b> procedures, process maps, slides, notes or BPMN files, and a system event log if one is available.</p></div>
+          <div class="row"><span class="n">04</span><p><b>Rough figures:</b> volumes, effort, waiting times and costs. Estimates are fine; we label them as assumptions and test which ones matter.</p></div>
+        </div>
+        <img src="assets/illustrations/team-desk.png" alt="" style="width:100%">
+      </div>
+      <div class="foot"><span class="brand"><img src="assets/brand/sogeti-sail.svg" alt="">Sogeti</span><span>AIxRay in your Jump Start &nbsp;|&nbsp; 14</span></div>
+    </div>
+  </section>
+
+  <!-- 15 CLOSE -->
+  <section data-label="Next steps">
+    <div class="s" style="padding:0">
+      <div style="position:absolute;left:0;top:0;width:620px;height:100%;background:var(--sg-blue);border-radius:0 0 240px 0"></div>
+      <div style="position:absolute;left:80px;top:150px;width:470px;color:#fff">
+        <div style="font-size:14px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.85)">Next steps</div>
+        <div class="mono" style="font-weight:700;font-size:48px;line-height:1.1;letter-spacing:-.02em;margin:18px 0 20px">Which process should we put under the AIxRay?</div>
+        <div style="font-weight:300;font-size:20px;line-height:1.5;color:rgba(255,255,255,.88)">Turn an AI conversation into a concrete process-transformation discussion.</div>
+      </div>
+      <div style="position:absolute;left:700px;right:80px;top:170px" class="rows">
+        <div class="row"><span class="n">01</span><p><b>Choose a candidate process</b> together, based on volume, pain and appetite for change.</p></div>
+        <div class="row"><span class="n">02</span><p><b>Confirm participants and dates</b> for the Jump Start sessions.</p></div>
+        <div class="row"><span class="n">03</span><p><b>Share the material you have</b> so we can prepare a first model before we meet.</p></div>
+      </div>
+      <div style="position:absolute;right:80px;bottom:34px;display:flex;align-items:center;gap:12px">
+        <img src="assets/brand/sogeti-sail.svg" alt="" style="height:24px"><span style="font-weight:700;font-size:17px;color:var(--sg-purple)">Sogeti</span>
+        <span style="font-size:12px;color:var(--text-muted);margin-left:8px">Part of the Capgemini Group &nbsp;|&nbsp; &copy; 2026 Sogeti</span>
+      </div>
+    </div>
+  </section>
+
+</deck-stage>
+
+<script type="application/json" id="speaker-notes">
+[
+  "Thank you for making the time. Today I want to show you how we use a tool called AIxRay inside our Jump Start workshops. The idea is simple. Before we talk about where AI could help, we put one of your real processes on the screen, agree how it works today, and then design how it could work with supervised AI. By the end of this conversation I hope you will have a clear picture of what the workshop looks like and what you would take away from it.",
+  "Let me start with the short version. Many AI conversations stall because nobody can point to where the work actually happens, who does it, and what a change would be worth. In a Jump Start, we take one of your processes and work through it with the people who run it, in three conversations. First we understand it, including the exceptions. Then we reimagine it, trying simpler fixes before AI, and writing down the approvals and fallbacks for every AI step. Then we evaluate it, with estimates built on assumptions everyone in the room can see and challenge. You leave with an agreed model of today, a future design, a ranked list of opportunities and a pilot brief with named owners.",
+  "Why start with the process at all? In our experience three things get in the way. First, the knowledge of how work really moves sits with people, and the documents often disagree with each other. Second, without a shared view of the steps, AI opportunities stay abstract. It is hard to say where AI genuinely helps, where a simpler change would do, and where people need to stay in control. And third, business cases are hard to trust when nobody can see the volumes, effort and costs behind them, or which of those numbers were measured and which were guessed.",
+  "AIxRay is the workbench we use to deal with those three problems. It plays a case through your process step by step, on one screen that the whole room can follow. When someone raises a problem or an idea, we record it on the step where it came up. It lets us compare today's process with a future design on the same clock. Every figure it shows comes with its formula and inputs, and each input is labeled by how much we actually know about it. And it runs in the browser from local files, so there is no server, no account and nothing to install on your side. What you see here is a demonstration example from insurance underwriting.",
+  "Here is how it fits into the Jump Start. Before we meet, we gather the material you already have, and where it exists a system event log, and we draft a first model. The workshop itself is three conversations. In Understand, we walk routine cases and exceptions with the people who do the work and correct the model live. In Reimagine, we look at removing, simplifying and connecting steps before we add automation or AI, and we design the controls for each AI step. In Evaluate, we model cycle time, effort and cost against today's baseline and rank the opportunities. Afterwards, we agree a checkpoint, produce the pilot brief and report, and send a review form to anyone who could not attend.",
+  "The first conversation is about agreeing how the work runs today. We start from the evidence you already have. AI can help us draft a first model from your documents, and our team reviews that draft before you ever see it. In the room, we walk the routine case first and then the exceptions, and the participants choose each branch. When a pain point, a question or a decision comes up, we record it on that exact step and give it an owner. And every step shows where it came from and whether you have confirmed it, so we keep what we know apart from what we still need to check.",
+  "The second conversation is about the future. We deliberately ask whether a simpler change would do the job before reaching for automation or AI: removing a step, simplifying it, standardizing it or connecting two systems. Once we start designing, today's process is locked as a baseline, so it cannot quietly drift. Every future alternative records which steps changed, were added or were removed, and why. Then we play both versions side by side on the same clock, and the room can see where time, handoffs and waiting fall away.",
+  "Whenever automation or AI takes on a step, we design its controls at the same time. On the right is an example from a synthetic workshop: an AI step that checks whether an application is complete. We write down what triggers it, the rules and limits it works within, who approves its output, what happens when it fails or is unsure, how we will test it, and who owns it. Those controls stay attached to the design and carry through into the pilot brief and its acceptance criteria. The aim is that people keep the decisions that need judgment.",
+  "The third conversation is about value. We look at four measures: cycle time, human effort, operating cost and the capacity that is freed up. The important part is how those numbers are built. Every figure shows its formula and its inputs, and each input is labeled as illustrative, provided, measured or confirmed. If an input is missing, the result stays blank rather than quietly assuming zero. And a sensitivity view shows which assumptions move the result the most, which tells us what to validate first. These are directional estimates to support a decision, not guaranteed results.",
+  "From there we turn the findings into a plan. Each opportunity carries a small business case, which means we can compare them on the same terms. We place them by value against effort, which separates quick wins from major projects, fill-ins and ideas we should reconsider. Then we group them into delivery waves: what to do now, including the first supervised AI pilot, what comes next, and what comes later. Each wave carries a running total built from the same formulas.",
+  "The workshop gives you estimates, but it does not have to stop there. If your workflow, ticketing or core system can export an event log, we can load it into the same model and see how the process actually runs: how many cases reach each step, how long each step takes and which paths cases follow. Later, a log from before a change and one from after can be compared step by step, with the caveats stated alongside. Only aggregates are kept, so no individual events, case IDs or names are stored.",
+  "So what do you take away? An agreed model of your current process with its sources and open questions. A future-state design compared against that baseline, with a reason for every change. A prioritized list of opportunities grouped into waves. A pilot brief with the automation designs, their controls, acceptance criteria and owners. A printable report, plus a review form your wider stakeholders can use to confirm or dispute each step. And exports into the tools your teams already use: PowerPoint, BPMN, and a Jira, Azure DevOps or Excel backlog.",
+  "A word on your data, because I know it matters. AIxRay runs from local files, and when it is opened from disk it makes no network requests at all. Using AI to draft material is optional. It only runs on approved commercial plans with the project lead's approval, and every AI draft stays out of reports and exports until a person has reviewed it. Findings marked sensitive are left out by default, and review forms carry only what we choose to include. Where your material includes personal or regulated data, we agree how to handle it with your data protection officer before the workshop starts.",
+  "To get ready, we need four things from you. A candidate process with a clear start and end, and a business owner who wants it improved. The people who run that work day to day, plus a decision maker who can sign off the checkpoint. Whatever evidence you already have, and an event log if one exists. And rough figures for volumes, effort, waiting time and cost. Estimates are perfectly fine; we label them as assumptions and test which ones actually matter.",
+  "Which brings me to the question I would like us to leave with: which process should we put under the AIxRay? If we can agree on a candidate together, confirm who should be in the room and when, and you can share the material you already have, we will prepare a first model before we meet. Thank you. I am happy to take questions, or to show you the tool live."
+]
+</script>
+<script src="deck-stage.js"></script>
+</body>
+</html>

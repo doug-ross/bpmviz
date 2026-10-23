@@ -1,0 +1,49 @@
+/* ============================================================
+   Sogeti — Typography tokens
+   Ubuntu / Ubuntu Light for UI & copy; Ubuntu Mono for big titles.
+   Mirrors the brand template: titles in Ubuntu Mono, subtitles in
+   Ubuntu Light, body in Ubuntu regular. Never embolden Ubuntu Light —
+   switch to Ubuntu regular + 700 instead.
+   ============================================================ */
+:root {
+  /* ---- Families ---- */
+  --font-sans:    "Ubuntu", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-light:   "Ubuntu", system-ui, sans-serif;   /* use with weight 300 */
+  --font-mono:    "Ubuntu Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* semantic family aliases */
+  --font-display: var(--font-mono);   /* presentation & section titles  */
+  --font-heading: var(--font-sans);   /* UI headings                     */
+  --font-body:    var(--font-sans);   /* body copy                       */
+
+  /* ---- Weights ---- */
+  --fw-light:   300; /* @kind font */
+  --fw-regular: 400; /* @kind font */
+  --fw-medium:  500; /* @kind font */
+  --fw-bold:    700; /* @kind font */
+
+  /* ---- Type scale (1.250 major-third-ish, tuned) ---- */
+  --fs-display-xl: 4.5rem;   /* 72px hero title         */
+  --fs-display-lg: 3.5rem;   /* 56px                    */
+  --fs-display-md: 2.75rem;  /* 44px section title      */
+  --fs-h1:         2.25rem;  /* 36px                    */
+  --fs-h2:         1.75rem;  /* 28px                    */
+  --fs-h3:         1.375rem; /* 22px                    */
+  --fs-h4:         1.125rem; /* 18px                    */
+  --fs-body-lg:    1.125rem; /* 18px subtitle/lead      */
+  --fs-body:       1rem;     /* 16px                    */
+  --fs-body-sm:    0.875rem; /* 14px                    */
+  --fs-caption:    0.75rem;  /* 12px                    */
+
+  /* ---- Line heights ---- */
+  --lh-tight:   1.1; /* @kind other */
+  --lh-snug:    1.25; /* @kind other */
+  --lh-normal:  1.5; /* @kind other */
+  --lh-relaxed: 1.65; /* @kind other */
+
+  /* ---- Letter spacing ---- */
+  --ls-tight:  -0.02em; /* @kind other */
+  --ls-normal: 0; /* @kind other */
+  --ls-wide:   0.04em; /* @kind other */
+  --ls-caps:   0.08em; /* @kind other */
+}

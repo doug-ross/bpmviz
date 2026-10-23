@@ -1,0 +1,86 @@
+/* ============================================================
+   Sogeti — Color tokens
+   Source: Sogeti Brand V3 PowerPoint template (theme1.xml +
+   "Color Palette" slide). Sogeti is part of the Capgemini Group;
+   the palette is shared with Capgemini's master brand.
+   ============================================================ */
+:root {
+  /* ---- Primary brand palette ---- */
+  --sg-blue:        #0070AD;  /* Capgemini Blue — primary brand color   */
+  --sg-vibrant:     #12ABDB;  /* Vibrant Blue — secondary / accents      */
+  --sg-purple:      #2B0A3D;  /* Deep Purple — primary dark / ink        */
+  --sg-red:         #F53B53;  /* Cool Tech Red — energetic highlight     */
+  --sg-grey:        #F5F5F7;  /* Cool Grey — light surface               */
+
+  /* ---- Infographic / illustration accents ----
+     Per brand guidance: limit these to smaller visual elements. */
+  --sg-green:       #95E616;  /* Vibrant Green */
+  --sg-sky:         #80B8D6;  /* Sky Blue      */
+
+  /* ---- Blue ramp (derived from Capgemini Blue) ---- */
+  --sg-blue-900: #00395A;
+  --sg-blue-800: #004C76;
+  --sg-blue-700: #005E91;
+  --sg-blue-600: #0070AD;   /* = --sg-blue */
+  --sg-blue-500: #1A86C0;
+  --sg-blue-400: #12ABDB;   /* = --sg-vibrant */
+  --sg-blue-300: #5FC4E6;
+  --sg-blue-200: #A6DDF0;
+  --sg-blue-100: #D8F0F9;
+  --sg-blue-50:  #EEF8FC;
+
+  /* ---- Purple ramp (derived from Deep Purple) ---- */
+  --sg-purple-900: #1A0626;
+  --sg-purple-800: #2B0A3D;  /* = --sg-purple */
+  --sg-purple-700: #44195C;
+  --sg-purple-600: #5E2F7A;
+  --sg-purple-400: #8E63A8;
+  --sg-purple-200: #C9B2D6;
+  --sg-purple-100: #E7DCEE;
+
+  /* ---- Neutral / grey ramp ---- */
+  --sg-white:   #FFFFFF;
+  --sg-grey-50:  #F5F5F7;   /* = --sg-grey, Cool Grey */
+  --sg-grey-100: #ECECEF;
+  --sg-grey-200: #DDDDE2;
+  --sg-grey-300: #C5C5CD;
+  --sg-grey-400: #9A9AA6;
+  --sg-grey-500: #71717E;
+  --sg-grey-600: #4F4F5A;
+  --sg-grey-700: #34343D;
+  --sg-grey-900: #15151B;
+
+  /* ---- Semantic aliases ---- */
+  --color-bg:            var(--sg-white);
+  --color-bg-subtle:     var(--sg-grey-50);
+  --color-bg-invert:     var(--sg-purple);     /* deep purple sections   */
+  --color-bg-brand:      var(--sg-blue);       /* blue sections          */
+
+  --surface-card:        var(--sg-white);
+  --surface-muted:       var(--sg-grey-50);
+  --surface-raised:      var(--sg-white);
+
+  --text-strong:         var(--sg-purple);     /* headings / ink         */
+  --text-body:           var(--sg-grey-700);
+  --text-muted:          var(--sg-grey-500);
+  --text-on-dark:        var(--sg-white);
+  --text-on-brand:       var(--sg-white);
+  --text-link:           var(--sg-blue);
+
+  --border-subtle:       var(--sg-grey-200);
+  --border-strong:       var(--sg-grey-300);
+  --border-brand:        var(--sg-blue);
+
+  --action-primary:      var(--sg-blue);
+  --action-primary-hover:var(--sg-blue-700);
+  --action-primary-active:var(--sg-blue-800);
+  --action-accent:       var(--sg-red);        /* sparing CTA highlight  */
+
+  --focus-ring:          var(--sg-vibrant);
+
+  /* ---- Status (kept on-brand) ---- */
+  --status-success: #1F8A3B;
+  --status-warning: #E8A317;
+  --status-error:   var(--sg-red);
+  --status-info:    var(--sg-vibrant);
+}
